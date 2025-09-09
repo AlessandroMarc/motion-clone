@@ -4,8 +4,8 @@
   "main": "index.ts",
   "scripts": {
     "dev": "concurrently \"npm:dev-f\" \"npm:dev-b\"",
-    "dev-f": "npm --prefix frontend start",
-    "dev-b": "nodemon --watch backend/src --exec ts-node backend/src/index.ts",
+    "dev-f": "npm --prefix frontend run dev",
+    "dev-b": "npm --prefix backend run dev",
     "lint": "eslint . --ext .ts,.tsx,.js,.jsx",
     "lint:fix": "eslint . --ext .ts,.tsx,.js,.jsx --fix",
     "format": "prettier --write .",
