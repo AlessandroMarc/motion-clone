@@ -1,5 +1,3 @@
-// Represents a personal task
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 interface Task {
   id: string; // unique identifier
   title: string;
@@ -13,8 +11,6 @@ interface Task {
   updatedAt: Date;
 }
 
-// Represents a personal project
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 interface Project {
   id: string; // unique identifier
   name: string;
@@ -26,7 +22,6 @@ interface Project {
   updatedAt: Date;
 }
 
-// Represents a milestone within a project
 interface Milestone {
   id: string; // unique identifier
   title: string;
@@ -38,8 +33,6 @@ interface Milestone {
   updatedAt: Date;
 }
 
-// Represents a calendar entry to integrate tasks/projects into schedule
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 interface CalendarEvent {
   id: string;
   title: string;
@@ -51,3 +44,5 @@ interface CalendarEvent {
   createdAt: Date;
   updatedAt: Date;
 }
+
+export type { Task, Project, Milestone, CalendarEvent };
