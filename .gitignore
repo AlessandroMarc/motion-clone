@@ -2,3 +2,7 @@ node_modules
 .vercel
 .env.development.local
 .env
+
+# Build outputs
+dist/
+backend/dist/
