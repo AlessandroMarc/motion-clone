@@ -1,0 +1,21 @@
+{
+  "name": "motion-clone",
+  "version": "1.0.0",
+  "main": "index.ts",
+  "scripts": {
+    "dev": "concurrently \"npm:dev-f\" \"npm:dev-b\"",
+    "dev-f": "npm --prefix frontend start",
+    "dev-b": "nodemon --watch backend/src --exec ts-node backend/src/index.ts"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "workspaces": [
+    "frontend",
+    "backend"
+  ],
+  "devDependencies": {
+    "concurrently": "^9.2.1"
+  }
+}
