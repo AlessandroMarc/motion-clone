@@ -1,16 +1,16 @@
-import React, { useState, useEffect } from "react";
-import logo from "./logo.svg";
-import "./App.css";
+import React, { useState, useEffect } from 'react';
+import logo from './logo.svg';
+import './App.css';
 
 function App() {
-  const [apiMessage, setApiMessage] = useState<string>("");
+  const [apiMessage, setApiMessage] = useState<string>('');
 
   useEffect(() => {
     // Test API connection
-    fetch("/api/health")
-      .then((response) => response.json())
-      .then((data) => setApiMessage(data.message))
-      .catch((error) => setApiMessage("API connection failed"));
+    fetch('/api/health')
+      .then(response => response.json())
+      .then(data => setApiMessage(data.message))
+      .catch(error => setApiMessage('API connection failed'));
   }, []);
 
   return (
