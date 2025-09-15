@@ -25,7 +25,7 @@ export class ResponseHelper {
   static error(
     res: Response,
     error: string,
-    statusCode: number = 500,
+    statusCode = 500,
     message?: string
   ): void {
     const response: ApiError = {
@@ -40,7 +40,7 @@ export class ResponseHelper {
   static created<T>(
     res: Response,
     data: T,
-    message: string = 'Resource created successfully'
+    message = 'Resource created successfully'
   ): void {
     const response: CreateResponse<T> = {
       success: true,
@@ -54,7 +54,7 @@ export class ResponseHelper {
   static updated<T>(
     res: Response,
     data: T,
-    message: string = 'Resource updated successfully'
+    message = 'Resource updated successfully'
   ): void {
     const response: UpdateResponse<T> = {
       success: true,
@@ -67,7 +67,7 @@ export class ResponseHelper {
   // Delete responses
   static deleted(
     res: Response,
-    message: string = 'Resource deleted successfully'
+    message = 'Resource deleted successfully'
   ): void {
     const response: DeleteResponse = {
       success: true,
@@ -104,7 +104,7 @@ export class ResponseHelper {
   }
 
   // Not found responses
-  static notFound(res: Response, resource: string = 'Resource'): void {
+  static notFound(res: Response, resource = 'Resource'): void {
     const response: ApiError = {
       success: false,
       error: `${resource} not found`,
@@ -134,10 +134,7 @@ export class ResponseHelper {
   }
 
   // Internal server error responses
-  static internalError(
-    res: Response,
-    error: string = 'Internal server error'
-  ): void {
+  static internalError(res: Response, error = 'Internal server error'): void {
     const response: ApiError = {
       success: false,
       error,
