@@ -25,14 +25,14 @@ export interface UpdateTaskInput {
 export interface CreateProjectInput {
   name: string;
   description?: string;
-  deadline?: Date | null;
+  deadline?: Date | string | null;
   status?: 'not-started' | 'in-progress' | 'completed';
 }
 
 export interface UpdateProjectInput {
   name?: string;
   description?: string;
-  deadline?: Date | null;
+  deadline?: Date | string | null;
   status?: 'not-started' | 'in-progress' | 'completed';
 }
 

@@ -6,16 +6,17 @@ import type { Task } from '@/../../shared/types';
  */
 export function transformFormDataToTask(
   data: TaskFormData
-): Omit<
-  Task,
-  'id' | 'createdAt' | 'updatedAt' | 'status' | 'dependencies' | 'projectId'
-> {
-  return {
+): Omit<Task, 'id' | 'created_at' | 'updated_at' | 'status' | 'dependencies'> {
+  console.log('Form data received:', data);
+  const transformed = {
     title: data.title,
     description: data.description || '',
-    dueDate: data.dueDate ? new Date(data.dueDate) : null,
+    due_date: data.dueDate ? new Date(data.dueDate) : null,
     priority: data.priority,
+    project_id: data.project_id || undefined,
   };
+  console.log('Transformed task data:', transformed);
+  return transformed;
 }
 
 /**

@@ -2,26 +2,19 @@
 
 import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Checkbox } from '@/components/ui/checkbox';
-import {
-  Calendar,
-  Clock,
-  AlertCircle,
-  CheckCircle2,
-  Circle,
-  Loader2,
-} from 'lucide-react';
-import type { Task } from '@/../../../shared/types';
+import { Card, CardContent } from '@/components/ui/card';
+import { Circle } from 'lucide-react';
+import type { Task, Project } from '@/../../../shared/types';
 import { taskService } from '@/services/taskService';
+import { projectService } from '@/services/projectService';
+import {
+  StatusGroupedList,
+  EmptyStateCard,
+  LoadingState,
+  ErrorState,
+} from '@/components/shared';
+import { TASK_STATUS_CONFIG } from '@/utils/statusUtils';
+import { TaskItem } from './TaskItem';
 
 interface TaskListProps {
   refreshTrigger?: number;
@@ -30,6 +23,7 @@ interface TaskListProps {
 
 export function TaskList({ refreshTrigger, onTaskUpdate }: TaskListProps) {
   const [tasks, setTasks] = useState<Task[]>([]);
+  const [projects, setProjects] = useState<Project[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -37,8 +31,12 @@ export function TaskList({ refreshTrigger, onTaskUpdate }: TaskListProps) {
     try {
       setIsLoading(true);
       setError(null);
-      const fetchedTasks = await taskService.getAllTasks();
+      const [fetchedTasks, fetchedProjects] = await Promise.all([
+        taskService.getAllTasks(),
+        projectService.getAllProjects(),
+      ]);
       setTasks(fetchedTasks);
+      setProjects(fetchedProjects);
     } catch (err) {
       const errorMessage =
         err instanceof Error ? err.message : 'Failed to fetch tasks';
@@ -80,71 +78,25 @@ export function TaskList({ refreshTrigger, onTaskUpdate }: TaskListProps) {
     }
   };
 
-  const getPriorityColor = (priority: string) => {
-    switch (priority) {
-      case 'high':
-        return 'bg-red-500';
-      case 'medium':
-        return 'bg-yellow-500';
-      case 'low':
-        return 'bg-green-500';
-      default:
-        return 'bg-gray-500';
-    }
-  };
-
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case 'completed':
-        return <CheckCircle2 className="h-4 w-4 text-green-500" />;
-      case 'in-progress':
-        return <Clock className="h-4 w-4 text-blue-500" />;
-      default:
-        return <Circle className="h-4 w-4 text-gray-400" />;
-    }
-  };
-
-  const formatDate = (date: Date | string | null) => {
-    if (!date) return 'No due date';
-    const dateObj = typeof date === 'string' ? new Date(date) : date;
-    return dateObj.toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-    });
-  };
-
-  const isOverdue = (dueDate: Date | string | null) => {
-    if (!dueDate) return false;
-    const dateObj = typeof dueDate === 'string' ? new Date(dueDate) : dueDate;
-    return dateObj < new Date();
+  const handleTaskUpdate = (updatedTask: Task) => {
+    setTasks(prevTasks =>
+      prevTasks.map(task => (task.id === updatedTask.id ? updatedTask : task))
+    );
+    onTaskUpdate?.();
+    toast.success('Task updated successfully');
   };
 
   if (isLoading) {
-    return (
-      <div className="flex items-center justify-center p-8">
-        <Loader2 className="h-8 w-8 animate-spin" />
-        <span className="ml-2">Loading tasks...</span>
-      </div>
-    );
+    return <LoadingState message="Loading tasks..." />;
   }
 
   if (error) {
     return (
-      <Card className="border-red-200 bg-red-50">
-        <CardContent className="flex items-center gap-2 p-6">
-          <AlertCircle className="h-5 w-5 text-red-500" />
-          <div>
-            <p className="font-medium text-red-800">Error loading tasks</p>
-            <p className="text-sm text-red-600">{error}</p>
-          </div>
-          <Button variant="outline" size="sm" onClick={fetchTasks}>
-            Retry
-          </Button>
-        </CardContent>
-      </Card>
+      <ErrorState
+        title="Error loading tasks"
+        message={error}
+        onRetry={fetchTasks}
+      />
     );
   }
 
@@ -166,80 +118,38 @@ export function TaskList({ refreshTrigger, onTaskUpdate }: TaskListProps) {
   }
 
   return (
-    <div className="space-y-4">
-      {tasks.map(task => (
-        <Card key={task.id} className="hover:shadow-md transition-shadow">
-          <CardHeader className="pb-3">
-            <div className="flex items-start justify-between">
-              <div className="flex items-start gap-3 flex-1">
-                <Checkbox
-                  checked={task.status === 'completed'}
-                  onCheckedChange={() =>
-                    handleStatusToggle(task.id, task.status)
-                  }
-                  className="mt-1"
-                />
-                <div className="flex-1 min-w-0">
-                  <CardTitle
-                    className={`text-lg ${task.status === 'completed' ? 'line-through text-muted-foreground' : ''}`}
-                  >
-                    {task.title}
-                  </CardTitle>
-                  {task.description && (
-                    <CardDescription className="mt-1">
-                      {task.description}
-                    </CardDescription>
-                  )}
-                </div>
-              </div>
-              <div className="flex items-center gap-2">
-                <div
-                  className={`h-2 w-2 rounded-full ${getPriorityColor(task.priority)}`}
-                />
-                <Badge variant="secondary" className="text-xs">
-                  {task.priority}
-                </Badge>
-              </div>
-            </div>
-          </CardHeader>
-
-          <CardContent className="pt-0">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                <div className="flex items-center gap-1">
-                  {getStatusIcon(task.status)}
-                  <span className="capitalize">
-                    {task.status.replace('-', ' ')}
-                  </span>
-                </div>
-
-                {task.dueDate && (
-                  <div
-                    className={`flex items-center gap-1 ${isOverdue(task.dueDate) && task.status !== 'completed' ? 'text-red-500' : ''}`}
-                  >
-                    <Calendar className="h-4 w-4" />
-                    <span>{formatDate(task.dueDate)}</span>
-                    {isOverdue(task.dueDate) && task.status !== 'completed' && (
-                      <AlertCircle className="h-4 w-4 text-red-500" />
-                    )}
-                  </div>
-                )}
-              </div>
-
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handleDeleteTask(task.id)}
-                  className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                >
-                  Delete
-                </Button>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      ))}
-    </div>
+    <StatusGroupedList
+      items={tasks}
+      statusConfig={TASK_STATUS_CONFIG}
+      getItemStatus={task => task.status}
+      renderItem={task => {
+        const project = task.project_id
+          ? projects.find(p => p.id === task.project_id)
+          : undefined;
+        console.log('TaskList renderItem:', {
+          taskId: task.id,
+          project_id: task.project_id,
+          foundProject: project,
+        });
+        return (
+          <TaskItem
+            key={task.id}
+            task={task}
+            project={project}
+            availableProjects={projects}
+            onStatusToggle={handleStatusToggle}
+            onDelete={handleDeleteTask}
+            onTaskUpdate={handleTaskUpdate}
+          />
+        );
+      }}
+      renderEmptyState={statusConfig => (
+        <EmptyStateCard
+          key={statusConfig.key}
+          statusConfig={statusConfig}
+          message={`No ${statusConfig.label.toLowerCase()} tasks`}
+        />
+      )}
+    />
   );
 }

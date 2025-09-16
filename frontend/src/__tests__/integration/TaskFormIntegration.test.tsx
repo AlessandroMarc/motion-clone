@@ -2,9 +2,42 @@ import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { TaskCreateDialogForm } from '@/components/Tasks/forms/TaskCreateDialogForm';
 
+// Mock react-hook-form
+jest.mock('react-hook-form', () => ({
+  ...jest.requireActual('react-hook-form'),
+  useFormContext: jest.fn(() => ({
+    watch: jest.fn(() => null),
+    setValue: jest.fn(),
+    getValues: jest.fn(() => ({})),
+    register: jest.fn(),
+    handleSubmit: jest.fn(fn => fn),
+    formState: { errors: {} },
+    reset: jest.fn(),
+  })),
+}));
+
 // Mock the useTaskForm hook
 jest.mock('@/hooks/useTaskForm', () => ({
-  useTaskForm: jest.fn(),
+  useTaskForm: jest.fn(() => ({
+    form: {
+      watch: jest.fn(() => null),
+      setValue: jest.fn(),
+      getValues: jest.fn(() => ({})),
+      register: jest.fn(),
+      handleSubmit: jest.fn(fn => fn),
+      formState: { errors: {} },
+      reset: jest.fn(),
+    },
+    register: jest.fn(),
+    handleSubmit: jest.fn(fn => fn),
+    errors: {},
+    reset: jest.fn(),
+    priority: 'medium',
+    isSubmitting: false,
+    onSubmit: jest.fn(),
+    handleCancel: jest.fn(),
+    setPriority: jest.fn(),
+  })),
 }));
 
 // Mock sonner
@@ -12,6 +45,21 @@ jest.mock('sonner', () => ({
   toast: {
     success: jest.fn(),
     error: jest.fn(),
+  },
+}));
+
+// Mock fetch
+global.fetch = jest.fn();
+
+// Mock project service
+jest.mock('@/services/projectService', () => ({
+  projectService: {
+    getAllProjects: jest.fn(() =>
+      Promise.resolve([
+        { id: '1', name: 'Test Project 1', description: 'Test project 1' },
+        { id: '2', name: 'Test Project 2', description: 'Test project 2' },
+      ])
+    ),
   },
 }));
 
@@ -120,8 +168,10 @@ describe('TaskForm Integration', () => {
     await user.click(trigger);
 
     // Verify error is displayed
-    expect(screen.getByText('Title is required')).toBeInTheDocument();
-    expect(screen.getByRole('textbox')).toHaveClass('border-red-500');
+    expect(screen.getAllByText('Title is required')[0]).toBeInTheDocument();
+    expect(screen.getByRole('textbox', { name: /title/i })).toHaveClass(
+      'border-red-500'
+    );
   });
 
   it('should handle loading state during submission', async () => {
@@ -179,8 +229,8 @@ describe('TaskForm Integration', () => {
     const trigger = screen.getByRole('button', { name: /create task/i });
     await user.click(trigger);
 
-    // Click on priority selector
-    const priorityTrigger = screen.getByRole('combobox');
+    // Click on priority selector (first combobox is the priority selector)
+    const priorityTrigger = screen.getAllByRole('combobox')[0];
     await user.click(priorityTrigger);
 
     // Select high priority

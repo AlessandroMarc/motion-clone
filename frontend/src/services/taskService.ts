@@ -7,6 +7,7 @@ export interface CreateTaskInput {
   description?: string;
   dueDate?: Date | null;
   priority: 'low' | 'medium' | 'high';
+  project_id?: string;
 }
 
 export interface UpdateTaskInput {
@@ -15,6 +16,7 @@ export interface UpdateTaskInput {
   dueDate?: Date | null;
   priority?: 'low' | 'medium' | 'high';
   status?: 'pending' | 'in-progress' | 'completed';
+  project_id?: string | null;
 }
 
 export interface ApiResponse<T> {
@@ -62,51 +64,78 @@ class TaskService {
   }
 
   async createTask(input: CreateTaskInput): Promise<Task> {
-    const response = await this.request<Task>('/api/tasks', {
+    const payload = {
+      title: input.title,
+      description: input.description,
+      due_date: input.dueDate?.toISOString(),
+      priority: input.priority,
+      status: 'pending',
+      dependencies: [],
+      project_id: input.project_id,
+    };
+    console.log('Task service payload:', payload);
+
+    const response = await this.request<any>('/api/tasks', {
       method: 'POST',
-      body: JSON.stringify({
-        title: input.title,
-        description: input.description,
-        due_date: input.dueDate?.toISOString(),
-        priority: input.priority,
-        status: 'pending',
-        dependencies: [],
-      }),
+      body: JSON.stringify(payload),
     });
 
     if (!response.success || !response.data) {
       throw new Error(response.error || 'Failed to create task');
     }
 
-    return response.data;
+    // Transform backend data to frontend format
+    return {
+      ...response.data,
+      due_date: response.data.due_date
+        ? new Date(response.data.due_date)
+        : null,
+      created_at: new Date(response.data.created_at),
+      updated_at: new Date(response.data.updated_at),
+    };
   }
 
   async getAllTasks(): Promise<Task[]> {
-    const response = await this.request<Task[]>('/api/tasks');
+    const response = await this.request<any[]>('/api/tasks');
 
     if (!response.success || !response.data) {
       throw new Error(response.error || 'Failed to fetch tasks');
     }
 
-    return response.data;
+    // Transform backend data to frontend format
+    return response.data.map(task => ({
+      ...task,
+      due_date: task.due_date ? new Date(task.due_date) : null,
+      created_at: new Date(task.created_at),
+      updated_at: new Date(task.updated_at),
+    }));
   }
 
   async getTaskById(id: string): Promise<Task> {
-    const response = await this.request<Task>(`/api/tasks/${id}`);
+    const response = await this.request<any>(`/api/tasks/${id}`);
 
     if (!response.success || !response.data) {
       throw new Error(response.error || 'Failed to fetch task');
     }
 
-    return response.data;
+    // Transform backend data to frontend format
+    return {
+      ...response.data,
+      due_date: response.data.due_date
+        ? new Date(response.data.due_date)
+        : null,
+      created_at: new Date(response.data.created_at),
+      updated_at: new Date(response.data.updated_at),
+    };
   }
 
   async updateTask(id: string, input: UpdateTaskInput): Promise<Task> {
-    const response = await this.request<Task>(`/api/tasks/${id}`, {
+    const response = await this.request<any>(`/api/tasks/${id}`, {
       method: 'PUT',
       body: JSON.stringify({
         ...input,
         due_date: input.dueDate?.toISOString(),
+        project_id: input.project_id,
       }),
     });
 
@@ -114,7 +143,15 @@ class TaskService {
       throw new Error(response.error || 'Failed to update task');
     }
 
-    return response.data;
+    // Transform backend data to frontend format
+    return {
+      ...response.data,
+      due_date: response.data.due_date
+        ? new Date(response.data.due_date)
+        : null,
+      created_at: new Date(response.data.created_at),
+      updated_at: new Date(response.data.updated_at),
+    };
   }
 
   async deleteTask(id: string): Promise<void> {

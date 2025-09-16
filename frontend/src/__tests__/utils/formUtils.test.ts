@@ -14,6 +14,7 @@ describe('formUtils', () => {
         description: 'Test Description',
         dueDate: '2024-01-01T10:00',
         priority: 'high' as const,
+        project_id: null,
       };
 
       const result = transformFormDataToTask(formData);
@@ -21,8 +22,9 @@ describe('formUtils', () => {
       expect(result).toEqual({
         title: 'Test Task',
         description: 'Test Description',
-        dueDate: new Date('2024-01-01T10:00'),
+        due_date: new Date('2024-01-01T10:00'),
         priority: 'high',
+        project_id: undefined,
       });
     });
 
@@ -32,6 +34,7 @@ describe('formUtils', () => {
         description: '',
         dueDate: '',
         priority: 'medium' as const,
+        project_id: null,
       };
 
       const result = transformFormDataToTask(formData);
@@ -39,8 +42,9 @@ describe('formUtils', () => {
       expect(result).toEqual({
         title: 'Test Task',
         description: '',
-        dueDate: null,
+        due_date: null,
         priority: 'medium',
+        project_id: undefined,
       });
     });
 
@@ -50,6 +54,7 @@ describe('formUtils', () => {
         description: undefined as any,
         dueDate: '',
         priority: 'low' as const,
+        project_id: null,
       };
 
       const result = transformFormDataToTask(formData);
@@ -57,8 +62,9 @@ describe('formUtils', () => {
       expect(result).toEqual({
         title: 'Test Task',
         description: '',
-        dueDate: null,
+        due_date: null,
         priority: 'low',
+        project_id: undefined,
       });
     });
 
@@ -68,11 +74,12 @@ describe('formUtils', () => {
         description: 'Test Description',
         dueDate: '',
         priority: 'high' as const,
+        project_id: null,
       };
 
       const result = transformFormDataToTask(formData);
 
-      expect(result.dueDate).toBeNull();
+      expect(result.due_date).toBeNull();
     });
 
     it('should convert valid dueDate string to Date', () => {
@@ -81,11 +88,12 @@ describe('formUtils', () => {
         description: 'Test Description',
         dueDate: '2024-12-31T23:59',
         priority: 'medium' as const,
+        project_id: null,
       };
 
       const result = transformFormDataToTask(formData);
 
-      expect(result.dueDate).toEqual(new Date('2024-12-31T23:59'));
+      expect(result.due_date).toEqual(new Date('2024-12-31T23:59'));
     });
   });
 

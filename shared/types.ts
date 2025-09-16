@@ -2,13 +2,13 @@ interface Task {
   id: string; // unique identifier
   title: string;
   description?: string;
-  dueDate: Date | null; // optional deadline
+  due_date: Date | null; // optional deadline
   priority: 'low' | 'medium' | 'high';
   status: 'pending' | 'in-progress' | 'completed';
   dependencies: string[]; // array of Task ids this task depends on
-  projectId?: string; // linked project, if any
-  createdAt: Date;
-  updatedAt: Date;
+  project_id?: string; // linked project, if any
+  created_at: Date;
+  updated_at: Date;
 }
 
 interface Project {

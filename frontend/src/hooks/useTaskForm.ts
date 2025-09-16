@@ -17,6 +17,7 @@ export const taskSchema = z.object({
     .max(500, 'Description must be less than 500 characters'),
   dueDate: z.string().optional(),
   priority: z.enum(['low', 'medium', 'high']),
+  project_id: z.string().nullable().optional(),
 });
 
 export type TaskFormData = z.infer<typeof taskSchema>;
@@ -25,7 +26,7 @@ export interface TaskCreateFormProps {
   onTaskCreate: (
     task: Omit<
       Task,
-      'id' | 'createdAt' | 'updatedAt' | 'status' | 'dependencies' | 'projectId'
+      'id' | 'created_at' | 'updated_at' | 'status' | 'dependencies'
     >
   ) => Promise<void>;
   isLoading?: boolean;
@@ -39,6 +40,7 @@ export function useTaskForm(onTaskCreate: TaskCreateFormProps['onTaskCreate']) {
     defaultValues: {
       priority: 'medium' as const,
       description: '',
+      project_id: null,
     },
   });
 
@@ -53,9 +55,12 @@ export function useTaskForm(onTaskCreate: TaskCreateFormProps['onTaskCreate']) {
   const priority = watch('priority');
 
   const onSubmit = async (data: TaskFormData) => {
+    console.log('useTaskForm: onSubmit called with data:', data);
+    console.log('useTaskForm: Form values:', form.getValues());
     setIsSubmitting(true);
     try {
       const taskData = transformFormDataToTask(data);
+      console.log('useTaskForm: Calling onTaskCreate with:', taskData);
       await onTaskCreate(taskData);
       reset();
       toast.success('Task created successfully!');

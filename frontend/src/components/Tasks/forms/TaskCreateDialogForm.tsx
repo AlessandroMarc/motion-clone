@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { FormProvider } from 'react-hook-form';
 import {
   Dialog,
   DialogContent,
@@ -14,6 +15,7 @@ import { TaskTitleField } from './TaskTitleField';
 import { TaskDescriptionField } from './TaskDescriptionField';
 import { TaskDueDateField } from './TaskDueDateField';
 import { TaskPriorityField } from './TaskPriorityField';
+import { TaskProjectField } from './TaskProjectField';
 import { TaskFormActions } from './TaskFormActions';
 
 export function TaskCreateDialogForm({
@@ -23,6 +25,7 @@ export function TaskCreateDialogForm({
   const [isDialogOpen, setIsDialogOpen] = useState(false);
 
   const {
+    form,
     register,
     handleSubmit,
     errors,
@@ -60,23 +63,26 @@ export function TaskCreateDialogForm({
           </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-6">
-          <div className="space-y-4">
-            <TaskTitleField register={register} errors={errors} />
-            <TaskDescriptionField register={register} errors={errors} />
-            <TaskDueDateField register={register} errors={errors} />
-            <TaskPriorityField
-              value={priority}
-              onValueChange={setPriority}
-              errors={errors}
-            />
-          </div>
+        <FormProvider {...form}>
+          <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-6">
+            <div className="space-y-4">
+              <TaskTitleField register={register} errors={errors} />
+              <TaskDescriptionField register={register} errors={errors} />
+              <TaskDueDateField register={register} errors={errors} />
+              <TaskPriorityField
+                value={priority}
+                onValueChange={setPriority}
+                errors={errors}
+              />
+              <TaskProjectField errors={errors} />
+            </div>
 
-          <TaskFormActions
-            isSubmitting={isSubmitting}
-            onCancel={handleFormCancel}
-          />
-        </form>
+            <TaskFormActions
+              isSubmitting={isSubmitting}
+              onCancel={handleFormCancel}
+            />
+          </form>
+        </FormProvider>
       </DialogContent>
     </Dialog>
   );

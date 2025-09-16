@@ -14,7 +14,11 @@ export class ProjectService {
         {
           name: input.name,
           description: input.description,
-          deadline: input.deadline?.toISOString(),
+          deadline: input.deadline
+            ? typeof input.deadline === 'string'
+              ? input.deadline
+              : input.deadline.toISOString()
+            : null,
           status: input.status || 'not-started',
         },
       ])
@@ -76,7 +80,11 @@ export class ProjectService {
     if (input.description !== undefined)
       updateData.description = input.description;
     if (input.deadline !== undefined)
-      updateData.deadline = input.deadline?.toISOString() ?? null;
+      updateData.deadline = input.deadline
+        ? typeof input.deadline === 'string'
+          ? input.deadline
+          : input.deadline.toISOString()
+        : null;
     if (input.status !== undefined) updateData.status = input.status;
 
     const { data, error } = await supabase

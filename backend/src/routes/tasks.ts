@@ -62,9 +62,12 @@ router.get('/:id', async (req: Request, res: Response) => {
 router.post('/', async (req: Request, res: Response) => {
   try {
     const input: CreateTaskInput = req.body;
+    console.log('Backend received task input:', input);
     const task = await taskService.createTask(input);
+    console.log('Backend created task:', task);
     ResponseHelper.created(res, task, 'Task created successfully');
   } catch (error) {
+    console.error('Backend task creation error:', error);
     ResponseHelper.badRequest(
       res,
       error instanceof Error ? error.message : 'Bad request'
