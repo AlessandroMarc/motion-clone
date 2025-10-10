@@ -42,6 +42,17 @@ export function TaskItem({
       console.error('Failed to link project:', error);
     }
   };
+
+  const handleProjectUnlink = async () => {
+    try {
+      const updatedTask = await taskService.updateTask(task.id, {
+        project_id: null,
+      });
+      onTaskUpdate?.(updatedTask);
+    } catch (error) {
+      console.error('Failed to unlink project:', error);
+    }
+  };
   return (
     <Card className="hover:shadow-sm transition-shadow">
       <CardContent className="p-4">
@@ -72,6 +83,7 @@ export function TaskItem({
                   project={project}
                   availableProjects={availableProjects}
                   onProjectSelect={handleProjectSelect}
+                  onProjectUnlink={handleProjectUnlink}
                 />
               </div>
             </div>
@@ -101,24 +113,13 @@ export function TaskItem({
               </div>
             )}
 
-            {task.project_id && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => console.log('View Project')}
-                className=""
-              >
-                View Project
-              </Button>
-            )}
-
             <Button
               variant="outline"
               size="sm"
               onClick={() => onDelete(task.id)}
               className="cursor-pointer text-red-600 bg-red-50 hover:text-red-50 hover:bg-red-800 h-7 px-2 text-xs"
             >
-              Delete
+              X
             </Button>
           </div>
         </div>

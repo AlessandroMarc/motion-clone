@@ -1,6 +1,6 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { ProjectsPage } from '@/app/projects/page';
-import type { Project } from '@/../../../shared/types';
+import { Project } from '@/../../../shared/types';
 
 // Mock the project service
 jest.mock('@/services/projectService', () => ({

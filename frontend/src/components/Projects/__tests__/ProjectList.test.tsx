@@ -1,6 +1,6 @@
 import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import { ProjectList } from '../ProjectList';
-import type { Project } from '@/../../../shared/types';
+import { Project } from '@/../../../shared/types';
 
 // Mock the project service
 jest.mock('@/services/projectService', () => ({
@@ -39,6 +39,9 @@ jest.mock('@/components/shared', () => ({
       {message}
       <button onClick={onRetry}>Retry</button>
     </div>
+  ),
+  StatusIcon: ({ status, type }: any) => (
+    <div data-testid={`status-icon-${status}-${type}`}>StatusIcon</div>
   ),
 }));
 

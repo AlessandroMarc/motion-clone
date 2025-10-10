@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Calendar, AlertCircle } from 'lucide-react';
 import { formatDate, isOverdue } from '@/utils/dateUtils';
 import { StatusIcon } from '@/components/shared';
+import Link from 'next/link';
 import type { Project } from '@/../../../shared/types';
 
 interface ProjectItemProps {
@@ -25,15 +26,20 @@ export function ProjectItem({
               <StatusIcon status={project.status} type="project" />
             </div>
             <div className="flex-1 min-w-0">
-              <h3
-                className={`text-sm font-medium ${
-                  project.status === 'completed'
-                    ? 'line-through text-muted-foreground'
-                    : ''
-                }`}
+              <Link
+                href={`/projects/${project.id}`}
+                className="block hover:text-primary transition-colors"
               >
-                {project.name}
-              </h3>
+                <h3
+                  className={`text-sm font-medium ${
+                    project.status === 'completed'
+                      ? 'line-through text-muted-foreground'
+                      : ''
+                  }`}
+                >
+                  {project.name}
+                </h3>
+              </Link>
               {project.description && (
                 <p className="text-xs text-muted-foreground mt-1 truncate">
                   {project.description}

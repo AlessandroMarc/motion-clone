@@ -1,6 +1,6 @@
 import { render, screen, fireEvent } from '@testing-library/react';
 import { ProjectItem } from '../ProjectItem';
-import type { Project } from '@/../../../shared/types';
+import { Project } from '../../../../../shared/types';
 
 const mockProject: Project = {
   id: '1',
@@ -93,7 +93,7 @@ describe('ProjectItem', () => {
     const overdueProject = {
       ...mockProject,
       deadline: new Date('2020-01-01'), // Past date
-      status: 'not-started',
+      status: 'not-started' as const,
     };
 
     render(
@@ -114,7 +114,7 @@ describe('ProjectItem', () => {
     const overdueCompletedProject = {
       ...mockProject,
       deadline: new Date('2020-01-01'), // Past date
-      status: 'completed',
+      status: 'completed' as const,
     };
 
     render(

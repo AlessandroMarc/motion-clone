@@ -37,10 +37,12 @@ export function ProjectSelectionPopover({
     <Popover open={true} onOpenChange={onClose}>
       <PopoverTrigger asChild>
         <Button
+          type="button"
           variant="ghost"
           size="sm"
-          className="h-auto p-0 text-sm text-muted-foreground hover:text-foreground"
+          className="h-auto font-normal px-3 py-2 text-muted-foreground hover:text-foreground border-0 rounded-none"
         >
+          <Folder className="h-3 w-3 text-muted-foreground mr-2" />
           Select project...
         </Button>
       </PopoverTrigger>
