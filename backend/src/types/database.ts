@@ -10,6 +10,7 @@ export interface CreateTaskInput {
   status?: 'pending' | 'in-progress' | 'completed';
   dependencies?: string[];
   project_id?: string;
+  user_id: string;
 }
 
 export interface UpdateTaskInput {
@@ -20,6 +21,7 @@ export interface UpdateTaskInput {
   status?: 'pending' | 'in-progress' | 'completed';
   dependencies?: string[];
   project_id?: string;
+  user_id?: string;
 }
 
 export interface CreateProjectInput {
@@ -27,6 +29,7 @@ export interface CreateProjectInput {
   description?: string;
   deadline?: Date | string | null;
   status?: 'not-started' | 'in-progress' | 'completed';
+  user_id: string;
 }
 
 export interface UpdateProjectInput {
@@ -34,6 +37,7 @@ export interface UpdateProjectInput {
   description?: string;
   deadline?: Date | string | null;
   status?: 'not-started' | 'in-progress' | 'completed';
+  user_id?: string;
 }
 
 export interface CreateMilestoneInput {
@@ -42,6 +46,7 @@ export interface CreateMilestoneInput {
   due_date?: Date | null;
   status?: 'not-started' | 'in-progress' | 'completed';
   project_id: string;
+  user_id: string;
 }
 
 export interface UpdateMilestoneInput {
@@ -50,6 +55,7 @@ export interface UpdateMilestoneInput {
   due_date?: Date | null;
   status?: 'not-started' | 'in-progress' | 'completed';
   project_id?: string;
+  user_id?: string;
 }
 
 export interface CreateCalendarEventInput {
@@ -59,6 +65,7 @@ export interface CreateCalendarEventInput {
   linked_task_id?: string;
   linked_project_id?: string;
   description?: string;
+  user_id: string;
 }
 
 export interface UpdateCalendarEventInput {
@@ -68,4 +75,5 @@ export interface UpdateCalendarEventInput {
   linked_task_id?: string;
   linked_project_id?: string;
   description?: string;
+  user_id?: string;
 }

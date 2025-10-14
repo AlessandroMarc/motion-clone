@@ -1,4 +1,5 @@
 import type { Project } from '@/../../../shared/types';
+import { getAuthToken } from '@/lib/auth';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3003';
 
@@ -32,11 +33,19 @@ class ProjectService {
       const url = `${API_BASE_URL}${endpoint}`;
       console.log('Making API request to:', url);
 
+      // Get auth token
+      const token = await getAuthToken();
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+        ...options.headers,
+      };
+
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+
       const response = await fetch(url, {
-        headers: {
-          'Content-Type': 'application/json',
-          ...options.headers,
-        },
+        headers,
         ...options,
       });
 

@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { TaskCreateForm } from '@/components/Tasks/TaskCreateForm';
 import { TaskList } from '@/components/Tasks/TaskList';
+import { ProtectedRoute } from '@/components/Auth/ProtectedRoute';
 import type { Task } from '@/../../../shared/types';
 import { taskService } from '@/services/taskService';
 
@@ -40,33 +41,35 @@ export default function TasksPage() {
   };
 
   return (
-    <div className="flex-1 p-6">
-      <div className="max-w-4xl mx-auto">
-        {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-4xl font-bold text-foreground mb-2">
-            Task Manager
-          </h1>
-          <p className="text-muted-foreground">
-            Organize your tasks and boost your productivity
-          </p>
-        </div>
+    <ProtectedRoute>
+      <div className="flex-1 p-6">
+        <div className="max-w-4xl mx-auto">
+          {/* Header */}
+          <div className="mb-8">
+            <h1 className="text-4xl font-bold text-foreground mb-2">
+              Task Manager
+            </h1>
+            <p className="text-muted-foreground">
+              Organize your tasks and boost your productivity
+            </p>
+          </div>
 
-        {/* Main Content */}
-        <div className="space-y-6">
-          <div className="flex items-center justify-between">
-            <h2 className="text-2xl font-semibold">Your Tasks</h2>
-            <TaskCreateForm
-              onTaskCreate={handleTaskCreate}
-              isLoading={isCreatingTask}
+          {/* Main Content */}
+          <div className="space-y-6">
+            <div className="flex items-center justify-between">
+              <h2 className="text-2xl font-semibold">Your Tasks</h2>
+              <TaskCreateForm
+                onTaskCreate={handleTaskCreate}
+                isLoading={isCreatingTask}
+              />
+            </div>
+            <TaskList
+              refreshTrigger={refreshTrigger}
+              onTaskUpdate={handleTaskUpdate}
             />
           </div>
-          <TaskList
-            refreshTrigger={refreshTrigger}
-            onTaskUpdate={handleTaskUpdate}
-          />
         </div>
       </div>
-    </div>
+    </ProtectedRoute>
   );
 }

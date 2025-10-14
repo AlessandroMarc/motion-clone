@@ -9,8 +9,8 @@ A RESTful API built with Express.js and Supabase for managing tasks, projects, m
 Create a `.env.development.local` file in the backend directory with your Supabase credentials:
 
 ```env
-NEXT_PUBLIC_SUPABASESUPABASE_ANON_KEY=your_anon_key_here
-NEXT_PUBLIC_SUPABASESUPABASE_URL=your_supabase_url_here
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_anon_key_here
+NEXT_PUBLIC_SUPABASES_URL=your_supabase_url_here
 SUPABASE_ANON_KEY=your_anon_key_here
 SUPABASE_JWT_SECRET=your_jwt_secret_here
 SUPABASE_SERVICE_ROLE_KEY=your_service_role_key_here

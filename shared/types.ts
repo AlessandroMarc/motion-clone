@@ -7,6 +7,7 @@ interface Task {
   status: 'pending' | 'in-progress' | 'completed';
   dependencies: string[]; // array of Task ids this task depends on
   project_id?: string; // linked project, if any
+  user_id: string; // owner of the task
   created_at: Date;
   updated_at: Date;
 }
@@ -18,6 +19,7 @@ interface Project {
   deadline: Date | null;
   milestones: Milestone[];
   status: 'not-started' | 'in-progress' | 'completed';
+  user_id: string; // owner of the project
   createdAt: Date;
   updatedAt: Date;
 }
@@ -29,6 +31,7 @@ interface Milestone {
   dueDate: Date | null;
   status: 'not-started' | 'in-progress' | 'completed';
   tasks: string[]; // array of Task ids under this milestone
+  user_id: string; // owner of the milestone
   createdAt: Date;
   updatedAt: Date;
 }
@@ -41,6 +44,7 @@ interface CalendarEvent {
   linkedTaskId?: string;
   linkedProjectId?: string;
   description?: string;
+  user_id: string; // owner of the calendar event
   createdAt: Date;
   updatedAt: Date;
 }

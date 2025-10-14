@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { ProjectCreateForm } from '@/components/Projects/ProjectCreateForm';
 import { ProjectList } from '@/components/Projects/ProjectList';
+import { ProtectedRoute } from '@/components/Auth/ProtectedRoute';
 import type { Project } from '@/../../../shared/types';
 import { projectService } from '@/services/projectService';
 
@@ -38,33 +39,35 @@ export default function ProjectsPage() {
   };
 
   return (
-    <div className="flex-1 p-6">
-      <div className="max-w-4xl mx-auto">
-        {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-4xl font-bold text-foreground mb-2">
-            Project Manager
-          </h1>
-          <p className="text-muted-foreground">
-            Organize your larger goals and track project progress
-          </p>
-        </div>
+    <ProtectedRoute>
+      <div className="flex-1 p-6">
+        <div className="max-w-4xl mx-auto">
+          {/* Header */}
+          <div className="mb-8">
+            <h1 className="text-4xl font-bold text-foreground mb-2">
+              Project Manager
+            </h1>
+            <p className="text-muted-foreground">
+              Organize your larger goals and track project progress
+            </p>
+          </div>
 
-        {/* Main Content */}
-        <div className="space-y-6">
-          <div className="flex items-center justify-between">
-            <h2 className="text-2xl font-semibold">Your Projects</h2>
-            <ProjectCreateForm
-              onProjectCreate={handleProjectCreate}
-              isLoading={isCreatingProject}
+          {/* Main Content */}
+          <div className="space-y-6">
+            <div className="flex items-center justify-between">
+              <h2 className="text-2xl font-semibold">Your Projects</h2>
+              <ProjectCreateForm
+                onProjectCreate={handleProjectCreate}
+                isLoading={isCreatingProject}
+              />
+            </div>
+            <ProjectList
+              refreshTrigger={refreshTrigger}
+              onProjectUpdate={handleProjectUpdate}
             />
           </div>
-          <ProjectList
-            refreshTrigger={refreshTrigger}
-            onProjectUpdate={handleProjectUpdate}
-          />
         </div>
       </div>
-    </div>
+    </ProtectedRoute>
   );
 }
