@@ -6,11 +6,12 @@ import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, Loader2 } from 'lucide-react';
 import { ProtectedRoute } from '@/components/Auth/ProtectedRoute';
-import type { Project, Task } from '@/../../../../shared/types';
+
 import { projectService } from '@/services/projectService';
 import { taskService } from '@/services/taskService';
 import { ProjectDetailView } from '@/components/Projects/ProjectDetailView';
 import { ProjectTasksSection } from '@/components/Projects/ProjectTasksSection';
+import { Project, Task } from '../../../../../shared/types';
 
 interface ProjectDetailPageProps {
   params: {
