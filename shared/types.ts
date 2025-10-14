@@ -1,10 +1,12 @@
+export type WorkItemStatus = 'not-started' | 'in-progress' | 'completed';
+
 interface Task {
   id: string; // unique identifier
   title: string;
   description?: string;
   due_date: Date | null; // optional deadline
   priority: 'low' | 'medium' | 'high';
-  status: 'pending' | 'in-progress' | 'completed';
+  status: WorkItemStatus;
   dependencies: string[]; // array of Task ids this task depends on
   project_id?: string; // linked project, if any
   user_id: string; // owner of the task
@@ -18,7 +20,7 @@ interface Project {
   description?: string;
   deadline: Date | null;
   milestones: Milestone[];
-  status: 'not-started' | 'in-progress' | 'completed';
+  status: WorkItemStatus;
   user_id: string; // owner of the project
   createdAt: Date;
   updatedAt: Date;
@@ -29,7 +31,7 @@ interface Milestone {
   title: string;
   description?: string;
   dueDate: Date | null;
-  status: 'not-started' | 'in-progress' | 'completed';
+  status: WorkItemStatus;
   tasks: string[]; // array of Task ids under this milestone
   user_id: string; // owner of the milestone
   createdAt: Date;

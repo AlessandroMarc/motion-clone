@@ -7,6 +7,7 @@ export interface CreateProjectData {
   name: string;
   description?: string;
   deadline?: Date | null;
+  user_id: string;
 }
 
 export interface UpdateProjectData {
@@ -37,7 +38,7 @@ class ProjectService {
       const token = await getAuthToken();
       const headers: Record<string, string> = {
         'Content-Type': 'application/json',
-        ...options.headers,
+        ...(options.headers as Record<string, string>),
       };
 
       if (token) {

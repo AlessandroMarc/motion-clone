@@ -23,7 +23,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { projectService } from '@/services/projectService';
-import type { Project } from '@/../../../shared/types';
+import type { Project, WorkItemStatus } from '@/../../../shared/types';
 
 // Helper function to format date for input field
 const formatDateForInput = (date: Date | null): string => {
@@ -128,11 +128,7 @@ export function ProjectEditDialog({
                 <label className="text-sm font-medium">Status</label>
                 <Select
                   value={status}
-                  onValueChange={value =>
-                    setStatus(
-                      value as 'not-started' | 'in-progress' | 'completed'
-                    )
-                  }
+                  onValueChange={(value: WorkItemStatus) => setStatus(value)}
                 >
                   <SelectTrigger>
                     <SelectValue />

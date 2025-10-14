@@ -3,7 +3,8 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { toast } from 'sonner';
-import type { Project } from '@/../../../shared/types';
+import type { Project, WorkItemStatus } from '@/../../../shared/types';
+import { useAuth } from '@/contexts/AuthContext';
 
 // Project form schema
 export const projectSchema = z.object({
@@ -31,6 +32,7 @@ export function useProjectForm(
   onProjectCreate: ProjectCreateFormProps['onProjectCreate']
 ) {
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const { user } = useAuth();
 
   const {
     register,
@@ -51,11 +53,17 @@ export function useProjectForm(
     try {
       setIsSubmitting(true);
 
+      if (!user) {
+        throw new Error('User must be authenticated to create a project');
+      }
+
       // Transform form data to project format
       const projectData = {
         name: data.name,
         description: data.description || undefined,
         deadline: data.deadline ? new Date(data.deadline) : null,
+        status: 'not-started' as WorkItemStatus,
+        user_id: user.id,
       };
 
       await onProjectCreate(projectData);

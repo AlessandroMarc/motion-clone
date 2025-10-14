@@ -5,6 +5,7 @@ import { toast } from 'sonner';
 import * as z from 'zod';
 import type { Task } from '@/../../shared/types';
 import { transformFormDataToTask } from '@/utils/formUtils';
+import { useAuth } from '@/contexts/AuthContext';
 
 // Form validation schema
 export const taskSchema = z.object({
@@ -34,6 +35,7 @@ export interface TaskCreateFormProps {
 
 export function useTaskForm(onTaskCreate: TaskCreateFormProps['onTaskCreate']) {
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const { user } = useAuth();
 
   const form = useForm<TaskFormData>({
     resolver: zodResolver(taskSchema),
@@ -59,7 +61,11 @@ export function useTaskForm(onTaskCreate: TaskCreateFormProps['onTaskCreate']) {
     console.log('useTaskForm: Form values:', form.getValues());
     setIsSubmitting(true);
     try {
-      const taskData = transformFormDataToTask(data);
+      if (!user) {
+        throw new Error('User must be authenticated to create a task');
+      }
+
+      const taskData = transformFormDataToTask(data, user.id);
       console.log('useTaskForm: Calling onTaskCreate with:', taskData);
       await onTaskCreate(taskData);
       reset();

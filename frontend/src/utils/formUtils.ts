@@ -5,7 +5,8 @@ import type { Task } from '@/../../shared/types';
  * Transforms form data to task creation data
  */
 export function transformFormDataToTask(
-  data: TaskFormData
+  data: TaskFormData,
+  userId: string
 ): Omit<Task, 'id' | 'created_at' | 'updated_at' | 'status' | 'dependencies'> {
   console.log('Form data received:', data);
   const transformed = {
@@ -14,6 +15,7 @@ export function transformFormDataToTask(
     due_date: data.dueDate ? new Date(data.dueDate) : null,
     priority: data.priority,
     project_id: data.project_id || undefined,
+    user_id: userId,
   };
   console.log('Transformed task data:', transformed);
   return transformed;

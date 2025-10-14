@@ -4,12 +4,14 @@ import { useState } from 'react';
 import { ProjectCreateForm } from '@/components/Projects/ProjectCreateForm';
 import { ProjectList } from '@/components/Projects/ProjectList';
 import { ProtectedRoute } from '@/components/Auth/ProtectedRoute';
+import { useAuth } from '@/contexts/AuthContext';
 import type { Project } from '@/../../../shared/types';
 import { projectService } from '@/services/projectService';
 
 export default function ProjectsPage() {
   const [isCreatingProject, setIsCreatingProject] = useState(false);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
+  const { user } = useAuth();
 
   const handleProjectCreate = async (
     projectData: Omit<
@@ -19,10 +21,15 @@ export default function ProjectsPage() {
   ) => {
     setIsCreatingProject(true);
     try {
+      if (!user) {
+        throw new Error('User must be authenticated to create a project');
+      }
+
       await projectService.createProject({
         name: projectData.name,
         description: projectData.description,
         deadline: projectData.deadline,
+        user_id: user.id,
       });
       setRefreshTrigger(prev => prev + 1);
     } catch (error) {
