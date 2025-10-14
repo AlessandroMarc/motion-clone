@@ -6,7 +6,7 @@
     "dev": "concurrently \"npm:dev-f\" \"npm:dev-b\"",
     "dev-f": "npm --prefix frontend run dev",
     "dev-b": "npm --prefix backend run dev",
-    "build-f": "npm --prefix frontend run build",
+    "build": "npm --prefix frontend run build",
     "build-b": "npm --prefix backend run build",
     "test": "concurrently \"npm:test-f\" \"npm:test-b\"",
     "test-f": "npm --prefix frontend run test",
