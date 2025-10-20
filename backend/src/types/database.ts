@@ -63,7 +63,6 @@ export interface CreateCalendarEventInput {
   start_time: string;
   end_time: string;
   linked_task_id?: string;
-  linked_project_id?: string;
   description?: string;
   user_id: string;
 }
@@ -73,7 +72,6 @@ export interface UpdateCalendarEventInput {
   start_time?: string;
   end_time?: string;
   linked_task_id?: string;
-  linked_project_id?: string;
   description?: string;
   user_id?: string;
 }

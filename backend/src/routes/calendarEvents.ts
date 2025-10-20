@@ -12,7 +12,7 @@ const calendarEventService = new CalendarEventService();
 // GET /api/calendar-events - Get all calendar events
 router.get('/', async (req: Request, res: Response) => {
   try {
-    const { start_date, end_date, task_id, project_id } = req.query;
+    const { start_date, end_date, task_id } = req.query;
 
     let events;
     if (
@@ -27,9 +27,6 @@ router.get('/', async (req: Request, res: Response) => {
       );
     } else if (task_id && typeof task_id === 'string') {
       events = await calendarEventService.getCalendarEventsByTaskId(task_id);
-    } else if (project_id && typeof project_id === 'string') {
-      events =
-        await calendarEventService.getCalendarEventsByProjectId(project_id);
     } else {
       events = await calendarEventService.getAllCalendarEvents();
     }

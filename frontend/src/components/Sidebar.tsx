@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
-import { Home, CheckSquare, FolderOpen, LogOut, User } from 'lucide-react';
+import { Home, CheckSquare, FolderOpen, Calendar, LogOut, User } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Skeleton } from '@/components/ui/skeleton';
 
@@ -23,6 +23,11 @@ const navigation = [
     name: 'Projects',
     href: '/projects',
     icon: FolderOpen,
+  },
+  {
+    name: 'Calendar',
+    href: '/calendar',
+    icon: Calendar,
   },
 ];
 

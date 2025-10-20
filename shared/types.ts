@@ -41,14 +41,13 @@ interface Milestone {
 interface CalendarEvent {
   id: string;
   title: string;
-  startTime: Date;
-  endTime: Date;
-  linkedTaskId?: string;
-  linkedProjectId?: string;
+  start_time: Date;
+  end_time: Date;
+  linked_task_id?: string;
   description?: string;
   user_id: string; // owner of the calendar event
-  createdAt: Date;
-  updatedAt: Date;
+  created_at: Date;
+  updated_at: Date;
 }
 
 export type { Task, Project, Milestone, CalendarEvent };

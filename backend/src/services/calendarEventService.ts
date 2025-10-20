@@ -18,7 +18,6 @@ export class CalendarEventService {
           start_time: input.start_time,
           end_time: input.end_time,
           linked_task_id: input.linked_task_id,
-          linked_project_id: input.linked_project_id,
           description: input.description,
         },
       ])
@@ -75,7 +74,6 @@ export class CalendarEventService {
       start_time?: string;
       end_time?: string;
       linked_task_id?: string | null;
-      linked_project_id?: string | null;
       description?: string;
     } = {
       updated_at: new Date().toISOString(),
@@ -87,8 +85,6 @@ export class CalendarEventService {
     if (input.end_time !== undefined) updateData.end_time = input.end_time;
     if (input.linked_task_id !== undefined)
       updateData.linked_task_id = input.linked_task_id;
-    if (input.linked_project_id !== undefined)
-      updateData.linked_project_id = input.linked_project_id;
     if (input.description !== undefined)
       updateData.description = input.description;
 
@@ -158,22 +154,4 @@ export class CalendarEventService {
     return data || [];
   }
 
-  // Get calendar events linked to a project
-  async getCalendarEventsByProjectId(
-    projectId: string
-  ): Promise<CalendarEvent[]> {
-    const { data, error } = await supabase
-      .from('calendar_events')
-      .select('*')
-      .eq('linked_project_id', projectId)
-      .order('start_time', { ascending: true });
-
-    if (error) {
-      throw new Error(
-        `Failed to fetch calendar events by project: ${error.message}`
-      );
-    }
-
-    return data || [];
-  }
 }
