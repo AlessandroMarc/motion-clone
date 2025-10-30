@@ -60,17 +60,18 @@ export function getEventPosition(
     return null;
   }
 
-  // Calculate row based on start time
+  // Calculate row based on start time (30-minute granularity; 48 rows)
   const startHour = event.start_time.getHours();
   const startMinute = event.start_time.getMinutes();
-  const row = startHour + 1; // 1-based indexing
+  const halfIndex = startMinute >= 30 ? 2 : 1;
+  const row = startHour * 2 + halfIndex; // 1-based indexing across 48 rows
 
-  // Calculate row span based on duration
+  // Calculate row span based on duration (30-minute increments)
   const endHour = event.end_time.getHours();
   const endMinute = event.end_time.getMinutes();
   const durationMinutes =
     (endHour - startHour) * 60 + (endMinute - startMinute);
-  const rowSpan = Math.max(1, Math.ceil(durationMinutes / 60));
+  const rowSpan = Math.max(1, Math.ceil(durationMinutes / 30));
 
   return {
     row,

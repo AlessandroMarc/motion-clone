@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { CalendarEvent } from '@/../../../shared/types';
 import { calendarService } from '@/services/calendarService';
 import {
@@ -10,15 +10,33 @@ import {
   isSameDay,
 } from '@/utils/calendarUtils';
 import { CalendarHeader, CalendarGridHeader } from './CalendarHeader';
-import { CalendarEventCard } from './CalendarEventCard';
 import { LoadingState } from '@/components/shared/LoadingState';
 import { ErrorState } from '@/components/shared/ErrorState';
+import { Button } from '@/components/ui/button';
+import CalendarCreateDialog from './CalendarCreateDialog';
+import DayColumn from './DayColumn';
 
 export function WeekCalendar() {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [createOpen, setCreateOpen] = useState(false);
+  const [title, setTitle] = useState('');
+  const [description, setDescription] = useState('');
+  const [startTime, setStartTime] = useState<string>('');
+  const [endTime, setEndTime] = useState<string>('');
+  const dayRefs = useRef<(HTMLDivElement | null)[]>([]);
+  const [draggingEventId, setDraggingEventId] = useState<string | null>(null);
+  const [dragPreview, setDragPreview] = useState<CalendarEvent | null>(null);
+  const dragStateRef = useRef<{
+    startClientX: number;
+    startClientY: number;
+    originalStart: Date;
+    originalEnd: Date;
+    originalDayIndex: number;
+    durationMs: number;
+  } | null>(null);
 
   const weekDates = useMemo(() => getWeekDates(currentDate), [currentDate]);
 
@@ -84,6 +102,169 @@ export function WeekCalendar() {
   // Generate time slots (0-23 hours)
   const timeSlots = Array.from({ length: 24 }, (_, i) => i);
 
+  const toLocalInputValue = (date: Date) => {
+    const pad = (n: number) => String(n).padStart(2, '0');
+    const yyyy = date.getFullYear();
+    const mm = pad(date.getMonth() + 1);
+    const dd = pad(date.getDate());
+    const hh = pad(date.getHours());
+    const min = pad(date.getMinutes());
+    return `${yyyy}-${mm}-${dd}T${hh}:${min}`;
+  };
+
+  const onGridCellClick = (date: Date, hour: number, minute: number) => {
+    const start = new Date(date);
+    start.setHours(hour, minute, 0, 0);
+    const end = new Date(start);
+    end.setHours(start.getHours() + 1);
+
+    setTitle('');
+    setDescription('');
+    setStartTime(toLocalInputValue(start));
+    setEndTime(toLocalInputValue(end));
+    setCreateOpen(true);
+  };
+
+  const handleCreate = async () => {
+    try {
+      const startIso = new Date(startTime).toISOString();
+      const endIso = new Date(endTime).toISOString();
+      await calendarService.createCalendarEvent({
+        title,
+        start_time: startIso,
+        end_time: endIso,
+        description: description || undefined,
+      } as any);
+
+      // Refresh current week events
+      const startDate = weekDates[0].toISOString().split('T')[0];
+      const endDate = weekDates[6].toISOString().split('T')[0];
+      const weekEvents = await calendarService.getCalendarEventsByDateRange(
+        startDate,
+        endDate
+      );
+      setEvents(weekEvents);
+      setCreateOpen(false);
+    } catch (err) {
+      console.error('Failed to create calendar event:', err);
+      // Optionally set error UI
+    }
+  };
+
+  // Drag & drop handlers
+  const onEventMouseDown = (
+    e: React.MouseEvent,
+    event: CalendarEvent,
+    eventDayIndex: number
+  ) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDraggingEventId(event.id);
+    dragStateRef.current = {
+      startClientX: e.clientX,
+      startClientY: e.clientY,
+      originalStart: new Date(event.start_time),
+      originalEnd: new Date(event.end_time),
+      originalDayIndex: eventDayIndex,
+      durationMs: new Date(event.end_time).getTime() - new Date(event.start_time).getTime(),
+    };
+
+    setDragPreview(event);
+  };
+
+  useEffect(() => {
+    if (!draggingEventId) return;
+
+    const hourHeight = 64; // px
+    const minutesPerPixel = 60 / hourHeight;
+    const snapMinutes = 30; // snap to 30 minutes
+
+    const handleMouseMove = (e: MouseEvent) => {
+      const state = dragStateRef.current;
+      if (!state) return;
+
+      // Determine which day column we're over
+      let targetDayIndex = state.originalDayIndex;
+      for (let i = 0; i < dayRefs.current.length; i++) {
+        const el = dayRefs.current[i];
+        if (!el) continue;
+        const rect = el.getBoundingClientRect();
+        if (e.clientX >= rect.left && e.clientX <= rect.right && e.clientY >= rect.top && e.clientY <= rect.bottom) {
+          targetDayIndex = i;
+          break;
+        }
+      }
+
+      // Vertical movement -> minutes delta
+      const deltaY = e.clientY - state.startClientY;
+      const deltaMinutesRaw = deltaY * minutesPerPixel;
+      const deltaMinutes = Math.round(deltaMinutesRaw / snapMinutes) * snapMinutes;
+
+      const baseStart = new Date(state.originalStart);
+      // Adjust base to same time on target day
+      const baseDayDate = new Date(weekDates[targetDayIndex]);
+      baseDayDate.setHours(baseStart.getHours(), baseStart.getMinutes(), 0, 0);
+
+      const newStart = new Date(baseDayDate.getTime() + deltaMinutes * 60 * 1000);
+      const newEnd = new Date(newStart.getTime() + state.durationMs);
+
+      setDragPreview(prev =>
+        prev
+          ? {
+              ...prev,
+              start_time: newStart,
+              end_time: newEnd,
+            }
+          : prev
+      );
+    };
+
+    const handleMouseUp = async () => {
+      const state = dragStateRef.current;
+      const preview = dragPreview;
+      setDraggingEventId(null);
+      dragStateRef.current = null;
+
+      if (!state || !preview) {
+        setDragPreview(null);
+        return;
+      }
+
+      // Persist update
+      try {
+        await calendarService.updateCalendarEvent(preview.id, {
+          start_time: (preview.start_time as Date).toISOString(),
+          end_time: (preview.end_time as Date).toISOString(),
+        } as any);
+
+        // Optimistically update local state
+        setEvents(curr =>
+          curr.map(ev =>
+            ev.id === preview.id
+              ? {
+                  ...ev,
+                  start_time: new Date(preview.start_time),
+                  end_time: new Date(preview.end_time),
+                }
+              : ev
+          )
+        );
+      } catch (err) {
+        console.error('Failed to update calendar event:', err);
+        // Optionally: revert UI by doing nothing (state remains old)
+      } finally {
+        setDragPreview(null);
+      }
+    };
+
+    window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('mouseup', handleMouseUp, { once: true });
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseup', handleMouseUp as any);
+    };
+  }, [draggingEventId, dragPreview, weekDates]);
+
   if (loading) {
     return <LoadingState />;
   }
@@ -125,43 +306,34 @@ export function WeekCalendar() {
             const dayEvents = eventsByDay[dayKey] || [];
 
             return (
-              <div key={dayIndex} className="bg-background relative">
-                {timeSlots.map(hour => (
-                  <div
-                    key={hour}
-                    className="h-16 border-b border-border relative"
-                  />
-                ))}
-
-                {/* Render events for this day */}
-                {dayEvents.map(event => {
-                  const position = getEventPosition(event, weekDates);
-                  if (!position) return null;
-
-                  // Only render if this event belongs to this day column
-                  if (position.column !== dayIndex + 1) return null;
-
-                  const top = `${(position.row - 1) * 4}rem`; // 4rem = 64px per hour
-                  const height = `${position.rowSpan * 4}rem`;
-
-                  return (
-                    <div
-                      key={event.id}
-                      className="absolute left-1 right-1 z-10"
-                      style={{
-                        top,
-                        height,
-                      }}
-                    >
-                      <CalendarEventCard event={event} />
-                    </div>
-                  );
-                })}
-              </div>
+              <DayColumn
+                key={dayIndex}
+                date={date}
+                dayIndex={dayIndex}
+                dayEvents={dayEvents}
+                onGridCellClick={onGridCellClick}
+                onEventMouseDown={onEventMouseDown}
+                draggingEventId={draggingEventId}
+                dragPreview={dragPreview}
+                setDayRef={el => (dayRefs.current[dayIndex] = el)}
+              />
             );
           })}
         </div>
       </div>
+      <CalendarCreateDialog
+        open={createOpen}
+        onOpenChange={setCreateOpen}
+        title={title}
+        setTitle={setTitle}
+        description={description}
+        setDescription={setDescription}
+        startTime={startTime}
+        setStartTime={setStartTime}
+        endTime={endTime}
+        setEndTime={setEndTime}
+        onCreate={handleCreate}
+      />
     </div>
   );
 }
