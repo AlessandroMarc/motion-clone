@@ -19,8 +19,7 @@ interface DayColumnProps {
   setDayRef: (el: HTMLDivElement | null) => void;
 }
 
-const HOUR_REM = 4; // 4rem per hour => 64px
-const HALF_REM = HOUR_REM / 2; // 2rem per half-hour => 32px
+const HOUR_PX = 64; // 64px per hour to match time gutter (h-16)
 
 export function DayColumn({
   date,
@@ -39,8 +38,8 @@ export function DayColumn({
     const end = new Date(event.end_time);
     const minutesFromMidnight = start.getHours() * 60 + start.getMinutes();
     const durationMinutes = Math.max(30, (end.getTime() - start.getTime()) / 60000);
-    const topRem = (minutesFromMidnight / 60) * HOUR_REM;
-    const heightRem = (durationMinutes / 60) * HOUR_REM;
+    const topPx = (minutesFromMidnight / 60) * HOUR_PX;
+    const heightPx = (durationMinutes / 60) * HOUR_PX;
 
     return (
       <div
@@ -48,7 +47,7 @@ export function DayColumn({
         className={`absolute left-1 right-1 z-10 ${
           draggingEventId === event.id ? (isGhost ? 'opacity-80 cursor-grabbing' : 'hidden') : ''
         }`}
-        style={{ top: `${topRem}rem`, height: `${heightRem}rem` }}
+        style={{ top: `${topPx}px`, height: `${heightPx}px` }}
         onMouseDown={e => onEventMouseDown(e, event, dayIndex)}
       >
         <CalendarEventCard event={event} />
