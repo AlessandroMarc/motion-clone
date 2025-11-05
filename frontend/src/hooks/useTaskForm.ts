@@ -20,10 +20,10 @@ export const taskSchema = z.object({
   priority: z.enum(['low', 'medium', 'high']),
   project_id: z.string().nullable().optional(),
   planned_duration_minutes: z
-    .number({ invalid_type_error: 'Planned duration is required' })
+    .number()
     .min(1, 'Planned duration must be at least 1 minute'),
   actual_duration_minutes: z
-    .number({ invalid_type_error: 'Actual duration must be a number' })
+    .number()
     .min(0, 'Actual duration cannot be negative'),
 });
 

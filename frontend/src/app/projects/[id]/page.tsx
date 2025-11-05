@@ -68,6 +68,8 @@ export default function ProjectDetailPage({ params }: ProjectDetailPageProps) {
         dueDate: taskData.due_date,
         priority: taskData.priority,
         project_id: params.id,
+        plannedDurationMinutes: taskData.planned_duration_minutes,
+        actualDurationMinutes: taskData.actual_duration_minutes,
       });
       setTasks(prev => [...prev, newTask]);
       toast.success('Task created successfully');
