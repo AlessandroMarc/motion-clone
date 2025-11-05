@@ -19,6 +19,12 @@ export const taskSchema = z.object({
   dueDate: z.string().optional(),
   priority: z.enum(['low', 'medium', 'high']),
   project_id: z.string().nullable().optional(),
+  planned_duration_minutes: z
+    .number({ invalid_type_error: 'Planned duration is required' })
+    .min(1, 'Planned duration must be at least 1 minute'),
+  actual_duration_minutes: z
+    .number({ invalid_type_error: 'Actual duration must be a number' })
+    .min(0, 'Actual duration cannot be negative'),
 });
 
 export type TaskFormData = z.infer<typeof taskSchema>;
@@ -43,6 +49,8 @@ export function useTaskForm(onTaskCreate: TaskCreateFormProps['onTaskCreate']) {
       priority: 'medium' as const,
       description: '',
       project_id: null,
+      planned_duration_minutes: 60,
+      actual_duration_minutes: 0,
     },
   });
 
@@ -70,9 +78,13 @@ export function useTaskForm(onTaskCreate: TaskCreateFormProps['onTaskCreate']) {
       await onTaskCreate(taskData);
       reset();
       toast.success('Task created successfully!');
+      return true;
     } catch (error) {
       console.error('Failed to create task:', error);
-      toast.error('Failed to create task. Please try again.');
+      const message =
+        error instanceof Error ? error.message : 'Failed to create task. Please try again.';
+      toast.error(message);
+      return false;
     } finally {
       setIsSubmitting(false);
     }

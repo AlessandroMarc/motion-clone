@@ -6,28 +6,80 @@ import type {
 import type { CalendarEvent } from '@shared/types.js';
 
 export class CalendarEventService {
+  private async ensureNoOverlaps(
+    userId: string,
+    startTimeIso: string,
+    endTimeIso: string,
+    excludeEventId?: string
+  ): Promise<void> {
+    if (new Date(startTimeIso) >= new Date(endTimeIso)) {
+      throw new Error('Calendar event end time must be after start time');
+    }
+
+    const query = supabase
+      .from('calendar_events')
+      .select('id')
+      .eq('user_id', userId)
+      .lt('start_time', endTimeIso)
+      .gt('end_time', startTimeIso);
+
+    if (excludeEventId) {
+      query.neq('id', excludeEventId);
+    }
+
+    const { data, error } = await query;
+
+    if (error) {
+      console.error('[CalendarEventService] Failed overlap check:', error);
+      throw new Error('Failed to validate calendar event overlap');
+    }
+
+    if (data && data.length > 0) {
+      throw new Error('Calendar event overlaps with an existing event');
+    }
+  }
+
   // Create a new calendar event
   async createCalendarEvent(
     input: CreateCalendarEventInput
   ): Promise<CalendarEvent> {
+    console.log('[CalendarEventService] createCalendarEvent called with input:', input);
+    
+    await this.ensureNoOverlaps(
+      input.user_id,
+      input.start_time,
+      input.end_time
+    );
+
+    const insertData = {
+      title: input.title,
+      start_time: input.start_time,
+      end_time: input.end_time,
+      linked_task_id: input.linked_task_id,
+      description: input.description,
+      user_id: input.user_id,
+    };
+    
+    console.log('[CalendarEventService] Inserting calendar event:', insertData);
+    
     const { data, error } = await supabase
       .from('calendar_events')
-      .insert([
-        {
-          title: input.title,
-          start_time: input.start_time,
-          end_time: input.end_time,
-          linked_task_id: input.linked_task_id,
-          description: input.description,
-        },
-      ])
+      .insert([insertData])
       .select()
       .single();
 
     if (error) {
+      console.error('[CalendarEventService] Failed to create calendar event:', {
+        error,
+        message: error.message,
+        details: error.details,
+        hint: error.hint,
+        code: error.code,
+      });
       throw new Error(`Failed to create calendar event: ${error.message}`);
     }
 
+    console.log('[CalendarEventService] Calendar event created successfully:', data);
     return data;
   }
 
@@ -68,6 +120,21 @@ export class CalendarEventService {
     id: string,
     input: UpdateCalendarEventInput
   ): Promise<CalendarEvent> {
+    const existing = await this.getCalendarEventById(id);
+    if (!existing) {
+      throw new Error('Calendar event not found');
+    }
+
+    const newStart = input.start_time ?? (existing.start_time as unknown as string);
+    const newEnd = input.end_time ?? (existing.end_time as unknown as string);
+
+    await this.ensureNoOverlaps(
+      existing.user_id,
+      newStart,
+      newEnd,
+      id
+    );
+
     const updateData: {
       updated_at: string;
       title?: string;
@@ -121,6 +188,11 @@ export class CalendarEventService {
     startDate: string,
     endDate: string
   ): Promise<CalendarEvent[]> {
+    console.log('[CalendarEventService] getCalendarEventsByDateRange called:', {
+      startDate,
+      endDate,
+    });
+    
     const { data, error } = await supabase
       .from('calendar_events')
       .select('*')
@@ -129,10 +201,26 @@ export class CalendarEventService {
       .order('start_time', { ascending: true });
 
     if (error) {
+      console.error('[CalendarEventService] Failed to fetch calendar events:', {
+        error,
+        message: error.message,
+        details: error.details,
+      });
       throw new Error(
         `Failed to fetch calendar events by date range: ${error.message}`
       );
     }
+
+    console.log('[CalendarEventService] Fetched calendar events:', {
+      count: data?.length || 0,
+      events: data?.map(e => ({
+        id: e.id,
+        title: e.title,
+        linked_task_id: e.linked_task_id,
+        start_time: e.start_time,
+        user_id: e.user_id,
+      })),
+    });
 
     return data || [];
   }

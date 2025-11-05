@@ -25,7 +25,7 @@ export function CalendarEventCard({ event, style }: CalendarEventCardProps) {
 
   return (
     <Card
-      className={`p-2 text-xs cursor-pointer transition-colors border ${getEventColor()}`}
+      className={`h-full overflow-hidden p-2 text-xs cursor-pointer transition-colors border ${getEventColor()}`}
       style={style}
     >
       <div className="flex items-start justify-between gap-1">

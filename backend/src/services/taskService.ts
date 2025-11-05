@@ -16,6 +16,8 @@ export class TaskService {
           status: input.status || 'pending',
           dependencies: input.dependencies || [],
           project_id: input.project_id,
+          planned_duration_minutes: input.planned_duration_minutes,
+          actual_duration_minutes: input.actual_duration_minutes ?? 0,
         },
       ])
       .select()
@@ -71,6 +73,8 @@ export class TaskService {
       status?: 'pending' | 'in-progress' | 'completed';
       dependencies?: string[];
       project_id?: string | null;
+      planned_duration_minutes?: number;
+      actual_duration_minutes?: number;
     } = {
       updated_at: new Date().toISOString(),
     };
@@ -86,6 +90,10 @@ export class TaskService {
       updateData.dependencies = input.dependencies;
     if (input.project_id !== undefined)
       updateData.project_id = input.project_id;
+    if (input.planned_duration_minutes !== undefined)
+      updateData.planned_duration_minutes = input.planned_duration_minutes;
+    if (input.actual_duration_minutes !== undefined)
+      updateData.actual_duration_minutes = input.actual_duration_minutes;
 
     const { data, error } = await supabase
       .from('tasks')

@@ -10,6 +10,11 @@ interface ProtectedRouteProps {
 
 export function ProtectedRoute({ children }: ProtectedRouteProps) {
   const { user, loading } = useAuth();
+  const bypassAuth = typeof window !== 'undefined' && process.env.NEXT_PUBLIC_AUTH_BYPASS === '1';
+
+  if (bypassAuth) {
+    return <>{children}</>;
+  }
 
   if (loading) {
     return (

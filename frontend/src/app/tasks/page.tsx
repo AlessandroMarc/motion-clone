@@ -6,6 +6,7 @@ import { TaskList } from '@/components/Tasks/TaskList';
 import { ProtectedRoute } from '@/components/Auth/ProtectedRoute';
 import type { Task } from '@/../../../shared/types';
 import { taskService } from '@/services/taskService';
+import { toast } from 'sonner';
 
 export default function TasksPage() {
   const [isCreatingTask, setIsCreatingTask] = useState(false);
@@ -26,11 +27,15 @@ export default function TasksPage() {
         dueDate: taskData.due_date,
         priority: taskData.priority,
         project_id: taskData.project_id,
+        plannedDurationMinutes: taskData.planned_duration_minutes,
+        actualDurationMinutes: taskData.actual_duration_minutes,
       });
       setRefreshTrigger(prev => prev + 1);
     } catch (error) {
       console.error('Failed to create task:', error);
-      // You could add a toast notification here
+      const message =
+        error instanceof Error ? error.message : 'Failed to create task';
+      toast.error(message);
     } finally {
       setIsCreatingTask(false);
     }

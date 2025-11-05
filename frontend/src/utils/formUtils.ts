@@ -16,6 +16,8 @@ export function transformFormDataToTask(
     priority: data.priority,
     project_id: data.project_id || undefined,
     user_id: userId,
+    planned_duration_minutes: data.planned_duration_minutes,
+    actual_duration_minutes: data.actual_duration_minutes ?? 0,
   };
   console.log('Transformed task data:', transformed);
   return transformed;

@@ -9,6 +9,8 @@ export interface CreateTaskInput {
   dueDate?: Date | null;
   priority: 'low' | 'medium' | 'high';
   project_id?: string;
+  plannedDurationMinutes: number;
+  actualDurationMinutes?: number;
 }
 
 export interface UpdateTaskInput {
@@ -18,6 +20,8 @@ export interface UpdateTaskInput {
   priority?: 'low' | 'medium' | 'high';
   status?: 'pending' | 'in-progress' | 'completed';
   project_id?: string | null;
+  plannedDurationMinutes?: number;
+  actualDurationMinutes?: number;
 }
 
 export interface ApiResponse<T> {
@@ -81,6 +85,8 @@ class TaskService {
       status: 'pending',
       dependencies: [],
       project_id: input.project_id,
+      planned_duration_minutes: input.plannedDurationMinutes,
+      actual_duration_minutes: input.actualDurationMinutes ?? 0,
     };
     console.log('Task service payload:', payload);
 
@@ -101,6 +107,8 @@ class TaskService {
         : null,
       created_at: new Date(response.data.created_at),
       updated_at: new Date(response.data.updated_at),
+      planned_duration_minutes: response.data.planned_duration_minutes,
+      actual_duration_minutes: response.data.actual_duration_minutes,
     };
   }
 
@@ -135,6 +143,8 @@ class TaskService {
         : null,
       created_at: new Date(response.data.created_at),
       updated_at: new Date(response.data.updated_at),
+      planned_duration_minutes: response.data.planned_duration_minutes,
+      actual_duration_minutes: response.data.actual_duration_minutes,
     };
   }
 
@@ -145,6 +155,8 @@ class TaskService {
         ...input,
         due_date: input.dueDate?.toISOString(),
         project_id: input.project_id,
+        planned_duration_minutes: input.plannedDurationMinutes,
+        actual_duration_minutes: input.actualDurationMinutes,
       }),
     });
 
@@ -160,6 +172,8 @@ class TaskService {
         : null,
       created_at: new Date(response.data.created_at),
       updated_at: new Date(response.data.updated_at),
+      planned_duration_minutes: response.data.planned_duration_minutes,
+      actual_duration_minutes: response.data.actual_duration_minutes,
     };
   }
 

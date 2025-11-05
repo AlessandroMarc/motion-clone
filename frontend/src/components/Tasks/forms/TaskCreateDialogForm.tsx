@@ -17,6 +17,7 @@ import { TaskDueDateField } from './TaskDueDateField';
 import { TaskPriorityField } from './TaskPriorityField';
 import { TaskProjectField } from './TaskProjectField';
 import { TaskFormActions } from './TaskFormActions';
+import { TaskDurationFields } from './TaskDurationFields';
 
 export function TaskCreateDialogForm({
   onTaskCreate,
@@ -37,8 +38,10 @@ export function TaskCreateDialogForm({
   } = useTaskForm(onTaskCreate);
 
   const handleFormSubmit = async (data: any) => {
-    await onSubmit(data);
-    setIsDialogOpen(false);
+    const success = await onSubmit(data);
+    if (success) {
+      setIsDialogOpen(false);
+    }
   };
 
   const handleFormCancel = () => {
@@ -75,6 +78,7 @@ export function TaskCreateDialogForm({
                 errors={errors}
               />
               <TaskProjectField errors={errors} />
+              <TaskDurationFields register={register} errors={errors} />
             </div>
 
             <TaskFormActions

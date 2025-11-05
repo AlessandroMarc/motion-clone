@@ -1,12 +1,13 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { toast } from 'sonner';
 import { Card, CardContent } from '@/components/ui/card';
 import { Circle } from 'lucide-react';
-import type { Task, Project } from '@/../../../shared/types';
+import type { Task, Project, CalendarEvent } from '@/../../../shared/types';
 import { taskService } from '@/services/taskService';
 import { projectService } from '@/services/projectService';
+import { calendarService } from '@/services/calendarService';
 import {
   StatusGroupedList,
   EmptyStateCard,
@@ -24,20 +25,37 @@ interface TaskListProps {
 export function TaskList({ refreshTrigger, onTaskUpdate }: TaskListProps) {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
+  const [calendarEvents, setCalendarEvents] = useState<CalendarEvent[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const fetchTasks = async () => {
+    console.log('[TaskList] fetchTasks called');
     try {
       setIsLoading(true);
       setError(null);
-      const [fetchedTasks, fetchedProjects] = await Promise.all([
-        taskService.getAllTasks(),
-        projectService.getAllProjects(),
-      ]);
+      const [fetchedTasks, fetchedProjects, fetchedCalendarEvents] =
+        await Promise.all([
+          taskService.getAllTasks(),
+          projectService.getAllProjects(),
+          calendarService.getAllCalendarEvents(),
+        ]);
+
+      console.log('[TaskList] Fetched data:', {
+        tasksCount: fetchedTasks.length,
+        taskIds: fetchedTasks.map(t => t.id),
+        projectsCount: fetchedProjects.length,
+        calendarEventsCount: fetchedCalendarEvents.length,
+        linkedTaskIds: fetchedCalendarEvents
+          .filter(e => e.linked_task_id)
+          .map(e => e.linked_task_id),
+      });
+
       setTasks(fetchedTasks);
       setProjects(fetchedProjects);
+      setCalendarEvents(fetchedCalendarEvents);
     } catch (err) {
+      console.error('[TaskList] Error fetching tasks:', err);
       const errorMessage =
         err instanceof Error ? err.message : 'Failed to fetch tasks';
       setError(errorMessage);
@@ -50,6 +68,20 @@ export function TaskList({ refreshTrigger, onTaskUpdate }: TaskListProps) {
   useEffect(() => {
     fetchTasks();
   }, [refreshTrigger]);
+
+  // Filter out tasks that have calendar events linked to them (planned tasks)
+  const linkedTaskIds = useMemo(() => {
+    const ids = new Set(
+      calendarEvents
+        .filter(ev => !!ev.linked_task_id)
+        .map(ev => ev.linked_task_id as string)
+    );
+    console.log(
+      '[TaskList] Linked task IDs from calendar events:',
+      Array.from(ids)
+    );
+    return ids;
+  }, [calendarEvents]);
 
   const handleStatusToggle = async (taskId: string, currentStatus: string) => {
     try {
@@ -140,6 +172,7 @@ export function TaskList({ refreshTrigger, onTaskUpdate }: TaskListProps) {
             onStatusToggle={handleStatusToggle}
             onDelete={handleDeleteTask}
             onTaskUpdate={handleTaskUpdate}
+            isPlanned={linkedTaskIds.has(task.id)}
           />
         );
       }}

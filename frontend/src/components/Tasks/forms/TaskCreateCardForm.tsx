@@ -15,6 +15,7 @@ import { TaskDescriptionField } from './TaskDescriptionField';
 import { TaskDueDateField } from './TaskDueDateField';
 import { TaskPriorityField } from './TaskPriorityField';
 import { TaskProjectField } from './TaskProjectField';
+import { TaskDurationFields } from './TaskDurationFields';
 import { TaskFormActions } from './TaskFormActions';
 
 export function TaskCreateCardForm({
@@ -36,8 +37,10 @@ export function TaskCreateCardForm({
   } = useTaskForm(onTaskCreate);
 
   const handleFormSubmit = async (data: any) => {
-    await onSubmit(data);
-    setIsExpanded(false);
+    const success = await onSubmit(data);
+    if (success) {
+      setIsExpanded(false);
+    }
   };
 
   const handleFormCancel = () => {
@@ -101,6 +104,12 @@ export function TaskCreateCardForm({
               </div>
 
               <TaskProjectField errors={errors} />
+              <TaskDurationFields
+                register={register}
+                errors={errors}
+                plannedId="quick-planned-duration"
+                actualId="quick-actual-duration"
+              />
             </div>
 
             <TaskFormActions

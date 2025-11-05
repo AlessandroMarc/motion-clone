@@ -2,7 +2,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Calendar, AlertCircle } from 'lucide-react';
+import { Calendar, AlertCircle, Timer } from 'lucide-react';
 import { getPriorityColor } from '@/utils/statusUtils';
 import { formatDate, isOverdue } from '@/utils/dateUtils';
 import { taskService } from '@/services/taskService';
@@ -16,6 +16,7 @@ interface TaskItemProps {
   onStatusToggle: (taskId: string, currentStatus: string) => void;
   onDelete: (taskId: string) => void;
   onTaskUpdate?: (updatedTask: Task) => void;
+  isPlanned?: boolean;
 }
 
 export function TaskItem({
@@ -25,6 +26,7 @@ export function TaskItem({
   onStatusToggle,
   onDelete,
   onTaskUpdate,
+  isPlanned = false,
 }: TaskItemProps) {
   console.log('TaskItem rendered:', {
     taskId: task.id,
@@ -78,13 +80,21 @@ export function TaskItem({
                   {task.description}
                 </p>
               )}
-              <div className="mt-1">
+              <div className="mt-1 flex items-center gap-2 flex-wrap">
                 <TaskProjectSection
                   project={project}
                   availableProjects={availableProjects}
                   onProjectSelect={handleProjectSelect}
                   onProjectUnlink={handleProjectUnlink}
                 />
+                <Badge variant="outline" className="text-[10px] px-1.5 py-0.5 flex items-center gap-1">
+                  <Timer className="h-3 w-3" />
+                  Planned: {task.planned_duration_minutes}m
+                </Badge>
+                <Badge variant="outline" className="text-[10px] px-1.5 py-0.5 flex items-center gap-1">
+                  <Timer className="h-3 w-3" />
+                  Actual: {task.actual_duration_minutes}m
+                </Badge>
               </div>
             </div>
           </div>

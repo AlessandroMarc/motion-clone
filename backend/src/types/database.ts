@@ -11,6 +11,8 @@ export interface CreateTaskInput {
   dependencies?: string[];
   project_id?: string;
   user_id: string;
+  planned_duration_minutes: number;
+  actual_duration_minutes?: number;
 }
 
 export interface UpdateTaskInput {
@@ -22,6 +24,8 @@ export interface UpdateTaskInput {
   dependencies?: string[];
   project_id?: string;
   user_id?: string;
+  planned_duration_minutes?: number;
+  actual_duration_minutes?: number;
 }
 
 export interface CreateProjectInput {

@@ -12,6 +12,8 @@ const calendarEventService = new CalendarEventService();
 // GET /api/calendar-events - Get all calendar events
 router.get('/', async (req: Request, res: Response) => {
   try {
+    console.log('[CalendarEventsRoute] GET /api/calendar-events called');
+    console.log('[CalendarEventsRoute] Query params:', req.query);
     const { start_date, end_date, task_id } = req.query;
 
     let events;
@@ -21,15 +23,27 @@ router.get('/', async (req: Request, res: Response) => {
       typeof start_date === 'string' &&
       typeof end_date === 'string'
     ) {
+      console.log('[CalendarEventsRoute] Fetching events by date range');
       events = await calendarEventService.getCalendarEventsByDateRange(
         start_date,
         end_date
       );
     } else if (task_id && typeof task_id === 'string') {
+      console.log('[CalendarEventsRoute] Fetching events by task_id');
       events = await calendarEventService.getCalendarEventsByTaskId(task_id);
     } else {
+      console.log('[CalendarEventsRoute] Fetching all events');
       events = await calendarEventService.getAllCalendarEvents();
     }
+
+    console.log('[CalendarEventsRoute] Returning events:', {
+      count: events.length,
+      events: events.map(e => ({
+        id: e.id,
+        title: e.title,
+        linked_task_id: e.linked_task_id,
+      })),
+    });
 
     ResponseHelper.list(
       res,
@@ -38,6 +52,10 @@ router.get('/', async (req: Request, res: Response) => {
       events.length
     );
   } catch (error) {
+    console.error(
+      '[CalendarEventsRoute] Error fetching calendar events:',
+      error
+    );
     ResponseHelper.internalError(
       res,
       error instanceof Error ? error.message : 'Internal server error'
@@ -70,14 +88,24 @@ router.get('/:id', async (req: Request, res: Response) => {
 // POST /api/calendar-events - Create new calendar event
 router.post('/', async (req: Request, res: Response) => {
   try {
+    console.log('[CalendarEventsRoute] POST /api/calendar-events called');
+    console.log('[CalendarEventsRoute] Request body:', req.body);
     const input: CreateCalendarEventInput = req.body;
     const event = await calendarEventService.createCalendarEvent(input);
+    console.log('[CalendarEventsRoute] Calendar event created:', event);
     ResponseHelper.created(res, event, 'Calendar event created successfully');
   } catch (error) {
-    ResponseHelper.badRequest(
-      res,
-      error instanceof Error ? error.message : 'Bad request'
+    console.error(
+      '[CalendarEventsRoute] Error creating calendar event:',
+      error
     );
+    const message =
+      error instanceof Error && error.message.includes('overlaps')
+        ? 'Calendar event overlaps with an existing event'
+        : error instanceof Error
+          ? error.message
+          : 'Bad request';
+    ResponseHelper.badRequest(res, message);
   }
 });
 
@@ -92,10 +120,13 @@ router.put('/:id', async (req: Request, res: Response) => {
     const event = await calendarEventService.updateCalendarEvent(id, input);
     ResponseHelper.updated(res, event, 'Calendar event updated successfully');
   } catch (error) {
-    ResponseHelper.badRequest(
-      res,
-      error instanceof Error ? error.message : 'Bad request'
-    );
+    const message =
+      error instanceof Error && error.message.includes('overlaps')
+        ? 'Calendar event overlaps with an existing event'
+        : error instanceof Error
+          ? error.message
+          : 'Bad request';
+    ResponseHelper.badRequest(res, message);
   }
 });
 
