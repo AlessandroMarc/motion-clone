@@ -9,6 +9,11 @@ export function transformFormDataToTask(
   userId: string
 ): Omit<Task, 'id' | 'created_at' | 'updated_at' | 'status' | 'dependencies'> {
   console.log('Form data received:', data);
+  const planned = Math.max(data.planned_duration_minutes, 0);
+  const actual = Math.min(
+    Math.max(data.actual_duration_minutes ?? 0, 0),
+    planned
+  );
   const transformed = {
     title: data.title,
     description: data.description || '',
@@ -16,8 +21,8 @@ export function transformFormDataToTask(
     priority: data.priority,
     project_id: data.project_id || undefined,
     user_id: userId,
-    planned_duration_minutes: data.planned_duration_minutes,
-    actual_duration_minutes: data.actual_duration_minutes ?? 0,
+    planned_duration_minutes: planned,
+    actual_duration_minutes: actual,
   };
   console.log('Transformed task data:', transformed);
   return transformed;

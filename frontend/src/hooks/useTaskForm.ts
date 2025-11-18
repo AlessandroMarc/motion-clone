@@ -25,6 +25,14 @@ export const taskSchema = z.object({
   actual_duration_minutes: z
     .number()
     .min(0, 'Actual duration cannot be negative'),
+}).superRefine((data, ctx) => {
+  if (data.actual_duration_minutes > data.planned_duration_minutes) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ['actual_duration_minutes'],
+      message: 'Actual duration cannot exceed planned duration',
+    });
+  }
 });
 
 export type TaskFormData = z.infer<typeof taskSchema>;

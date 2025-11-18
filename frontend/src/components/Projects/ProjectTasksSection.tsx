@@ -1,14 +1,11 @@
 'use client';
 
-import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Checkbox } from '@/components/ui/checkbox';
 import { Plus, Calendar, AlertCircle, X } from 'lucide-react';
 import { getPriorityColor } from '@/utils/statusUtils';
 import { formatDate, isOverdue } from '@/utils/dateUtils';
-import { taskService } from '@/services/taskService';
 
 import type { Task } from '@/../../../shared/types';
 import { ProjectTaskCreateDialog } from './ProjectTaskCreateDialog';
@@ -31,18 +28,6 @@ export function ProjectTasksSection({
   onTaskCreate,
   onTaskUnlink,
 }: ProjectTasksSectionProps) {
-  const handleStatusToggle = async (taskId: string, currentStatus: string) => {
-    try {
-      const newStatus = currentStatus === 'completed' ? 'pending' : 'completed';
-      await taskService.updateTask(taskId, {
-        status: newStatus as 'pending' | 'in-progress' | 'completed',
-      });
-      // Note: We don't update local state here since the parent will refetch
-    } catch (error) {
-      console.error('Failed to update task status:', error);
-    }
-  };
-
   const handleTaskCreate = async (
     taskData: Omit<
       Task,
@@ -86,14 +71,6 @@ export function ProjectTasksSection({
                 key={task.id}
                 className="flex items-center gap-3 p-3 border rounded-lg hover:bg-accent/50 transition-colors group"
               >
-                <Checkbox
-                  checked={task.status === 'completed'}
-                  onCheckedChange={() =>
-                    handleStatusToggle(task.id, task.status)
-                  }
-                  className="flex-shrink-0"
-                />
-
                 <div className="flex-1 min-w-0">
                   <h4
                     className={`text-sm font-medium ${
@@ -109,6 +86,16 @@ export function ProjectTasksSection({
                       {task.description}
                     </p>
                   )}
+                  <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                    <span className="inline-flex items-center rounded border px-1.5 py-0.5">
+                      {task.status === 'in-progress'
+                        ? 'In progress'
+                        : task.status.charAt(0).toUpperCase() + task.status.slice(1)}
+                    </span>
+                    <span>
+                      Planned {task.planned_duration_minutes}m · Actual {task.actual_duration_minutes}m
+                    </span>
+                  </div>
                 </div>
 
                 <div className="flex items-center gap-2 flex-shrink-0">

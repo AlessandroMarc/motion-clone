@@ -4,7 +4,12 @@ import { useState, useEffect, useMemo } from 'react';
 import { toast } from 'sonner';
 import { Card, CardContent } from '@/components/ui/card';
 import { Circle } from 'lucide-react';
-import type { Task, Project, CalendarEvent } from '@/../../../shared/types';
+import type {
+  Task,
+  Project,
+  CalendarEventUnion,
+} from '@/../../../shared/types';
+import { isCalendarEventTask } from '@/../../../shared/types';
 import { taskService } from '@/services/taskService';
 import { projectService } from '@/services/projectService';
 import { calendarService } from '@/services/calendarService';
@@ -16,6 +21,7 @@ import {
 } from '@/components/shared';
 import { TASK_STATUS_CONFIG } from '@/utils/statusUtils';
 import { TaskItem } from './TaskItem';
+import { TaskEditDialogForm } from './forms';
 
 interface TaskListProps {
   refreshTrigger?: number;
@@ -25,9 +31,13 @@ interface TaskListProps {
 export function TaskList({ refreshTrigger, onTaskUpdate }: TaskListProps) {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
-  const [calendarEvents, setCalendarEvents] = useState<CalendarEvent[]>([]);
+  const [calendarEvents, setCalendarEvents] = useState<CalendarEventUnion[]>(
+    []
+  );
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
+  const [isDetailsOpen, setIsDetailsOpen] = useState(false);
 
   const fetchTasks = async () => {
     console.log('[TaskList] fetchTasks called');
@@ -83,21 +93,6 @@ export function TaskList({ refreshTrigger, onTaskUpdate }: TaskListProps) {
     return ids;
   }, [calendarEvents]);
 
-  const handleStatusToggle = async (taskId: string, currentStatus: string) => {
-    try {
-      const newStatus = currentStatus === 'completed' ? 'pending' : 'completed';
-      await taskService.updateTask(taskId, {
-        status: newStatus as 'pending' | 'in-progress' | 'completed',
-      });
-      await fetchTasks();
-      onTaskUpdate?.();
-      toast.success(`Task marked as ${newStatus}`);
-    } catch (err) {
-      console.error('Failed to update task status:', err);
-      toast.error('Failed to update task status');
-    }
-  };
-
   const handleDeleteTask = async (taskId: string) => {
     try {
       await taskService.deleteTask(taskId);
@@ -110,12 +105,34 @@ export function TaskList({ refreshTrigger, onTaskUpdate }: TaskListProps) {
     }
   };
 
-  const handleTaskUpdate = (updatedTask: Task) => {
+  const handleTaskUpdate = (
+    updatedTask: Task,
+    options: { showToast?: boolean } = {}
+  ) => {
     setTasks(prevTasks =>
       prevTasks.map(task => (task.id === updatedTask.id ? updatedTask : task))
     );
     onTaskUpdate?.();
-    toast.success('Task updated successfully');
+    if (options.showToast !== false) {
+      toast.success('Task updated successfully');
+    }
+  };
+
+  const handleTaskSelect = (task: Task) => {
+    setSelectedTask(task);
+    setIsDetailsOpen(true);
+  };
+
+  const handleDialogOpenChange = (open: boolean) => {
+    setIsDetailsOpen(open);
+    if (!open) {
+      setSelectedTask(null);
+    }
+  };
+
+  const handleTaskDialogUpdate = (updatedTask: Task) => {
+    handleTaskUpdate(updatedTask, { showToast: false });
+    setSelectedTask(updatedTask);
   };
 
   if (isLoading) {
@@ -150,39 +167,48 @@ export function TaskList({ refreshTrigger, onTaskUpdate }: TaskListProps) {
   }
 
   return (
-    <StatusGroupedList
-      items={tasks}
-      statusConfig={TASK_STATUS_CONFIG}
-      getItemStatus={task => task.status}
-      renderItem={task => {
-        const project = task.project_id
-          ? projects.find(p => p.id === task.project_id)
-          : undefined;
-        console.log('TaskList renderItem:', {
-          taskId: task.id,
-          project_id: task.project_id,
-          foundProject: project,
-        });
-        return (
-          <TaskItem
-            key={task.id}
-            task={task}
-            project={project}
-            availableProjects={projects}
-            onStatusToggle={handleStatusToggle}
-            onDelete={handleDeleteTask}
-            onTaskUpdate={handleTaskUpdate}
-            isPlanned={linkedTaskIds.has(task.id)}
+    <>
+      <StatusGroupedList
+        items={tasks}
+        statusConfig={TASK_STATUS_CONFIG}
+        getItemStatus={task => task.status}
+        renderItem={task => {
+          const project = task.project_id
+            ? projects.find(p => p.id === task.project_id)
+            : undefined;
+          console.log('TaskList renderItem:', {
+            taskId: task.id,
+            project_id: task.project_id,
+            foundProject: project,
+          });
+          return (
+            <TaskItem
+              key={task.id}
+              task={task}
+              project={project}
+              availableProjects={projects}
+              onDelete={handleDeleteTask}
+              onTaskUpdate={handleTaskUpdate}
+              isPlanned={linkedTaskIds.has(task.id)}
+              onSelect={handleTaskSelect}
+            />
+          );
+        }}
+        renderEmptyState={statusConfig => (
+          <EmptyStateCard
+            key={statusConfig.key}
+            statusConfig={statusConfig}
+            message={`No ${statusConfig.label.toLowerCase()} tasks`}
           />
-        );
-      }}
-      renderEmptyState={statusConfig => (
-        <EmptyStateCard
-          key={statusConfig.key}
-          statusConfig={statusConfig}
-          message={`No ${statusConfig.label.toLowerCase()} tasks`}
-        />
-      )}
-    />
+        )}
+      />
+
+      <TaskEditDialogForm
+        task={selectedTask}
+        open={isDetailsOpen}
+        onOpenChange={handleDialogOpenChange}
+        onTaskUpdated={handleTaskDialogUpdate}
+      />
+    </>
   );
 }

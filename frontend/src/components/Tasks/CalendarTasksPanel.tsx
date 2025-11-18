@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import type { Task, Project, CalendarEvent } from '@/../../../shared/types';
+import type { Task, Project, CalendarEventUnion } from '@/../../../shared/types';
 import { taskService } from '@/services/taskService';
 import { projectService } from '@/services/projectService';
 import { calendarService } from '@/services/calendarService';
@@ -16,7 +16,7 @@ interface CalendarTasksPanelProps {
 export function CalendarTasksPanel({ currentWeekStart, refreshTrigger }: CalendarTasksPanelProps) {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [projectsById, setProjectsById] = useState<Record<string, Project>>({});
-  const [weekEvents, setWeekEvents] = useState<CalendarEvent[]>([]);
+  const [weekEvents, setWeekEvents] = useState<CalendarEventUnion[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 

@@ -1,5 +1,12 @@
 // Re-export shared types for convenience
-export type { Task, Project, Milestone, CalendarEvent } from '@shared/types.js';
+export type {
+  Task,
+  Project,
+  Milestone,
+  CalendarEvent,
+  CalendarEventTask,
+  CalendarEventUnion,
+} from '@shared/types.js';
 
 // Database-specific types that extend or modify shared types
 export interface CreateTaskInput {
@@ -7,7 +14,6 @@ export interface CreateTaskInput {
   description?: string;
   due_date?: Date | null;
   priority: 'low' | 'medium' | 'high';
-  status?: 'pending' | 'in-progress' | 'completed';
   dependencies?: string[];
   project_id?: string;
   user_id: string;
@@ -20,7 +26,6 @@ export interface UpdateTaskInput {
   description?: string;
   due_date?: Date | null;
   priority?: 'low' | 'medium' | 'high';
-  status?: 'pending' | 'in-progress' | 'completed';
   dependencies?: string[];
   project_id?: string;
   user_id?: string;
@@ -69,6 +74,7 @@ export interface CreateCalendarEventInput {
   linked_task_id?: string;
   description?: string;
   user_id: string;
+  completed_at?: string | null;
 }
 
 export interface UpdateCalendarEventInput {
@@ -78,4 +84,5 @@ export interface UpdateCalendarEventInput {
   linked_task_id?: string;
   description?: string;
   user_id?: string;
+  completed_at?: string | null;
 }

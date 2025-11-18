@@ -3,9 +3,79 @@ import type {
   CreateCalendarEventInput,
   UpdateCalendarEventInput,
 } from '../types/database.js';
-import type { CalendarEvent } from '@shared/types.js';
+import type { CalendarEvent, CalendarEventTask, CalendarEventUnion } from '@shared/types.js';
+import { TaskService } from './taskService.js';
+
+const normalizeNullableDate = (
+  value: string | Date | null | undefined
+): string | null => {
+  if (value === undefined || value === null) {
+    return null;
+  }
+
+  if (typeof value === 'string') {
+    return value;
+  }
+
+  return value.toISOString();
+};
 
 export class CalendarEventService {
+  private taskService: TaskService;
+
+  constructor() {
+    this.taskService = new TaskService();
+  }
+
+  private calculateEventDurationMinutes(
+    startTime: string | Date,
+    endTime: string | Date
+  ): number {
+    const start = typeof startTime === 'string' ? new Date(startTime) : startTime;
+    const end = typeof endTime === 'string' ? new Date(endTime) : endTime;
+    const diffMs = end.getTime() - start.getTime();
+    return Math.max(0, Math.round(diffMs / (1000 * 60)));
+  }
+
+  private async updateTaskDurationFromEvent(
+    taskId: string,
+    eventDurationMinutes: number,
+    isCompleting: boolean
+  ): Promise<void> {
+    try {
+      const task = await this.taskService.getTaskById(taskId);
+      if (!task) {
+        console.warn(
+          `[CalendarEventService] Task ${taskId} not found, skipping duration update`
+        );
+        return;
+      }
+
+      const currentActual = task.actual_duration_minutes ?? 0;
+      const planned = task.planned_duration_minutes ?? 0;
+
+      let newActual: number;
+      if (isCompleting) {
+        newActual = Math.min(currentActual + eventDurationMinutes, planned);
+      } else {
+        newActual = Math.max(0, currentActual - eventDurationMinutes);
+      }
+
+      await this.taskService.updateTask(taskId, {
+        actual_duration_minutes: newActual,
+      });
+
+      console.log(
+        `[CalendarEventService] Updated task ${taskId} actual duration: ${currentActual} -> ${newActual} (${isCompleting ? '+' : '-'}${eventDurationMinutes}min)`
+      );
+    } catch (error) {
+      console.error(
+        `[CalendarEventService] Failed to update task duration:`,
+        error
+      );
+    }
+  }
+
   private async ensureNoOverlaps(
     userId: string,
     startTimeIso: string,
@@ -42,7 +112,7 @@ export class CalendarEventService {
   // Create a new calendar event
   async createCalendarEvent(
     input: CreateCalendarEventInput
-  ): Promise<CalendarEvent> {
+  ): Promise<CalendarEventUnion> {
     console.log('[CalendarEventService] createCalendarEvent called with input:', input);
     
     await this.ensureNoOverlaps(
@@ -55,9 +125,13 @@ export class CalendarEventService {
       title: input.title,
       start_time: input.start_time,
       end_time: input.end_time,
-      linked_task_id: input.linked_task_id,
+      linked_task_id: input.linked_task_id ?? null,
       description: input.description,
       user_id: input.user_id,
+      completed_at:
+        input.linked_task_id
+          ? normalizeNullableDate(input.completed_at)
+          : null,
     };
     
     console.log('[CalendarEventService] Inserting calendar event:', insertData);
@@ -80,11 +154,27 @@ export class CalendarEventService {
     }
 
     console.log('[CalendarEventService] Calendar event created successfully:', data);
+
+    if (input.linked_task_id && insertData.completed_at) {
+      const eventDurationMinutes = this.calculateEventDurationMinutes(
+        input.start_time,
+        input.end_time
+      );
+
+      if (eventDurationMinutes > 0) {
+        await this.updateTaskDurationFromEvent(
+          input.linked_task_id,
+          eventDurationMinutes,
+          true
+        );
+      }
+    }
+
     return data;
   }
 
   // Get all calendar events
-  async getAllCalendarEvents(): Promise<CalendarEvent[]> {
+  async getAllCalendarEvents(): Promise<CalendarEventUnion[]> {
     const { data, error } = await supabase
       .from('calendar_events')
       .select('*')
@@ -98,7 +188,7 @@ export class CalendarEventService {
   }
 
   // Get calendar event by ID
-  async getCalendarEventById(id: string): Promise<CalendarEvent | null> {
+  async getCalendarEventById(id: string): Promise<CalendarEventUnion | null> {
     const { data, error } = await supabase
       .from('calendar_events')
       .select('*')
@@ -119,7 +209,13 @@ export class CalendarEventService {
   async updateCalendarEvent(
     id: string,
     input: UpdateCalendarEventInput
-  ): Promise<CalendarEvent> {
+  ): Promise<CalendarEventUnion> {
+    console.log('[CalendarEventService] updateCalendarEvent called:', {
+      id,
+      input,
+      completed_at: input.completed_at,
+      completed_at_type: typeof input.completed_at,
+    });
     const existing = await this.getCalendarEventById(id);
     if (!existing) {
       throw new Error('Calendar event not found');
@@ -142,6 +238,7 @@ export class CalendarEventService {
       end_time?: string;
       linked_task_id?: string | null;
       description?: string;
+      completed_at?: string | null;
     } = {
       updated_at: new Date().toISOString(),
     };
@@ -155,6 +252,42 @@ export class CalendarEventService {
     if (input.description !== undefined)
       updateData.description = input.description;
 
+    const nextLinkedTaskId =
+      input.linked_task_id !== undefined
+        ? input.linked_task_id
+        : ((existing as unknown as { linked_task_id?: string | null })
+            .linked_task_id ?? null);
+
+    const existingCompletedAt = normalizeNullableDate(
+      (existing as unknown as { completed_at?: string | Date | null })
+        .completed_at
+    );
+
+    let completedAt: string | null;
+    if (!nextLinkedTaskId) {
+      // Not a task event: always set to null
+      completedAt = null;
+    } else if (input.completed_at !== undefined) {
+      // Explicitly provided: normalize it (could be null, string, or Date)
+      completedAt = normalizeNullableDate(input.completed_at);
+      console.log('[CalendarEventService] Setting completed_at:', {
+        input_completed_at: input.completed_at,
+        normalized: completedAt,
+      });
+    } else {
+      // Not provided: keep existing value
+      completedAt = existingCompletedAt;
+      console.log('[CalendarEventService] Keeping existing completed_at:', completedAt);
+    }
+
+    updateData.completed_at = completedAt;
+    console.log('[CalendarEventService] Final updateData.completed_at:', updateData.completed_at);
+
+    const wasCompleted = !!existingCompletedAt;
+    const willBeCompleted = !!completedAt;
+    const isCompleting = !wasCompleted && willBeCompleted;
+    const isUncompleting = wasCompleted && !willBeCompleted;
+
     const { data, error } = await supabase
       .from('calendar_events')
       .update(updateData)
@@ -166,11 +299,45 @@ export class CalendarEventService {
       throw new Error(`Failed to update calendar event: ${error.message}`);
     }
 
+    if (nextLinkedTaskId && (isCompleting || isUncompleting)) {
+      const eventStart = updateData.start_time ?? (existing.start_time as unknown as string);
+      const eventEnd = updateData.end_time ?? (existing.end_time as unknown as string);
+      const eventDurationMinutes = this.calculateEventDurationMinutes(
+        eventStart,
+        eventEnd
+      );
+
+      if (eventDurationMinutes > 0) {
+        await this.updateTaskDurationFromEvent(
+          nextLinkedTaskId,
+          eventDurationMinutes,
+          isCompleting
+        );
+      }
+    }
+
     return data;
   }
 
   // Delete calendar event
   async deleteCalendarEvent(id: string): Promise<boolean> {
+    const existing = await this.getCalendarEventById(id);
+    
+    if (existing?.linked_task_id && existing.completed_at) {
+      const eventDurationMinutes = this.calculateEventDurationMinutes(
+        existing.start_time,
+        existing.end_time
+      );
+
+      if (eventDurationMinutes > 0) {
+        await this.updateTaskDurationFromEvent(
+          existing.linked_task_id,
+          eventDurationMinutes,
+          false
+        );
+      }
+    }
+
     const { error } = await supabase
       .from('calendar_events')
       .delete()
@@ -187,7 +354,7 @@ export class CalendarEventService {
   async getCalendarEventsByDateRange(
     startDate: string,
     endDate: string
-  ): Promise<CalendarEvent[]> {
+  ): Promise<CalendarEventUnion[]> {
     console.log('[CalendarEventService] getCalendarEventsByDateRange called:', {
       startDate,
       endDate,
@@ -226,7 +393,7 @@ export class CalendarEventService {
   }
 
   // Get calendar events linked to a task
-  async getCalendarEventsByTaskId(taskId: string): Promise<CalendarEvent[]> {
+  async getCalendarEventsByTaskId(taskId: string): Promise<CalendarEventTask[]> {
     const { data, error } = await supabase
       .from('calendar_events')
       .select('*')

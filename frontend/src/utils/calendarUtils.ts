@@ -1,4 +1,4 @@
-import type { CalendarEvent } from '@/../../../shared/types';
+import type { CalendarEventUnion } from '@/../../../shared/types';
 
 /**
  * Get array of dates for the week containing the given date
@@ -42,7 +42,7 @@ export function formatTimeSlot(hour: number): string {
  * - column: 1-based column number (1-7 for Monday-Sunday)
  */
 export function getEventPosition(
-  event: CalendarEvent,
+  event: CalendarEventUnion,
   weekDates: Date[]
 ): { row: number; rowSpan: number; column: number } | null {
   const eventDate = new Date(event.start_time);

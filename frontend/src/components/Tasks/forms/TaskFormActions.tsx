@@ -1,3 +1,4 @@
+import { type ReactNode } from 'react';
 import { Button } from '@/components/ui/button';
 import { Plus, Loader2 } from 'lucide-react';
 
@@ -7,6 +8,8 @@ interface TaskFormActionsProps {
   submitText?: string;
   cancelText?: string;
   className?: string;
+  submittingText?: string;
+  submitIcon?: ReactNode;
 }
 
 export function TaskFormActions({
@@ -15,6 +18,8 @@ export function TaskFormActions({
   submitText = 'Create Task',
   cancelText = 'Cancel',
   className = '',
+  submittingText = 'Creating...',
+  submitIcon,
 }: TaskFormActionsProps) {
   return (
     <div className={`flex justify-end gap-3 ${className}`}>
@@ -30,11 +35,11 @@ export function TaskFormActions({
         {isSubmitting ? (
           <>
             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            Creating...
+            {submittingText}
           </>
         ) : (
           <>
-            <Plus className="mr-2 h-4 w-4" />
+            {submitIcon ?? <Plus className="mr-2 h-4 w-4" />}
             {submitText}
           </>
         )}

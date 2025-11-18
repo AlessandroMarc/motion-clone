@@ -50,7 +50,10 @@ export function ProjectLinkButton({
             variant="ghost"
             size="sm"
             className="h-auto font-normal px-3 py-2 text-muted-foreground hover:text-foreground border-0 rounded-none"
-            onClick={() => setIsLinkingProject(true)}
+            onClick={event => {
+              event.stopPropagation();
+              setIsLinkingProject(true);
+            }}
           >
             <Folder className="h-3 w-3 text-muted-foreground mr-2" />
             {label ?? 'Link to project'}
@@ -77,6 +80,7 @@ export function ProjectLinkButton({
                 variant="ghost"
                 size="sm"
                 className="h-auto px-2 py-2 text-blue-600 hover:text-blue-700 hover:bg-blue-50 border-0 rounded-none border-l"
+                onClick={event => event.stopPropagation()}
               >
                 <ExternalLink className="h-3 w-3" />
               </Button>

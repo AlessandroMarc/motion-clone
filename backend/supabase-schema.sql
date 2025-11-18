@@ -54,6 +54,7 @@ CREATE TABLE calendar_events (
     linked_project_id UUID REFERENCES projects(id) ON DELETE SET NULL,
     description TEXT,
     user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+    completed_at TIMESTAMP WITH TIME ZONE,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );

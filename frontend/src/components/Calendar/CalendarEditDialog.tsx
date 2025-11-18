@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 
 interface CalendarEditDialogProps {
   open: boolean;
@@ -17,6 +18,10 @@ interface CalendarEditDialogProps {
   setStartTime: (v: string) => void;
   endTime: string;
   setEndTime: (v: string) => void;
+  isTaskEvent?: boolean;
+  completed?: boolean;
+  completedAt?: Date | null;
+  onCompletedChange?: (completed: boolean) => void;
   onSave: () => void;
   onDelete: () => void;
 }
@@ -32,6 +37,10 @@ export function CalendarEditDialog({
   setStartTime,
   endTime,
   setEndTime,
+  isTaskEvent = false,
+  completed = false,
+  completedAt,
+  onCompletedChange,
   onSave,
   onDelete,
 }: CalendarEditDialogProps) {
@@ -81,6 +90,37 @@ export function CalendarEditDialog({
               rows={3}
             />
           </div>
+          {isTaskEvent && (
+            <div className="space-y-2">
+              <div className="flex items-center space-x-2">
+              <Checkbox
+                id="calendar-completed"
+                checked={completed}
+                onCheckedChange={(checked: boolean) =>
+                  onCompletedChange?.(checked === true)
+                }
+                />
+                <Label
+                  htmlFor="calendar-completed"
+                  className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+                >
+                  Task completata
+                </Label>
+              </div>
+              {completedAt && (
+                <p className="text-xs text-muted-foreground ml-6">
+                  Completata il:{' '}
+                  {completedAt.toLocaleString('it-IT', {
+                    day: '2-digit',
+                    month: '2-digit',
+                    year: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                  })}
+                </p>
+              )}
+            </div>
+          )}
         </div>
         <DialogFooter>
           <Button variant="destructive" onClick={onDelete}>

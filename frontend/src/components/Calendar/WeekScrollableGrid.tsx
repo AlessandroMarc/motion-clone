@@ -2,25 +2,26 @@
 
 import DayColumn from './DayColumn';
 import TimeColumn from './TimeColumn';
-import type { CalendarEvent } from '@/../../../shared/types';
+import type { CalendarEventUnion, Task } from '@/../../../shared/types';
 
 interface WeekScrollableGridProps {
   weekDates: Date[];
-  eventsByDay: { [key: string]: CalendarEvent[] };
+  eventsByDay: { [key: string]: CalendarEventUnion[] };
   onGridCellClick: (date: Date, hour: number, minute: number) => void;
   onEventMouseDown: (
     e: React.MouseEvent,
-    event: CalendarEvent,
+    event: CalendarEventUnion,
     eventDayIndex: number
   ) => void;
   draggingEventId: string | null;
-  dragPreview: CalendarEvent | null;
+  dragPreview: CalendarEventUnion | null;
   setDayRef: (dayIndex: number, el: HTMLDivElement | null) => void;
   gridRef: React.Ref<HTMLDivElement>;
   scrollSentinelRef: React.Ref<HTMLDivElement> | null;
   sentinelHour?: number;
   onExternalTaskDrop?: (task: { id: string; title: string; description?: string }, date: Date, hour: number, minute: number) => void;
   onExternalTaskDragOver?: (date: Date, hour: number, minute: number) => void;
+  tasksMap?: Map<string, Task>;
 }
 
 export function WeekScrollableGrid({
@@ -36,6 +37,7 @@ export function WeekScrollableGrid({
   sentinelHour = 13,
   onExternalTaskDrop,
   onExternalTaskDragOver,
+  tasksMap,
 }: WeekScrollableGridProps) {
   const timeSlots = Array.from({ length: 24 }, (_, i) => i);
 
@@ -98,6 +100,7 @@ export function WeekScrollableGrid({
                   onExternalTaskDrop(task, date, hour, minute);
                 } : undefined}
                 onExternalTaskDragOver={onExternalTaskDragOver}
+                tasksMap={tasksMap}
               />
             );
           })}

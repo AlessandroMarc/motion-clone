@@ -1,4 +1,5 @@
-import type { CalendarEvent } from '@/../../../shared/types';
+import type { CalendarEvent, CalendarEventTask, CalendarEventUnion } from '@/../../../shared/types';
+import { isCalendarEventTask } from '@/../../../shared/types';
 import type {
   CreateCalendarEventInput,
   UpdateCalendarEventInput,
@@ -83,8 +84,8 @@ class CalendarService {
     }
   }
 
-  async getAllCalendarEvents(): Promise<CalendarEvent[]> {
-    const response = await this.request<CalendarEvent[]>(
+  async getAllCalendarEvents(): Promise<CalendarEventUnion[]> {
+    const response = await this.request<CalendarEventUnion[]>(
       '/api/calendar-events'
     );
 
@@ -99,19 +100,22 @@ class CalendarService {
       end_time: new Date(event.end_time),
       created_at: new Date(event.created_at),
       updated_at: new Date(event.updated_at),
-    }));
+      ...(isCalendarEventTask(event) && {
+        completed_at: event.completed_at ? new Date(event.completed_at) : null,
+      }),
+    })) as CalendarEventUnion[];
   }
 
   async getCalendarEventsByDateRange(
     startDate: string,
     endDate: string
-  ): Promise<CalendarEvent[]> {
+  ): Promise<CalendarEventUnion[]> {
     console.log('[CalendarService] getCalendarEventsByDateRange called:', {
       startDate,
       endDate,
     });
 
-    const response = await this.request<CalendarEvent[]>(
+    const response = await this.request<CalendarEventUnion[]>(
       `/api/calendar-events?start_date=${startDate}&end_date=${endDate}`
     );
 
@@ -122,7 +126,7 @@ class CalendarService {
       events: response.data?.map(e => ({
         id: e.id,
         title: e.title,
-        linked_task_id: e.linked_task_id,
+        linked_task_id: isCalendarEventTask(e) ? e.linked_task_id : undefined,
         start_time: e.start_time,
       })),
     });
@@ -142,14 +146,17 @@ class CalendarService {
       end_time: new Date(event.end_time),
       created_at: new Date(event.created_at),
       updated_at: new Date(event.updated_at),
-    }));
+      ...(isCalendarEventTask(event) && {
+        completed_at: event.completed_at ? new Date(event.completed_at) : null,
+      }),
+    })) as CalendarEventUnion[];
 
     console.log('[CalendarService] Transformed calendar events:', {
       count: transformed.length,
       events: transformed.map(e => ({
         id: e.id,
         title: e.title,
-        linked_task_id: e.linked_task_id,
+        linked_task_id: isCalendarEventTask(e) ? e.linked_task_id : undefined,
         start_time: e.start_time instanceof Date ? e.start_time.toISOString() : e.start_time,
       })),
     });
@@ -157,8 +164,36 @@ class CalendarService {
     return transformed;
   }
 
-  async getCalendarEventById(id: string): Promise<CalendarEvent> {
-    const response = await this.request<CalendarEvent>(
+  async getCalendarEventsByTaskId(taskId: string): Promise<CalendarEventTask[]> {
+    console.log('[CalendarService] getCalendarEventsByTaskId called:', {
+      taskId,
+    });
+
+    const response = await this.request<CalendarEventTask[]>(
+      `/api/calendar-events?task_id=${taskId}`
+    );
+
+    if (!response.success || !response.data) {
+      console.error('[CalendarService] Failed to fetch task-linked events:', {
+        taskId,
+        error: response.error,
+        message: response.message,
+      });
+      throw new Error(response.error || 'Failed to fetch linked calendar events');
+    }
+
+    return response.data.map(event => ({
+      ...event,
+      start_time: new Date(event.start_time),
+      end_time: new Date(event.end_time),
+      created_at: new Date(event.created_at),
+      updated_at: new Date(event.updated_at),
+      completed_at: event.completed_at ? new Date(event.completed_at) : null,
+    })) as CalendarEventTask[];
+  }
+
+  async getCalendarEventById(id: string): Promise<CalendarEventUnion> {
+    const response = await this.request<CalendarEventUnion>(
       `/api/calendar-events/${id}`
     );
 
@@ -166,23 +201,43 @@ class CalendarService {
       throw new Error(response.error || 'Failed to fetch calendar event');
     }
 
-    return {
+    const result = {
       ...response.data,
       start_time: new Date(response.data.start_time),
       end_time: new Date(response.data.end_time),
       created_at: new Date(response.data.created_at),
       updated_at: new Date(response.data.updated_at),
     };
+
+    if (isCalendarEventTask(response.data)) {
+      return {
+        ...result,
+        linked_task_id: response.data.linked_task_id,
+        completed_at: response.data.completed_at
+          ? new Date(response.data.completed_at)
+          : null,
+      } as CalendarEventTask;
+    }
+
+    return result as CalendarEvent;
   }
 
   async createCalendarEvent(
     input: CreateCalendarEventInput
-  ): Promise<CalendarEvent> {
+  ): Promise<CalendarEventUnion> {
     console.log('[CalendarService] createCalendarEvent called with input:', input);
 
-    const response = await this.request<CalendarEvent>('/api/calendar-events', {
+    const payload = {
+      ...input,
+      completed_at:
+        input.completed_at && typeof input.completed_at === 'object' && 'toISOString' in input.completed_at
+          ? (input.completed_at as Date).toISOString()
+          : input.completed_at ?? null,
+    };
+
+    const response = await this.request<CalendarEventUnion>('/api/calendar-events', {
       method: 'POST',
-      body: JSON.stringify(input),
+      body: JSON.stringify(payload),
     });
 
     console.log('[CalendarService] createCalendarEvent response:', {
@@ -212,19 +267,41 @@ class CalendarService {
       updated_at: new Date(response.data.updated_at),
     };
 
+    if (isCalendarEventTask(response.data)) {
+      const taskResult = {
+        ...result,
+        linked_task_id: response.data.linked_task_id,
+        completed_at: response.data.completed_at
+          ? new Date(response.data.completed_at)
+          : null,
+      } as CalendarEventTask;
+      console.log('[CalendarService] Created calendar event task (transformed):', taskResult);
+      return taskResult;
+    }
+
     console.log('[CalendarService] Created calendar event (transformed):', result);
-    return result;
+    return result as CalendarEvent;
   }
 
   async updateCalendarEvent(
     id: string,
     input: UpdateCalendarEventInput
-  ): Promise<CalendarEvent> {
-    const response = await this.request<CalendarEvent>(
+  ): Promise<CalendarEventUnion> {
+    const payload = {
+      ...input,
+      completed_at:
+        input.completed_at && typeof input.completed_at === 'object' && 'toISOString' in input.completed_at
+          ? (input.completed_at as Date).toISOString()
+          : input.completed_at !== undefined
+            ? input.completed_at
+            : undefined,
+    };
+
+    const response = await this.request<CalendarEventUnion>(
       `/api/calendar-events/${id}`,
       {
         method: 'PUT',
-        body: JSON.stringify(input),
+        body: JSON.stringify(payload),
       }
     );
 
@@ -239,13 +316,25 @@ class CalendarService {
       throw new Error(response.error || response.message || 'Failed to update calendar event');
     }
 
-    return {
+    const result = {
       ...response.data,
       start_time: new Date(response.data.start_time),
       end_time: new Date(response.data.end_time),
       created_at: new Date(response.data.created_at),
       updated_at: new Date(response.data.updated_at),
     };
+
+    if (isCalendarEventTask(response.data)) {
+      return {
+        ...result,
+        linked_task_id: response.data.linked_task_id,
+        completed_at: response.data.completed_at
+          ? new Date(response.data.completed_at)
+          : null,
+      } as CalendarEventTask;
+    }
+
+    return result as CalendarEvent;
   }
 
   async deleteCalendarEvent(id: string): Promise<boolean> {
@@ -258,6 +347,46 @@ class CalendarService {
     }
 
     return true;
+  }
+
+  /**
+   * Batch create multiple calendar events
+   * Returns array of results with success/failure status for each event
+   */
+  async createCalendarEventsBatch(
+    events: Array<{
+      title: string;
+      start_time: string;
+      end_time: string;
+      description?: string;
+      linked_task_id?: string;
+      user_id: string;
+      completed_at?: string | null;
+    }>
+  ): Promise<Array<{ success: boolean; event?: CalendarEventUnion; error?: string; index: number }>> {
+    const results = await Promise.allSettled(
+      events.map((eventData, index) =>
+        this.createCalendarEvent(eventData).then(
+          event => ({ success: true, event, index }),
+          error => ({
+            success: false,
+            error: error instanceof Error ? error.message : 'Unknown error',
+            index,
+          })
+        )
+      )
+    );
+
+    return results.map((result, index) => {
+      if (result.status === 'fulfilled') {
+        return result.value;
+      }
+      return {
+        success: false,
+        error: result.reason?.message || 'Unknown error',
+        index,
+      };
+    });
   }
 }
 

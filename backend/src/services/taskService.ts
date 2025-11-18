@@ -3,8 +3,43 @@ import type { CreateTaskInput, UpdateTaskInput } from '../types/database.js';
 import type { Task } from '@shared/types.js';
 
 export class TaskService {
+  private determineStatus(
+    plannedDuration: number | null | undefined,
+    actualDuration: number | null | undefined
+  ): 'pending' | 'in-progress' | 'completed' {
+    const planned = plannedDuration ?? 0;
+    const actual = actualDuration ?? 0;
+
+    const normalizedPlanned = planned < 0 ? 0 : planned;
+    const normalizedActual = actual < 0 ? 0 : actual;
+
+    if (normalizedActual <= 0) {
+      return 'pending';
+    }
+
+    if (normalizedPlanned <= 0) {
+      return 'completed';
+    }
+
+    if (normalizedActual >= normalizedPlanned) {
+      return 'completed';
+    }
+
+    return 'in-progress';
+  }
+
   // Create a new task
   async createTask(input: CreateTaskInput): Promise<Task> {
+    const rawPlanned = input.planned_duration_minutes;
+    const normalizedPlanned = rawPlanned < 0 ? 0 : rawPlanned;
+    const rawActual = input.actual_duration_minutes ?? 0;
+    const normalizedActual = Math.min(
+      Math.max(rawActual, 0),
+      normalizedPlanned
+    );
+
+    const status = this.determineStatus(normalizedPlanned, normalizedActual);
+
     const { data, error } = await supabase
       .from('tasks')
       .insert([
@@ -13,11 +48,11 @@ export class TaskService {
           description: input.description,
           due_date: input.due_date?.toISOString(),
           priority: input.priority,
-          status: input.status || 'pending',
+          status,
           dependencies: input.dependencies || [],
           project_id: input.project_id,
-          planned_duration_minutes: input.planned_duration_minutes,
-          actual_duration_minutes: input.actual_duration_minutes ?? 0,
+          planned_duration_minutes: normalizedPlanned,
+          actual_duration_minutes: normalizedActual,
         },
       ])
       .select()
@@ -64,6 +99,12 @@ export class TaskService {
 
   // Update task
   async updateTask(id: string, input: UpdateTaskInput): Promise<Task> {
+    const existingTask = await this.getTaskById(id);
+
+    if (!existingTask) {
+      throw new Error('Task not found');
+    }
+
     const updateData: {
       updated_at: string;
       title?: string;
@@ -85,15 +126,33 @@ export class TaskService {
     if (input.due_date !== undefined)
       updateData.due_date = input.due_date?.toISOString() ?? null;
     if (input.priority !== undefined) updateData.priority = input.priority;
-    if (input.status !== undefined) updateData.status = input.status;
     if (input.dependencies !== undefined)
       updateData.dependencies = input.dependencies;
     if (input.project_id !== undefined)
       updateData.project_id = input.project_id;
-    if (input.planned_duration_minutes !== undefined)
-      updateData.planned_duration_minutes = input.planned_duration_minutes;
-    if (input.actual_duration_minutes !== undefined)
-      updateData.actual_duration_minutes = input.actual_duration_minutes;
+
+    const rawPlanned =
+      input.planned_duration_minutes ?? existingTask.planned_duration_minutes;
+    const normalizedPlanned = rawPlanned < 0 ? 0 : rawPlanned;
+
+    if (input.planned_duration_minutes !== undefined) {
+      updateData.planned_duration_minutes = normalizedPlanned;
+    }
+
+    const rawActual =
+      input.actual_duration_minutes ??
+      existingTask.actual_duration_minutes ??
+      0;
+    const normalizedActual = Math.min(
+      Math.max(rawActual, 0),
+      normalizedPlanned
+    );
+
+    updateData.actual_duration_minutes = normalizedActual;
+    updateData.status = this.determineStatus(
+      normalizedPlanned,
+      normalizedActual
+    );
 
     const { data, error } = await supabase
       .from('tasks')

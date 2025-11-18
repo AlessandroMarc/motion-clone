@@ -18,7 +18,6 @@ export interface UpdateTaskInput {
   description?: string;
   dueDate?: Date | null;
   priority?: 'low' | 'medium' | 'high';
-  status?: 'pending' | 'in-progress' | 'completed';
   project_id?: string | null;
   plannedDurationMinutes?: number;
   actualDurationMinutes?: number;
@@ -82,7 +81,6 @@ class TaskService {
       description: input.description,
       due_date: input.dueDate?.toISOString(),
       priority: input.priority,
-      status: 'pending',
       dependencies: [],
       project_id: input.project_id,
       planned_duration_minutes: input.plannedDurationMinutes,

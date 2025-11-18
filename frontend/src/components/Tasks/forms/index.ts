@@ -9,6 +9,7 @@ export { TaskDurationFields } from './TaskDurationFields';
 // Complete form components
 export { TaskCreateDialogForm } from './TaskCreateDialogForm';
 export { TaskCreateCardForm } from './TaskCreateCardForm';
+export { TaskEditDialogForm } from './TaskEditDialogForm';
 
 // Re-export types and hooks
 export {

@@ -1,21 +1,21 @@
 'use client';
 
-import { CalendarEvent } from '@/../../../shared/types';
+import { CalendarEventUnion } from '@/../../../shared/types';
 import { CalendarEventCard } from './CalendarEventCard';
 import { isSameDay } from '@/utils/calendarUtils';
 
 interface DayColumnProps {
   date: Date;
   dayIndex: number;
-  dayEvents: CalendarEvent[];
+  dayEvents: CalendarEventUnion[];
   onGridCellClick: (date: Date, hour: number, minute: number) => void;
   onEventMouseDown: (
     e: React.MouseEvent,
-    event: CalendarEvent,
+    event: CalendarEventUnion,
     eventDayIndex: number
   ) => void;
   draggingEventId: string | null;
-  dragPreview: CalendarEvent | null;
+  dragPreview: CalendarEventUnion | null;
   setDayRef: (el: HTMLDivElement | null) => void;
   scrollSentinelRef?: React.Ref<HTMLDivElement>;
   sentinelHour?: number;
@@ -31,6 +31,7 @@ interface DayColumnProps {
     minute: number,
     taskData?: { id: string; title: string; description?: string }
   ) => void;
+  tasksMap?: Map<string, import('@/../../../shared/types').Task>;
 }
 
 const HOUR_PX = 64; // 64px per hour to match time gutter (h-16)
@@ -49,6 +50,7 @@ export function DayColumn({
   sentinelHour = 13,
   onExternalTaskDrop,
   onExternalTaskDragOver,
+  tasksMap,
 }: DayColumnProps) {
   const hours = Array.from({ length: 24 }, (_, i) => i);
 
@@ -62,7 +64,7 @@ export function DayColumn({
   const getDurationMinutes = (start: Date, end: Date) =>
     Math.max(30, (end.getTime() - start.getTime()) / 60000);
 
-  const toIntervals = (events: CalendarEvent[]): EventInterval[] =>
+  const toIntervals = (events: CalendarEventUnion[]): EventInterval[] =>
     events.map(ev => {
       const startDate = new Date(ev.start_time);
       const endDate = new Date(ev.end_time);
@@ -73,7 +75,7 @@ export function DayColumn({
       };
     });
 
-  const computeOverlapLayout = (events: CalendarEvent[]): LayoutMap => {
+  const computeOverlapLayout = (events: CalendarEventUnion[]): LayoutMap => {
     const intervals = toIntervals(events).sort(
       (a, b) => a.startMin - b.startMin || a.endMin - b.endMin
     );
@@ -106,7 +108,7 @@ export function DayColumn({
   };
 
   const renderEventBox = (
-    event: CalendarEvent,
+    event: CalendarEventUnion,
     isGhost: boolean,
     layout: LayoutInfo | undefined
   ) => {
@@ -141,7 +143,14 @@ export function DayColumn({
         }}
         onMouseDown={e => onEventMouseDown(e, event, dayIndex)}
       >
-        <CalendarEventCard event={event} />
+        <CalendarEventCard
+          event={event}
+          task={
+            'linked_task_id' in event && event.linked_task_id
+              ? tasksMap?.get(event.linked_task_id)
+              : undefined
+          }
+        />
       </div>
     );
   };
@@ -150,9 +159,9 @@ export function DayColumn({
     dragPreview && isSameDay(dragPreview.start_time as Date, date);
 
   // Build layout map including drag preview if it belongs here
-  const eventsForLayout: CalendarEvent[] =
+  const eventsForLayout: CalendarEventUnion[] =
     previewBelongsHere && dragPreview
-      ? [...dayEvents, dragPreview as CalendarEvent]
+      ? [...dayEvents, dragPreview]
       : dayEvents;
   const layoutMap = computeOverlapLayout(eventsForLayout);
 
@@ -430,9 +439,9 @@ export function DayColumn({
       {/* Render ghost/preview in the column where it currently is */}
       {previewBelongsHere && dragPreview
         ? renderEventBox(
-            dragPreview as CalendarEvent,
+            dragPreview,
             true,
-            layoutMap[(dragPreview as CalendarEvent).id]
+            layoutMap[dragPreview.id]
           )
         : null}
     </div>

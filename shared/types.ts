@@ -45,11 +45,41 @@ interface CalendarEvent {
   title: string;
   start_time: Date;
   end_time: Date;
-  linked_task_id?: string;
   description?: string;
   user_id: string; // owner of the calendar event
   created_at: Date;
   updated_at: Date;
+  // Explicitly exclude task-related fields
+  linked_task_id?: never;
+  completed_at?: never;
 }
 
-export type { Task, Project, Milestone, CalendarEvent };
+interface CalendarEventTask
+  extends Omit<CalendarEvent, 'linked_task_id' | 'completed_at'> {
+  linked_task_id: string; // required for task events
+  completed_at: Date | null;
+}
+
+// Union type for when we don't know which type it is
+type CalendarEventUnion = CalendarEvent | CalendarEventTask;
+
+// Type guard to check if an event is a task event
+function isCalendarEventTask(
+  event: CalendarEventUnion
+): event is CalendarEventTask {
+  return (
+    'linked_task_id' in event &&
+    event.linked_task_id !== undefined &&
+    event.linked_task_id !== null
+  );
+}
+
+export type {
+  Task,
+  Project,
+  Milestone,
+  CalendarEvent,
+  CalendarEventTask,
+  CalendarEventUnion,
+};
+export { isCalendarEventTask };
