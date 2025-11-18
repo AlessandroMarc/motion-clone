@@ -1,11 +1,17 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { toast } from 'sonner';
 import { Card, CardContent } from '@/components/ui/card';
 import { Folder } from 'lucide-react';
-import type { Project } from '@/../../../shared/types';
+import type {
+  Project,
+  Task,
+  CalendarEventUnion,
+} from '@/../../../shared/types';
 import { projectService } from '@/services/projectService';
+import { taskService } from '@/services/taskService';
+import { calendarService } from '@/services/calendarService';
 import {
   StatusGroupedList,
   EmptyStateCard,
@@ -14,6 +20,7 @@ import {
 } from '@/components/shared';
 import { PROJECT_STATUS_CONFIG } from '@/utils/statusUtils';
 import { ProjectItem } from './ProjectItem';
+import { checkProjectSchedulingStatus } from '@/utils/projectSchedulingStatus';
 
 interface ProjectListProps {
   refreshTrigger?: number;
@@ -25,6 +32,10 @@ export function ProjectList({
   onProjectUpdate,
 }: ProjectListProps) {
   const [projects, setProjects] = useState<Project[]>([]);
+  const [tasks, setTasks] = useState<Task[]>([]);
+  const [calendarEvents, setCalendarEvents] = useState<CalendarEventUnion[]>(
+    []
+  );
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -32,8 +43,14 @@ export function ProjectList({
     try {
       setIsLoading(true);
       setError(null);
-      const fetchedProjects = await projectService.getAllProjects();
+      const [fetchedProjects, fetchedTasks, fetchedEvents] = await Promise.all([
+        projectService.getAllProjects(),
+        taskService.getAllTasks(),
+        calendarService.getAllCalendarEvents(),
+      ]);
       setProjects(fetchedProjects);
+      setTasks(fetchedTasks);
+      setCalendarEvents(fetchedEvents);
     } catch (err) {
       const errorMessage =
         err instanceof Error ? err.message : 'Failed to fetch projects';
@@ -47,6 +64,22 @@ export function ProjectList({
   useEffect(() => {
     fetchProjects();
   }, [refreshTrigger]);
+
+  // Calculate scheduling status for each project (must be before conditional returns)
+  const projectSchedulingStatuses = useMemo(() => {
+    const statuses = new Map<
+      string,
+      ReturnType<typeof checkProjectSchedulingStatus>
+    >();
+
+    projects.forEach(project => {
+      const projectTasks = tasks.filter(task => task.project_id === project.id);
+      const status = checkProjectSchedulingStatus(projectTasks, calendarEvents);
+      statuses.set(project.id, status);
+    });
+
+    return statuses;
+  }, [projects, tasks, calendarEvents]);
 
   const handleStatusToggle = async (
     projectId: string,
@@ -115,14 +148,18 @@ export function ProjectList({
       items={projects}
       statusConfig={PROJECT_STATUS_CONFIG}
       getItemStatus={project => project.status}
-      renderItem={project => (
-        <ProjectItem
-          key={project.id}
-          project={project}
-          onStatusToggle={handleStatusToggle}
-          onDelete={handleDeleteProject}
-        />
-      )}
+      renderItem={project => {
+        const schedulingStatus = projectSchedulingStatuses.get(project.id);
+        return (
+          <ProjectItem
+            key={project.id}
+            project={project}
+            schedulingStatus={schedulingStatus}
+            onStatusToggle={handleStatusToggle}
+            onDelete={handleDeleteProject}
+          />
+        );
+      }}
       renderEmptyState={statusConfig => (
         <EmptyStateCard
           key={statusConfig.key}

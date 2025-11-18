@@ -1,22 +1,99 @@
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Calendar, AlertCircle } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { Calendar, AlertCircle, CheckCircle2, Clock, AlertTriangle } from 'lucide-react';
 import { formatDate, isOverdue } from '@/utils/dateUtils';
 import { StatusIcon } from '@/components/shared';
 import Link from 'next/link';
 import type { Project } from '@/../../../shared/types';
+import type { ProjectSchedulingStatus } from '@/utils/projectSchedulingStatus';
 
 interface ProjectItemProps {
   project: Project;
+  schedulingStatus?: ProjectSchedulingStatus;
   onStatusToggle: (projectId: string, currentStatus: string) => void;
   onDelete: (projectId: string) => void;
 }
 
 export function ProjectItem({
   project,
+  schedulingStatus,
   onStatusToggle,
   onDelete,
 }: ProjectItemProps) {
+  const renderSchedulingIndicator = () => {
+    if (!schedulingStatus || project.status === 'completed') {
+      return null;
+    }
+
+    // If no incomplete tasks, nothing to show
+    if (schedulingStatus.incompleteTasksCount === 0) {
+      return null;
+    }
+
+    // All tasks scheduled and no violations
+    if (schedulingStatus.allTasksScheduled) {
+      return (
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+                <CheckCircle2 className="h-3 w-3 mr-1" />
+                On track
+              </Badge>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Tutte le task sono schedulate entro le deadline</p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+      );
+    }
+
+    // Has deadline violations
+    if (schedulingStatus.hasDeadlineViolations) {
+      return (
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Badge variant="outline" className="bg-red-50 text-red-700 border-red-200">
+                <AlertTriangle className="h-3 w-3 mr-1" />
+                At risk
+              </Badge>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Alcune task sono schedulate dopo la deadline</p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+      );
+    }
+
+    // Some tasks not scheduled
+    if (schedulingStatus.scheduledTasksCount < schedulingStatus.incompleteTasksCount) {
+      return (
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Badge variant="outline" className="bg-yellow-50 text-yellow-700 border-yellow-200">
+                <Clock className="h-3 w-3 mr-1" />
+                {schedulingStatus.scheduledTasksCount}/{schedulingStatus.incompleteTasksCount} scheduled
+              </Badge>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>
+                {schedulingStatus.incompleteTasksCount - schedulingStatus.scheduledTasksCount} task non ancora schedulate
+              </p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+      );
+    }
+
+    return null;
+  };
+
   return (
     <Card className="hover:shadow-sm transition-shadow">
       <CardContent className="p-4">
@@ -49,6 +126,8 @@ export function ProjectItem({
           </div>
 
           <div className="flex items-center gap-2 flex-shrink-0">
+            {renderSchedulingIndicator()}
+
             <div className="flex items-center gap-1 text-xs text-muted-foreground">
               <span className="capitalize">
                 {project.status.replace('-', ' ')}

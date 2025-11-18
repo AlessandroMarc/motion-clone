@@ -1,4 +1,4 @@
-import { Task, CalendarEventTask } from '@/../../../shared/types';
+import { Task, CalendarEventTask } from '@shared/types';
 import {
   calculateRequiredEvents,
   distributeEvents,
