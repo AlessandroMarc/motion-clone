@@ -1,5 +1,8 @@
-import type { Task, CalendarEventTask, CalendarEventUnion } from '@/../../../shared/types';
-import { isCalendarEventTask } from '@/../../../shared/types';
+import type {
+  Task,
+  CalendarEventTask,
+  CalendarEventUnion,
+} from '@/../../../shared/types';
 
 export interface TaskSchedulingConfig {
   eventDurationMinutes: number;
@@ -19,6 +22,7 @@ export const DEFAULT_CONFIG: TaskSchedulingConfig = {
 };
 
 export interface ScheduledEvent {
+  task_id: string;
   start_time: Date;
   end_time: Date;
 }
@@ -40,10 +44,15 @@ export function calculateRequiredEvents(
   }, 0);
 
   // Calculate remaining duration needed
-  const remainingDuration = Math.max(0, task.planned_duration_minutes - existingDuration);
+  const remainingDuration = Math.max(
+    0,
+    task.planned_duration_minutes - existingDuration
+  );
 
   // Calculate number of events needed
-  const eventsNeeded = Math.ceil(remainingDuration / config.eventDurationMinutes);
+  const eventsNeeded = Math.ceil(
+    remainingDuration / config.eventDurationMinutes
+  );
 
   return eventsNeeded;
 }
@@ -80,80 +89,13 @@ function isSlotOccupied(
 }
 
 /**
- * Get available time slots for a given day within working hours, excluding occupied slots
- */
-function getAvailableTimeSlots(
-  date: Date,
-  config: TaskSchedulingConfig,
-  existingEvents: CalendarEventUnion[] = []
-): ScheduledEvent[] {
-  const slots: ScheduledEvent[] = [];
-  const day = new Date(date);
-  day.setHours(config.workingHoursStart, 0, 0, 0);
-
-  const endOfDay = new Date(date);
-  endOfDay.setHours(config.workingHoursEnd, 0, 0, 0);
-
-  while (day < endOfDay) {
-    const slotEnd = new Date(day);
-    slotEnd.setMinutes(slotEnd.getMinutes() + config.eventDurationMinutes);
-
-    if (slotEnd <= endOfDay) {
-      const slot: ScheduledEvent = {
-        start_time: new Date(day),
-        end_time: new Date(slotEnd),
-      };
-
-      // Only add slot if it doesn't overlap with existing events
-      if (!isSlotOccupied(slot, existingEvents)) {
-        slots.push(slot);
-      }
-    }
-
-    day.setMinutes(day.getMinutes() + config.eventDurationMinutes);
-  }
-
-  return slots;
-}
-
-/**
- * Get all available days from start date to end date
- */
-function getAvailableDays(
-  startDate: Date,
-  endDate: Date,
-  config: TaskSchedulingConfig
-): Date[] {
-  const days: Date[] = [];
-  const current = new Date(startDate);
-  current.setHours(0, 0, 0, 0);
-
-  const end = new Date(endDate);
-  end.setHours(23, 59, 59, 999);
-
-  while (current <= end) {
-    const dayOfWeek = current.getDay();
-    // Skip weekends if configured
-    if (config.skipWeekends && (dayOfWeek === 0 || dayOfWeek === 6)) {
-      current.setDate(current.getDate() + 1);
-      continue;
-    }
-
-    days.push(new Date(current));
-    current.setDate(current.getDate() + 1);
-  }
-
-  return days;
-}
-
-/**
  * Round time to next 15-minute interval
  */
 function roundToNext15Minutes(date: Date): Date {
   const rounded = new Date(date);
   const minutes = rounded.getMinutes();
   const remainder = minutes % 15;
-  
+
   if (remainder === 0) {
     // Already on a 15-minute boundary, add 15 minutes
     rounded.setMinutes(minutes + 15);
@@ -161,7 +103,7 @@ function roundToNext15Minutes(date: Date): Date {
     // Round up to next 15-minute boundary
     rounded.setMinutes(minutes + (15 - remainder));
   }
-  
+
   rounded.setSeconds(0);
   rounded.setMilliseconds(0);
   return rounded;
@@ -174,10 +116,10 @@ function roundToNext15Minutes(date: Date): Date {
 function getNextAvailableSlot(
   startFrom: Date,
   config: TaskSchedulingConfig,
-  allExistingEvents: CalendarEventUnion[],
-  gapMinutes: number = 5
+  taskId: string,
+  allExistingEvents: CalendarEventUnion[]
 ): ScheduledEvent | null {
-  let currentTime = new Date(startFrom);
+  const currentTime = new Date(startFrom);
   const endOfDay = new Date(currentTime);
   endOfDay.setHours(config.workingHoursEnd, 0, 0, 0);
 
@@ -202,6 +144,7 @@ function getNextAvailableSlot(
     }
 
     const slot: ScheduledEvent = {
+      task_id: taskId,
       start_time: new Date(currentTime),
       end_time: new Date(slotEnd),
     };
@@ -213,7 +156,9 @@ function getNextAvailableSlot(
 
     // Move to next slot position (try next slot start time)
     // We increment by event duration to check if the slot after this one is free
-    currentTime.setMinutes(currentTime.getMinutes() + config.eventDurationMinutes);
+    currentTime.setMinutes(
+      currentTime.getMinutes() + config.eventDurationMinutes
+    );
   }
 
   return null;
@@ -235,7 +180,7 @@ export function distributeEvents(
   }
 
   // Start from provided time or round current time to next 15 minutes
-  let currentTime = startFrom 
+  let currentTime = startFrom
     ? new Date(startFrom)
     : roundToNext15Minutes(new Date());
 
@@ -249,7 +194,9 @@ export function distributeEvents(
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     endDate = new Date(today);
-    endDate.setDate(endDate.getDate() + (config.defaultDaysWithoutDeadline || 14));
+    endDate.setDate(
+      endDate.getDate() + (config.defaultDaysWithoutDeadline || 14)
+    );
     endDate.setHours(23, 59, 59, 999);
   }
 
@@ -268,7 +215,12 @@ export function distributeEvents(
 
   for (let i = 0; i < requiredEvents; i++) {
     // Get next available slot starting from current time
-    let slot = getNextAvailableSlot(currentTime, config, scheduledEvents, gapMinutes);
+    let slot = getNextAvailableSlot(
+      currentTime,
+      config,
+      task.id,
+      scheduledEvents
+    );
 
     // If no slot available today, move to next day
     if (!slot) {
@@ -285,7 +237,12 @@ export function distributeEvents(
         break;
       }
 
-      slot = getNextAvailableSlot(currentTime, config, scheduledEvents, gapMinutes);
+      slot = getNextAvailableSlot(
+        currentTime,
+        config,
+        task.id,
+        scheduledEvents
+      );
       if (!slot) {
         // Still no slot available, skip this event
         break;
@@ -376,10 +333,19 @@ export function prepareTaskEvents(
   events: ScheduledEvent[];
   violations: ScheduledEvent[];
 } {
-  const requiredEvents = calculateRequiredEvents(task, existingTaskEvents, config);
-  const events = distributeEvents(task, requiredEvents, config, allExistingEvents, startFrom);
+  const requiredEvents = calculateRequiredEvents(
+    task,
+    existingTaskEvents,
+    config
+  );
+  const events = distributeEvents(
+    task,
+    requiredEvents,
+    config,
+    allExistingEvents,
+    startFrom
+  );
   const violations = checkDeadlineViolations(events, task);
 
   return { events, violations };
 }
-

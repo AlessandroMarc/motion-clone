@@ -25,6 +25,7 @@ export const taskSchema = z.object({
   actual_duration_minutes: z
     .number()
     .min(0, 'Actual duration cannot be negative'),
+  blockedBy: z.array(z.string()).optional(),
 }).superRefine((data, ctx) => {
   if (data.actual_duration_minutes > data.planned_duration_minutes) {
     ctx.addIssue({
@@ -59,6 +60,7 @@ export function useTaskForm(onTaskCreate: TaskCreateFormProps['onTaskCreate']) {
       project_id: null,
       planned_duration_minutes: 60,
       actual_duration_minutes: 0,
+      blockedBy: [],
     },
   });
 

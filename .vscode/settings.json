@@ -2,6 +2,21 @@
   "jest.autoRun": "off",
   "jest.rootPath": "frontend",
   "jest.jestCommandLine": "npm test --",
-  "jest.workingDirectory": "${workspaceFolder}/frontend"
+  "jest.workingDirectory": "${workspaceFolder}/frontend",
+  "eslint.enable": true,
+  "eslint.validate": [
+    "javascript",
+    "javascriptreact",
+    "typescript",
+    "typescriptreact"
+  ],
+  "eslint.workingDirectories": [
+    ".",
+    "frontend",
+    "backend"
+  ],
+  "editor.codeActionsOnSave": {
+    "source.fixAll.eslint": "explicit"
+  }
 }
 

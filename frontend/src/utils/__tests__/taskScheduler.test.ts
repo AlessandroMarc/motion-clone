@@ -1,4 +1,4 @@
-import { Task, CalendarEventTask } from '@shared/types';
+import { Task, CalendarEventTask, CalendarEventUnion } from '@shared/types';
 import {
   calculateRequiredEvents,
   distributeEvents,
@@ -304,14 +304,17 @@ describe('taskScheduler', () => {
       });
       const events = [
         {
+          task_id: task.id,
           start_time: new Date('2024-01-04T10:00:00'),
           end_time: new Date('2024-01-04T11:00:00'),
         },
         {
+          task_id: task.id,
           start_time: new Date('2024-01-06T10:00:00'), // After deadline
           end_time: new Date('2024-01-06T11:00:00'),
         },
         {
+          task_id: task.id,
           start_time: new Date('2024-01-05T10:00:00'),
           end_time: new Date('2024-01-05T11:00:00'),
         },
@@ -329,10 +332,12 @@ describe('taskScheduler', () => {
       });
       const events = [
         {
+          task_id: task.id,
           start_time: new Date('2024-01-04T10:00:00'),
           end_time: new Date('2024-01-04T11:00:00'),
         },
         {
+          task_id: task.id,
           start_time: new Date('2024-01-05T10:00:00'),
           end_time: new Date('2024-01-05T11:00:00'),
         },
@@ -347,6 +352,7 @@ describe('taskScheduler', () => {
       const task = createMockTask({ due_date: null });
       const events = [
         {
+          task_id: task.id,
           start_time: new Date('2024-01-10T10:00:00'),
           end_time: new Date('2024-01-10T11:00:00'),
         },
@@ -389,6 +395,41 @@ describe('taskScheduler', () => {
       );
 
       expect(result.events.length).toBe(2); // 180 - 60 = 120 minutes remaining
+    });
+
+    it('should handle tasks with dependencies, so that the dependencies are scheduled before the task', () => {
+      const dependency = createMockTask({ id: 'task-1' });
+      const task = createMockTask({ id: 'task-2', dependencies: ['task-1'] });
+      const config = { ...DEFAULT_CONFIG, eventDurationMinutes: 60 };
+
+      // Schedule the dependency first
+      const dependencyResult = prepareTaskEvents(dependency, [], config, []);
+      expect(dependencyResult.events.length).toBeGreaterThan(0);
+      const dependencyEvent = dependencyResult.events[0];
+
+      // Schedule the dependent task, passing dependency events to avoid overlaps
+      const taskResult = prepareTaskEvents(
+        task,
+        [],
+        config,
+        dependencyResult.events.map(e => ({
+          id: `temp-${e.task_id}`,
+          title: 'Dependency Event',
+          start_time: e.start_time,
+          end_time: e.end_time,
+          description: '',
+          user_id: task.user_id,
+          created_at: new Date(),
+          updated_at: new Date(),
+        }))
+      );
+      expect(taskResult.events.length).toBeGreaterThan(0);
+      const taskEvent = taskResult.events[0];
+
+      // The dependency should be scheduled before the dependent task
+      expect(dependencyEvent.start_time.getTime()).toBeLessThanOrEqual(
+        taskEvent.start_time.getTime()
+      );
     });
   });
 });

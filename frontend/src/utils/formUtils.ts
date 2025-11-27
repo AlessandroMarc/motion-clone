@@ -23,6 +23,7 @@ export function transformFormDataToTask(
     user_id: userId,
     planned_duration_minutes: planned,
     actual_duration_minutes: actual,
+    blockedBy: data.blockedBy || [],
   };
   console.log('Transformed task data:', transformed);
   return transformed;

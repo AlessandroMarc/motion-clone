@@ -21,6 +21,7 @@ import { TaskDescriptionField } from './TaskDescriptionField';
 import { TaskDueDateField } from './TaskDueDateField';
 import { TaskPriorityField } from './TaskPriorityField';
 import { TaskProjectField } from './TaskProjectField';
+import { TaskBlockedByField } from './TaskBlockedByField';
 import { TaskDurationFields } from './TaskDurationFields';
 import { TaskFormActions } from './TaskFormActions';
 import { formatEventTime } from '@/utils/calendarUtils';
@@ -40,6 +41,7 @@ const emptyFormValues: TaskFormData = {
   project_id: null,
   planned_duration_minutes: 60,
   actual_duration_minutes: 0,
+  blockedBy: [],
 };
 
 const formatDateTimeLocal = (date: Date) => {
@@ -60,6 +62,7 @@ const mapTaskToFormValues = (task: Task): TaskFormData => ({
   project_id: task.project_id ?? null,
   planned_duration_minutes: task.planned_duration_minutes ?? 60,
   actual_duration_minutes: task.actual_duration_minutes ?? 0,
+  blockedBy: task.blockedBy || [],
 });
 
 export function TaskEditDialogForm({
@@ -174,6 +177,7 @@ export function TaskEditDialogForm({
         project_id: data.project_id ?? null,
         plannedDurationMinutes: data.planned_duration_minutes,
         actualDurationMinutes: data.actual_duration_minutes ?? 0,
+        blockedBy: data.blockedBy || [],
       });
 
       onTaskUpdated(updatedTask);
@@ -193,7 +197,7 @@ export function TaskEditDialogForm({
 
   return (
     <Dialog open={open && !!task} onOpenChange={handleDialogOpenChange}>
-      <DialogContent className="sm:max-w-[500px]">
+      <DialogContent className="sm:max-w-[500px] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Edit Task</DialogTitle>
           {task && (
@@ -216,10 +220,11 @@ export function TaskEditDialogForm({
                 errors={errors}
               />
               <TaskProjectField errors={errors} />
+              <TaskBlockedByField errors={errors} currentTaskId={task?.id} />
               <TaskDurationFields register={register} errors={errors} />
             </div>
 
-            <div className="space-y-3">
+            <div className="space-y-3 max-h-[10vh] overflow-y-auto">
               <div className="flex items-center justify-between">
                 <h3 className="text-sm font-medium">
                   {!areEventsLoading && !eventsError && linkedEvents.length > 0
@@ -252,18 +257,23 @@ export function TaskEditDialogForm({
                     >
                       <div className="flex items-start justify-between gap-3">
                         <div className="space-y-1">
-                          <p className="text-sm font-medium leading-snug">
-                            {event.title}
-                          </p>
-                          <p className="text-xs text-muted-foreground">
-                            {event.start_time.toLocaleDateString(undefined, {
-                              month: 'short',
-                              day: 'numeric',
-                              year: 'numeric',
-                            })}
-                            {' - '}
-                            {formatEventTime(event.start_time, event.end_time)}
-                          </p>
+                          <div className="flex align-center gap-2 items-baseline">
+                            <p className="text-sm font-medium leading-snug">
+                              {event.title}
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                              {event.start_time.toLocaleDateString(undefined, {
+                                month: 'short',
+                                day: 'numeric',
+                                year: 'numeric',
+                              })}
+                              {' - '}
+                              {formatEventTime(
+                                event.start_time,
+                                event.end_time
+                              )}
+                            </p>
+                          </div>
                           {event.description && (
                             <p className="text-xs text-muted-foreground line-clamp-2">
                               {event.description}

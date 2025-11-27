@@ -15,6 +15,7 @@ import { TaskDescriptionField } from './TaskDescriptionField';
 import { TaskDueDateField } from './TaskDueDateField';
 import { TaskPriorityField } from './TaskPriorityField';
 import { TaskProjectField } from './TaskProjectField';
+import { TaskBlockedByField } from './TaskBlockedByField';
 import { TaskDurationFields } from './TaskDurationFields';
 import { TaskFormActions } from './TaskFormActions';
 
@@ -104,6 +105,7 @@ export function TaskCreateCardForm({
               </div>
 
               <TaskProjectField errors={errors} />
+              <TaskBlockedByField errors={errors} />
               <TaskDurationFields
                 register={register}
                 errors={errors}
