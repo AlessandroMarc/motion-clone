@@ -50,6 +50,7 @@ export class TaskService {
           priority: input.priority,
           status,
           dependencies: input.dependencies || [],
+          blocked_by: input.blockedBy || [],
           project_id: input.project_id,
           planned_duration_minutes: normalizedPlanned,
           actual_duration_minutes: normalizedActual,
@@ -113,6 +114,7 @@ export class TaskService {
       priority?: 'low' | 'medium' | 'high';
       status?: 'pending' | 'in-progress' | 'completed';
       dependencies?: string[];
+      blocked_by?: string[];
       project_id?: string | null;
       planned_duration_minutes?: number;
       actual_duration_minutes?: number;
@@ -128,6 +130,8 @@ export class TaskService {
     if (input.priority !== undefined) updateData.priority = input.priority;
     if (input.dependencies !== undefined)
       updateData.dependencies = input.dependencies;
+    if (input.blockedBy !== undefined)
+      updateData.blocked_by = input.blockedBy;
     if (input.project_id !== undefined)
       updateData.project_id = input.project_id;
 

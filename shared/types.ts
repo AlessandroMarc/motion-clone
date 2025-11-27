@@ -8,6 +8,7 @@ interface Task {
   priority: 'low' | 'medium' | 'high';
   status: WorkItemStatus;
   dependencies: string[]; // array of Task ids this task depends on
+  blockedBy?: string[]; // array of Task ids that block this task
   project_id?: string; // linked project, if any
   user_id: string; // owner of the task
   created_at: Date;

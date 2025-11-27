@@ -15,6 +15,7 @@ export interface CreateTaskInput {
   due_date?: Date | null;
   priority: 'low' | 'medium' | 'high';
   dependencies?: string[];
+  blockedBy?: string[];
   project_id?: string;
   user_id: string;
   planned_duration_minutes: number;
@@ -27,6 +28,7 @@ export interface UpdateTaskInput {
   due_date?: Date | null;
   priority?: 'low' | 'medium' | 'high';
   dependencies?: string[];
+  blockedBy?: string[];
   project_id?: string;
   user_id?: string;
   planned_duration_minutes?: number;

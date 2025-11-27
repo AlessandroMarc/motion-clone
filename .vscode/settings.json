@@ -1,0 +1,7 @@
+{
+  "jest.autoRun": "off",
+  "jest.rootPath": "frontend",
+  "jest.jestCommandLine": "npm test --",
+  "jest.workingDirectory": "${workspaceFolder}/frontend"
+}
+

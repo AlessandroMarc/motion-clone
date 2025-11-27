@@ -9,6 +9,7 @@ export interface CreateTaskInput {
   dueDate?: Date | null;
   priority: 'low' | 'medium' | 'high';
   project_id?: string;
+  blockedBy?: string[];
   plannedDurationMinutes: number;
   actualDurationMinutes?: number;
 }
@@ -19,6 +20,7 @@ export interface UpdateTaskInput {
   dueDate?: Date | null;
   priority?: 'low' | 'medium' | 'high';
   project_id?: string | null;
+  blockedBy?: string[];
   plannedDurationMinutes?: number;
   actualDurationMinutes?: number;
 }
@@ -82,6 +84,7 @@ class TaskService {
       due_date: input.dueDate?.toISOString(),
       priority: input.priority,
       dependencies: [],
+      blocked_by: input.blockedBy || [],
       project_id: input.project_id,
       planned_duration_minutes: input.plannedDurationMinutes,
       actual_duration_minutes: input.actualDurationMinutes ?? 0,
@@ -107,6 +110,7 @@ class TaskService {
       updated_at: new Date(response.data.updated_at),
       planned_duration_minutes: response.data.planned_duration_minutes,
       actual_duration_minutes: response.data.actual_duration_minutes,
+      blockedBy: response.data.blocked_by || [],
     };
   }
 
@@ -123,6 +127,7 @@ class TaskService {
       due_date: task.due_date ? new Date(task.due_date) : null,
       created_at: new Date(task.created_at),
       updated_at: new Date(task.updated_at),
+      blockedBy: task.blocked_by || [],
     }));
   }
 
@@ -143,6 +148,7 @@ class TaskService {
       updated_at: new Date(response.data.updated_at),
       planned_duration_minutes: response.data.planned_duration_minutes,
       actual_duration_minutes: response.data.actual_duration_minutes,
+      blockedBy: response.data.blocked_by || [],
     };
   }
 
@@ -150,10 +156,11 @@ class TaskService {
     const response = await this.request<any>(`/api/tasks/${id}`, {
       method: 'PUT',
       body: JSON.stringify({
-        ...input,
-        due_date: input.dueDate?.toISOString(),
-        project_id: input.project_id,
-        planned_duration_minutes: input.plannedDurationMinutes,
+      ...input,
+      due_date: input.dueDate?.toISOString(),
+      project_id: input.project_id,
+      blocked_by: input.blockedBy,
+      planned_duration_minutes: input.plannedDurationMinutes,
         actual_duration_minutes: input.actualDurationMinutes,
       }),
     });
@@ -172,6 +179,7 @@ class TaskService {
       updated_at: new Date(response.data.updated_at),
       planned_duration_minutes: response.data.planned_duration_minutes,
       actual_duration_minutes: response.data.actual_duration_minutes,
+      blockedBy: response.data.blocked_by || [],
     };
   }
 
@@ -186,7 +194,7 @@ class TaskService {
   }
 
   async getTasksByProject(projectId: string): Promise<Task[]> {
-    const response = await this.request<Task[]>(
+    const response = await this.request<any[]>(
       `/api/tasks?project_id=${projectId}`
     );
 
@@ -194,19 +202,33 @@ class TaskService {
       throw new Error(response.error || 'Failed to fetch tasks by project');
     }
 
-    return response.data;
+    // Transform backend data to frontend format
+    return response.data.map(task => ({
+      ...task,
+      due_date: task.due_date ? new Date(task.due_date) : null,
+      created_at: new Date(task.created_at),
+      updated_at: new Date(task.updated_at),
+      blockedBy: task.blocked_by || [],
+    }));
   }
 
   async getTasksByStatus(
     status: 'pending' | 'in-progress' | 'completed'
   ): Promise<Task[]> {
-    const response = await this.request<Task[]>(`/api/tasks?status=${status}`);
+    const response = await this.request<any[]>(`/api/tasks?status=${status}`);
 
     if (!response.success || !response.data) {
       throw new Error(response.error || 'Failed to fetch tasks by status');
     }
 
-    return response.data;
+    // Transform backend data to frontend format
+    return response.data.map(task => ({
+      ...task,
+      due_date: task.due_date ? new Date(task.due_date) : null,
+      created_at: new Date(task.created_at),
+      updated_at: new Date(task.updated_at),
+      blockedBy: task.blocked_by || [],
+    }));
   }
 }
 

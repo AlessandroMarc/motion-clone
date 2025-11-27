@@ -10,7 +10,7 @@ import {
 } from '../taskScheduler';
 
 describe('taskScheduler', () => {
-  const createMockTask = (overrides: Partial<Task> = {}): Task => ({
+  const createMockTask = (overrides = {}): Task => ({
     id: 'task-1',
     title: 'Test Task',
     description: '',
@@ -18,6 +18,7 @@ describe('taskScheduler', () => {
     priority: 'medium',
     status: 'not-started',
     dependencies: [],
+    blockedBy: [],
     project_id: undefined,
     user_id: 'user-1',
     created_at: new Date(),
