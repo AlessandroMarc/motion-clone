@@ -39,7 +39,6 @@ export function useProjectForm(
     handleSubmit,
     formState: { errors },
     reset,
-    setValue,
   } = useForm<ProjectFormData>({
     resolver: zodResolver(projectSchema),
     defaultValues: {

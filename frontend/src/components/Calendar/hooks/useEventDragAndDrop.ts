@@ -2,7 +2,6 @@ import { useState, useEffect, useRef } from 'react';
 import { CalendarEventUnion } from '@/../../../shared/types';
 import { calendarService } from '@/services/calendarService';
 
-const HOUR_PX = 64;
 const dragThresholdPx = 5;
 
 export function useEventDragAndDrop(
@@ -12,7 +11,9 @@ export function useEventDragAndDrop(
   onEventUpdate?: (eventId: string, startTime: Date, endTime: Date) => void
 ) {
   const [draggingEventId, setDraggingEventId] = useState<string | null>(null);
-  const [dragPreview, setDragPreview] = useState<CalendarEventUnion | null>(null);
+  const [dragPreview, setDragPreview] = useState<CalendarEventUnion | null>(
+    null
+  );
   const dragStateRef = useRef<{
     startClientX: number;
     startClientY: number;
@@ -189,4 +190,3 @@ export function useEventDragAndDrop(
     onEventMouseDown,
   };
 }
-

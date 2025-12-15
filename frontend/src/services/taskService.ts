@@ -156,11 +156,11 @@ class TaskService {
     const response = await this.request<any>(`/api/tasks/${id}`, {
       method: 'PUT',
       body: JSON.stringify({
-      ...input,
-      due_date: input.dueDate?.toISOString(),
-      project_id: input.project_id,
-      blocked_by: input.blockedBy,
-      planned_duration_minutes: input.plannedDurationMinutes,
+        ...input,
+        due_date: input.dueDate?.toISOString(),
+        project_id: input.project_id,
+        blocked_by: input.blockedBy,
+        planned_duration_minutes: input.plannedDurationMinutes,
         actual_duration_minutes: input.actualDurationMinutes,
       }),
     });

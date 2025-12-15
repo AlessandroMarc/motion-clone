@@ -9,7 +9,6 @@ import type {
   Project,
   CalendarEventUnion,
 } from '@/../../../shared/types';
-import { isCalendarEventTask } from '@/../../../shared/types';
 import { taskService } from '@/services/taskService';
 import { projectService } from '@/services/projectService';
 import { calendarService } from '@/services/calendarService';

@@ -20,10 +20,7 @@ import { TaskBlockedByField } from './TaskBlockedByField';
 import { TaskFormActions } from './TaskFormActions';
 import { TaskDurationFields } from './TaskDurationFields';
 
-export function TaskCreateDialogForm({
-  onTaskCreate,
-  isLoading = false,
-}: TaskCreateFormProps) {
+export function TaskCreateDialogForm({ onTaskCreate }: TaskCreateFormProps) {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
 
   const {

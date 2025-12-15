@@ -8,33 +8,35 @@ import { transformFormDataToTask } from '@/utils/formUtils';
 import { useAuth } from '@/contexts/AuthContext';
 
 // Form validation schema
-export const taskSchema = z.object({
-  title: z
-    .string()
-    .min(1, 'Title is required')
-    .max(100, 'Title must be less than 100 characters'),
-  description: z
-    .string()
-    .max(500, 'Description must be less than 500 characters'),
-  dueDate: z.string().optional(),
-  priority: z.enum(['low', 'medium', 'high']),
-  project_id: z.string().nullable().optional(),
-  planned_duration_minutes: z
-    .number()
-    .min(1, 'Planned duration must be at least 1 minute'),
-  actual_duration_minutes: z
-    .number()
-    .min(0, 'Actual duration cannot be negative'),
-  blockedBy: z.array(z.string()).optional(),
-}).superRefine((data, ctx) => {
-  if (data.actual_duration_minutes > data.planned_duration_minutes) {
-    ctx.addIssue({
-      code: z.ZodIssueCode.custom,
-      path: ['actual_duration_minutes'],
-      message: 'Actual duration cannot exceed planned duration',
-    });
-  }
-});
+export const taskSchema = z
+  .object({
+    title: z
+      .string()
+      .min(1, 'Title is required')
+      .max(100, 'Title must be less than 100 characters'),
+    description: z
+      .string()
+      .max(500, 'Description must be less than 500 characters'),
+    dueDate: z.string().optional(),
+    priority: z.enum(['low', 'medium', 'high']),
+    project_id: z.string().nullable().optional(),
+    planned_duration_minutes: z
+      .number()
+      .min(1, 'Planned duration must be at least 1 minute'),
+    actual_duration_minutes: z
+      .number()
+      .min(0, 'Actual duration cannot be negative'),
+    blockedBy: z.array(z.string()).optional(),
+  })
+  .superRefine((data, ctx) => {
+    if (data.actual_duration_minutes > data.planned_duration_minutes) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['actual_duration_minutes'],
+        message: 'Actual duration cannot exceed planned duration',
+      });
+    }
+  });
 
 export type TaskFormData = z.infer<typeof taskSchema>;
 
@@ -92,7 +94,9 @@ export function useTaskForm(onTaskCreate: TaskCreateFormProps['onTaskCreate']) {
     } catch (error) {
       console.error('Failed to create task:', error);
       const message =
-        error instanceof Error ? error.message : 'Failed to create task. Please try again.';
+        error instanceof Error
+          ? error.message
+          : 'Failed to create task. Please try again.';
       toast.error(message);
       return false;
     } finally {

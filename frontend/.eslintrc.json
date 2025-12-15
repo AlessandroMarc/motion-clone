@@ -6,16 +6,17 @@
     "sourceType": "module",
     "ecmaFeatures": {
       "jsx": true
-    }
+    },
+    "project": null
   },
   "plugins": ["@typescript-eslint"],
   "extends": [
-    "eslint:recommended",
-    "plugin:@typescript-eslint/recommended",
-    "prettier"
+    "next/core-web-vitals",
+    "plugin:@typescript-eslint/recommended"
   ],
   "rules": {
     "no-unused-vars": "off",
+    "no-empty": "error",
     "@typescript-eslint/no-unused-vars": [
       "error",
       {
@@ -29,23 +30,11 @@
   },
   "ignorePatterns": [
     "node_modules/",
-    "dist/",
-    "build/",
     ".next/",
     "out/",
-    "coverage/",
-    "*.config.js",
-    "*.config.mjs"
-  ],
-  "overrides": [
-    {
-      "files": ["backend/**/*.ts"],
-      "parserOptions": {
-        "project": "./backend/tsconfig.eslint.json"
-      }
-    }
+    "build/",
+    "dist/",
+    "next-env.d.ts"
   ]
 }
-
-
 

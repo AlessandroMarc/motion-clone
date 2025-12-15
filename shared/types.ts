@@ -50,6 +50,8 @@ interface CalendarEvent {
   user_id: string; // owner of the calendar event
   created_at: Date;
   updated_at: Date;
+  google_event_id?: string | null; // ID from Google Calendar if synced
+  synced_from_google?: boolean; // Whether this event was synced from Google Calendar
   // Explicitly exclude task-related fields
   linked_task_id?: never;
   completed_at?: never;
@@ -75,6 +77,25 @@ function isCalendarEventTask(
   );
 }
 
+interface Schedule {
+  id: string;
+  user_id: string;
+  name: string;
+  working_hours_start: number; // 0-23
+  working_hours_end: number; // 0-23
+  is_default: boolean;
+  created_at: Date;
+  updated_at: Date;
+}
+
+interface UserSettings {
+  id: string;
+  user_id: string;
+  active_schedule_id: string | null;
+  created_at: Date;
+  updated_at: Date;
+}
+
 export type {
   Task,
   Project,
@@ -82,5 +103,7 @@ export type {
   CalendarEvent,
   CalendarEventTask,
   CalendarEventUnion,
+  Schedule,
+  UserSettings,
 };
 export { isCalendarEventTask };

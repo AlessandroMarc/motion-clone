@@ -3,7 +3,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Calendar, AlertCircle, X } from 'lucide-react';
+import { Calendar, AlertCircle, X } from 'lucide-react';
 import { getPriorityColor } from '@/utils/statusUtils';
 import { formatDate, isOverdue } from '@/utils/dateUtils';
 
@@ -90,10 +90,12 @@ export function ProjectTasksSection({
                     <span className="inline-flex items-center rounded border px-1.5 py-0.5">
                       {task.status === 'in-progress'
                         ? 'In progress'
-                        : task.status.charAt(0).toUpperCase() + task.status.slice(1)}
+                        : task.status.charAt(0).toUpperCase() +
+                          task.status.slice(1)}
                     </span>
                     <span>
-                      Planned {task.planned_duration_minutes}m · Actual {task.actual_duration_minutes}m
+                      Planned {task.planned_duration_minutes}m · Actual{' '}
+                      {task.actual_duration_minutes}m
                     </span>
                   </div>
                 </div>

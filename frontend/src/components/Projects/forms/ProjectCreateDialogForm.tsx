@@ -20,7 +20,6 @@ import { ProjectFormActions } from './ProjectFormActions';
 
 export function ProjectCreateDialogForm({
   onProjectCreate,
-  isLoading = false,
 }: ProjectCreateFormProps) {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
 

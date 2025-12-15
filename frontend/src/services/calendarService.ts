@@ -1,4 +1,8 @@
-import type { CalendarEvent, CalendarEventTask, CalendarEventUnion } from '@/../../../shared/types';
+import type {
+  CalendarEvent,
+  CalendarEventTask,
+  CalendarEventUnion,
+} from '@/../../../shared/types';
 import { isCalendarEventTask } from '@/../../../shared/types';
 import type {
   CreateCalendarEventInput,
@@ -49,7 +53,11 @@ class CalendarService {
         ...options,
       });
 
-      console.log('[CalendarService] API response status:', response.status, response.statusText);
+      console.log(
+        '[CalendarService] API response status:',
+        response.status,
+        response.statusText
+      );
 
       if (!response.ok) {
         const errorText = await response.text();
@@ -58,7 +66,9 @@ class CalendarService {
           statusText: response.statusText,
           body: errorText,
         });
-        throw new Error(`HTTP error! status: ${response.status}, message: ${errorText}`);
+        throw new Error(
+          `HTTP error! status: ${response.status}, message: ${errorText}`
+        );
       }
 
       const data = await response.json();
@@ -66,7 +76,11 @@ class CalendarService {
         success: data.success,
         message: data.message,
         hasData: !!data.data,
-        dataCount: Array.isArray(data.data) ? data.data.length : data.data ? 1 : 0,
+        dataCount: Array.isArray(data.data)
+          ? data.data.length
+          : data.data
+            ? 1
+            : 0,
         error: data.error,
       });
       return data;
@@ -157,14 +171,19 @@ class CalendarService {
         id: e.id,
         title: e.title,
         linked_task_id: isCalendarEventTask(e) ? e.linked_task_id : undefined,
-        start_time: e.start_time instanceof Date ? e.start_time.toISOString() : e.start_time,
+        start_time:
+          e.start_time instanceof Date
+            ? e.start_time.toISOString()
+            : e.start_time,
       })),
     });
 
     return transformed;
   }
 
-  async getCalendarEventsByTaskId(taskId: string): Promise<CalendarEventTask[]> {
+  async getCalendarEventsByTaskId(
+    taskId: string
+  ): Promise<CalendarEventTask[]> {
     console.log('[CalendarService] getCalendarEventsByTaskId called:', {
       taskId,
     });
@@ -179,7 +198,9 @@ class CalendarService {
         error: response.error,
         message: response.message,
       });
-      throw new Error(response.error || 'Failed to fetch linked calendar events');
+      throw new Error(
+        response.error || 'Failed to fetch linked calendar events'
+      );
     }
 
     return response.data.map(event => ({
@@ -225,20 +246,28 @@ class CalendarService {
   async createCalendarEvent(
     input: CreateCalendarEventInput
   ): Promise<CalendarEventUnion> {
-    console.log('[CalendarService] createCalendarEvent called with input:', input);
+    console.log(
+      '[CalendarService] createCalendarEvent called with input:',
+      input
+    );
 
     const payload = {
       ...input,
       completed_at:
-        input.completed_at && typeof input.completed_at === 'object' && 'toISOString' in input.completed_at
+        input.completed_at &&
+        typeof input.completed_at === 'object' &&
+        'toISOString' in input.completed_at
           ? (input.completed_at as Date).toISOString()
-          : input.completed_at ?? null,
+          : (input.completed_at ?? null),
     };
 
-    const response = await this.request<CalendarEventUnion>('/api/calendar-events', {
-      method: 'POST',
-      body: JSON.stringify(payload),
-    });
+    const response = await this.request<CalendarEventUnion>(
+      '/api/calendar-events',
+      {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      }
+    );
 
     console.log('[CalendarService] createCalendarEvent response:', {
       success: response.success,
@@ -254,9 +283,13 @@ class CalendarService {
         fullResponse: response,
       });
       if (response.error?.toLowerCase().includes('overlap')) {
-        throw new Error('This event overlaps an existing one. Choose a different time.');
+        throw new Error(
+          'This event overlaps an existing one. Choose a different time.'
+        );
       }
-      throw new Error(response.error || response.message || 'Failed to create calendar event');
+      throw new Error(
+        response.error || response.message || 'Failed to create calendar event'
+      );
     }
 
     const result = {
@@ -275,11 +308,17 @@ class CalendarService {
           ? new Date(response.data.completed_at)
           : null,
       } as CalendarEventTask;
-      console.log('[CalendarService] Created calendar event task (transformed):', taskResult);
+      console.log(
+        '[CalendarService] Created calendar event task (transformed):',
+        taskResult
+      );
       return taskResult;
     }
 
-    console.log('[CalendarService] Created calendar event (transformed):', result);
+    console.log(
+      '[CalendarService] Created calendar event (transformed):',
+      result
+    );
     return result as CalendarEvent;
   }
 
@@ -290,7 +329,9 @@ class CalendarService {
     const payload = {
       ...input,
       completed_at:
-        input.completed_at && typeof input.completed_at === 'object' && 'toISOString' in input.completed_at
+        input.completed_at &&
+        typeof input.completed_at === 'object' &&
+        'toISOString' in input.completed_at
           ? (input.completed_at as Date).toISOString()
           : input.completed_at !== undefined
             ? input.completed_at
@@ -311,9 +352,13 @@ class CalendarService {
         message: response.message,
       });
       if (response.error?.toLowerCase().includes('overlap')) {
-        throw new Error('This event overlaps an existing one. Choose a different time.');
+        throw new Error(
+          'This event overlaps an existing one. Choose a different time.'
+        );
       }
-      throw new Error(response.error || response.message || 'Failed to update calendar event');
+      throw new Error(
+        response.error || response.message || 'Failed to update calendar event'
+      );
     }
 
     const result = {
@@ -352,6 +397,8 @@ class CalendarService {
   /**
    * Batch create multiple calendar events
    * Returns array of results with success/failure status for each event
+   * Creates events sequentially to avoid overlap issues
+   * If an event fails due to overlap, it will be skipped and the next event will be tried
    */
   async createCalendarEventsBatch(
     events: Array<{
@@ -363,30 +410,60 @@ class CalendarService {
       user_id: string;
       completed_at?: string | null;
     }>
-  ): Promise<Array<{ success: boolean; event?: CalendarEventUnion; error?: string; index: number }>> {
-    const results = await Promise.allSettled(
-      events.map((eventData, index) =>
-        this.createCalendarEvent(eventData).then(
-          event => ({ success: true, event, index }),
-          error => ({
-            success: false,
-            error: error instanceof Error ? error.message : 'Unknown error',
-            index,
-          })
-        )
-      )
-    );
+  ): Promise<
+    Array<{
+      success: boolean;
+      event?: CalendarEventUnion;
+      error?: string;
+      index: number;
+    }>
+  > {
+    // Create events sequentially to ensure overlap checks work correctly
+    // Each event is checked against all previously created events
+    const results: Array<{
+      success: boolean;
+      event?: CalendarEventUnion;
+      error?: string;
+      index: number;
+    }> = [];
 
-    return results.map((result, index) => {
-      if (result.status === 'fulfilled') {
-        return result.value;
+    for (let index = 0; index < events.length; index++) {
+      const eventData = events[index];
+      try {
+        const event = await this.createCalendarEvent(eventData);
+        results.push({ success: true, event, index });
+        console.log(`[CalendarService] Successfully created event ${index + 1}/${events.length}:`, {
+          title: eventData.title,
+          start_time: eventData.start_time,
+          end_time: eventData.end_time,
+        });
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+        const isOverlapError = errorMessage.includes('overlaps');
+        
+        console.warn(`[CalendarService] Failed to create event ${index + 1}/${events.length}:`, {
+          title: eventData.title,
+          start_time: eventData.start_time,
+          end_time: eventData.end_time,
+          error: errorMessage,
+          isOverlapError,
+        });
+        
+        results.push({
+          success: false,
+          error: errorMessage,
+          index,
+        });
+        
+        // If it's an overlap error, continue with next event
+        // The scheduling logic should have prevented this, but we'll skip it anyway
+        if (isOverlapError) {
+          console.warn(`[CalendarService] Skipping overlapping event, continuing with next event`);
+        }
       }
-      return {
-        success: false,
-        error: result.reason?.message || 'Unknown error',
-        index,
-      };
-    });
+    }
+
+    return results;
   }
 }
 

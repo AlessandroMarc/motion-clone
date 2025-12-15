@@ -1,8 +1,7 @@
-import type { Response } from 'express';
+import type { Response as ExpressResponse } from 'express';
 import type {
-  ApiResponse,
-  ApiError,
   ApiSuccess,
+  ApiError,
   CreateResponse,
   UpdateResponse,
   DeleteResponse,
@@ -12,7 +11,7 @@ import type {
 
 export class ResponseHelper {
   // Success responses
-  static success<T>(res: Response, data: T, message?: string): void {
+  static success<T>(res: ExpressResponse, data: T, message?: string): void {
     const response: ApiSuccess<T> = {
       success: true,
       data,
@@ -23,7 +22,7 @@ export class ResponseHelper {
 
   // Error responses
   static error(
-    res: Response,
+    res: ExpressResponse,
     error: string,
     statusCode = 500,
     message?: string
@@ -38,7 +37,7 @@ export class ResponseHelper {
 
   // Create responses
   static created<T>(
-    res: Response,
+    res: ExpressResponse,
     data: T,
     message = 'Resource created successfully'
   ): void {
@@ -52,7 +51,7 @@ export class ResponseHelper {
 
   // Update responses
   static updated<T>(
-    res: Response,
+    res: ExpressResponse,
     data: T,
     message = 'Resource updated successfully'
   ): void {
@@ -66,7 +65,7 @@ export class ResponseHelper {
 
   // Delete responses
   static deleted(
-    res: Response,
+    res: ExpressResponse,
     message = 'Resource deleted successfully'
   ): void {
     const response: DeleteResponse = {
@@ -79,7 +78,7 @@ export class ResponseHelper {
 
   // List responses
   static list<T>(
-    res: Response,
+    res: ExpressResponse,
     data: T[],
     message?: string,
     count?: number
@@ -94,7 +93,7 @@ export class ResponseHelper {
   }
 
   // Single resource responses
-  static single<T>(res: Response, data: T, message?: string): void {
+  static single<T>(res: ExpressResponse, data: T, message?: string): void {
     const response: SingleResponse<T> = {
       success: true,
       data,
@@ -104,7 +103,7 @@ export class ResponseHelper {
   }
 
   // Not found responses
-  static notFound(res: Response, resource = 'Resource'): void {
+  static notFound(res: ExpressResponse, resource = 'Resource'): void {
     const response: ApiError = {
       success: false,
       error: `${resource} not found`,
@@ -114,7 +113,11 @@ export class ResponseHelper {
   }
 
   // Bad request responses
-  static badRequest(res: Response, error: string, message?: string): void {
+  static badRequest(
+    res: ExpressResponse,
+    error: string,
+    message?: string
+  ): void {
     const response: ApiError = {
       success: false,
       error,
@@ -124,7 +127,11 @@ export class ResponseHelper {
   }
 
   // Validation error responses
-  static validationError(res: Response, error: string, message?: string): void {
+  static validationError(
+    res: ExpressResponse,
+    error: string,
+    message?: string
+  ): void {
     const response: ApiError = {
       success: false,
       error,
@@ -134,7 +141,10 @@ export class ResponseHelper {
   }
 
   // Internal server error responses
-  static internalError(res: Response, error = 'Internal server error'): void {
+  static internalError(
+    res: ExpressResponse,
+    error = 'Internal server error'
+  ): void {
     const response: ApiError = {
       success: false,
       error,

@@ -9,7 +9,11 @@ import {
 } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Plus } from 'lucide-react';
-import { useTaskForm, type TaskCreateFormProps } from '@/hooks/useTaskForm';
+import {
+  TaskFormData,
+  useTaskForm,
+  type TaskCreateFormProps,
+} from '@/hooks/useTaskForm';
 import { TaskTitleField } from './TaskTitleField';
 import { TaskDescriptionField } from './TaskDescriptionField';
 import { TaskDueDateField } from './TaskDueDateField';
@@ -19,10 +23,7 @@ import { TaskBlockedByField } from './TaskBlockedByField';
 import { TaskDurationFields } from './TaskDurationFields';
 import { TaskFormActions } from './TaskFormActions';
 
-export function TaskCreateCardForm({
-  onTaskCreate,
-  isLoading = false,
-}: TaskCreateFormProps) {
+export function TaskCreateCardForm({ onTaskCreate }: TaskCreateFormProps) {
   const [isExpanded, setIsExpanded] = useState(false);
 
   const {
@@ -37,7 +38,7 @@ export function TaskCreateCardForm({
     setPriority,
   } = useTaskForm(onTaskCreate);
 
-  const handleFormSubmit = async (data: any) => {
+  const handleFormSubmit = async (data: TaskFormData) => {
     const success = await onSubmit(data);
     if (success) {
       setIsExpanded(false);

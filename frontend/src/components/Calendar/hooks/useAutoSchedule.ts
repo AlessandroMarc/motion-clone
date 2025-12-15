@@ -1,5 +1,9 @@
 import { useState, useEffect } from 'react';
-import { Task, CalendarEventTask, CalendarEventUnion, isCalendarEventTask } from '@/../../../shared/types';
+import {
+  Task,
+  CalendarEventUnion,
+  isCalendarEventTask,
+} from '@/../../../shared/types';
 import { taskService } from '@/services/taskService';
 import { calendarService } from '@/services/calendarService';
 import { toast } from 'sonner';
@@ -34,7 +38,7 @@ export function useAutoSchedule(
     try {
       // Refresh both tasks and events before opening dialog
       // This ensures the dialog has the latest data
-      const [allTasks, refreshedEvents] = await Promise.all([
+      const [allTasks] = await Promise.all([
         taskService.getAllTasks(),
         refreshEvents(),
       ]);
@@ -68,7 +72,7 @@ export function useAutoSchedule(
       // Refresh events first to ensure we have the latest data
       // This is important because the dialog might have been opened with stale data
       const latestEvents = await refreshEvents();
-      
+
       // First, delete all non-completed task events
       // Completed events should be preserved
       const nonCompletedTaskEvents = latestEvents.filter(
@@ -79,7 +83,7 @@ export function useAutoSchedule(
         `[useAutoSchedule] Deleting ${nonCompletedTaskEvents.length} non-completed task events before rescheduling`,
         {
           eventIds: nonCompletedTaskEvents.map(e => e.id),
-          eventTasks: nonCompletedTaskEvents.map(e => 
+          eventTasks: nonCompletedTaskEvents.map(e =>
             isCalendarEventTask(e) ? e.linked_task_id : null
           ),
         }
@@ -104,7 +108,7 @@ export function useAutoSchedule(
 
       const successful = results.filter(r => r.success).length;
       const failed = results.filter(r => !r.success).length;
-      const violations = eventsToCreate.filter((event, index) => {
+      const violations = eventsToCreate.filter(event => {
         const task = tasks.find(t => t.id === event.linked_task_id);
         if (!task?.due_date) return false;
         const eventStart = new Date(event.start_time);
@@ -151,4 +155,3 @@ export function useAutoSchedule(
     handleAutoSchedule,
   };
 }
-

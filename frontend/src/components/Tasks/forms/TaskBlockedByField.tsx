@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { useFormContext } from 'react-hook-form';
+import { FieldErrors, useFormContext } from 'react-hook-form';
 import {
   Command,
   CommandEmpty,
@@ -19,9 +19,10 @@ import { Check, ChevronsUpDown, X, AlertCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { taskService } from '@/services/taskService';
 import type { Task } from '@/../../../shared/types';
+import { TaskFormData } from '@/hooks/useTaskForm';
 
 interface TaskBlockedByFieldProps {
-  errors?: any;
+  errors?: FieldErrors<TaskFormData>;
   currentTaskId?: string; // For edit mode, to exclude current task
 }
 
@@ -48,7 +49,8 @@ export function TaskBlockedByField({
 
       try {
         setIsLoading(true);
-        const fetchedTasks = await taskService.getTasksByProject(selectedProjectId);
+        const fetchedTasks =
+          await taskService.getTasksByProject(selectedProjectId);
         // Exclude current task if in edit mode
         const filteredTasks = currentTaskId
           ? fetchedTasks.filter(task => task.id !== currentTaskId)
@@ -78,15 +80,14 @@ export function TaskBlockedByField({
     if (current.includes(taskId)) {
       setValue(
         'blockedBy',
-        current.filter(id => id !== taskId),
+        current.filter((id: string) => id !== taskId),
         { shouldValidate: true, shouldDirty: true }
       );
     } else {
-      setValue(
-        'blockedBy',
-        [...current, taskId],
-        { shouldValidate: true, shouldDirty: true }
-      );
+      setValue('blockedBy', [...current, taskId], {
+        shouldValidate: true,
+        shouldDirty: true,
+      });
     }
   };
 
@@ -94,7 +95,7 @@ export function TaskBlockedByField({
     const current = selectedBlockedBy || [];
     setValue(
       'blockedBy',
-      current.filter(id => id !== taskId),
+      current.filter((id: string) => id !== taskId),
       { shouldValidate: true, shouldDirty: true }
     );
   };
@@ -140,7 +141,7 @@ export function TaskBlockedByField({
                     key={task.id}
                     variant="secondary"
                     className="mr-1 mb-1"
-                    onClick={(e) => {
+                    onClick={e => {
                       e.stopPropagation();
                       handleRemove(task.id);
                     }}
@@ -148,16 +149,16 @@ export function TaskBlockedByField({
                     {task.title}
                     <button
                       className="ml-1 ring-offset-background rounded-full outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
-                      onKeyDown={(e) => {
+                      onKeyDown={e => {
                         if (e.key === 'Enter') {
                           handleRemove(task.id);
                         }
                       }}
-                      onMouseDown={(e) => {
+                      onMouseDown={e => {
                         e.preventDefault();
                         e.stopPropagation();
                       }}
-                      onClick={(e) => {
+                      onClick={e => {
                         e.preventDefault();
                         e.stopPropagation();
                         handleRemove(task.id);
@@ -224,12 +225,8 @@ export function TaskBlockedByField({
         </PopoverContent>
       </Popover>
       {errors?.blockedBy && (
-        <p className="text-sm text-destructive">
-          {errors.blockedBy.message}
-        </p>
+        <p className="text-sm text-destructive">{errors.blockedBy.message}</p>
       )}
     </div>
   );
 }
-
-

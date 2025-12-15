@@ -2,10 +2,12 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Calendar } from 'lucide-react';
 import { hasFieldError, getFieldError } from '@/utils/formUtils';
+import { FieldErrors, UseFormRegister } from 'react-hook-form';
+import { TaskFormData } from '@/hooks/useTaskForm';
 
 interface TaskDueDateFieldProps {
-  register: any;
-  errors: any;
+  register: UseFormRegister<TaskFormData>;
+  errors: FieldErrors<TaskFormData>;
   id?: string;
   className?: string;
 }

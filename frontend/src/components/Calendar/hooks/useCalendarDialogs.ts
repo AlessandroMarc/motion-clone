@@ -1,5 +1,8 @@
 import { useState } from 'react';
-import { CalendarEventUnion, isCalendarEventTask } from '@/../../../shared/types';
+import {
+  CalendarEventUnion,
+  isCalendarEventTask,
+} from '@/../../../shared/types';
 import { calendarService } from '@/services/calendarService';
 import { toast } from 'sonner';
 
@@ -186,4 +189,3 @@ export function useCalendarDialogs(
     handleDeleteEdit,
   };
 }
-

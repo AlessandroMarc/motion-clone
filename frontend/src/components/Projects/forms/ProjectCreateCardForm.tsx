@@ -19,7 +19,6 @@ import { ProjectFormActions } from './ProjectFormActions';
 
 export function ProjectCreateCardForm({
   onProjectCreate,
-  isLoading = false,
 }: ProjectCreateFormProps) {
   const [isExpanded, setIsExpanded] = useState(false);
 

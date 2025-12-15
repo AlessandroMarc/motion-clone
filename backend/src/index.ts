@@ -4,7 +4,10 @@ import taskRoutes from './routes/tasks.js';
 import projectRoutes from './routes/projects.js';
 import milestoneRoutes from './routes/milestones.js';
 import calendarEventRoutes from './routes/calendarEvents.js';
+import userSettingsRoutes from './routes/userSettings.js';
+import googleCalendarRoutes from './routes/googleCalendar.js';
 import { ResponseHelper } from './utils/responseHelpers.js';
+import { SyncScheduler } from './services/syncScheduler.js';
 
 const app = express();
 const PORT = process.env.PORT || 3003;
@@ -46,6 +49,12 @@ app.use('/api/tasks', taskRoutes);
 app.use('/api/projects', projectRoutes);
 app.use('/api/milestones', milestoneRoutes);
 app.use('/api/calendar-events', calendarEventRoutes);
+app.use('/api/user-settings', userSettingsRoutes);
+app.use('/api/google-calendar', googleCalendarRoutes);
+
+// Start sync scheduler
+const syncScheduler = new SyncScheduler();
+syncScheduler.start();
 
 // Start server
 app.listen(PORT, () => {

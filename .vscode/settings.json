@@ -1,9 +1,16 @@
 {
-  "jest.autoRun": "off",
+  "jest.runMode": "on-save",
   "jest.rootPath": "frontend",
   "jest.jestCommandLine": "npm test --",
   "jest.workingDirectory": "${workspaceFolder}/frontend",
   "eslint.enable": true,
+  "eslint.useFlatConfig": false,
+  "eslint.probe": [
+    "javascript",
+    "javascriptreact",
+    "typescript",
+    "typescriptreact"
+  ],
   "eslint.validate": [
     "javascript",
     "javascriptreact",
@@ -11,9 +18,14 @@
     "typescriptreact"
   ],
   "eslint.workingDirectories": [
-    ".",
-    "frontend",
-    "backend"
+    {
+      "directory": "./frontend",
+      "changeProcessCWD": true
+    },
+    {
+      "directory": "./backend",
+      "changeProcessCWD": true
+    }
   ],
   "editor.codeActionsOnSave": {
     "source.fixAll.eslint": "explicit"

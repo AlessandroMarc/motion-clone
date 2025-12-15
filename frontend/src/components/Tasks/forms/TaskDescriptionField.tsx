@@ -1,10 +1,12 @@
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { hasFieldError, getFieldError } from '@/utils/formUtils';
+import { FieldErrors, UseFormRegister } from 'react-hook-form';
+import { TaskFormData } from '@/hooks/useTaskForm';
 
 interface TaskDescriptionFieldProps {
-  register: any;
-  errors: any;
+  register: UseFormRegister<TaskFormData>;
+  errors: FieldErrors<TaskFormData>;
   id?: string;
   className?: string;
   placeholder?: string;

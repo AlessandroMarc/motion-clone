@@ -55,6 +55,8 @@ CREATE TABLE calendar_events (
     description TEXT,
     user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
     completed_at TIMESTAMP WITH TIME ZONE,
+    google_event_id TEXT,
+    synced_from_google BOOLEAN DEFAULT false,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
@@ -80,6 +82,9 @@ CREATE INDEX idx_calendar_events_start_time ON calendar_events(start_time);
 CREATE INDEX idx_calendar_events_end_time ON calendar_events(end_time);
 CREATE INDEX idx_calendar_events_linked_task_id ON calendar_events(linked_task_id);
 CREATE INDEX idx_calendar_events_linked_project_id ON calendar_events(linked_project_id);
+CREATE INDEX idx_calendar_events_google_event_id ON calendar_events(google_event_id);
+CREATE INDEX idx_calendar_events_synced_from_google ON calendar_events(synced_from_google);
+CREATE UNIQUE INDEX idx_calendar_events_user_google_event_id ON calendar_events(user_id, google_event_id) WHERE google_event_id IS NOT NULL;
 
 -- Create updated_at trigger function
 CREATE OR REPLACE FUNCTION update_updated_at_column()
@@ -103,11 +108,31 @@ CREATE TRIGGER update_tasks_updated_at BEFORE UPDATE ON tasks
 CREATE TRIGGER update_calendar_events_updated_at BEFORE UPDATE ON calendar_events
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
+-- Google Calendar Tokens table
+CREATE TABLE google_calendar_tokens (
+    id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+    user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+    access_token TEXT NOT NULL,
+    refresh_token TEXT NOT NULL,
+    expires_at TIMESTAMP WITH TIME ZONE NOT NULL,
+    calendar_id TEXT NOT NULL DEFAULT 'primary',
+    last_synced_at TIMESTAMP WITH TIME ZONE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    UNIQUE(user_id)
+);
+
+CREATE INDEX idx_google_calendar_tokens_user_id ON google_calendar_tokens(user_id);
+
+CREATE TRIGGER update_google_calendar_tokens_updated_at BEFORE UPDATE ON google_calendar_tokens
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
 -- Enable Row Level Security (RLS) - you can customize this based on your auth needs
 ALTER TABLE projects ENABLE ROW LEVEL SECURITY;
 ALTER TABLE milestones ENABLE ROW LEVEL SECURITY;
 ALTER TABLE tasks ENABLE ROW LEVEL SECURITY;
 ALTER TABLE calendar_events ENABLE ROW LEVEL SECURITY;
+ALTER TABLE google_calendar_tokens ENABLE ROW LEVEL SECURITY;
 
 -- Example RLS policies (user-specific data access)
 -- Users can only see and modify their own data
@@ -130,3 +155,8 @@ CREATE POLICY "Users can view own calendar events" ON calendar_events FOR SELECT
 CREATE POLICY "Users can insert own calendar events" ON calendar_events FOR INSERT WITH CHECK (auth.uid() = user_id);
 CREATE POLICY "Users can update own calendar events" ON calendar_events FOR UPDATE USING (auth.uid() = user_id);
 CREATE POLICY "Users can delete own calendar events" ON calendar_events FOR DELETE USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can view own google calendar tokens" ON google_calendar_tokens FOR SELECT USING (auth.uid() = user_id);
+CREATE POLICY "Users can insert own google calendar tokens" ON google_calendar_tokens FOR INSERT WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "Users can update own google calendar tokens" ON google_calendar_tokens FOR UPDATE USING (auth.uid() = user_id);
+CREATE POLICY "Users can delete own google calendar tokens" ON google_calendar_tokens FOR DELETE USING (auth.uid() = user_id);

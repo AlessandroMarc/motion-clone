@@ -77,6 +77,8 @@ export interface CreateCalendarEventInput {
   description?: string;
   user_id: string;
   completed_at?: string | null;
+  google_event_id?: string;
+  synced_from_google?: boolean;
 }
 
 export interface UpdateCalendarEventInput {
@@ -87,4 +89,6 @@ export interface UpdateCalendarEventInput {
   description?: string;
   user_id?: string;
   completed_at?: string | null;
+  google_event_id?: string;
+  synced_from_google?: boolean;
 }

@@ -3,7 +3,7 @@ import type {
   CreateCalendarEventInput,
   UpdateCalendarEventInput,
 } from '../types/database.js';
-import type { CalendarEvent, CalendarEventTask, CalendarEventUnion } from '@shared/types.js';
+import type { CalendarEventTask, CalendarEventUnion } from '@shared/types.js';
 import { TaskService } from './taskService.js';
 
 const normalizeNullableDate = (
@@ -31,7 +31,8 @@ export class CalendarEventService {
     startTime: string | Date,
     endTime: string | Date
   ): number {
-    const start = typeof startTime === 'string' ? new Date(startTime) : startTime;
+    const start =
+      typeof startTime === 'string' ? new Date(startTime) : startTime;
     const end = typeof endTime === 'string' ? new Date(endTime) : endTime;
     const diffMs = end.getTime() - start.getTime();
     return Math.max(0, Math.round(diffMs / (1000 * 60)));
@@ -113,29 +114,51 @@ export class CalendarEventService {
   async createCalendarEvent(
     input: CreateCalendarEventInput
   ): Promise<CalendarEventUnion> {
-    console.log('[CalendarEventService] createCalendarEvent called with input:', input);
-    
-    await this.ensureNoOverlaps(
-      input.user_id,
-      input.start_time,
-      input.end_time
+    console.log(
+      '[CalendarEventService] createCalendarEvent called with input:',
+      input
     );
 
-    const insertData = {
+    // Skip overlap check for events synced from Google (they may overlap)
+    if (!input.synced_from_google) {
+      await this.ensureNoOverlaps(
+        input.user_id,
+        input.start_time,
+        input.end_time
+      );
+    }
+
+    const insertData: {
+      title: string;
+      start_time: string;
+      end_time: string;
+      linked_task_id: string | null;
+      description: string | null;
+      user_id: string;
+      completed_at: string | null;
+      google_event_id?: string | null;
+      synced_from_google?: boolean;
+    } = {
       title: input.title,
       start_time: input.start_time,
       end_time: input.end_time,
       linked_task_id: input.linked_task_id ?? null,
-      description: input.description,
+      description: input.description ?? null,
       user_id: input.user_id,
-      completed_at:
-        input.linked_task_id
-          ? normalizeNullableDate(input.completed_at)
-          : null,
+      completed_at: input.linked_task_id
+        ? normalizeNullableDate(input.completed_at)
+        : null,
     };
-    
+
+    if (input.google_event_id !== undefined) {
+      insertData.google_event_id = input.google_event_id ?? null;
+    }
+    if (input.synced_from_google !== undefined) {
+      insertData.synced_from_google = input.synced_from_google;
+    }
+
     console.log('[CalendarEventService] Inserting calendar event:', insertData);
-    
+
     const { data, error } = await supabase
       .from('calendar_events')
       .insert([insertData])
@@ -153,7 +176,10 @@ export class CalendarEventService {
       throw new Error(`Failed to create calendar event: ${error.message}`);
     }
 
-    console.log('[CalendarEventService] Calendar event created successfully:', data);
+    console.log(
+      '[CalendarEventService] Calendar event created successfully:',
+      data
+    );
 
     if (input.linked_task_id && insertData.completed_at) {
       const eventDurationMinutes = this.calculateEventDurationMinutes(
@@ -221,15 +247,19 @@ export class CalendarEventService {
       throw new Error('Calendar event not found');
     }
 
-    const newStart = input.start_time ?? (existing.start_time as unknown as string);
+    const newStart =
+      input.start_time ?? (existing.start_time as unknown as string);
     const newEnd = input.end_time ?? (existing.end_time as unknown as string);
 
-    await this.ensureNoOverlaps(
-      existing.user_id,
-      newStart,
-      newEnd,
-      id
-    );
+    // Skip overlap check for events synced from Google
+    const isSyncedFromGoogle =
+      (existing as unknown as { synced_from_google?: boolean })
+        .synced_from_google ?? false;
+    const willBeSyncedFromGoogle = input.synced_from_google ?? false;
+
+    if (!isSyncedFromGoogle && !willBeSyncedFromGoogle) {
+      await this.ensureNoOverlaps(existing.user_id, newStart, newEnd, id);
+    }
 
     const updateData: {
       updated_at: string;
@@ -239,6 +269,8 @@ export class CalendarEventService {
       linked_task_id?: string | null;
       description?: string;
       completed_at?: string | null;
+      google_event_id?: string | null;
+      synced_from_google?: boolean;
     } = {
       updated_at: new Date().toISOString(),
     };
@@ -251,6 +283,10 @@ export class CalendarEventService {
       updateData.linked_task_id = input.linked_task_id;
     if (input.description !== undefined)
       updateData.description = input.description;
+    if (input.google_event_id !== undefined)
+      updateData.google_event_id = input.google_event_id ?? null;
+    if (input.synced_from_google !== undefined)
+      updateData.synced_from_google = input.synced_from_google;
 
     const nextLinkedTaskId =
       input.linked_task_id !== undefined
@@ -277,11 +313,17 @@ export class CalendarEventService {
     } else {
       // Not provided: keep existing value
       completedAt = existingCompletedAt;
-      console.log('[CalendarEventService] Keeping existing completed_at:', completedAt);
+      console.log(
+        '[CalendarEventService] Keeping existing completed_at:',
+        completedAt
+      );
     }
 
     updateData.completed_at = completedAt;
-    console.log('[CalendarEventService] Final updateData.completed_at:', updateData.completed_at);
+    console.log(
+      '[CalendarEventService] Final updateData.completed_at:',
+      updateData.completed_at
+    );
 
     const wasCompleted = !!existingCompletedAt;
     const willBeCompleted = !!completedAt;
@@ -300,8 +342,10 @@ export class CalendarEventService {
     }
 
     if (nextLinkedTaskId && (isCompleting || isUncompleting)) {
-      const eventStart = updateData.start_time ?? (existing.start_time as unknown as string);
-      const eventEnd = updateData.end_time ?? (existing.end_time as unknown as string);
+      const eventStart =
+        updateData.start_time ?? (existing.start_time as unknown as string);
+      const eventEnd =
+        updateData.end_time ?? (existing.end_time as unknown as string);
       const eventDurationMinutes = this.calculateEventDurationMinutes(
         eventStart,
         eventEnd
@@ -322,7 +366,7 @@ export class CalendarEventService {
   // Delete calendar event
   async deleteCalendarEvent(id: string): Promise<boolean> {
     const existing = await this.getCalendarEventById(id);
-    
+
     if (existing?.linked_task_id && existing.completed_at) {
       const eventDurationMinutes = this.calculateEventDurationMinutes(
         existing.start_time,
@@ -359,7 +403,7 @@ export class CalendarEventService {
       startDate,
       endDate,
     });
-    
+
     const { data, error } = await supabase
       .from('calendar_events')
       .select('*')
@@ -393,7 +437,9 @@ export class CalendarEventService {
   }
 
   // Get calendar events linked to a task
-  async getCalendarEventsByTaskId(taskId: string): Promise<CalendarEventTask[]> {
+  async getCalendarEventsByTaskId(
+    taskId: string
+  ): Promise<CalendarEventTask[]> {
     const { data, error } = await supabase
       .from('calendar_events')
       .select('*')
@@ -409,4 +455,27 @@ export class CalendarEventService {
     return data || [];
   }
 
+  // Get calendar event by Google event ID
+  async getCalendarEventByGoogleEventId(
+    userId: string,
+    googleEventId: string
+  ): Promise<CalendarEventUnion | null> {
+    const { data, error } = await supabase
+      .from('calendar_events')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('google_event_id', googleEventId)
+      .single();
+
+    if (error) {
+      if (error.code === 'PGRST116') {
+        return null; // Event not found
+      }
+      throw new Error(
+        `Failed to fetch calendar event by Google event ID: ${error.message}`
+      );
+    }
+
+    return data;
+  }
 }

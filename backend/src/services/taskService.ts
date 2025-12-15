@@ -130,8 +130,7 @@ export class TaskService {
     if (input.priority !== undefined) updateData.priority = input.priority;
     if (input.dependencies !== undefined)
       updateData.dependencies = input.dependencies;
-    if (input.blockedBy !== undefined)
-      updateData.blocked_by = input.blockedBy;
+    if (input.blockedBy !== undefined) updateData.blocked_by = input.blockedBy;
     if (input.project_id !== undefined)
       updateData.project_id = input.project_id;
 

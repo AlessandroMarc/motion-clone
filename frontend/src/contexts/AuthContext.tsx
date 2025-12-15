@@ -3,11 +3,14 @@
 import { createContext, useContext, useEffect, useState } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase';
+import type { Schedule } from '@/../../../shared/types';
+import { userSettingsService } from '@/services/userSettingsService';
 
 interface AuthContextType {
   user: User | null;
   session: Session | null;
   loading: boolean;
+  activeSchedule: Schedule | null;
   signInWithGoogle: () => Promise<void>;
   signOut: () => Promise<void>;
 }
@@ -18,6 +21,36 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
+  const [activeSchedule, setActiveSchedule] = useState<Schedule | null>(null);
+
+  // Load active schedule when user changes
+  useEffect(() => {
+    const loadActiveSchedule = async (userId: string) => {
+      try {
+        const schedule = await userSettingsService.getActiveSchedule(userId);
+        setActiveSchedule(schedule);
+      } catch (error) {
+        console.error('Failed to load active schedule:', error);
+        // Set default schedule on error
+        setActiveSchedule({
+          id: '',
+          user_id: userId,
+          name: 'Default',
+          working_hours_start: 9,
+          working_hours_end: 22,
+          is_default: true,
+          created_at: new Date(),
+          updated_at: new Date(),
+        });
+      }
+    };
+
+    if (user?.id) {
+      loadActiveSchedule(user.id);
+    } else {
+      setActiveSchedule(null);
+    }
+  }, [user]);
 
   useEffect(() => {
     // Get initial session
@@ -79,6 +112,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     user,
     session,
     loading,
+    activeSchedule,
     signInWithGoogle,
     signOut,
   };

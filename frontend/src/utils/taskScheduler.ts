@@ -2,6 +2,7 @@ import type {
   Task,
   CalendarEventTask,
   CalendarEventUnion,
+  Schedule,
 } from '@/../../../shared/types';
 
 export interface TaskSchedulingConfig {
@@ -20,6 +21,24 @@ export const DEFAULT_CONFIG: TaskSchedulingConfig = {
   skipWeekends: false,
   defaultDaysWithoutDeadline: 14,
 };
+
+/**
+ * Create a TaskSchedulingConfig from a Schedule
+ */
+export function createConfigFromSchedule(
+  schedule: Schedule | null,
+  eventDurationMinutes = 60
+): TaskSchedulingConfig {
+  return {
+    eventDurationMinutes,
+    workingHoursStart:
+      schedule?.working_hours_start ?? DEFAULT_CONFIG.workingHoursStart,
+    workingHoursEnd:
+      schedule?.working_hours_end ?? DEFAULT_CONFIG.workingHoursEnd,
+    skipWeekends: DEFAULT_CONFIG.skipWeekends,
+    defaultDaysWithoutDeadline: DEFAULT_CONFIG.defaultDaysWithoutDeadline,
+  };
+}
 
 export interface ScheduledEvent {
   task_id: string;
@@ -76,16 +95,36 @@ function isSlotOccupied(
   slot: ScheduledEvent,
   existingEvents: CalendarEventUnion[]
 ): boolean {
-  return existingEvents.some(event => {
+  const overlaps = existingEvents.some(event => {
     const eventStart = new Date(event.start_time);
     const eventEnd = new Date(event.end_time);
-    return doEventsOverlap(
+    const overlaps = doEventsOverlap(
       slot.start_time,
       slot.end_time,
       eventStart,
       eventEnd
     );
+
+    if (overlaps) {
+      console.log('[taskScheduler] Slot overlaps with event:', {
+        slot: {
+          start: slot.start_time.toISOString(),
+          end: slot.end_time.toISOString(),
+        },
+        event: {
+          id: event.id,
+          title: event.title,
+          start: eventStart.toISOString(),
+          end: eventEnd.toISOString(),
+          syncedFromGoogle: event.synced_from_google,
+        },
+      });
+    }
+
+    return overlaps;
   });
+
+  return overlaps;
 }
 
 /**
@@ -119,7 +158,7 @@ function getNextAvailableSlot(
   taskId: string,
   allExistingEvents: CalendarEventUnion[]
 ): ScheduledEvent | null {
-  const currentTime = new Date(startFrom);
+  let currentTime = new Date(startFrom);
   const endOfDay = new Date(currentTime);
   endOfDay.setHours(config.workingHoursEnd, 0, 0, 0);
 
@@ -154,11 +193,30 @@ function getNextAvailableSlot(
       return slot;
     }
 
-    // Move to next slot position (try next slot start time)
-    // We increment by event duration to check if the slot after this one is free
-    currentTime.setMinutes(
-      currentTime.getMinutes() + config.eventDurationMinutes
-    );
+    // Slot is occupied - find the end time of the overlapping event
+    // and move to just after it (with a small gap)
+    const overlappingEvent = allExistingEvents.find(event => {
+      const eventStart = new Date(event.start_time);
+      const eventEnd = new Date(event.end_time);
+      return doEventsOverlap(
+        slot.start_time,
+        slot.end_time,
+        eventStart,
+        eventEnd
+      );
+    });
+
+    if (overlappingEvent) {
+      // Move to end of overlapping event + 5 minute gap
+      const eventEnd = new Date(overlappingEvent.end_time);
+      currentTime = new Date(eventEnd);
+      currentTime.setMinutes(currentTime.getMinutes() + 5);
+    } else {
+      // Fallback: increment by event duration
+      currentTime.setMinutes(
+        currentTime.getMinutes() + config.eventDurationMinutes
+      );
+    }
   }
 
   return null;
@@ -212,6 +270,17 @@ export function distributeEvents(
 
   // Track scheduled events to avoid overlaps within the same batch
   const scheduledEvents: CalendarEventUnion[] = [...allExistingEvents];
+
+  console.log('[taskScheduler] distributeEvents called:', {
+    taskId: task.id,
+    taskTitle: task.title,
+    requiredEvents,
+    existingEventsCount: allExistingEvents.length,
+    syncedFromGoogleCount: allExistingEvents.filter(
+      e => e.synced_from_google === true
+    ).length,
+    startFrom: startFrom?.toISOString(),
+  });
 
   for (let i = 0; i < requiredEvents; i++) {
     // Get next available slot starting from current time

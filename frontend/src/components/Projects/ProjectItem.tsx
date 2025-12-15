@@ -1,8 +1,19 @@
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { Calendar, AlertCircle, CheckCircle2, Clock, AlertTriangle } from 'lucide-react';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
+import {
+  Calendar,
+  AlertCircle,
+  CheckCircle2,
+  Clock,
+  AlertTriangle,
+} from 'lucide-react';
 import { formatDate, isOverdue } from '@/utils/dateUtils';
 import { StatusIcon } from '@/components/shared';
 import Link from 'next/link';
@@ -19,7 +30,6 @@ interface ProjectItemProps {
 export function ProjectItem({
   project,
   schedulingStatus,
-  onStatusToggle,
   onDelete,
 }: ProjectItemProps) {
   const renderSchedulingIndicator = () => {
@@ -38,7 +48,10 @@ export function ProjectItem({
         <TooltipProvider>
           <Tooltip>
             <TooltipTrigger asChild>
-              <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+              <Badge
+                variant="outline"
+                className="bg-green-50 text-green-700 border-green-200"
+              >
                 <CheckCircle2 className="h-3 w-3 mr-1" />
                 On track
               </Badge>
@@ -57,7 +70,10 @@ export function ProjectItem({
         <TooltipProvider>
           <Tooltip>
             <TooltipTrigger asChild>
-              <Badge variant="outline" className="bg-red-50 text-red-700 border-red-200">
+              <Badge
+                variant="outline"
+                className="bg-red-50 text-red-700 border-red-200"
+              >
                 <AlertTriangle className="h-3 w-3 mr-1" />
                 At risk
               </Badge>
@@ -71,19 +87,28 @@ export function ProjectItem({
     }
 
     // Some tasks not scheduled
-    if (schedulingStatus.scheduledTasksCount < schedulingStatus.incompleteTasksCount) {
+    if (
+      schedulingStatus.scheduledTasksCount <
+      schedulingStatus.incompleteTasksCount
+    ) {
       return (
         <TooltipProvider>
           <Tooltip>
             <TooltipTrigger asChild>
-              <Badge variant="outline" className="bg-yellow-50 text-yellow-700 border-yellow-200">
+              <Badge
+                variant="outline"
+                className="bg-yellow-50 text-yellow-700 border-yellow-200"
+              >
                 <Clock className="h-3 w-3 mr-1" />
-                {schedulingStatus.scheduledTasksCount}/{schedulingStatus.incompleteTasksCount} scheduled
+                {schedulingStatus.scheduledTasksCount}/
+                {schedulingStatus.incompleteTasksCount} scheduled
               </Badge>
             </TooltipTrigger>
             <TooltipContent>
               <p>
-                {schedulingStatus.incompleteTasksCount - schedulingStatus.scheduledTasksCount} task non ancora schedulate
+                {schedulingStatus.incompleteTasksCount -
+                  schedulingStatus.scheduledTasksCount}{' '}
+                task non ancora schedulate
               </p>
             </TooltipContent>
           </Tooltip>

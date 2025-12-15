@@ -15,6 +15,12 @@ SUPABASE_ANON_KEY=your_anon_key_here
 SUPABASE_JWT_SECRET=your_jwt_secret_here
 SUPABASE_SERVICE_ROLE_KEY=your_service_role_key_here
 SUPABASE_URL=your_supabase_url_here
+
+# Google Calendar OAuth (optional - reuse same credentials from Supabase Auth)
+GOOGLE_CLIENT_ID=your_google_client_id_here
+GOOGLE_CLIENT_SECRET=your_google_client_secret_here
+GOOGLE_REDIRECT_URI=http://localhost:3003/api/google-calendar/callback
+FRONTEND_URL=http://localhost:3000
 ```
 
 ### 2. Database Setup
@@ -22,6 +28,7 @@ SUPABASE_URL=your_supabase_url_here
 1. Go to your Supabase project dashboard
 2. Navigate to the SQL Editor
 3. Run the SQL script from `supabase-schema.sql` to create all required tables
+4. If you're adding Google Calendar integration to an existing database, also run `migrations/add_google_calendar_integration.sql`
 
 ### 3. Install Dependencies
 
@@ -75,6 +82,14 @@ The server will run on `http://localhost:3003`
 - `POST /api/calendar-events` - Create new calendar event
 - `PUT /api/calendar-events/:id` - Update calendar event
 - `DELETE /api/calendar-events/:id` - Delete calendar event
+
+### Google Calendar Integration
+
+- `GET /api/google-calendar/auth` - Initiate OAuth flow (requires `user_id` query param)
+- `GET /api/google-calendar/callback` - OAuth callback endpoint
+- `GET /api/google-calendar/status` - Get connection status (requires `user_id` query param)
+- `POST /api/google-calendar/sync` - Manually sync events from Google Calendar (requires `user_id` in body)
+- `DELETE /api/google-calendar/disconnect` - Disconnect Google Calendar (requires `user_id` in body)
 
 ## Data Types
 

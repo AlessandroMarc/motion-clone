@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -28,10 +28,11 @@ import type {
 import { isCalendarEventTask } from '@/../../../shared/types';
 import {
   type TaskSchedulingConfig,
-  DEFAULT_CONFIG,
+  createConfigFromSchedule,
   prepareTaskEvents,
   sortTasksForScheduling,
 } from '@/utils/taskScheduler';
+import type { Schedule } from '@/../../../shared/types';
 
 interface AutoScheduleDialogProps {
   open: boolean;
@@ -40,6 +41,7 @@ interface AutoScheduleDialogProps {
   existingEvents: CalendarEventTask[];
   allCalendarEvents: CalendarEventUnion[]; // All calendar events to avoid overlaps
   userId: string;
+  activeSchedule: Schedule | null;
   onSchedule: (
     events: Array<{
       title: string;
@@ -59,6 +61,7 @@ export function AutoScheduleDialog({
   existingEvents,
   allCalendarEvents,
   userId,
+  activeSchedule,
   onSchedule,
 }: AutoScheduleDialogProps) {
   const [eventDuration, setEventDuration] = useState<number>(60);
@@ -97,10 +100,10 @@ export function AutoScheduleDialog({
   // to avoid overlaps between events created in the same batch
   // Events are scheduled consecutively starting from now (rounded to next 15 minutes)
   const taskEvents = useMemo(() => {
-    const config: TaskSchedulingConfig = {
-      ...DEFAULT_CONFIG,
-      eventDurationMinutes: eventDuration,
-    };
+    const config: TaskSchedulingConfig = createConfigFromSchedule(
+      activeSchedule,
+      eventDuration
+    );
 
     const allEvents: Array<{
       task: Task;
@@ -122,7 +125,7 @@ export function AutoScheduleDialog({
 
     // Filter events:
     // 1. Completed task events - should not be deleted, but also don't block scheduling
-    // 2. Non-task events (regular calendar events) - should not be deleted, and DO block scheduling
+    // 2. Non-task events (regular calendar events, including synced from Google) - should not be deleted, and DO block scheduling
     // 3. Non-completed task events - will be deleted, so should NOT block scheduling
     const completedTaskEvents = allCalendarEvents.filter(
       event => isCalendarEventTask(event) && event.completed_at !== null
@@ -130,15 +133,25 @@ export function AutoScheduleDialog({
     const regularEvents = allCalendarEvents.filter(
       event => !isCalendarEventTask(event)
     );
-    const nonCompletedTaskEvents = allCalendarEvents.filter(
-      event => isCalendarEventTask(event) && !event.completed_at
+
+    // Log for debugging
+    const syncedFromGoogleEvents = regularEvents.filter(
+      event => event.synced_from_google === true
     );
+    console.log('[AutoScheduleDialog] Event filtering:', {
+      totalEvents: allCalendarEvents.length,
+      regularEvents: regularEvents.length,
+      syncedFromGoogle: syncedFromGoogleEvents.length,
+      completedTaskEvents: completedTaskEvents.length,
+      syncedEventTitles: syncedFromGoogleEvents.map(e => e.title),
+    });
 
     // Accumulate scheduled events as we process each task
-    // Start with regular events (non-task events) and completed task events
+    // Start with regular events (non-task events, including Google synced) and completed task events
     // Non-completed task events will be deleted, so they don't block scheduling
+    // IMPORTANT: Regular events (including Google synced) block scheduling and must be worked around
     const accumulatedScheduledEvents: CalendarEventUnion[] = [
-      ...regularEvents,
+      ...regularEvents, // Includes events synced from Google Calendar - these block scheduling
       ...completedTaskEvents,
     ];
     let currentStartTime = new Date(startFrom);
@@ -182,7 +195,13 @@ export function AutoScheduleDialog({
     }
 
     return allEvents;
-  }, [sortedTasks, existingEvents, allCalendarEvents, eventDuration]);
+  }, [
+    sortedTasks,
+    existingEvents,
+    allCalendarEvents,
+    eventDuration,
+    activeSchedule,
+  ]);
 
   const totalEvents = useMemo(
     () => taskEvents.reduce((sum, te) => sum + te.events.length, 0),

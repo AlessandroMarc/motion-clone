@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useRef, useMemo } from 'react';
 import {
-  CalendarEventUnion,
   isCalendarEventTask,
   type CalendarEventTask,
 } from '@/../../../shared/types';
@@ -29,7 +28,7 @@ interface WeekCalendarProps {
 }
 
 export function WeekCalendar({ onTaskDropped }: WeekCalendarProps) {
-  const { user } = useAuth();
+  const { user, activeSchedule } = useAuth();
   const [currentDate, setCurrentDate] = useState(new Date());
   const dayRefs = useRef<(HTMLDivElement | null)[]>([]);
   const gridRef = useRef<HTMLDivElement | null>(null);
@@ -38,19 +37,16 @@ export function WeekCalendar({ onTaskDropped }: WeekCalendarProps) {
 
   // Normalize currentDate to a stable value (date string) to prevent unnecessary recalculations
   // Use the timestamp normalized to midnight to create a stable key
+  const currentDateTimestamp = useMemo(() => {
+    const d = new Date(currentDate);
+    d.setHours(0, 0, 0, 0);
+    return d.getTime();
+  }, [currentDate]);
+
   const currentDateKey = useMemo(() => {
-    const date = new Date(currentDate);
-    date.setHours(0, 0, 0, 0);
-    const timestamp = date.getTime();
-    return new Date(timestamp).toISOString().split('T')[0];
-  }, [
-    // Use timestamp normalized to midnight as dependency
-    (() => {
-      const d = new Date(currentDate);
-      d.setHours(0, 0, 0, 0);
-      return d.getTime();
-    })(),
-  ]);
+    const date = new Date(currentDateTimestamp);
+    return new Date(date).toISOString().split('T')[0];
+  }, [currentDateTimestamp]);
 
   const weekDates = useMemo(() => {
     const normalizedDate = new Date(currentDateKey + 'T00:00:00');
@@ -68,19 +64,27 @@ export function WeekCalendar({ onTaskDropped }: WeekCalendarProps) {
       if (window.scrollY > 50) return;
       try {
         sentinel.scrollIntoView({ block: 'center', behavior: 'auto' });
-      } catch {}
+      } catch {
+        console.error('[WeekCalendar] Error scrolling to sentinel');
+      }
       hasAutoScrolledRef.current = true;
     };
 
     // Defer to next frames to allow CSS/layout/fonts to settle
+    let id2: number | null = null;
     const id1 = requestAnimationFrame(() => {
-      const id2 = requestAnimationFrame(() => {
+      id2 = requestAnimationFrame(() => {
         setTimeout(run, 0);
       });
     });
 
     return () => {
-      cancelAnimationFrame(id1);
+      if (id1) {
+        cancelAnimationFrame(id1);
+      }
+      if (id2) {
+        cancelAnimationFrame(id2);
+      }
     };
   }, []);
 
@@ -128,16 +132,13 @@ export function WeekCalendar({ onTaskDropped }: WeekCalendarProps) {
     onTaskDropped
   );
 
-  const {
-    externalDragPreview,
-    setExternalDragPreview,
-    handleExternalTaskDragOver,
-  } = useExternalTaskDrag(
-    weekDates,
-    dayRefs,
-    handleExternalTaskDrop,
-    draggingEventId
-  );
+  const { externalDragPreview, handleExternalTaskDragOver } =
+    useExternalTaskDrag(
+      weekDates,
+      dayRefs,
+      handleExternalTaskDrop,
+      draggingEventId
+    );
 
   // Auto-schedule
   const {
@@ -246,6 +247,7 @@ export function WeekCalendar({ onTaskDropped }: WeekCalendarProps) {
           }
           allCalendarEvents={events}
           userId={user.id}
+          activeSchedule={activeSchedule}
           onSchedule={handleAutoSchedule}
         />
       )}

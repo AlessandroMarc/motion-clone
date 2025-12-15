@@ -1,12 +1,10 @@
 {
-  "root": true,
+  "root": false,
   "parser": "@typescript-eslint/parser",
   "parserOptions": {
     "ecmaVersion": 2020,
     "sourceType": "module",
-    "ecmaFeatures": {
-      "jsx": true
-    }
+    "project": "./tsconfig.eslint.json"
   },
   "plugins": ["@typescript-eslint"],
   "extends": [
@@ -14,8 +12,13 @@
     "plugin:@typescript-eslint/recommended",
     "prettier"
   ],
+  "env": {
+    "node": true,
+    "es2020": true
+  },
   "rules": {
     "no-unused-vars": "off",
+    "no-empty": "error",
     "@typescript-eslint/no-unused-vars": [
       "error",
       {
@@ -31,21 +34,9 @@
     "node_modules/",
     "dist/",
     "build/",
-    ".next/",
-    "out/",
-    "coverage/",
     "*.config.js",
     "*.config.mjs"
-  ],
-  "overrides": [
-    {
-      "files": ["backend/**/*.ts"],
-      "parserOptions": {
-        "project": "./backend/tsconfig.eslint.json"
-      }
-    }
   ]
 }
-
 
 
