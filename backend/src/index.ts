@@ -53,12 +53,19 @@ app.use('/api/user-settings', userSettingsRoutes);
 app.use('/api/google-calendar', googleCalendarRoutes);
 
 // Start sync scheduler
-const syncScheduler = new SyncScheduler();
-syncScheduler.start();
+// NOTE: Vercel deploys this backend as a serverless function. In-process schedulers
+// (node-cron) and long-running listeners should NOT run there.
+if (!process.env.VERCEL) {
+  const syncScheduler = new SyncScheduler();
+  syncScheduler.start();
+}
 
 // Start server
-app.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}`);
-});
+// In serverless (Vercel), we export the app and let the platform handle the listener.
+if (!process.env.VERCEL) {
+  app.listen(PORT, () => {
+    console.log(`Server is running on port ${PORT}`);
+  });
+}
 
 export default app;
