@@ -23,6 +23,7 @@ import {
   SheetTitle,
 } from '@/components/ui/sheet';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { logger } from '@/lib/logger';
 
 const navigation = [
   {
@@ -61,7 +62,7 @@ function NavigationContent({ onLinkClick }: { onLinkClick?: () => void }) {
       await signOut();
       onLinkClick?.();
     } catch (error) {
-      console.error('Failed to sign out:', error);
+      logger.error('Failed to sign out:', error);
     }
   };
 

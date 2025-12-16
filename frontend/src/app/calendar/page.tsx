@@ -1,9 +1,9 @@
 'use client';
 
 import { useState } from 'react';
-import { WeekCalendar } from '@/components/Calendar/WeekCalendar';
+import { WeekCalendar } from '@/components/Calendar';
 import { ProtectedRoute } from '@/components/Auth/ProtectedRoute';
-import { CalendarTasksPanel } from '@/components/Tasks/CalendarTasksPanel';
+import { CalendarTasksPanel } from '@/components/Tasks';
 
 export default function CalendarPage() {
   const [taskPanelRefresh, setTaskPanelRefresh] = useState(0);

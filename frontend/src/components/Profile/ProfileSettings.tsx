@@ -18,6 +18,7 @@ import { Button } from '@/components/ui/button';
 import { Plus } from 'lucide-react';
 import { toast } from 'sonner';
 import type { Schedule } from '@/../../../shared/types';
+import { logger } from '@/lib/logger';
 
 export function ProfileSettings() {
   const { activeSchedule } = useAuth();
@@ -46,7 +47,7 @@ export function ProfileSettings() {
       );
       toast.success('Schedule created successfully');
     } catch (error) {
-      console.error('Failed to create schedule:', error);
+      logger.error('Failed to create schedule:', error);
       toast.error('Failed to create schedule');
     }
   };
@@ -68,7 +69,7 @@ export function ProfileSettings() {
       toast.success('Schedule updated successfully');
       setEditingSchedule(null);
     } catch (error) {
-      console.error('Failed to update schedule:', error);
+      logger.error('Failed to update schedule:', error);
       toast.error('Failed to update schedule');
     }
   };
@@ -77,7 +78,7 @@ export function ProfileSettings() {
     try {
       await setActiveSchedule(scheduleId);
     } catch (error) {
-      console.error('Failed to set active schedule:', error);
+      logger.error('Failed to set active schedule:', error);
       toast.error('Failed to set active schedule');
     }
   };

@@ -1,12 +1,12 @@
 'use client';
 
 import { useState } from 'react';
-import { TaskCreateForm } from '@/components/Tasks/TaskCreateForm';
-import { TaskList } from '@/components/Tasks/TaskList';
+import { TaskCreateForm, TaskList } from '@/components/Tasks';
 import { ProtectedRoute } from '@/components/Auth/ProtectedRoute';
 import type { Task } from '@/../../../shared/types';
 import { taskService } from '@/services/taskService';
 import { toast } from 'sonner';
+import { logger } from '@/lib/logger';
 
 export default function TasksPage() {
   const [isCreatingTask, setIsCreatingTask] = useState(false);
@@ -20,7 +20,7 @@ export default function TasksPage() {
   ) => {
     setIsCreatingTask(true);
     try {
-      console.log('TasksPage: handleTaskCreate called with:', taskData);
+      logger.debug('TasksPage: handleTaskCreate called with:', taskData);
       await taskService.createTask({
         title: taskData.title,
         description: taskData.description,
@@ -32,7 +32,7 @@ export default function TasksPage() {
       });
       setRefreshTrigger(prev => prev + 1);
     } catch (error) {
-      console.error('Failed to create task:', error);
+      logger.error('Failed to create task:', error);
       const message =
         error instanceof Error ? error.message : 'Failed to create task';
       toast.error(message);

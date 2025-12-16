@@ -7,6 +7,7 @@ import { formatDate, isOverdue } from '@/utils/dateUtils';
 import { taskService } from '@/services/taskService';
 import { TaskProjectSection } from './TaskProjectSection';
 import type { Task, Project } from '@/../../../shared/types';
+import { logger } from '@/lib/logger';
 
 interface TaskItemProps {
   task: Task;
@@ -45,12 +46,6 @@ export function TaskItem({
   isPlanned = false,
   onSelect,
 }: TaskItemProps) {
-  console.log('TaskItem rendered:', {
-    taskId: task.id,
-    projectId: task.project_id,
-    project,
-  });
-
   const handleProjectSelect = async (projectId: string) => {
     try {
       const updatedTask = await taskService.updateTask(task.id, {
@@ -58,7 +53,7 @@ export function TaskItem({
       });
       onTaskUpdate?.(updatedTask);
     } catch (error) {
-      console.error('Failed to link project:', error);
+      logger.error('Failed to link project:', error);
     }
   };
 
@@ -69,7 +64,7 @@ export function TaskItem({
       });
       onTaskUpdate?.(updatedTask);
     } catch (error) {
-      console.error('Failed to unlink project:', error);
+      logger.error('Failed to unlink project:', error);
     }
   };
   return (
