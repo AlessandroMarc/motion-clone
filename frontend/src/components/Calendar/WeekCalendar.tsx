@@ -14,6 +14,7 @@ import CalendarEditDialog from './CalendarEditDialog';
 import WeekScrollableGrid from './WeekScrollableGrid';
 import { AutoScheduleDialog } from './AutoScheduleDialog';
 import { useAuth } from '@/contexts/AuthContext';
+import { useIsMobile } from '@/hooks/use-mobile';
 import {
   useCalendarEvents,
   useEventDragAndDrop,
@@ -29,7 +30,9 @@ interface WeekCalendarProps {
 
 export function WeekCalendar({ onTaskDropped }: WeekCalendarProps) {
   const { user, activeSchedule } = useAuth();
+  const isMobile = useIsMobile();
   const [currentDate, setCurrentDate] = useState(new Date());
+  const [currentDay, setCurrentDay] = useState(new Date()); // For mobile single-day view
   const dayRefs = useRef<(HTMLDivElement | null)[]>([]);
   const gridRef = useRef<HTMLDivElement | null>(null);
   const scrollSentinelRef = useRef<HTMLDivElement | null>(null);
@@ -49,9 +52,10 @@ export function WeekCalendar({ onTaskDropped }: WeekCalendarProps) {
   }, [currentDateTimestamp]);
 
   const weekDates = useMemo(() => {
-    const normalizedDate = new Date(currentDateKey + 'T00:00:00');
-    return getWeekDates(normalizedDate);
-  }, [currentDateKey]);
+    // On mobile, use currentDay to determine the week; on desktop, use currentDate
+    const dateToUse = isMobile ? currentDay : new Date(currentDateKey + 'T00:00:00');
+    return getWeekDates(dateToUse);
+  }, [currentDateKey, isMobile, currentDay]);
 
   // One-time initial scroll to center around mid-day using an in-grid sentinel
   useEffect(() => {
@@ -163,8 +167,47 @@ export function WeekCalendar({ onTaskDropped }: WeekCalendarProps) {
   };
 
   const handleCurrentWeek = () => {
-    setCurrentDate(new Date());
+    const today = new Date();
+    setCurrentDate(today);
+    setCurrentDay(today);
   };
+
+  // Mobile day navigation
+  const handlePreviousDay = () => {
+    const newDay = new Date(currentDay);
+    newDay.setDate(newDay.getDate() - 1);
+    setCurrentDay(newDay);
+  };
+
+  const handleNextDay = () => {
+    const newDay = new Date(currentDay);
+    newDay.setDate(newDay.getDate() + 1);
+    setCurrentDay(newDay);
+  };
+
+  // For mobile, use single day; for desktop, use week
+  const displayDates = isMobile ? [currentDay] : weekDates;
+  
+  // For mobile single-day view, map eventsByDay to show only the current day as day-0
+  const displayEventsByDay = useMemo(() => {
+    if (!isMobile) return eventsByDay;
+    
+    // Find which day index in the week the currentDay corresponds to
+    const dayIndex = weekDates.findIndex(d => 
+      d.toDateString() === currentDay.toDateString()
+    );
+    
+    // If found, map that day's events to day-0 for mobile display
+    // If not found (day is outside current week), fetch events for that day
+    if (dayIndex >= 0) {
+      return {
+        'day-0': eventsByDay[`day-${dayIndex}`] || []
+      };
+    }
+    
+    // Day is outside current week, return empty (events will be fetched when week changes)
+    return { 'day-0': [] };
+  }, [isMobile, eventsByDay, weekDates, currentDay]);
 
   if (loading) {
     return <LoadingState />;
@@ -182,10 +225,13 @@ export function WeekCalendar({ onTaskDropped }: WeekCalendarProps) {
         onNextWeek={handleNextWeek}
         onCurrentWeek={handleCurrentWeek}
         onAutoSchedule={handleAutoScheduleClick}
+        currentDay={isMobile ? currentDay : undefined}
+        onPreviousDay={isMobile ? handlePreviousDay : undefined}
+        onNextDay={isMobile ? handleNextDay : undefined}
       />
       <WeekScrollableGrid
-        weekDates={weekDates}
-        eventsByDay={eventsByDay}
+        weekDates={displayDates}
+        eventsByDay={displayEventsByDay}
         onGridCellClick={dialogs.openCreateDialog}
         onEventMouseDown={onEventMouseDown}
         draggingEventId={draggingEventId}
@@ -197,6 +243,7 @@ export function WeekCalendar({ onTaskDropped }: WeekCalendarProps) {
         onExternalTaskDrop={handleExternalTaskDrop}
         onExternalTaskDragOver={handleExternalTaskDragOver}
         tasksMap={tasksMap}
+        isMobile={isMobile}
       />
       <CalendarCreateDialog
         open={dialogs.createOpen}

@@ -1,9 +1,23 @@
 import express, { type Request, type Response } from 'express';
 import { GoogleCalendarService } from '../services/googleCalendarService.js';
+import { getFrontendUrl } from '../config/env.js';
 import { ResponseHelper } from '../utils/responseHelpers.js';
 
 const router = express.Router();
 const googleCalendarService = new GoogleCalendarService();
+
+function getFrontendBaseUrlOrFail(res: Response): string | null {
+  try {
+    return getFrontendUrl();
+  } catch (e) {
+    console.error('[GoogleCalendarRoute] FRONTEND_URL is not configured:', e);
+    ResponseHelper.internalError(
+      res,
+      e instanceof Error ? e.message : 'Missing FRONTEND_URL'
+    );
+    return null;
+  }
+}
 
 // GET /api/google-calendar/auth - Initiate OAuth flow
 router.get('/auth', async (req: Request, res: Response) => {
@@ -29,17 +43,19 @@ router.get('/auth', async (req: Request, res: Response) => {
 router.get('/callback', async (req: Request, res: Response) => {
   try {
     const { code, state, error } = req.query;
+    const frontendUrl = getFrontendBaseUrlOrFail(res);
+    if (!frontendUrl) return;
 
     if (error) {
       console.error('[GoogleCalendarRoute] OAuth error:', error);
       return res.redirect(
-        `${process.env.FRONTEND_URL || 'http://localhost:3000'}/profile?google_calendar_error=${encodeURIComponent(error as string)}`
+        `${frontendUrl}/profile?google_calendar_error=${encodeURIComponent(error as string)}`
       );
     }
 
     if (!code || !state) {
       return res.redirect(
-        `${process.env.FRONTEND_URL || 'http://localhost:3000'}/profile?google_calendar_error=missing_code_or_state`
+        `${frontendUrl}/profile?google_calendar_error=missing_code_or_state`
       );
     }
 
@@ -51,17 +67,32 @@ router.get('/callback', async (req: Request, res: Response) => {
 
     if (result.success) {
       return res.redirect(
-        `${process.env.FRONTEND_URL || 'http://localhost:3000'}/profile?google_calendar_connected=true`
+        `${frontendUrl}/profile?google_calendar_connected=true`
       );
     } else {
       return res.redirect(
-        `${process.env.FRONTEND_URL || 'http://localhost:3000'}/profile?google_calendar_error=${encodeURIComponent(result.error || 'unknown_error')}`
+        `${frontendUrl}/profile?google_calendar_error=${encodeURIComponent(result.error || 'unknown_error')}`
       );
     }
   } catch (error) {
     console.error('[GoogleCalendarRoute] Callback error:', error);
-    return res.redirect(
-      `${process.env.FRONTEND_URL || 'http://localhost:3000'}/profile?google_calendar_error=${encodeURIComponent(error instanceof Error ? error.message : 'unknown_error')}`
+    const frontendUrl = (() => {
+      try {
+        return getFrontendUrl();
+      } catch {
+        return null;
+      }
+    })();
+
+    if (frontendUrl) {
+      return res.redirect(
+        `${frontendUrl}/profile?google_calendar_error=${encodeURIComponent(error instanceof Error ? error.message : 'unknown_error')}`
+      );
+    }
+
+    ResponseHelper.internalError(
+      res,
+      error instanceof Error ? error.message : 'unknown_error'
     );
   }
 });
@@ -76,7 +107,11 @@ router.get('/status', async (req: Request, res: Response) => {
     }
 
     const status = await googleCalendarService.getConnectionStatus(userId);
-    ResponseHelper.success(res, status, 'Connection status retrieved successfully');
+    ResponseHelper.success(
+      res,
+      status,
+      'Connection status retrieved successfully'
+    );
   } catch (error) {
     console.error('[GoogleCalendarRoute] Status error:', error);
     ResponseHelper.internalError(
@@ -131,7 +166,11 @@ router.delete('/disconnect', async (req: Request, res: Response) => {
     }
 
     await googleCalendarService.disconnectGoogleCalendar(userId);
-    ResponseHelper.success(res, null, 'Google Calendar disconnected successfully');
+    ResponseHelper.success(
+      res,
+      null,
+      'Google Calendar disconnected successfully'
+    );
   } catch (error) {
     console.error('[GoogleCalendarRoute] Disconnect error:', error);
     ResponseHelper.internalError(
@@ -142,5 +181,3 @@ router.delete('/disconnect', async (req: Request, res: Response) => {
 });
 
 export default router;
-
-

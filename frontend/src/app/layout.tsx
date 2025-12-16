@@ -25,7 +25,7 @@ export default function RootLayout({
         <AuthProvider>
           <div className="flex h-screen">
             <Sidebar />
-            <main className="flex-1 overflow-auto">{children}</main>
+            <main className="flex-1 overflow-auto md:pt-0 pt-16">{children}</main>
           </div>
           <Toaster position="top-right" richColors />
         </AuthProvider>

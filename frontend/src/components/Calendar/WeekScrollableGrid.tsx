@@ -1,5 +1,6 @@
 'use client';
 
+import { cn } from '@/lib/utils';
 import DayColumn from './DayColumn';
 import TimeColumn from './TimeColumn';
 import type { CalendarEventUnion, Task } from '@/../../../shared/types';
@@ -22,6 +23,7 @@ interface WeekScrollableGridProps {
   onExternalTaskDrop?: (task: { id: string; title: string; description?: string }, date: Date, hour: number, minute: number) => void;
   onExternalTaskDragOver?: (date: Date, hour: number, minute: number) => void;
   tasksMap?: Map<string, Task>;
+  isMobile?: boolean;
 }
 
 export function WeekScrollableGrid({
@@ -38,18 +40,33 @@ export function WeekScrollableGrid({
   onExternalTaskDrop,
   onExternalTaskDragOver,
   tasksMap,
+  isMobile = false,
 }: WeekScrollableGridProps) {
   const timeSlots = Array.from({ length: 24 }, (_, i) => i);
 
   return (
-    <div className="border rounded-lg overflow-hidden h-[calc(100vh-100px)]">
-      <div className="grid grid-cols-8 gap-px bg-border rounded-t-lg overflow-hidden">
+    <div className="border rounded-lg overflow-hidden h-[calc(100vh-100px)] md:h-[calc(100vh-100px)]">
+      <div className={cn(
+        "grid gap-px bg-border rounded-t-lg overflow-hidden",
+        isMobile ? "grid-cols-2" : "grid-cols-8"
+      )}>
         {/* Time column header */}
         <div className="bg-muted p-3 text-sm font-medium text-muted-foreground">
           Time
         </div>
         {weekDates.map((_, index) => (
-          <div key={index} className="bg-muted p-3" />
+          <div key={index} className="bg-muted p-3">
+            {isMobile && (
+              <div className="text-center">
+                <div className="text-xs font-medium text-muted-foreground">
+                  {weekDates[index].toLocaleDateString('en-US', { weekday: 'short' })}
+                </div>
+                <div className="text-sm font-semibold">
+                  {weekDates[index].toLocaleDateString('en-US', { day: 'numeric' })}
+                </div>
+              </div>
+            )}
+          </div>
         ))}
       </div>
       <div 
@@ -64,7 +81,10 @@ export function WeekScrollableGrid({
         }}
       >
         <div 
-          className="grid grid-cols-8 gap-px bg-border w-full"
+          className={cn(
+            "grid gap-px bg-border w-full",
+            isMobile ? "grid-cols-2" : "grid-cols-8"
+          )}
           onDragOver={e => {
             console.log('[WeekScrollableGrid] onDragOver on grid inner div');
             if (onExternalTaskDrop) {

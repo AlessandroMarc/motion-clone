@@ -47,22 +47,22 @@ export default function ProjectsPage() {
 
   return (
     <ProtectedRoute>
-      <div className="flex-1 p-6">
+      <div className="flex-1 p-3 md:p-6">
         <div className="max-w-4xl mx-auto">
           {/* Header */}
-          <div className="mb-8">
-            <h1 className="text-4xl font-bold text-foreground mb-2">
+          <div className="mb-6 md:mb-8">
+            <h1 className="text-2xl md:text-4xl font-bold text-foreground mb-2">
               Project Manager
             </h1>
-            <p className="text-muted-foreground">
+            <p className="text-sm md:text-base text-muted-foreground">
               Organize your larger goals and track project progress
             </p>
           </div>
 
           {/* Main Content */}
-          <div className="space-y-6">
-            <div className="flex items-center justify-between">
-              <h2 className="text-2xl font-semibold">Your Projects</h2>
+          <div className="space-y-4 md:space-y-6">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+              <h2 className="text-xl md:text-2xl font-semibold">Your Projects</h2>
               <ProjectCreateForm
                 onProjectCreate={handleProjectCreate}
                 isLoading={isCreatingProject}

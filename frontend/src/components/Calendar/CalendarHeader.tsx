@@ -7,6 +7,7 @@ import {
   getDayAbbreviation,
   getMonthDay,
 } from '@/utils/calendarUtils';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface CalendarHeaderProps {
   weekDates: Date[];
@@ -14,6 +15,10 @@ interface CalendarHeaderProps {
   onNextWeek: () => void;
   onCurrentWeek: () => void;
   onAutoSchedule?: () => void;
+  // Mobile-specific props
+  currentDay?: Date;
+  onPreviousDay?: () => void;
+  onNextDay?: () => void;
 }
 
 export function CalendarHeader({
@@ -22,7 +27,80 @@ export function CalendarHeader({
   onNextWeek,
   onCurrentWeek,
   onAutoSchedule,
+  currentDay,
+  onPreviousDay,
+  onNextDay,
 }: CalendarHeaderProps) {
+  const isMobile = useIsMobile();
+
+  // Mobile view: show single day navigation
+  if (isMobile && currentDay && onPreviousDay && onNextDay) {
+    const dayName = currentDay.toLocaleDateString('en-US', { weekday: 'long' });
+    const dayDate = currentDay.toLocaleDateString('en-US', { 
+      month: 'short', 
+      day: 'numeric',
+      year: 'numeric'
+    });
+
+    return (
+      <div className="flex flex-col gap-4 mb-6">
+        <div className="flex items-center justify-between">
+          <h1 className="text-xl font-bold">Calendar</h1>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={onCurrentWeek}
+              className="text-xs h-9"
+            >
+              Today
+            </Button>
+            {onAutoSchedule && (
+              <Button
+                variant="default"
+                size="sm"
+                onClick={onAutoSchedule}
+                className="text-xs h-9 cursor-pointer hover:bg-primary hover:text-white"  
+              >
+                Auto-Schedule
+              </Button>
+            )}
+          </div>
+        </div>
+
+        <div className="flex items-center justify-between">
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={onPreviousDay}
+            className="h-9 w-9 p-0"
+          >
+            <ChevronLeft className="h-4 w-4" />
+          </Button>
+
+          <div className="text-center flex-1 px-4">
+            <div className="text-sm font-medium text-muted-foreground">
+              {dayName}
+            </div>
+            <div className="text-lg font-semibold">
+              {dayDate}
+            </div>
+          </div>
+
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={onNextDay}
+            className="h-9 w-9 p-0"
+          >
+            <ChevronRight className="h-4 w-4" />
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  // Desktop view: show week navigation
   return (
     <div className="flex items-center justify-between mb-6">
       <div className="flex items-center space-x-4">

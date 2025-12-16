@@ -1,6 +1,7 @@
 import { google } from 'googleapis';
 import { supabase } from '../config/supabase.js';
 import { CalendarEventService } from './calendarEventService.js';
+import { getGoogleOAuthEnv } from '../config/env.js';
 import dotenv from 'dotenv';
 import path from 'path';
 
@@ -13,25 +14,24 @@ if (envResult.error) {
   dotenv.config({ path: path.join(process.cwd(), '.env') });
 }
 
-const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
-const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET;
-const GOOGLE_REDIRECT_URI =
-  process.env.GOOGLE_REDIRECT_URI ||
-  'http://localhost:3003/api/google-calendar/callback';
+function getOAuthConfigOrThrow() {
+  // Validates required vars and URL format (no defaults).
+  return getGoogleOAuthEnv();
+}
 
-console.log('[GoogleCalendarService] Environment check:', {
-  envPath,
-  hasClientId: !!GOOGLE_CLIENT_ID,
-  hasClientSecret: !!GOOGLE_CLIENT_SECRET,
-  redirectUri: GOOGLE_REDIRECT_URI,
-});
-
-if (!GOOGLE_CLIENT_ID || !GOOGLE_CLIENT_SECRET) {
-  console.error(
-    '[GoogleCalendarService] Missing Google OAuth credentials. Google Calendar integration will not work.'
-  );
-  console.error('[GoogleCalendarService] Available env vars:', 
-    Object.keys(process.env).filter(k => k.includes('GOOGLE'))
+// Helpful startup log (without leaking secrets)
+try {
+  const cfg = getOAuthConfigOrThrow();
+  console.log('[GoogleCalendarService] Google OAuth env loaded:', {
+    envPath,
+    hasClientId: !!cfg.clientId,
+    hasClientSecret: !!cfg.clientSecret,
+    redirectUri: cfg.redirectUri,
+  });
+} catch (e) {
+  console.warn(
+    '[GoogleCalendarService] Google OAuth env not configured; Google Calendar integration endpoints will fail until env vars are set.',
+    e instanceof Error ? e.message : e
   );
 }
 
@@ -60,14 +60,12 @@ export class GoogleCalendarService {
    * Generate OAuth2 URL for Google Calendar authorization
    */
   initiateOAuth(userId: string): string {
-    if (!GOOGLE_CLIENT_ID || !GOOGLE_CLIENT_SECRET) {
-      throw new Error('Google OAuth credentials not configured');
-    }
+    const { clientId, clientSecret, redirectUri } = getOAuthConfigOrThrow();
 
     const oauth2Client = new google.auth.OAuth2(
-      GOOGLE_CLIENT_ID,
-      GOOGLE_CLIENT_SECRET,
-      GOOGLE_REDIRECT_URI
+      clientId,
+      clientSecret,
+      redirectUri
     );
 
     const authUrl = oauth2Client.generateAuthUrl({
@@ -87,15 +85,13 @@ export class GoogleCalendarService {
     code: string,
     userId: string
   ): Promise<{ success: boolean; error?: string }> {
-    if (!GOOGLE_CLIENT_ID || !GOOGLE_CLIENT_SECRET) {
-      throw new Error('Google OAuth credentials not configured');
-    }
+    const { clientId, clientSecret, redirectUri } = getOAuthConfigOrThrow();
 
     try {
       const oauth2Client = new google.auth.OAuth2(
-        GOOGLE_CLIENT_ID,
-        GOOGLE_CLIENT_SECRET,
-        GOOGLE_REDIRECT_URI
+        clientId,
+        clientSecret,
+        redirectUri
       );
 
       const { tokens } = await oauth2Client.getToken(code);
@@ -109,36 +105,28 @@ export class GoogleCalendarService {
         : new Date(Date.now() + 3600 * 1000); // Default 1 hour
 
       // Save or update tokens in database
-      const { error } = await supabase
-        .from('google_calendar_tokens')
-        .upsert(
-          {
-            user_id: userId,
-            access_token: tokens.access_token,
-            refresh_token: tokens.refresh_token,
-            expires_at: expiresAt.toISOString(),
-            calendar_id: 'primary',
-            updated_at: new Date().toISOString(),
-          },
-          {
-            onConflict: 'user_id',
-          }
-        );
+      const { error } = await supabase.from('google_calendar_tokens').upsert(
+        {
+          user_id: userId,
+          access_token: tokens.access_token,
+          refresh_token: tokens.refresh_token,
+          expires_at: expiresAt.toISOString(),
+          calendar_id: 'primary',
+          updated_at: new Date().toISOString(),
+        },
+        {
+          onConflict: 'user_id',
+        }
+      );
 
       if (error) {
-        console.error(
-          '[GoogleCalendarService] Failed to save tokens:',
-          error
-        );
+        console.error('[GoogleCalendarService] Failed to save tokens:', error);
         throw new Error(`Failed to save tokens: ${error.message}`);
       }
 
       return { success: true };
     } catch (error) {
-      console.error(
-        '[GoogleCalendarService] OAuth callback error:',
-        error
-      );
+      console.error('[GoogleCalendarService] OAuth callback error:', error);
       return {
         success: false,
         error:
@@ -150,9 +138,7 @@ export class GoogleCalendarService {
   /**
    * Get user's Google Calendar tokens
    */
-  private async getTokens(
-    userId: string
-  ): Promise<GoogleCalendarToken | null> {
+  private async getTokens(userId: string): Promise<GoogleCalendarToken | null> {
     const { data, error } = await supabase
       .from('google_calendar_tokens')
       .select('*')
@@ -173,9 +159,7 @@ export class GoogleCalendarService {
    * Refresh access token if expired
    */
   async refreshAccessToken(userId: string): Promise<string> {
-    if (!GOOGLE_CLIENT_ID || !GOOGLE_CLIENT_SECRET) {
-      throw new Error('Google OAuth credentials not configured');
-    }
+    const { clientId, clientSecret, redirectUri } = getOAuthConfigOrThrow();
 
     const tokens = await this.getTokens(userId);
     if (!tokens) {
@@ -183,9 +167,9 @@ export class GoogleCalendarService {
     }
 
     const oauth2Client = new google.auth.OAuth2(
-      GOOGLE_CLIENT_ID,
-      GOOGLE_CLIENT_SECRET,
-      GOOGLE_REDIRECT_URI
+      clientId,
+      clientSecret,
+      redirectUri
     );
 
     oauth2Client.setCredentials({
@@ -251,6 +235,7 @@ export class GoogleCalendarService {
     errors: string[];
   }> {
     try {
+      const { clientId, clientSecret, redirectUri } = getOAuthConfigOrThrow();
       const accessToken = await this.getValidAccessToken(userId);
       const tokens = await this.getTokens(userId);
       if (!tokens) {
@@ -258,9 +243,9 @@ export class GoogleCalendarService {
       }
 
       const oauth2Client = new google.auth.OAuth2(
-        GOOGLE_CLIENT_ID,
-        GOOGLE_CLIENT_SECRET,
-        GOOGLE_REDIRECT_URI
+        clientId,
+        clientSecret,
+        redirectUri
       );
 
       oauth2Client.setCredentials({
@@ -379,16 +364,11 @@ export class GoogleCalendarService {
 
       return { success: true, synced, errors };
     } catch (error) {
-      console.error(
-        '[GoogleCalendarService] Sync error:',
-        error
-      );
+      console.error('[GoogleCalendarService] Sync error:', error);
       return {
         success: false,
         synced: 0,
-        errors: [
-          error instanceof Error ? error.message : 'Unknown sync error',
-        ],
+        errors: [error instanceof Error ? error.message : 'Unknown sync error'],
       };
     }
   }
@@ -429,4 +409,3 @@ export class GoogleCalendarService {
     };
   }
 }
-
