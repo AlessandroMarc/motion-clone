@@ -1,59 +1,11 @@
 import type { Schedule, UserSettings } from '@/../../../shared/types';
-import { getAuthToken } from '@/lib/auth';
-
-const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_URL ||
-  (process.env.NODE_ENV === 'production' ? '/api' : 'http://localhost:3003');
-
-export interface ApiResponse<T> {
-  success: boolean;
-  message: string;
-  data?: T;
-  error?: string;
-}
+import { request } from './apiClient';
 
 class UserSettingsService {
-  private async request<T>(
-    endpoint: string,
-    options: RequestInit = {}
-  ): Promise<ApiResponse<T>> {
-    try {
-      const url = `${API_BASE_URL}${endpoint}`;
-      const token = await getAuthToken();
-      const headers: Record<string, string> = {
-        'Content-Type': 'application/json',
-        ...(options.headers as Record<string, string>),
-      };
-
-      if (token) {
-        headers['Authorization'] = `Bearer ${token}`;
-      }
-
-      const response = await fetch(url, {
-        headers,
-        ...options,
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const data = await response.json();
-      return data;
-    } catch (error) {
-      console.error('API request failed:', error);
-      return {
-        success: false,
-        message: 'Failed to connect to the server',
-        error: error instanceof Error ? error.message : 'Unknown error',
-      };
-    }
-  }
-
   // Get active schedule for user (or default)
   async getActiveSchedule(userId: string): Promise<Schedule> {
-    const response = await this.request<Schedule>(
-      `/api/user-settings/active-schedule?user_id=${userId}`
+    const response = await request<Schedule>(
+      `/user-settings/active-schedule?user_id=${userId}`
     );
 
     if (!response.success || !response.data) {
@@ -79,8 +31,8 @@ class UserSettingsService {
 
   // Get all schedules for user
   async getUserSchedules(userId: string): Promise<Schedule[]> {
-    const response = await this.request<Schedule[]>(
-      `/api/user-settings/schedules?user_id=${userId}`
+    const response = await request<Schedule[]>(
+      `/user-settings/schedules?user_id=${userId}`
     );
 
     if (!response.success || !response.data) {
@@ -96,8 +48,8 @@ class UserSettingsService {
 
   // Get user settings
   async getUserSettings(userId: string): Promise<UserSettings | null> {
-    const response = await this.request<UserSettings>(
-      `/api/user-settings?user_id=${userId}`
+    const response = await request<UserSettings>(
+      `/user-settings?user_id=${userId}`
     );
 
     if (!response.success || !response.data) {
@@ -119,19 +71,16 @@ class UserSettingsService {
     workingHoursEnd: number,
     isDefault = false
   ): Promise<Schedule> {
-    const response = await this.request<Schedule>(
-      '/api/user-settings/schedules',
-      {
-        method: 'POST',
-        body: JSON.stringify({
-          user_id: userId,
-          name,
-          working_hours_start: workingHoursStart,
-          working_hours_end: workingHoursEnd,
-          is_default: isDefault,
-        }),
-      }
-    );
+    const response = await request<Schedule>('/user-settings/schedules', {
+      method: 'POST',
+      body: JSON.stringify({
+        user_id: userId,
+        name,
+        working_hours_start: workingHoursStart,
+        working_hours_end: workingHoursEnd,
+        is_default: isDefault,
+      }),
+    });
 
     if (!response.success || !response.data) {
       throw new Error(response.error || 'Failed to create schedule');
@@ -152,8 +101,8 @@ class UserSettingsService {
     workingHoursStart: number,
     workingHoursEnd: number
   ): Promise<Schedule> {
-    const response = await this.request<Schedule>(
-      `/api/user-settings/schedules/${scheduleId}?user_id=${userId}`,
+    const response = await request<Schedule>(
+      `/user-settings/schedules/${scheduleId}?user_id=${userId}`,
       {
         method: 'PUT',
         body: JSON.stringify({
@@ -180,16 +129,13 @@ class UserSettingsService {
     userId: string,
     scheduleId: string | null
   ): Promise<UserSettings> {
-    const response = await this.request<UserSettings>(
-      `/api/user-settings?user_id=${userId}`,
+    const response = await request<UserSettings>(
+      `/user-settings?user_id=${userId}`,
       {
         method: 'PUT',
         body: JSON.stringify({
           active_schedule_id: scheduleId,
         }),
-        headers: {
-          'Content-Type': 'application/json',
-        },
       }
     );
 

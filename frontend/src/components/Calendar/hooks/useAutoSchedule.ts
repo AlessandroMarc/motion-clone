@@ -7,6 +7,7 @@ import {
 import { taskService } from '@/services/taskService';
 import { calendarService } from '@/services/calendarService';
 import { toast } from 'sonner';
+import { logger } from '@/lib/logger';
 
 export function useAutoSchedule(
   user: { id: string } | null,
@@ -28,7 +29,7 @@ export function useAutoSchedule(
         allTasks.forEach(task => map.set(task.id, task));
         setTasksMap(map);
       } catch (err) {
-        console.error('Failed to load tasks:', err);
+        logger.error('Failed to load tasks:', err);
       }
     };
     loadTasks();
@@ -48,7 +49,7 @@ export function useAutoSchedule(
       setTasksMap(map);
       setAutoScheduleOpen(true);
     } catch (err) {
-      console.error('Failed to fetch tasks for auto-scheduling:', err);
+      logger.error('Failed to fetch tasks for auto-scheduling:', err);
       toast.error('Failed to load tasks');
     }
   };
@@ -79,7 +80,7 @@ export function useAutoSchedule(
         event => isCalendarEventTask(event) && !event.completed_at
       );
 
-      console.log(
+      logger.debug(
         `[useAutoSchedule] Deleting ${nonCompletedTaskEvents.length} non-completed task events before rescheduling`,
         {
           eventIds: nonCompletedTaskEvents.map(e => e.id),
@@ -91,7 +92,7 @@ export function useAutoSchedule(
 
       const deletePromises = nonCompletedTaskEvents.map(event =>
         calendarService.deleteCalendarEvent(event.id).catch(err => {
-          console.error(`Failed to delete event ${event.id}:`, err);
+          logger.error(`Failed to delete event ${event.id}:`, err);
           return null;
         })
       );
@@ -141,7 +142,7 @@ export function useAutoSchedule(
       // Notify parent to refresh task list
       onTaskDropped?.();
     } catch (err) {
-      console.error('Failed to auto-schedule tasks:', err);
+      logger.error('Failed to auto-schedule tasks:', err);
       toast.error('Failed to schedule tasks');
     }
   };

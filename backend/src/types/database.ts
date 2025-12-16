@@ -6,6 +6,8 @@ export type {
   CalendarEvent,
   CalendarEventTask,
   CalendarEventUnion,
+  CreateCalendarEventInput,
+  UpdateCalendarEventInput,
 } from '@shared/types.js';
 
 // Database-specific types that extend or modify shared types
@@ -67,28 +69,4 @@ export interface UpdateMilestoneInput {
   status?: 'not-started' | 'in-progress' | 'completed';
   project_id?: string;
   user_id?: string;
-}
-
-export interface CreateCalendarEventInput {
-  title: string;
-  start_time: string;
-  end_time: string;
-  linked_task_id?: string;
-  description?: string;
-  user_id: string;
-  completed_at?: string | null;
-  google_event_id?: string;
-  synced_from_google?: boolean;
-}
-
-export interface UpdateCalendarEventInput {
-  title?: string;
-  start_time?: string;
-  end_time?: string;
-  linked_task_id?: string;
-  description?: string;
-  user_id?: string;
-  completed_at?: string | null;
-  google_event_id?: string;
-  synced_from_google?: boolean;
 }

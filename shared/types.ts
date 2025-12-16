@@ -1,5 +1,30 @@
 export type WorkItemStatus = 'not-started' | 'in-progress' | 'completed';
 
+// API DTOs (used across frontend + backend)
+interface CreateCalendarEventInput {
+  title: string;
+  start_time: string;
+  end_time: string;
+  linked_task_id?: string;
+  description?: string;
+  user_id: string;
+  completed_at?: string | null;
+  google_event_id?: string;
+  synced_from_google?: boolean;
+}
+
+interface UpdateCalendarEventInput {
+  title?: string;
+  start_time?: string;
+  end_time?: string;
+  linked_task_id?: string;
+  description?: string;
+  user_id?: string;
+  completed_at?: string | null;
+  google_event_id?: string;
+  synced_from_google?: boolean;
+}
+
 interface Task {
   id: string; // unique identifier
   title: string;
@@ -103,6 +128,8 @@ export type {
   CalendarEvent,
   CalendarEventTask,
   CalendarEventUnion,
+  CreateCalendarEventInput,
+  UpdateCalendarEventInput,
   Schedule,
   UserSettings,
 };

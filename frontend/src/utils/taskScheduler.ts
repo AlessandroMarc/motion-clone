@@ -1,9 +1,11 @@
 import type {
   Task,
+  CalendarEvent,
   CalendarEventTask,
   CalendarEventUnion,
   Schedule,
 } from '@/../../../shared/types';
+import { logger } from '@/lib/logger';
 
 export interface TaskSchedulingConfig {
   eventDurationMinutes: number;
@@ -91,40 +93,44 @@ function doEventsOverlap(
 /**
  * Check if a time slot overlaps with any existing calendar events
  */
+function findOverlappingEvent(
+  slot: ScheduledEvent,
+  existingEvents: CalendarEventUnion[]
+): CalendarEventUnion | null {
+  for (const event of existingEvents) {
+    const eventStart = new Date(event.start_time);
+    const eventEnd = new Date(event.end_time);
+    if (doEventsOverlap(slot.start_time, slot.end_time, eventStart, eventEnd)) {
+      return event;
+    }
+  }
+  return null;
+}
+
 function isSlotOccupied(
   slot: ScheduledEvent,
   existingEvents: CalendarEventUnion[]
 ): boolean {
-  const overlaps = existingEvents.some(event => {
-    const eventStart = new Date(event.start_time);
-    const eventEnd = new Date(event.end_time);
-    const overlaps = doEventsOverlap(
-      slot.start_time,
-      slot.end_time,
-      eventStart,
-      eventEnd
-    );
-
-    if (overlaps) {
-      console.log('[taskScheduler] Slot overlaps with event:', {
-        slot: {
-          start: slot.start_time.toISOString(),
-          end: slot.end_time.toISOString(),
-        },
-        event: {
-          id: event.id,
-          title: event.title,
-          start: eventStart.toISOString(),
-          end: eventEnd.toISOString(),
-          syncedFromGoogle: event.synced_from_google,
-        },
-      });
-    }
-
-    return overlaps;
-  });
-
-  return overlaps;
+  const overlappingEvent = findOverlappingEvent(slot, existingEvents);
+  if (overlappingEvent) {
+    const eventStart = new Date(overlappingEvent.start_time);
+    const eventEnd = new Date(overlappingEvent.end_time);
+    logger.debug('[taskScheduler] Slot overlaps with event:', {
+      slot: {
+        start: slot.start_time.toISOString(),
+        end: slot.end_time.toISOString(),
+      },
+      event: {
+        id: overlappingEvent.id,
+        title: overlappingEvent.title,
+        start: eventStart.toISOString(),
+        end: eventEnd.toISOString(),
+        syncedFromGoogle: overlappingEvent.synced_from_google,
+      },
+    });
+    return true;
+  }
+  return false;
 }
 
 /**
@@ -195,16 +201,7 @@ function getNextAvailableSlot(
 
     // Slot is occupied - find the end time of the overlapping event
     // and move to just after it (with a small gap)
-    const overlappingEvent = allExistingEvents.find(event => {
-      const eventStart = new Date(event.start_time);
-      const eventEnd = new Date(event.end_time);
-      return doEventsOverlap(
-        slot.start_time,
-        slot.end_time,
-        eventStart,
-        eventEnd
-      );
-    });
+    const overlappingEvent = findOverlappingEvent(slot, allExistingEvents);
 
     if (overlappingEvent) {
       // Move to end of overlapping event + 5 minute gap
@@ -271,7 +268,7 @@ export function distributeEvents(
   // Track scheduled events to avoid overlaps within the same batch
   const scheduledEvents: CalendarEventUnion[] = [...allExistingEvents];
 
-  console.log('[taskScheduler] distributeEvents called:', {
+  logger.debug('[taskScheduler] distributeEvents called:', {
     taskId: task.id,
     taskTitle: task.title,
     requiredEvents,
@@ -321,7 +318,7 @@ export function distributeEvents(
     events.push(slot);
 
     // Add this event to scheduled events to avoid overlaps
-    scheduledEvents.push({
+    const tempEvent: CalendarEvent = {
       id: `temp-${task.id}-${slot.start_time.getTime()}`,
       title: task.title,
       start_time: slot.start_time,
@@ -330,7 +327,8 @@ export function distributeEvents(
       user_id: task.user_id,
       created_at: new Date(),
       updated_at: new Date(),
-    } as CalendarEventUnion);
+    };
+    scheduledEvents.push(tempEvent);
 
     // Move current time to end of this event + gap for next event
     currentTime = new Date(slot.end_time);

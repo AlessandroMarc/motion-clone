@@ -8,6 +8,9 @@ import userSettingsRoutes from './routes/userSettings.js';
 import googleCalendarRoutes from './routes/googleCalendar.js';
 import { ResponseHelper } from './utils/responseHelpers.js';
 import { SyncScheduler } from './services/syncScheduler.js';
+import { loadEnv } from './config/loadEnv.js';
+
+loadEnv();
 
 const app = express();
 const PORT = process.env.PORT || 3003;

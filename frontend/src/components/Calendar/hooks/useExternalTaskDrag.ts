@@ -1,7 +1,19 @@
-import { useState, useEffect, useRef } from 'react';
-import { CalendarEventUnion } from '@/../../../shared/types';
+import { useEffect, useRef, useState } from 'react';
+import type { CalendarEventTask, CalendarEventUnion } from '@/../../../shared/types';
+import { logger } from '@/lib/logger';
 
 const HOUR_PX = 64;
+
+type DraggedTask = { id: string; title: string; description?: string };
+
+function readTaskFromDataTransfer(dt: DataTransfer | null | undefined): DraggedTask | null {
+  const taskId = dt?.getData('application/x-task-id');
+  const taskTitle = dt?.getData('application/x-task-title');
+  if (!taskId || !taskTitle) return null;
+
+  const taskDescription = dt?.getData('application/x-task-description');
+  return { id: taskId, title: taskTitle, description: taskDescription || undefined };
+}
 
 export function useExternalTaskDrag(
   weekDates: Date[],
@@ -16,40 +28,19 @@ export function useExternalTaskDrag(
 ) {
   const [externalDragPreview, setExternalDragPreview] =
     useState<CalendarEventUnion | null>(null);
-  const draggedTaskDataRef = useRef<{
-    id: string;
-    title: string;
-    description?: string;
-  } | null>(null);
+  const draggedTaskDataRef = useRef<DraggedTask | null>(null);
 
   // Listen for drag events to capture task data
   useEffect(() => {
     const handleDragStart = (e: DragEvent) => {
-      const taskId = e.dataTransfer?.getData('application/x-task-id');
-      const taskTitle = e.dataTransfer?.getData('application/x-task-title');
-      const taskDescription = e.dataTransfer?.getData(
-        'application/x-task-description'
-      );
-      if (taskId && taskTitle) {
-        draggedTaskDataRef.current = {
-          id: taskId,
-          title: taskTitle,
-          description: taskDescription || undefined,
-        };
-        console.log(
-          '[useExternalTaskDrag] Captured dragged task data:',
-          draggedTaskDataRef.current
-        );
-      }
+      const task = readTaskFromDataTransfer(e.dataTransfer);
+      if (!task) return;
+      draggedTaskDataRef.current = task;
+      logger.debug('[useExternalTaskDrag] Captured dragged task data', task);
     };
 
-    const handleDragEnd = (e: DragEvent) => {
-      console.log('[useExternalTaskDrag] handleDragEnd called', {
-        dropEffect: e.dataTransfer?.dropEffect,
-        effectAllowed: e.dataTransfer?.effectAllowed,
-      });
-      // Don't clear immediately - wait a bit to see if drop was successful
-      // The drop handler will clear the preview if successful
+    const handleDragEnd = () => {
+      // Don't clear immediately - let the drop handler clear preview if it ran.
       setTimeout(() => {
         draggedTaskDataRef.current = null;
         setExternalDragPreview(null);
@@ -70,18 +61,8 @@ export function useExternalTaskDrag(
     hour: number,
     minute: number
   ) => {
-    console.log('[useExternalTaskDrag] handleExternalTaskDragOver called', {
-      date: date.toISOString(),
-      hour,
-      minute,
-      storedTaskData: draggedTaskDataRef.current,
-      draggingEventId,
-    });
     // Don't override internal drag preview
     if (draggingEventId) {
-      console.log(
-        '[useExternalTaskDrag] Skipping drag over because internal drag is active'
-      );
       return;
     }
 
@@ -93,41 +74,28 @@ export function useExternalTaskDrag(
     // Use stored task data from ref
     const taskData = draggedTaskDataRef.current;
     const taskTitle = taskData?.title || 'Task';
-    const taskDescription = taskData?.description;
 
-    setExternalDragPreview({
+    const preview: CalendarEventTask = {
       id: 'external-task-ghost',
       title: taskTitle,
-      description: taskDescription,
+      description: taskData?.description,
       start_time: start,
       end_time: end,
       created_at: new Date(),
       updated_at: new Date(),
       linked_task_id: taskData?.id || 'dragging',
-    } as any);
-    console.log(
-      '[useExternalTaskDrag] Set external drag preview with title:',
-      taskTitle
-    );
+      completed_at: null,
+    };
+    setExternalDragPreview(preview);
   };
 
   // Fallback drop handler in case the drop event doesn't hit the specific slots
   useEffect(() => {
     const handleDocumentDrop = (event: DragEvent) => {
-      if (event.defaultPrevented) {
-        console.log(
-          '[useExternalTaskDrag] Document drop ignored because event already handled'
-        );
-        return;
-      }
+      if (event.defaultPrevented) return;
 
       const taskData = draggedTaskDataRef.current;
-      if (!taskData) {
-        console.log(
-          '[useExternalTaskDrag] Document drop ignored: no dragged task data'
-        );
-        return;
-      }
+      if (!taskData) return;
 
       // Determine which day column the drop occurred in
       const dayIndex = dayRefs.current.findIndex(ref => {
@@ -142,13 +110,13 @@ export function useExternalTaskDrag(
       });
 
       if (dayIndex === -1) {
-        console.warn('[useExternalTaskDrag] Document drop outside of day columns');
+        logger.warn('[useExternalTaskDrag] Document drop outside of day columns');
         return;
       }
 
       const dayRef = dayRefs.current[dayIndex];
       if (!dayRef) {
-        console.warn('[useExternalTaskDrag] Document drop: day ref missing');
+        logger.warn('[useExternalTaskDrag] Document drop: day ref missing');
         return;
       }
 
@@ -169,17 +137,6 @@ export function useExternalTaskDrag(
         event.dataTransfer?.getData('application/x-task-description') ||
         taskData.description;
 
-      console.log('[useExternalTaskDrag] Document-level drop fallback triggered', {
-        taskId,
-        title,
-        description,
-        dayIndex,
-        dropDate: dropDate.toISOString(),
-        hour,
-        minute,
-        relativeY,
-      });
-
       try {
         event.preventDefault();
         onTaskDrop(
@@ -192,7 +149,7 @@ export function useExternalTaskDrag(
           setExternalDragPreview(null);
         });
       } catch (err) {
-        console.error('[useExternalTaskDrag] Drop failed:', err);
+        logger.error('[useExternalTaskDrag] Drop failed:', err);
         draggedTaskDataRef.current = null;
         setExternalDragPreview(null);
       }

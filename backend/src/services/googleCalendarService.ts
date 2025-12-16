@@ -2,37 +2,12 @@ import { google } from 'googleapis';
 import { supabase } from '../config/supabase.js';
 import { CalendarEventService } from './calendarEventService.js';
 import { getGoogleOAuthEnv } from '../config/env.js';
-import dotenv from 'dotenv';
-import path from 'path';
-
-// Load environment variables - try multiple paths
-const envPath = path.join(process.cwd(), '..', '.env');
-const envResult = dotenv.config({ path: envPath });
-
-// Also try loading from current directory
-if (envResult.error) {
-  dotenv.config({ path: path.join(process.cwd(), '.env') });
-}
+import { loadEnv } from '../config/loadEnv.js';
 
 function getOAuthConfigOrThrow() {
+  loadEnv();
   // Validates required vars and URL format (no defaults).
   return getGoogleOAuthEnv();
-}
-
-// Helpful startup log (without leaking secrets)
-try {
-  const cfg = getOAuthConfigOrThrow();
-  console.log('[GoogleCalendarService] Google OAuth env loaded:', {
-    envPath,
-    hasClientId: !!cfg.clientId,
-    hasClientSecret: !!cfg.clientSecret,
-    redirectUri: cfg.redirectUri,
-  });
-} catch (e) {
-  console.warn(
-    '[GoogleCalendarService] Google OAuth env not configured; Google Calendar integration endpoints will fail until env vars are set.',
-    e instanceof Error ? e.message : e
-  );
 }
 
 const SCOPES = ['https://www.googleapis.com/auth/calendar.readonly'];
