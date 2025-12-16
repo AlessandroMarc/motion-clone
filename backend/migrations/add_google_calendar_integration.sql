@@ -55,3 +55,4 @@ CREATE POLICY "Users can delete own google calendar tokens"
 ON google_calendar_tokens FOR DELETE 
 USING (auth.uid() = user_id);
 
+
