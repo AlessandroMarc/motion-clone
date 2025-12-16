@@ -1,5 +1,9 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  experimental: {
+    // Allow importing files from outside the Next.js app directory (e.g. repo-level /shared)
+    externalDir: true,
+  },
   async rewrites() {
     // Only apply proxy in development
     if (process.env.NODE_ENV === 'development') {

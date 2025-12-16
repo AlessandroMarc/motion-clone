@@ -29,7 +29,7 @@ export function LoginDialog() {
 
   return (
     <Dialog open={true}>
-      <DialogContent className="sm:max-w-md" hideCloseButton>
+      <DialogContent className="sm:max-w-md" showCloseButton={false}>
         <DialogHeader>
           <DialogTitle>Sign in to Motion Clone</DialogTitle>
           <DialogDescription>

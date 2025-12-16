@@ -1,12 +1,12 @@
 import type {
   CalendarEventTask,
   CalendarEventUnion,
-} from '@/../../../shared/types';
-import { isCalendarEventTask } from '@/../../../shared/types';
+} from '@shared/types';
+import { isCalendarEventTask } from '@shared/types';
 import type {
   CreateCalendarEventInput,
   UpdateCalendarEventInput,
-} from '@/../../../shared/types';
+} from '@shared/types';
 import { request } from './apiClient';
 import { toCalendarEventUnion, toCalendarEventUnions } from './transforms';
 

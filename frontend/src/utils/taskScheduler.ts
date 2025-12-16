@@ -4,7 +4,7 @@ import type {
   CalendarEventTask,
   CalendarEventUnion,
   Schedule,
-} from '@/../../../shared/types';
+} from '@shared/types';
 import { logger } from '@/lib/logger';
 
 export interface TaskSchedulingConfig {

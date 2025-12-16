@@ -4,7 +4,7 @@ import { Clock } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Check, Edit2 } from 'lucide-react';
-import type { Schedule } from '@/../../../shared/types';
+import type { Schedule } from '@shared/types';
 
 interface ScheduleCardProps {
   schedule: Schedule;

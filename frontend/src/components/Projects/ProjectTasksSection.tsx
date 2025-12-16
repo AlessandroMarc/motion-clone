@@ -7,7 +7,7 @@ import { Calendar, AlertCircle, X } from 'lucide-react';
 import { getPriorityColor } from '@/utils/statusUtils';
 import { formatDate, isOverdue } from '@/utils/dateUtils';
 
-import type { Task } from '@/../../../shared/types';
+import type { Task } from '@shared/types';
 import { ProjectTaskCreateDialog } from './ProjectTaskCreateDialog';
 
 interface ProjectTasksSectionProps {

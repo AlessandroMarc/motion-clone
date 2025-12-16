@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import type { Task, Project } from '@/../../../shared/types';
+import type { Task, Project } from '@shared/types';
 import { taskService } from '@/services/taskService';
 import { projectService } from '@/services/projectService';
 import { Card, CardContent } from '@/components/ui/card';

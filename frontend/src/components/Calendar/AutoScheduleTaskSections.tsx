@@ -2,7 +2,7 @@
 
 import { Badge } from '@/components/ui/badge';
 import { AlertTriangle, Clock } from 'lucide-react';
-import type { Task } from '@/../../../shared/types';
+import type { Task } from '@shared/types';
 
 type TaskEventBlock = {
   task: Task;

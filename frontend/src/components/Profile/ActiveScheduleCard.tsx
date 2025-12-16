@@ -2,7 +2,7 @@
 
 import { Clock } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
-import type { Schedule } from '@/../../../shared/types';
+import type { Schedule } from '@shared/types';
 
 interface ActiveScheduleCardProps {
   schedule: Schedule | null;

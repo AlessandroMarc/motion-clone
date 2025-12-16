@@ -3,7 +3,7 @@
 import { cn } from '@/lib/utils';
 import DayColumn from './DayColumn';
 import TimeColumn from './TimeColumn';
-import type { CalendarEventUnion, Task } from '@/../../../shared/types';
+import type { CalendarEventUnion, Task } from '@shared/types';
 
 interface WeekScrollableGridProps {
   weekDates: Date[];

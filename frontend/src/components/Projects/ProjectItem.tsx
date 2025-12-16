@@ -17,7 +17,7 @@ import {
 import { formatDate, isOverdue } from '@/utils/dateUtils';
 import { StatusIcon } from '@/components/shared';
 import Link from 'next/link';
-import type { Project } from '@/../../../shared/types';
+import type { Project } from '@shared/types';
 import type { ProjectSchedulingStatus } from '@/utils/projectSchedulingStatus';
 
 interface ProjectItemProps {

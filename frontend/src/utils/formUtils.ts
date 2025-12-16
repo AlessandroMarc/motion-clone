@@ -1,5 +1,5 @@
 import type { TaskFormData } from '@/hooks/useTaskForm';
-import type { Task } from '@/../../shared/types';
+import type { Task } from '@shared/types';
 
 /**
  * Transforms form data to task creation data

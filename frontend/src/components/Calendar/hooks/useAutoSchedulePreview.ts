@@ -1,15 +1,15 @@
 'use client';
 
 import { useMemo } from 'react';
-import type { CalendarEventTask, CalendarEventUnion, Task, CalendarEvent } from '@/../../../shared/types';
-import { isCalendarEventTask } from '@/../../../shared/types';
+import type { CalendarEventTask, CalendarEventUnion, Task, CalendarEvent } from '@shared/types';
+import { isCalendarEventTask } from '@shared/types';
 import {
   createConfigFromSchedule,
   prepareTaskEvents,
   sortTasksForScheduling,
   type TaskSchedulingConfig,
 } from '@/utils/taskScheduler';
-import type { Schedule } from '@/../../../shared/types';
+import type { Schedule } from '@shared/types';
 import { logger } from '@/lib/logger';
 
 type TaskEventBlock = {

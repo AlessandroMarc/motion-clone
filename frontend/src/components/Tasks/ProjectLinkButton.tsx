@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Folder, X, ExternalLink } from 'lucide-react';
 import Link from 'next/link';
-import type { Project } from '@/../../../shared/types';
+import type { Project } from '@shared/types';
 import { ProjectSelectionPopover } from './ProjectSelectionPopover';
 
 interface ProjectLinkButtonProps {

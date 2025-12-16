@@ -7,7 +7,7 @@ import {
   type CalendarEventUnion,
   type Schedule,
   type Task,
-} from '@/../../../shared/types';
+} from '@shared/types';
 import { CalendarHeader } from './CalendarHeader';
 import WeekScrollableGrid from './WeekScrollableGrid';
 import CalendarCreateDialog from './CalendarCreateDialog';
@@ -21,10 +21,10 @@ type Dialogs = {
   setTitle: (v: string) => void;
   description: string;
   setDescription: (v: string) => void;
-  startTime: Date;
-  setStartTime: (d: Date) => void;
-  endTime: Date;
-  setEndTime: (d: Date) => void;
+  startTime: string;
+  setStartTime: (v: string) => void;
+  endTime: string;
+  setEndTime: (v: string) => void;
   handleCreate: () => Promise<void>;
 
   editOpen: boolean;
@@ -33,14 +33,14 @@ type Dialogs = {
   setEditTitle: (v: string) => void;
   editDescription: string;
   setEditDescription: (v: string) => void;
-  editStartTime: Date;
-  setEditStartTime: (d: Date) => void;
-  editEndTime: Date;
-  setEditEndTime: (d: Date) => void;
+  editStartTime: string;
+  setEditStartTime: (v: string) => void;
+  editEndTime: string;
+  setEditEndTime: (v: string) => void;
   editEvent: CalendarEventUnion | null;
   editCompleted: boolean;
   setEditCompleted: (v: boolean) => void;
-  openCreateDialog: (start: Date, end: Date) => void;
+  openCreateDialog: (date: Date, hour: number, minute: number) => void;
   openEditDialog: (event: CalendarEventUnion) => void;
   handleSaveEdit: (
     setEvents: (updater: (curr: CalendarEventUnion[]) => CalendarEventUnion[]) => void

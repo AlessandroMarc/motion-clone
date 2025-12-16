@@ -18,8 +18,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import type { Task, CalendarEventTask, CalendarEventUnion } from '@/../../../shared/types';
-import type { Schedule } from '@/../../../shared/types';
+import type { Task, CalendarEventTask, CalendarEventUnion } from '@shared/types';
+import type { Schedule } from '@shared/types';
 import { logger } from '@/lib/logger';
 import { useAutoSchedulePreview } from './hooks/useAutoSchedulePreview';
 import { AutoScheduleSummary } from './AutoScheduleSummary';

@@ -4,7 +4,7 @@ import {
   CalendarEventUnion,
   isCalendarEventTask,
   type Task,
-} from '@/../../../shared/types';
+} from '@shared/types';
 import { formatEventTime } from '@/utils/calendarUtils';
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';

@@ -3,7 +3,7 @@
 import { toast } from 'sonner';
 import { Card, CardContent } from '@/components/ui/card';
 import { Circle } from 'lucide-react';
-import type { Project, Task } from '@/../../../shared/types';
+import type { Project, Task } from '@shared/types';
 import {
   EmptyStateCard,
   ErrorState,

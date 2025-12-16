@@ -1,4 +1,4 @@
-import type { CalendarEventUnion } from '@/../../../shared/types';
+import type { CalendarEventUnion } from '@shared/types';
 
 /**
  * Get array of dates for the week containing the given date

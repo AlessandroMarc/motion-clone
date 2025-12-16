@@ -17,7 +17,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Plus } from 'lucide-react';
 import { toast } from 'sonner';
-import type { Schedule } from '@/../../../shared/types';
+import type { Schedule } from '@shared/types';
 import { logger } from '@/lib/logger';
 
 export function ProfileSettings() {

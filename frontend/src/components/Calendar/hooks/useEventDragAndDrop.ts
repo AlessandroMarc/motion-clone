@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { CalendarEventUnion } from '@/../../../shared/types';
+import { CalendarEventUnion } from '@shared/types';
 import { calendarService } from '@/services/calendarService';
 
 const dragThresholdPx = 5;

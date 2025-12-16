@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { TaskCreateForm, TaskList } from '@/components/Tasks';
 import { ProtectedRoute } from '@/components/Auth/ProtectedRoute';
-import type { Task } from '@/../../../shared/types';
+import type { Task } from '@shared/types';
 import { taskService } from '@/services/taskService';
 import { toast } from 'sonner';
 import { logger } from '@/lib/logger';

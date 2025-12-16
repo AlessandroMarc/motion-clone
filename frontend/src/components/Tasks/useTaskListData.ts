@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo } from 'react';
-import type { CalendarEventUnion, Project, Task } from '@/../../../shared/types';
+import type { CalendarEventUnion, Project, Task } from '@shared/types';
 import { calendarService } from '@/services/calendarService';
 import { projectService } from '@/services/projectService';
 import { taskService } from '@/services/taskService';

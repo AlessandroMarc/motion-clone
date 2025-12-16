@@ -1,6 +1,6 @@
 'use client';
 
-import type { CalendarEventUnion, Task } from '@/../../../shared/types';
+import type { CalendarEventUnion, Task } from '@shared/types';
 import { isSameDay } from '@/utils/calendarUtils';
 import { computeOverlapLayout } from './dayColumnLayout';
 import { DayColumnEvents } from './DayColumnEvents';

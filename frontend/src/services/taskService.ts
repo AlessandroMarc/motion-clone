@@ -1,4 +1,4 @@
-import type { Task } from '@/../../shared/types';
+import type { Task } from '@shared/types';
 import { request } from './apiClient';
 import { toTask, toTasks } from './transforms';
 

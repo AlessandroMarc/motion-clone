@@ -6,7 +6,7 @@ import { getPriorityColor } from '@/utils/statusUtils';
 import { formatDate, isOverdue } from '@/utils/dateUtils';
 import { taskService } from '@/services/taskService';
 import { TaskProjectSection } from './TaskProjectSection';
-import type { Task, Project } from '@/../../../shared/types';
+import type { Task, Project } from '@shared/types';
 import { logger } from '@/lib/logger';
 
 interface TaskItemProps {

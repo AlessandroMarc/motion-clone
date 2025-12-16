@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Calendar } from 'lucide-react';
 import { formatDate } from '@/utils/dateUtils';
 import { ProjectEditDialog } from './ProjectEditDialog';
-import type { Project } from '@/../../../shared/types';
+import type { Project } from '@shared/types';
 
 interface ProjectDetailViewProps {
   project: Project;

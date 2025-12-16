@@ -1,7 +1,10 @@
 'use client';
 
 import { useEffect, useMemo, useRef } from 'react';
-import { isCalendarEventTask, type CalendarEventUnion } from '@/../../../shared/types';
+import {
+  isCalendarEventTask,
+  type CalendarEventUnion,
+} from '@shared/types';
 import { getWeekDates } from '@/utils/calendarUtils';
 import { LoadingState } from '@/components/shared/LoadingState';
 import { ErrorState } from '@/components/shared/ErrorState';
@@ -23,7 +26,9 @@ interface WeekCalendarContainerProps {
   onTaskDropped?: () => void;
 }
 
-export function WeekCalendarContainer({ onTaskDropped }: WeekCalendarContainerProps) {
+export function WeekCalendarContainer({
+  onTaskDropped,
+}: WeekCalendarContainerProps) {
   const { user, activeSchedule } = useAuth();
   const isMobile = useIsMobile();
 
@@ -75,18 +80,27 @@ export function WeekCalendarContainer({ onTaskDropped }: WeekCalendarContainerPr
 
   const dialogs = useCalendarDialogs(user, refreshEvents, onTaskDropped);
 
-  const handleEventUpdate = (eventId: string, startTime: Date, endTime: Date) => {
+  const handleEventUpdate = (
+    eventId: string,
+    startTime: Date,
+    endTime: Date
+  ) => {
     setEvents(curr =>
-      curr.map(ev => (ev.id === eventId ? { ...ev, start_time: startTime, end_time: endTime } : ev))
+      curr.map(ev =>
+        ev.id === eventId
+          ? { ...ev, start_time: startTime, end_time: endTime }
+          : ev
+      )
     );
   };
 
-  const { draggingEventId, dragPreview, onEventMouseDown } = useEventDragAndDrop(
-    weekDates,
-    dayRefs,
-    event => dialogs.openEditDialog(event),
-    handleEventUpdate
-  );
+  const { draggingEventId, dragPreview, onEventMouseDown } =
+    useEventDragAndDrop(
+      weekDates,
+      dayRefs,
+      event => dialogs.openEditDialog(event),
+      handleEventUpdate
+    );
 
   const { handleExternalTaskDrop } = useExternalTaskDrop(
     user,
@@ -95,12 +109,13 @@ export function WeekCalendarContainer({ onTaskDropped }: WeekCalendarContainerPr
     onTaskDropped
   );
 
-  const { externalDragPreview, handleExternalTaskDragOver } = useExternalTaskDrag(
-    weekDates,
-    dayRefs,
-    handleExternalTaskDrop,
-    draggingEventId
-  );
+  const { externalDragPreview, handleExternalTaskDragOver } =
+    useExternalTaskDrag(
+      weekDates,
+      dayRefs,
+      handleExternalTaskDrop,
+      draggingEventId
+    );
 
   const {
     autoScheduleOpen,
@@ -116,7 +131,9 @@ export function WeekCalendarContainer({ onTaskDropped }: WeekCalendarContainerPr
   const displayEventsByDay = useMemo(() => {
     if (!isMobile) return eventsByDay;
 
-    const dayIndex = weekDates.findIndex(d => d.toDateString() === navigation.currentDay.toDateString());
+    const dayIndex = weekDates.findIndex(
+      d => d.toDateString() === navigation.currentDay.toDateString()
+    );
     if (dayIndex >= 0) {
       return { 'day-0': eventsByDay[`day-${dayIndex}`] || [] };
     }
@@ -131,7 +148,9 @@ export function WeekCalendarContainer({ onTaskDropped }: WeekCalendarContainerPr
       isMobile={isMobile}
       weekDates={weekDates}
       displayDates={displayDates}
-      displayEventsByDay={displayEventsByDay as Record<string, CalendarEventUnion[]>}
+      displayEventsByDay={
+        displayEventsByDay as Record<string, CalendarEventUnion[]>
+      }
       events={events}
       setEvents={setEvents}
       draggingEventId={draggingEventId}
@@ -162,5 +181,3 @@ export function WeekCalendarContainer({ onTaskDropped }: WeekCalendarContainerPr
     />
   );
 }
-
-

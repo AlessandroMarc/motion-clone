@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
-import { CalendarEventUnion } from '@/../../../shared/types';
+import { CalendarEventUnion } from '@shared/types';
 import { calendarService } from '@/services/calendarService';
 import { isSameDay } from '@/utils/calendarUtils';
 

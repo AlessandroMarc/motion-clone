@@ -5,7 +5,7 @@ import { ProjectCreateForm } from '@/components/Projects/ProjectCreateForm';
 import { ProjectList } from '@/components/Projects/ProjectList';
 import { ProtectedRoute } from '@/components/Auth/ProtectedRoute';
 import { useAuth } from '@/contexts/AuthContext';
-import type { Project } from '@/../../../shared/types';
+import type { Project } from '@shared/types';
 import { projectService } from '@/services/projectService';
 
 export default function ProjectsPage() {

@@ -1,4 +1,4 @@
-import type { Project } from '@/../../../shared/types';
+import type { Project } from '@shared/types';
 import { request } from './apiClient';
 
 export interface CreateProjectData {

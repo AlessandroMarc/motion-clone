@@ -1,4 +1,4 @@
-import { Task, CalendarEventTask, CalendarEventUnion, isCalendarEventTask } from '@/../../../shared/types';
+import { Task, CalendarEventTask, CalendarEventUnion, isCalendarEventTask } from '@shared/types';
 
 export interface ProjectSchedulingStatus {
   allTasksScheduled: boolean;

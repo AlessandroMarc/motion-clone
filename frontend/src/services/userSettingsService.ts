@@ -1,4 +1,4 @@
-import type { Schedule, UserSettings } from '@/../../../shared/types';
+import type { Schedule, UserSettings } from '@shared/types';
 import { request } from './apiClient';
 
 class UserSettingsService {

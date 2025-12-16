@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import type { CalendarEventTask, CalendarEventUnion } from '@/../../../shared/types';
+import type { CalendarEventTask, CalendarEventUnion } from '@shared/types';
 import { logger } from '@/lib/logger';
 
 const HOUR_PX = 64;
@@ -81,6 +81,7 @@ export function useExternalTaskDrag(
       description: taskData?.description,
       start_time: start,
       end_time: end,
+      user_id: 'preview',
       created_at: new Date(),
       updated_at: new Date(),
       linked_task_id: taskData?.id || 'dragging',

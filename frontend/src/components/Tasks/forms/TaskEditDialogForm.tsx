@@ -14,7 +14,7 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { taskService } from '@/services/taskService';
 import { calendarService } from '@/services/calendarService';
-import type { Task, CalendarEventTask } from '@/../../../shared/types';
+import type { Task, CalendarEventTask } from '@shared/types';
 import { taskSchema, type TaskFormData } from '@/hooks/useTaskForm';
 import { TaskTitleField } from './TaskTitleField';
 import { TaskDescriptionField } from './TaskDescriptionField';

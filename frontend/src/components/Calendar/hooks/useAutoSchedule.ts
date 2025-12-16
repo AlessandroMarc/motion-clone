@@ -3,7 +3,7 @@ import {
   Task,
   CalendarEventUnion,
   isCalendarEventTask,
-} from '@/../../../shared/types';
+} from '@shared/types';
 import { taskService } from '@/services/taskService';
 import { calendarService } from '@/services/calendarService';
 import { toast } from 'sonner';

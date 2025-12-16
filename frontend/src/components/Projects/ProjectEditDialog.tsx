@@ -23,7 +23,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { projectService } from '@/services/projectService';
-import type { Project, WorkItemStatus } from '@/../../../shared/types';
+import type { Project, WorkItemStatus } from '@shared/types';
 
 // Helper function to format date for input field
 const formatDateForInput = (date: Date | null): string => {
