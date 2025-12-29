@@ -10,12 +10,6 @@ type EnvVarConfig = {
   group?: string; // For conditional groups (e.g., Google Calendar)
 };
 
-type EnvVarGroup = {
-  name: string;
-  required: boolean;
-  vars: string[];
-};
-
 // Schema: Define all environment variables in one place
 const ENV_VAR_SCHEMA: EnvVarConfig[] = [
   // Supabase - required
@@ -110,11 +104,16 @@ export function validateEnvOrThrow(): void {
   }
 
   // Validate each variable in schema
-  const groupVars = new Map<string, { configs: EnvVarConfig[]; values: Map<string, string | undefined> }>();
+  const groupVars = new Map<
+    string,
+    { configs: EnvVarConfig[]; values: Map<string, string | undefined> }
+  >();
 
   for (const config of ENV_VAR_SCHEMA) {
     const value = getEnvValue(config);
-    const varName = config.fallbacks ? `${config.name} (or ${config.fallbacks.join(', ')})` : config.name;
+    const varName = config.fallbacks
+      ? `${config.name} (or ${config.fallbacks.join(', ')})`
+      : config.name;
 
     // Handle grouped variables (conditionally required)
     if (config.group) {
@@ -145,13 +144,13 @@ export function validateEnvOrThrow(): void {
   // Validate grouped variables (all or none)
   for (const [groupName, group] of groupVars.entries()) {
     const values = Array.from(group.values.values());
-    const hasSome = values.some((v) => v !== undefined);
-    const hasAll = values.every((v) => v !== undefined);
+    const hasSome = values.some(v => v !== undefined);
+    const hasAll = values.every(v => v !== undefined);
 
     if (hasSome && !hasAll) {
       const missing = group.configs
-        .filter((c) => !group.values.get(c.name))
-        .map((c) => c.name);
+        .filter(c => !group.values.get(c.name))
+        .map(c => c.name);
       errors.push(
         `${groupName} integration is partially configured. Missing: ${missing.join(', ')}`
       );
@@ -172,14 +171,16 @@ export function validateEnvOrThrow(): void {
   // Output warnings
   if (warnings.length > 0) {
     console.warn('Environment variable warnings:');
-    warnings.forEach((warning) => console.warn(`  - ${warning}`));
+    warnings.forEach(warning => console.warn(`  - ${warning}`));
   }
 
   // Throw error if validation failed
   if (errors.length > 0) {
     console.error('Environment variable validation failed:');
-    errors.forEach((error) => console.error(`  - ${error}`));
-    console.error('\nPlease check your .env file and ensure all required variables are set.');
+    errors.forEach(error => console.error(`  - ${error}`));
+    console.error(
+      '\nPlease check your .env file and ensure all required variables are set.'
+    );
     process.exit(1);
   }
 }
