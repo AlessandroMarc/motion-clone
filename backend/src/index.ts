@@ -9,10 +9,19 @@ import googleCalendarRoutes from './routes/googleCalendar.js';
 import { ResponseHelper } from './utils/responseHelpers.js';
 import { SyncScheduler } from './services/syncScheduler.js';
 import { loadEnv } from './config/loadEnv.js';
-import { validateEnvOrThrow } from './config/validateEnv.js';
+import { validateEnvOrThrow, validateEnv } from './config/validateEnv.js';
 
 loadEnv();
-validateEnvOrThrow();
+
+// Validate environment variables
+// In serverless (Vercel), catch errors and log them instead of crashing
+try {
+  validateEnvOrThrow();
+} catch (error) {
+  console.error('Environment validation error:', error);
+  // Don't throw here - let the app start and handle errors in routes
+  // This allows the health check to still work and provide useful error messages
+}
 
 const app = express();
 const PORT = process.env.PORT || 3003;
@@ -23,9 +32,24 @@ app.use(express.json());
 
 // Routes
 app.get('/api/health', (req: Request, res: Response) => {
+  const envStatus = validateEnv();
+
+  if (!envStatus.isValid) {
+    return ResponseHelper.error(
+      res,
+      `Environment configuration error: ${envStatus.errors.join('; ')}`,
+      500,
+      'Backend is unhealthy due to missing environment variables'
+    );
+  }
+
   ResponseHelper.success(
     res,
-    { status: 'healthy', timestamp: new Date().toISOString() },
+    {
+      status: 'healthy',
+      timestamp: new Date().toISOString(),
+      warnings: envStatus.warnings.length > 0 ? envStatus.warnings : undefined,
+    },
     'Backend is running!'
   );
 });

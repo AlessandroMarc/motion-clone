@@ -89,10 +89,14 @@ function validateUrlFormat(name: string, value: string): string | null {
 }
 
 /**
- * Validates all required environment variables.
- * Throws an error with details if any are missing.
+ * Validates environment variables and returns validation result.
+ * Does not throw or exit - returns status for inspection.
  */
-export function validateEnvOrThrow(): void {
+export function validateEnv(): {
+  isValid: boolean;
+  errors: string[];
+  warnings: string[];
+} {
   const errors: string[] = [];
   const warnings: string[] = [];
 
@@ -174,13 +178,43 @@ export function validateEnvOrThrow(): void {
     warnings.forEach(warning => console.warn(`  - ${warning}`));
   }
 
+  return {
+    isValid: errors.length === 0,
+    errors,
+    warnings,
+  };
+}
+
+/**
+ * Validates all required environment variables.
+ * Throws an error with details if any are missing.
+ */
+export function validateEnvOrThrow(): void {
+  const result = validateEnv();
+
+  // Output warnings
+  if (result.warnings.length > 0) {
+    console.warn('Environment variable warnings:');
+    result.warnings.forEach(warning => console.warn(`  - ${warning}`));
+  }
+
   // Throw error if validation failed
-  if (errors.length > 0) {
-    console.error('Environment variable validation failed:');
-    errors.forEach(error => console.error(`  - ${error}`));
-    console.error(
-      '\nPlease check your .env file and ensure all required variables are set.'
-    );
+  if (!result.isValid) {
+    const errorMessage = [
+      'Environment variable validation failed:',
+      ...result.errors.map(error => `  - ${error}`),
+      '\nPlease check your .env file and ensure all required variables are set.',
+    ].join('\n');
+
+    console.error(errorMessage);
+
+    // In serverless environments (Vercel), don't call process.exit()
+    // Instead, throw an error that can be caught and handled
+    if (process.env.VERCEL) {
+      throw new Error(errorMessage);
+    }
+
+    // In local development, exit the process
     process.exit(1);
   }
 }
