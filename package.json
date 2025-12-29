@@ -8,11 +8,14 @@
     "dev-b": "npm --prefix backend run dev",
     "build": "npm --prefix frontend run build",
     "build-b": "npm --prefix backend run build",
+    "build:all": "npm run build && npm run build-b",
     "lint": "eslint . --ext .ts,.tsx,.js,.jsx",
     "lint:fix": "eslint . --ext .ts,.tsx,.js,.jsx --fix",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "test": "npm --prefix frontend run test"
+    "test": "npm --prefix frontend run test",
+    "test:ci": "npm --prefix frontend run test -- --watchAll=false",
+    "ci": "npm ci && npm run build:all && npm run test:ci"
   },
   "keywords": [],
   "author": "",
