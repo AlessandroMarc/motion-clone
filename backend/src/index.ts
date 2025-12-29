@@ -9,8 +9,10 @@ import googleCalendarRoutes from './routes/googleCalendar.js';
 import { ResponseHelper } from './utils/responseHelpers.js';
 import { SyncScheduler } from './services/syncScheduler.js';
 import { loadEnv } from './config/loadEnv.js';
+import { validateEnvOrThrow } from './config/validateEnv.js';
 
 loadEnv();
+validateEnvOrThrow();
 
 const app = express();
 const PORT = process.env.PORT || 3003;

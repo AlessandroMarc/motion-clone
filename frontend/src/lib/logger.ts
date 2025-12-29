@@ -11,7 +11,7 @@ function isEnabled(): boolean {
 function write(level: LogLevel, ...args: unknown[]): void {
   if (!isEnabled()) return;
 
-  // eslint-disable-next-line no-console
+   
   const fn =
     level === 'error'
       ? console.error

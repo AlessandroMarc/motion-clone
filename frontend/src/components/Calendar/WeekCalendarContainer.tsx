@@ -1,10 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useRef } from 'react';
-import {
-  isCalendarEventTask,
-  type CalendarEventUnion,
-} from '@shared/types';
+import { type CalendarEventUnion } from '@shared/types';
 import { getWeekDates } from '@/utils/calendarUtils';
 import { LoadingState } from '@/components/shared/LoadingState';
 import { ErrorState } from '@/components/shared/ErrorState';

@@ -23,6 +23,7 @@ export default function TestPage() {
             console.log('Response data:', data);
             setResult(`Success: ${JSON.stringify(data, null, 2)}`);
           } catch (e) {
+            console.error('Error parsing JSON:', e);
             setResult(`Success but invalid JSON: ${xhr.responseText}`);
           }
         } else {

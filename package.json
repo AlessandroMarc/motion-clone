@@ -1,6 +1,7 @@
 {
   "name": "motion-clone",
   "version": "1.0.0",
+  "type": "module",
   "main": "index.ts",
   "scripts": {
     "dev": "concurrently \"npm:dev-f\" \"npm:dev-b\"",
@@ -9,13 +10,13 @@
     "build": "npm --prefix frontend run build",
     "build-b": "npm --prefix backend run build",
     "build:all": "npm run build && npm run build-b",
-    "lint": "eslint . --ext .ts,.tsx,.js,.jsx",
-    "lint:fix": "eslint . --ext .ts,.tsx,.js,.jsx --fix",
+    "lint": "eslint frontend/src backend/src --ignore-pattern '**/node_modules/**' --ignore-pattern '**/.next/**' --ignore-pattern '**/dist/**'",
+    "lint:fix": "eslint . --fix",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "test": "npm --prefix frontend run test",
     "test:ci": "npm --prefix frontend run test -- --watchAll=false",
-    "ci": "npm ci && npm run build:all && npm run test:ci"
+    "ci": "npm ci && npm run build:all && npm run test:ci && npm run lint && npm run format:check && echo 'CI passed'"
   },
   "keywords": [],
   "author": "",
@@ -26,6 +27,8 @@
     "backend"
   ],
   "devDependencies": {
+    "@eslint/eslintrc": "^3.3.3",
+    "@eslint/js": "^9.39.2",
     "@typescript-eslint/eslint-plugin": "^8.50.0",
     "@typescript-eslint/parser": "^8.50.0",
     "concurrently": "^9.2.1",

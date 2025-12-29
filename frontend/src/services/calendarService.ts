@@ -1,7 +1,4 @@
-import type {
-  CalendarEventTask,
-  CalendarEventUnion,
-} from '@shared/types';
+import type { CalendarEventTask, CalendarEventUnion } from '@shared/types';
 import { isCalendarEventTask } from '@shared/types';
 import type {
   CreateCalendarEventInput,
