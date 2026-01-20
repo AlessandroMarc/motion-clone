@@ -6,3 +6,5 @@ node_modules
 # Build outputs
 dist/
 backend/dist/
+# Sentry Config File
+.env.sentry-build-plugin
