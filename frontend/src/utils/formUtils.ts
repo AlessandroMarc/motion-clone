@@ -64,16 +64,20 @@ export function getPriorityDisplayText(priority: string): string {
 /**
  * Validates if a field has an error
  */
-export function hasFieldError(errors: any, fieldName: string): boolean {
-  return !!(errors && errors[fieldName]);
+export function hasFieldError(errors: unknown, fieldName: string): boolean {
+  return !!(errors && (errors as Record<string, unknown>)[fieldName]);
 }
 
 /**
  * Gets error message for a field
  */
 export function getFieldError(
-  errors: any,
+  errors: unknown,
   fieldName: string
 ): string | undefined {
-  return errors?.[fieldName]?.message;
+  const error = (errors as Record<string, unknown>)?.[fieldName];
+  if (error && typeof error === 'object' && 'message' in error) {
+    return error.message as string;
+  }
+  return undefined;
 }
