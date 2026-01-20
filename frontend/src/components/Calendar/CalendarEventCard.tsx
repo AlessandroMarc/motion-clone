@@ -57,15 +57,15 @@ export function CalendarEventCard({
 
   return (
     <Card
-      className={`calendar-event-card h-full overflow-hidden p-2 text-xs cursor-pointer border animate-scale-in ${getEventColor()} ${isCompleted ? 'animate-task-complete' : ''}`}
+      className={`calendar-event-card h-full overflow-hidden p-1.5 text-[10px] cursor-pointer border rounded-sm animate-scale-in ${getEventColor()} ${isCompleted ? 'animate-task-complete' : ''}`}
       style={style}
     >
-      <div className="flex items-start justify-between gap-1">
+      <div className="flex items-start gap-0.5">
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-1 mb-1">
-            <span className="text-xs">{getEventIcon()}</span>
+          <div className="flex items-center gap-0.5">
+            <span className="text-[10px] shrink-0">{getEventIcon()}</span>
             <span
-              className={`font-medium truncate ${
+              className={`font-medium truncate leading-tight ${
                 isCompleted ? 'line-through opacity-70' : ''
               }`}
             >
@@ -73,50 +73,36 @@ export function CalendarEventCard({
             </span>
           </div>
 
-          <div className="text-xs opacity-75 mb-1">
+          <div className="text-[9px] opacity-75 leading-tight">
             {formatEventTime(event.start_time, event.end_time)}
           </div>
-
-          {event.description && (
-            <div className="text-xs opacity-75 truncate">
-              {event.description}
-            </div>
-          )}
         </div>
       </div>
 
-      {isTaskEvent && (
-        <div className="mt-1 flex items-center gap-1">
-          <Badge
-            variant={isCompleted ? 'default' : 'secondary'}
-            className="text-xs px-1 py-0"
-          >
-            {isCompleted ? '✓ Task' : 'Task'}
-          </Badge>
-          {isAfterDeadline && (
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Badge
-                    variant="destructive"
-                    className="text-xs px-1 py-0 flex items-center gap-1"
-                  >
-                    <AlertTriangle className="h-3 w-3" />
-                    After deadline
-                  </Badge>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>
-                    This event is scheduled after the task deadline (
-                    {task?.due_date
-                      ? new Date(task.due_date).toLocaleDateString()
-                      : 'unknown'}
-                    )
-                  </p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-          )}
+      {isTaskEvent && isAfterDeadline && (
+        <div className="mt-0.5">
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Badge
+                  variant="destructive"
+                  className="text-[9px] px-1 py-0 h-4 flex items-center gap-0.5"
+                >
+                  <AlertTriangle className="h-2.5 w-2.5" />
+                  Late
+                </Badge>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>
+                  Scheduled after deadline (
+                  {task?.due_date
+                    ? new Date(task.due_date).toLocaleDateString()
+                    : 'unknown'}
+                  )
+                </p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
         </div>
       )}
     </Card>

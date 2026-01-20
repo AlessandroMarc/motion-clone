@@ -69,7 +69,7 @@ function NavigationContent({ onLinkClick }: { onLinkClick?: () => void }) {
 
   return (
     <>
-      <nav className="flex-1 space-y-1 p-4">
+      <nav className="flex-1 space-y-0.5 p-2">
         {navigation.map(item => {
           const isActive = pathname === item.href;
           return (
@@ -77,7 +77,7 @@ function NavigationContent({ onLinkClick }: { onLinkClick?: () => void }) {
               <Button
                 variant={isActive ? 'secondary' : 'ghost'}
                 className={cn(
-                  'w-full justify-start h-11 min-h-[44px]',
+                  'w-full justify-start h-9 text-sm',
                   isActive && 'bg-secondary text-secondary-foreground'
                 )}
               >
@@ -90,23 +90,23 @@ function NavigationContent({ onLinkClick }: { onLinkClick?: () => void }) {
       </nav>
 
       {/* User Profile Section */}
-      <div className="border-t p-4">
+      <div className="border-t p-2">
         {loading ? (
           <div className="space-y-2">
-            <Skeleton className="h-4 w-32" />
+            <Skeleton className="h-4 w-24" />
             <Skeleton className="h-8 w-full" />
           </div>
         ) : user ? (
-          <div className="space-y-3">
+          <div className="space-y-2">
             <div className="flex items-center space-x-2">
-              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-primary-foreground">
-                <User className="h-4 w-4" />
+              <div className="flex h-7 w-7 items-center justify-center rounded-full bg-primary text-primary-foreground">
+                <User className="h-3.5 w-3.5" />
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium truncate">
+                <p className="text-xs font-medium truncate">
                   {user.user_metadata?.full_name || user.email}
                 </p>
-                <p className="text-xs text-muted-foreground truncate">
+                <p className="text-[10px] text-muted-foreground truncate">
                   {user.email}
                 </p>
               </div>
@@ -115,14 +115,14 @@ function NavigationContent({ onLinkClick }: { onLinkClick?: () => void }) {
               variant="ghost"
               size="sm"
               onClick={handleSignOut}
-              className="w-full justify-start text-muted-foreground hover:text-foreground h-11 min-h-[44px]"
+              className="w-full justify-start text-muted-foreground hover:text-foreground h-8 text-xs"
             >
-              <LogOut className="mr-2 h-4 w-4" />
+              <LogOut className="mr-2 h-3.5 w-3.5" />
               Sign out
             </Button>
           </div>
         ) : (
-          <div className="text-center text-sm text-muted-foreground">
+          <div className="text-center text-xs text-muted-foreground">
             Not signed in
           </div>
         )}
@@ -172,9 +172,9 @@ export function Sidebar() {
 
   // Desktop sidebar
   return (
-    <div className="hidden md:flex h-full w-64 flex-col border-r bg-background">
-      <div className="flex h-16 items-center justify-between border-b px-6">
-        <h1 className="text-xl font-semibold">Motion Clone</h1>
+    <div className="hidden md:flex h-full w-48 flex-col border-r bg-background">
+      <div className="flex h-14 items-center justify-between border-b px-3">
+        <h1 className="text-base font-semibold">Motion Clone</h1>
         <ThemeToggle />
       </div>
       <NavigationContent />
