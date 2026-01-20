@@ -27,6 +27,11 @@ import { logger } from '@/lib/logger';
 
 const navigation = [
   {
+    name: 'Calendar',
+    href: '/calendar',
+    icon: Calendar,
+  },
+  {
     name: 'Welcome',
     href: '/',
     icon: Home,
@@ -40,11 +45,6 @@ const navigation = [
     name: 'Projects',
     href: '/projects',
     icon: FolderOpen,
-  },
-  {
-    name: 'Calendar',
-    href: '/calendar',
-    icon: Calendar,
   },
   {
     name: 'Profile',

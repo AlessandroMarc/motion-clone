@@ -56,6 +56,11 @@ export function validateEnv(): ValidationResult {
  * Validates environment variables and throws an error if validation fails.
  * This is the main function to call at startup.
  * Works in both browser and Node.js (Next.js SSR) environments.
+ *
+ * Behavior:
+ * - Always validates and throws in production deployments (e.g., Vercel)
+ * - Skips throwing (only warns) in CI environments (GitHub Actions, etc.)
+ * - Skips validation in test environment
  */
 export function validateEnvOrThrow(): void {
   // Skip validation in test environment
@@ -81,6 +86,20 @@ export function validateEnvOrThrow(): void {
       '  - NEXT_PUBLIC_SUPABASE_ANON_KEY',
     ].join('\n');
 
+    // In CI environments (GitHub Actions, etc.), only warn but don't fail the build
+    // This allows CI to test that code compiles without requiring real env vars
+    // In production deployments (Vercel), we want to fail fast if env vars are missing
+    const isCI = process.env.CI === 'true' || process.env.GITHUB_ACTIONS === 'true';
+
+    if (isCI) {
+      console.warn(
+        `[CI Mode] ${errorMessage}\n` +
+          'Continuing build in CI mode - validation will occur at runtime in production.'
+      );
+      return;
+    }
+
+    // In production deployments (Vercel, etc.), fail the build
     console.error(errorMessage);
     throw new Error(errorMessage);
   }

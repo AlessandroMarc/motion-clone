@@ -17,7 +17,7 @@ export function ProjectDetailView({
 }: ProjectDetailViewProps) {
   return (
     <Card className="p-4">
-      <CardHeader className="pb-4">
+      <CardHeader>
         <div className="flex items-center justify-between">
           <CardTitle className="text-2xl">Project Details</CardTitle>
           <ProjectEditDialog

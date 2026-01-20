@@ -12,7 +12,7 @@ import {
 } from '@/components/Home';
 
 export default function Home() {
-  const { apiMessage, isApiConnected } = useApiConnection();
+  const { apiMessage, isApiConnected, isLoading } = useApiConnection();
   const { user, loading, signInWithGoogle } = useAuth();
   const [isSigningIn, setIsSigningIn] = useState(false);
 
@@ -27,6 +27,12 @@ export default function Home() {
     }
   };
 
+  // Show loading state while connecting (during cold start)
+  if (isLoading) {
+    return <LoadingState />;
+  }
+
+  // Show error only if we've stopped trying and still not connected
   if (!isApiConnected) {
     return <ConnectionError />;
   }

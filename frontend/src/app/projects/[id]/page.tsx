@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useParams } from 'next/navigation';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, Loader2 } from 'lucide-react';
@@ -21,18 +21,28 @@ interface ProjectDetailPageProps {
 
 export default function ProjectDetailPage({ params }: ProjectDetailPageProps) {
   const router = useRouter();
+  const urlParams = useParams();
+  // Use params from props if available, otherwise fall back to useParams hook
+  const projectId = params?.id || (urlParams?.id as string);
+  
   const [project, setProject] = useState<Project | null>(null);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchProjectData = async () => {
+  const fetchProjectData = async (id: string) => {
+    if (!id) {
+      setError('Project ID is required');
+      setIsLoading(false);
+      return;
+    }
+
     try {
       setIsLoading(true);
       setError(null);
       const [fetchedProject, fetchedTasks] = await Promise.all([
-        projectService.getProjectById(params.id),
-        taskService.getTasksByProject(params.id),
+        projectService.getProjectById(id),
+        taskService.getTasksByProject(id),
       ]);
       setProject(fetchedProject);
       setTasks(fetchedTasks);
@@ -47,8 +57,10 @@ export default function ProjectDetailPage({ params }: ProjectDetailPageProps) {
   };
 
   useEffect(() => {
-    fetchProjectData();
-  }, [params.id]);
+    if (projectId) {
+      fetchProjectData(projectId);
+    }
+  }, [projectId]);
 
   const handleProjectUpdate = (updatedProject: Project) => {
     setProject(updatedProject);
@@ -61,13 +73,18 @@ export default function ProjectDetailPage({ params }: ProjectDetailPageProps) {
       'id' | 'created_at' | 'updated_at' | 'status' | 'dependencies'
     >
   ) => {
+    if (!projectId) {
+      toast.error('Project ID is required');
+      return;
+    }
+
     try {
       const newTask = await taskService.createTask({
         title: taskData.title,
         description: taskData.description,
         dueDate: taskData.due_date,
         priority: taskData.priority,
-        project_id: params.id,
+        project_id: projectId,
         plannedDurationMinutes: taskData.planned_duration_minutes,
         actualDurationMinutes: taskData.actual_duration_minutes,
       });
@@ -94,6 +111,28 @@ export default function ProjectDetailPage({ params }: ProjectDetailPageProps) {
   const handleBack = () => {
     router.push('/projects');
   };
+
+  // Show error if projectId is not available
+  if (!projectId) {
+    return (
+      <div className="flex-1 p-6">
+        <div className="max-w-4xl mx-auto">
+          <div className="text-center">
+            <h1 className="text-2xl font-bold text-destructive mb-4">
+              Invalid Project ID
+            </h1>
+            <p className="text-muted-foreground mb-4">
+              The project ID is missing or invalid.
+            </p>
+            <Button onClick={handleBack}>
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Back to Projects
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (isLoading) {
     return (
@@ -159,7 +198,7 @@ export default function ProjectDetailPage({ params }: ProjectDetailPageProps) {
             />
 
             <ProjectTasksSection
-              projectId={params.id}
+              projectId={projectId}
               tasks={tasks}
               onTaskCreate={handleTaskCreate}
               onTaskUnlink={handleTaskUnlink}
