@@ -25,9 +25,9 @@ export default function SentryExamplePage() {
       <Head>
         <title>Sentry Example</title>
       </Head>
-      
+
       <h1 style={{ marginBottom: "1rem" }}>Sentry Example Page</h1>
-      
+
       <p style={{ marginBottom: "2rem", color: "#666" }}>
         Click the buttons below to trigger test errors and verify Sentry is working correctly.
       </p>

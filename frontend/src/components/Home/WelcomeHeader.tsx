@@ -22,6 +22,9 @@ export function WelcomeHeader({ apiMessage }: WelcomeHeaderProps) {
         <div className="h-2 w-2 rounded-full bg-green-500" />
         <span>API Connected: {apiMessage}</span>
       </div>
+      <button onClick={myUndefinedFunction}>
+        Test Error
+      </button>
     </div>
   );
 }
