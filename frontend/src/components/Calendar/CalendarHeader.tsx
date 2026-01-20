@@ -51,7 +51,7 @@ export function CalendarHeader({
               variant="outline"
               size="sm"
               onClick={onCurrentWeek}
-              className="text-xs h-9"
+              className="text-xs h-11 min-h-[44px] px-4"
             >
               Today
             </Button>
@@ -60,7 +60,7 @@ export function CalendarHeader({
                 variant="default"
                 size="sm"
                 onClick={onAutoSchedule}
-                className="text-xs h-9 cursor-pointer hover:bg-primary hover:text-white"  
+                className="text-xs h-11 min-h-[44px] px-4 cursor-pointer hover:bg-primary hover:text-white"  
               >
                 Auto-Schedule
               </Button>
@@ -71,11 +71,11 @@ export function CalendarHeader({
         <div className="flex items-center justify-between">
           <Button 
             variant="outline" 
-            size="sm" 
+            size="icon"
             onClick={onPreviousDay}
-            className="h-9 w-9 p-0"
+            className="h-11 w-11 min-h-[44px] min-w-[44px] p-0"
           >
-            <ChevronLeft className="h-4 w-4" />
+            <ChevronLeft className="h-5 w-5" />
           </Button>
 
           <div className="text-center flex-1 px-4">
@@ -89,11 +89,11 @@ export function CalendarHeader({
 
           <Button 
             variant="outline" 
-            size="sm" 
+            size="icon"
             onClick={onNextDay}
-            className="h-9 w-9 p-0"
+            className="h-11 w-11 min-h-[44px] min-w-[44px] p-0"
           >
-            <ChevronRight className="h-4 w-4" />
+            <ChevronRight className="h-5 w-5" />
           </Button>
         </div>
       </div>

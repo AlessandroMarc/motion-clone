@@ -25,6 +25,7 @@ import { TaskBlockedByField } from './TaskBlockedByField';
 import { TaskDurationFields } from './TaskDurationFields';
 import { TaskFormActions } from './TaskFormActions';
 import { formatEventTime } from '@/utils/calendarUtils';
+import posthog from 'posthog-js';
 
 interface TaskEditDialogFormProps {
   task: Task | null;
@@ -182,6 +183,17 @@ export function TaskEditDialogForm({
 
       onTaskUpdated(updatedTask);
       toast.success('Task updated successfully');
+
+      // PostHog: Capture task updated event
+      posthog.capture('task_updated', {
+        priority: data.priority,
+        has_due_date: !!data.dueDate,
+        has_project: !!data.project_id,
+        planned_duration_minutes: data.planned_duration_minutes,
+        has_dependencies: (data.blockedBy?.length || 0) > 0,
+        linked_events_count: linkedEvents.length,
+      });
+
       onOpenChange(false);
     } catch (error) {
       console.error('Failed to update task:', error);
@@ -190,6 +202,9 @@ export function TaskEditDialogForm({
           ? error.message
           : 'Failed to update task. Please try again.';
       toast.error(message);
+
+      // PostHog: Capture task update error
+      posthog.captureException(error instanceof Error ? error : new Error(message));
     } finally {
       setIsSubmitting(false);
     }

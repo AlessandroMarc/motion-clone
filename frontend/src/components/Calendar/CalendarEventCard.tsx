@@ -57,7 +57,7 @@ export function CalendarEventCard({
 
   return (
     <Card
-      className={`h-full overflow-hidden p-2 text-xs cursor-pointer transition-colors border ${getEventColor()}`}
+      className={`calendar-event-card h-full overflow-hidden p-2 text-xs cursor-pointer border animate-scale-in ${getEventColor()} ${isCompleted ? 'animate-task-complete' : ''}`}
       style={style}
     >
       <div className="flex items-start justify-between gap-1">

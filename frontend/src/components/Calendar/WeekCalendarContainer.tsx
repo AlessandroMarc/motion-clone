@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef } from 'react';
 import { type CalendarEventUnion } from '@shared/types';
 import { getWeekDates } from '@/utils/calendarUtils';
-import { LoadingState } from '@/components/shared/LoadingState';
+import { CalendarSkeleton } from './CalendarSkeleton';
 import { ErrorState } from '@/components/shared/ErrorState';
 import { useAuth } from '@/contexts/AuthContext';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -137,8 +137,8 @@ export function WeekCalendarContainer({
     return { 'day-0': [] };
   }, [isMobile, eventsByDay, weekDates, navigation.currentDay]);
 
-  if (loading) return <LoadingState />;
-  if (error) return <ErrorState message={error} />;
+  if (loading) return <CalendarSkeleton />;
+  if (error) return <ErrorState message={error} onRetry={refreshEvents} />;
 
   return (
     <WeekCalendarView

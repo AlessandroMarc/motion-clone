@@ -5,6 +5,7 @@ import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase';
 import type { Schedule } from '@shared/types';
 import { userSettingsService } from '@/services/userSettingsService';
+import posthog from 'posthog-js';
 
 interface AuthContextType {
   user: User | null;
@@ -72,6 +73,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false);
+
+      // PostHog: Identify user on sign-in
+      if (event === 'SIGNED_IN' && session?.user) {
+        posthog.identify(session.user.id, {
+          email: session.user.email,
+          name: session.user.user_metadata?.full_name || session.user.user_metadata?.name,
+        });
+        posthog.capture('user_signed_in', {
+          auth_provider: 'google',
+        });
+      }
     });
 
     return () => subscription.unsubscribe();
@@ -97,6 +109,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signOut = async () => {
     try {
+      // PostHog: Capture sign-out event before resetting
+      posthog.capture('user_signed_out');
+      posthog.reset();
+
       const { error } = await supabase.auth.signOut();
       if (error) {
         console.error('Error signing out:', error);

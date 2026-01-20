@@ -6,6 +6,7 @@ import * as z from 'zod';
 import type { Task } from '@shared/types';
 import { transformFormDataToTask } from '@/utils/formUtils';
 import { useAuth } from '@/contexts/AuthContext';
+import posthog from 'posthog-js';
 
 // Form validation schema
 export const taskSchema = z
@@ -90,6 +91,16 @@ export function useTaskForm(onTaskCreate: TaskCreateFormProps['onTaskCreate']) {
       await onTaskCreate(taskData);
       reset();
       toast.success('Task created successfully!');
+
+      // PostHog: Capture task created event
+      posthog.capture('task_created', {
+        priority: data.priority,
+        has_due_date: !!data.dueDate,
+        has_project: !!data.project_id,
+        planned_duration_minutes: data.planned_duration_minutes,
+        has_dependencies: (data.blockedBy?.length || 0) > 0,
+      });
+
       return true;
     } catch (error) {
       console.error('Failed to create task:', error);

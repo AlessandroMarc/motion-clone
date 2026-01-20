@@ -4,17 +4,29 @@ const nextConfig = {
     // Allow importing files from outside the Next.js app directory (e.g. repo-level /shared)
     externalDir: true,
   },
+  // This is required to support PostHog trailing slash API requests
+  skipTrailingSlashRedirect: true,
   async rewrites() {
-    // Only apply proxy in development
+    const rewrites = [
+      // PostHog reverse proxy for analytics
+      {
+        source: '/ingest/static/:path*',
+        destination: 'https://eu-assets.i.posthog.com/static/:path*',
+      },
+      {
+        source: '/ingest/:path*',
+        destination: 'https://eu.i.posthog.com/:path*',
+      },
+    ];
+
+    // Only apply API proxy in development
     if (process.env.NODE_ENV === 'development') {
-      return [
-        {
-          source: '/api/:path*',
-          destination: 'http://localhost:3003/api/:path*',
-        },
-      ];
+      rewrites.push({
+        source: '/api/:path*',
+        destination: 'http://localhost:3003/api/:path*',
+      });
     }
-    return [];
+    return rewrites;
   },
 };
 

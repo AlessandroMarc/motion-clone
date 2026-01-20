@@ -67,9 +67,11 @@ export function TaskItem({
       logger.error('Failed to unlink project:', error);
     }
   };
+  const isCompleted = task.status === 'completed';
+  
   return (
     <Card
-      className="hover:shadow-sm transition-shadow cursor-pointer"
+      className={`task-item hover:shadow-sm cursor-pointer animate-scale-in ${isCompleted ? 'opacity-75' : ''}`}
       onClick={() => onSelect?.(task)}
     >
       <CardContent className="p-4">
@@ -77,8 +79,8 @@ export function TaskItem({
           <div className="flex items-center gap-3 flex-1 min-w-0">
             <div className="flex-1 min-w-0">
               <h3
-                className={`text-sm font-medium ${
-                  task.status === 'completed'
+                className={`text-sm font-medium transition-all duration-200 ${
+                  isCompleted
                     ? 'line-through text-muted-foreground'
                     : ''
                 }`}
@@ -156,13 +158,15 @@ export function TaskItem({
 
             <Button
               variant="outline"
-              size="sm"
+              size="icon"
               onClick={event => {
                 event.stopPropagation();
                 onDelete(task.id);
               }}
-              className="cursor-pointer text-red-600 bg-red-50 hover:text-red-50 hover:bg-red-800 h-7 px-2 text-xs"
+              className="cursor-pointer text-red-600 bg-red-50 hover:text-red-50 hover:bg-red-800 h-9 w-9 md:h-8 md:w-8 min-h-[36px] min-w-[36px] shrink-0"
+              title="Delete task"
             >
+              <span className="sr-only">Delete</span>
               X
             </Button>
           </div>

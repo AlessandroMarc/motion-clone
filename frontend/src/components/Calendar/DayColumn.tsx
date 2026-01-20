@@ -5,6 +5,7 @@ import { isSameDay } from '@/utils/calendarUtils';
 import { computeOverlapLayout } from './dayColumnLayout';
 import { DayColumnEvents } from './DayColumnEvents';
 import { DayColumnGrid } from './DayColumnGrid';
+import { DayColumnEmptyState } from './DayColumnEmptyState';
 
 interface DayColumnProps {
   date: Date;
@@ -63,6 +64,8 @@ export function DayColumn({
       : dayEvents;
   const layoutMap = computeOverlapLayout(eventsForLayout);
 
+  const hasEvents = dayEvents.length > 0 || (previewBelongsHere && dragPreview);
+
   return (
     <div
       className="bg-background relative"
@@ -92,6 +95,10 @@ export function DayColumn({
         onEventMouseDown={onEventMouseDown}
         tasksMap={tasksMap}
       />
+
+      {!hasEvents && (
+        <DayColumnEmptyState date={date} onAddEvent={onGridCellClick} />
+      )}
     </div>
   );
 }

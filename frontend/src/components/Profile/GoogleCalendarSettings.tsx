@@ -14,6 +14,16 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Calendar, Loader2, RefreshCw, Unlink } from 'lucide-react';
@@ -25,6 +35,7 @@ export function GoogleCalendarSettings() {
   const [loading, setLoading] = useState(true);
   const [syncing, setSyncing] = useState(false);
   const [disconnecting, setDisconnecting] = useState(false);
+  const [disconnectDialogOpen, setDisconnectDialogOpen] = useState(false);
 
   const loadStatus = useCallback(async () => {
     if (!user?.id) {
@@ -106,16 +117,14 @@ export function GoogleCalendarSettings() {
     }
   };
 
-  const handleDisconnect = async () => {
+  const handleDisconnectClick = () => {
+    setDisconnectDialogOpen(true);
+  };
+
+  const handleConfirmDisconnect = async () => {
     if (!user?.id) return;
 
-    if (
-      !confirm(
-        'Are you sure you want to disconnect Google Calendar? Your synced events will remain, but automatic sync will stop.'
-      )
-    ) {
-      return;
-    }
+    setDisconnectDialogOpen(false);
 
     try {
       setDisconnecting(true);
@@ -219,7 +228,7 @@ export function GoogleCalendarSettings() {
                 )}
               </Button>
               <Button
-                onClick={handleDisconnect}
+                onClick={handleDisconnectClick}
                 disabled={disconnecting}
                 variant="destructive"
                 className="flex-1"
@@ -237,6 +246,26 @@ export function GoogleCalendarSettings() {
                 )}
               </Button>
             </div>
+
+            <AlertDialog open={disconnectDialogOpen} onOpenChange={setDisconnectDialogOpen}>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Disconnect Google Calendar</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Are you sure you want to disconnect Google Calendar? Your synced events will remain, but automatic sync will stop.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction
+                    onClick={handleConfirmDisconnect}
+                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                  >
+                    Disconnect
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
           </div>
         ) : (
           <div className="text-center py-6">

@@ -1,0 +1,72 @@
+[
+  {
+    "event": "user_signed_in",
+    "description": "User successfully signed in with Google authentication",
+    "file_path": "frontend/src/contexts/AuthContext.tsx"
+  },
+  {
+    "event": "user_signed_out",
+    "description": "User signed out of the application",
+    "file_path": "frontend/src/contexts/AuthContext.tsx"
+  },
+  {
+    "event": "task_created",
+    "description": "User created a new task with priority, due date, and project assignment",
+    "file_path": "frontend/src/hooks/useTaskForm.ts"
+  },
+  {
+    "event": "task_updated",
+    "description": "User updated an existing task's details",
+    "file_path": "frontend/src/components/Tasks/forms/TaskEditDialogForm.tsx"
+  },
+  {
+    "event": "project_created",
+    "description": "User created a new project to organize tasks",
+    "file_path": "frontend/src/hooks/useProjectForm.ts"
+  },
+  {
+    "event": "project_updated",
+    "description": "User updated an existing project's details or status",
+    "file_path": "frontend/src/components/Projects/ProjectEditDialog.tsx"
+  },
+  {
+    "event": "calendar_event_created",
+    "description": "User manually created a calendar event",
+    "file_path": "frontend/src/components/Calendar/CalendarCreateDialog.tsx"
+  },
+  {
+    "event": "calendar_event_updated",
+    "description": "User edited an existing calendar event",
+    "file_path": "frontend/src/components/Calendar/CalendarEditDialog.tsx"
+  },
+  {
+    "event": "calendar_event_deleted",
+    "description": "User deleted a calendar event",
+    "file_path": "frontend/src/components/Calendar/CalendarEditDialog.tsx"
+  },
+  {
+    "event": "auto_schedule_completed",
+    "description": "User completed auto-scheduling tasks to calendar events",
+    "file_path": "frontend/src/components/Calendar/AutoScheduleDialog.tsx"
+  },
+  {
+    "event": "google_calendar_connected",
+    "description": "User connected their Google Calendar integration",
+    "file_path": "frontend/src/components/Profile/GoogleCalendarSettings.tsx"
+  },
+  {
+    "event": "google_calendar_synced",
+    "description": "User manually triggered a Google Calendar sync",
+    "file_path": "frontend/src/components/Profile/GoogleCalendarSettings.tsx"
+  },
+  {
+    "event": "google_calendar_disconnected",
+    "description": "User disconnected their Google Calendar integration",
+    "file_path": "frontend/src/components/Profile/GoogleCalendarSettings.tsx"
+  },
+  {
+    "event": "task_completed",
+    "description": "User marked a task as completed via calendar event checkbox",
+    "file_path": "frontend/src/components/Calendar/CalendarEditDialog.tsx"
+  }
+]

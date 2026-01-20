@@ -5,6 +5,7 @@ import { z } from 'zod';
 import { toast } from 'sonner';
 import type { Project, WorkItemStatus } from '@shared/types';
 import { useAuth } from '@/contexts/AuthContext';
+import posthog from 'posthog-js';
 
 // Project form schema
 export const projectSchema = z.object({
@@ -70,6 +71,12 @@ export function useProjectForm(
       // Reset form on success
       reset();
       toast.success('Project created successfully!');
+
+      // PostHog: Capture project created event
+      posthog.capture('project_created', {
+        has_description: !!data.description,
+        has_deadline: !!data.deadline,
+      });
     } catch (error) {
       console.error('Failed to create project:', error);
       toast.error('Failed to create project. Please try again.');

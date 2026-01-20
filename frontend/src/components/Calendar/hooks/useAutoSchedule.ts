@@ -121,20 +121,48 @@ export function useAutoSchedule(
       // Refresh calendar events
       await refreshEvents();
 
-      // Show summary toast
+      // Show detailed summary toast
       if (successful > 0) {
+        // Get unique task names that were scheduled
+        const scheduledTaskIds = new Set(
+          eventsToCreate.map(e => e.linked_task_id)
+        );
+        const scheduledTaskNames = tasks
+          .filter(t => scheduledTaskIds.has(t.id))
+          .map(t => t.title)
+          .slice(0, 3); // Show up to 3 task names
+
+        const taskSummary =
+          scheduledTaskNames.length > 0
+            ? scheduledTaskNames.length === scheduledTaskIds.size
+              ? scheduledTaskNames.join(', ')
+              : `${scheduledTaskNames.join(', ')} and ${scheduledTaskIds.size - scheduledTaskNames.length} more`
+            : '';
+
         toast.success(
-          `Successfully created ${successful} event${successful > 1 ? 's' : ''}`
+          `Created ${successful} event${successful > 1 ? 's' : ''} for ${scheduledTaskIds.size} task${scheduledTaskIds.size > 1 ? 's' : ''}`,
+          {
+            description: taskSummary || undefined,
+            duration: 4000,
+          }
         );
       }
       if (failed > 0) {
-        toast.error(`Failed to create ${failed} event${failed > 1 ? 's' : ''}`);
+        toast.error(
+          `Failed to create ${failed} event${failed > 1 ? 's' : ''}`,
+          {
+            description: 'Some events could not be scheduled. Please try again.',
+            duration: 5000,
+          }
+        );
       }
       if (violations > 0) {
         toast.warning(
           `${violations} event${violations > 1 ? 's' : ''} scheduled after deadline`,
           {
-            duration: 5000,
+            description:
+              'Consider extending deadlines or reducing task duration.',
+            duration: 6000,
           }
         );
       }

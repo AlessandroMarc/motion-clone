@@ -1,11 +1,23 @@
 'use client';
 
+import { useState } from 'react';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Trash2 } from 'lucide-react';
 
 interface CalendarEditDialogProps {
   open: boolean;
@@ -44,7 +56,19 @@ export function CalendarEditDialog({
   onSave,
   onDelete,
 }: CalendarEditDialogProps) {
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+
+  const handleDeleteClick = () => {
+    setDeleteDialogOpen(true);
+  };
+
+  const handleConfirmDelete = () => {
+    setDeleteDialogOpen(false);
+    onDelete();
+  };
+
   return (
+    <>
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
@@ -123,7 +147,8 @@ export function CalendarEditDialog({
           )}
         </div>
         <DialogFooter>
-          <Button variant="destructive" onClick={onDelete}>
+          <Button variant="destructive" onClick={handleDeleteClick} className="gap-2">
+            <Trash2 className="h-4 w-4" />
             Delete
           </Button>
           <div className="ml-auto flex gap-2">
@@ -137,6 +162,27 @@ export function CalendarEditDialog({
         </DialogFooter>
       </DialogContent>
     </Dialog>
+
+    <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Delete Event</AlertDialogTitle>
+          <AlertDialogDescription>
+            Are you sure you want to delete "{title}"? This action cannot be undone.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>Cancel</AlertDialogCancel>
+          <AlertDialogAction
+            onClick={handleConfirmDelete}
+            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+          >
+            Delete
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+    </>
   );
 }
 
