@@ -15,6 +15,7 @@ import {
   Menu,
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
+import { ThemeToggle } from '@/components/ThemeToggle';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
   Sheet,
@@ -141,15 +142,18 @@ export function Sidebar() {
         <header className="md:hidden fixed top-0 left-0 right-0 z-50 h-16 border-b bg-background">
           <div className="flex h-full items-center justify-between px-4">
             <h1 className="text-xl font-semibold">Motion Clone</h1>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setMobileMenuOpen(true)}
-              className="h-11 w-11 min-h-[44px] min-w-[44px]"
-            >
-              <Menu className="h-5 w-5" />
-              <span className="sr-only">Open menu</span>
-            </Button>
+            <div className="flex items-center gap-1">
+              <ThemeToggle />
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setMobileMenuOpen(true)}
+                className="h-11 w-11 min-h-[44px] min-w-[44px]"
+              >
+                <Menu className="h-5 w-5" />
+                <span className="sr-only">Open menu</span>
+              </Button>
+            </div>
           </div>
         </header>
         <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
