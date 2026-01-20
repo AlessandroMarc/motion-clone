@@ -7,11 +7,6 @@ interface WelcomeHeaderProps {
 }
 
 export function WelcomeHeader({ apiMessage }: WelcomeHeaderProps) {
-  const handleTestError = () => {
-    // This will throw an error that Sentry will capture
-    throw new Error('Test Sentry Error from WelcomeHeader!');
-  };
-
   return (
     <div className="text-center mb-12">
       <div className="flex items-center justify-center mb-4">
@@ -27,12 +22,6 @@ export function WelcomeHeader({ apiMessage }: WelcomeHeaderProps) {
         <div className="h-2 w-2 rounded-full bg-green-500" />
         <span>API Connected: {apiMessage}</span>
       </div>
-      <button 
-        onClick={handleTestError}
-        className="mt-4 px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 transition-colors"
-      >
-        Test Sentry Error
-      </button>
     </div>
   );
 }
