@@ -1,4 +1,4 @@
--- Supabase Database Schema for Motion Clone
+-- Supabase Database Schema for Nexto
 -- Run this SQL in your Supabase SQL editor to create the required tables
 
 -- Enable UUID extension

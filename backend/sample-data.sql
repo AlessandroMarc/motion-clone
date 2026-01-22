@@ -1,5 +1,5 @@
 -- ============================================================
--- MOTION CLONE - SAMPLE DATA FOR SHOWCASE
+-- NEXTO - SAMPLE DATA FOR SHOWCASE
 -- ============================================================
 -- 
 -- INSTRUCTIONS:

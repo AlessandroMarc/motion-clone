@@ -8,7 +8,7 @@
 export const landingContent = {
   // Navigation
   nav: {
-    brand: 'FlowTask',
+    brand: 'Nexto',
     cta: 'Get Started',
     dashboard: 'Go to Dashboard',
   },
@@ -17,7 +17,7 @@ export const landingContent = {
   hero: {
     headline: 'Your Time, Intelligently Scheduled',
     subheadline:
-      'Stop juggling calendars and to-do lists. FlowTask automatically schedules your tasks around your life, so you can focus on what actually matters.',
+      'Stop juggling calendars and to-do lists. Nexto automatically schedules your tasks around your life, so you can focus on what actually matters.',
     primaryCta: 'Start Scheduling for Free',
     secondaryCta: 'See How It Works',
     badge: 'AI-Powered Scheduling',
@@ -62,7 +62,7 @@ export const landingContent = {
 
   // Benefits Section
   benefits: {
-    sectionTitle: 'Why Teams Love FlowTask',
+    sectionTitle: 'Why Teams Love Nexto',
     items: [
       {
         id: 'save-time',
@@ -119,7 +119,7 @@ export const landingContent = {
 
   // Footer
   footer: {
-    copyright: '© 2025 FlowTask. All rights reserved.',
+    copyright: '© 2025 Nexto. All rights reserved.',
     tagline: 'Built for people who value their time.',
   },
 };

@@ -12,7 +12,7 @@ export function WelcomeHeader({ apiMessage }: WelcomeHeaderProps) {
       <div className="flex items-center justify-center mb-4">
         <Sparkles className="h-12 w-12 text-primary mr-3" />
         <h1 className="text-5xl font-bold text-foreground">
-          Welcome to Motion Clone
+          Welcome to Nexto
         </h1>
       </div>
       <p className="text-xl text-muted-foreground mb-6">

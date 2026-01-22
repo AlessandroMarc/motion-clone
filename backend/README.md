@@ -1,4 +1,4 @@
-# Motion Clone Backend API
+# Nexto Backend API
 
 A RESTful API built with Express.js and Supabase for managing tasks, projects, milestones, and calendar events.
 

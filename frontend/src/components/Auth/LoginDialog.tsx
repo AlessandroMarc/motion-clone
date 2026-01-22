@@ -31,7 +31,7 @@ export function LoginDialog() {
     <Dialog open={true}>
       <DialogContent className="sm:max-w-md" showCloseButton={false}>
         <DialogHeader>
-          <DialogTitle>Sign in to Motion Clone</DialogTitle>
+          <DialogTitle>Sign in to Nexto</DialogTitle>
           <DialogDescription>
             Please sign in with your Google account to access tasks and
             projects.

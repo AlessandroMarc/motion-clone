@@ -58,7 +58,7 @@ app.get('/api', (req: Request, res: Response) => {
   ResponseHelper.success(
     res,
     {
-      name: 'Motion Clone API',
+      name: 'Nexto API',
       version: '1.0.0',
       description:
         'A RESTful API for managing tasks, projects, milestones, and calendar events',
@@ -69,7 +69,7 @@ app.get('/api', (req: Request, res: Response) => {
         calendarEvents: '/api/calendar-events',
       },
     },
-    'Welcome to the Motion Clone API'
+    'Welcome to the Nexto API'
   );
 });
 

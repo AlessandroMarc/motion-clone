@@ -60,7 +60,7 @@ let cachedFrontendUrl: string | null = null;
 
 /**
  * Required for Google Calendar OAuth callback redirect back to the UI.
- * Example: https://motion-clone.yourdomain.com
+ * Example: https://nexto.yourdomain.com
  */
 export function getFrontendUrl(): string {
   if (cachedFrontendUrl) return cachedFrontendUrl;

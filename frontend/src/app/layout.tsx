@@ -6,8 +6,8 @@ import { LayoutWrapper } from '@/components/LayoutWrapper';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'FlowTask - Intelligent Scheduling',
-  description: 'Stop juggling calendars and to-do lists. FlowTask automatically schedules your tasks around your life.',
+  title: 'Nexto - Intelligent Scheduling',
+  description: 'Stop juggling calendars and to-do lists. Nexto automatically schedules your tasks around your life.',
 };
 
 export default function RootLayout({

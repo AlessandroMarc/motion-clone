@@ -1,6 +1,6 @@
 # Supabase Authentication Setup Guide
 
-This guide will help you set up Supabase authentication with Google OAuth for the Motion Clone application.
+This guide will help you set up Supabase authentication with Google OAuth for the Nexto application.
 
 ## Prerequisites
 
@@ -13,7 +13,7 @@ This guide will help you set up Supabase authentication with Google OAuth for th
 2. Click "New Project"
 3. Choose your organization
 4. Enter project details:
-   - Name: `motion-clone` (or your preferred name)
+   - Name: `nexto` (or your preferred name)
    - Database Password: Choose a strong password
    - Region: Select the region closest to your users
 5. Click "Create new project"
