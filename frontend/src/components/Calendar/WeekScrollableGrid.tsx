@@ -4,6 +4,7 @@ import { cn } from '@/lib/utils';
 import DayColumn from './DayColumn';
 import TimeColumn from './TimeColumn';
 import type { CalendarEventUnion, Task } from '@shared/types';
+import { getDayAbbreviation, getMonthDay } from '@/utils/calendarUtils';
 
 interface WeekScrollableGridProps {
   weekDates: Date[];
@@ -43,37 +44,46 @@ export function WeekScrollableGrid({
   isMobile = false,
 }: WeekScrollableGridProps) {
   const timeSlots = Array.from({ length: 24 }, (_, i) => i);
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
 
   return (
-    <div className="border rounded-lg overflow-hidden h-[calc(100vh-100px)] md:h-[calc(100vh-100px)]">
+    <div className="rounded-xl bg-card border border-border/50 overflow-hidden h-[calc(100vh-120px)]">
+      {/* Day Headers */}
       <div className={cn(
-        "grid gap-px bg-border rounded-t-lg overflow-hidden",
+        "grid border-b border-border/50",
         isMobile ? "grid-cols-2" : "grid-cols-8"
       )}>
         {/* Time column header */}
-        <div className="bg-muted p-3 text-sm font-medium text-muted-foreground">
-          Time
+        <div className="p-2 text-[10px] font-medium text-muted-foreground/60 text-right pr-3">
+          
         </div>
-        {weekDates.map((_, index) => (
-          <div key={index} className="bg-muted p-3">
-            {isMobile && (
-              <div className="text-center">
-                <div className="text-xs font-medium text-muted-foreground">
-                  {weekDates[index].toLocaleDateString('en-US', { weekday: 'short' })}
-                </div>
-                <div className="text-sm font-semibold">
-                  {weekDates[index].toLocaleDateString('en-US', { day: 'numeric' })}
-                </div>
+        {weekDates.map((date, index) => {
+          const isToday = date.getTime() === today.getTime();
+          return (
+            <div key={index} className="p-2 text-center">
+              <div className="text-[10px] font-medium text-muted-foreground/70 uppercase tracking-wider">
+                {getDayAbbreviation(date)}
               </div>
-            )}
-          </div>
-        ))}
+              <div className={cn(
+                "text-sm font-semibold mt-0.5",
+                isToday && "text-primary"
+              )}>
+                {getMonthDay(date)}
+                {isToday && (
+                  <span className="ml-1 inline-block w-1.5 h-1.5 rounded-full bg-primary" />
+                )}
+              </div>
+            </div>
+          );
+        })}
       </div>
+
+      {/* Scrollable Grid */}
       <div 
         ref={gridRef} 
-        className="h-full overflow-y-auto w-full"
+        className="h-[calc(100%-60px)] overflow-y-auto"
         onDragOver={e => {
-          console.log('[WeekScrollableGrid] onDragOver on grid container');
           if (onExternalTaskDrop) {
             e.preventDefault();
             e.stopPropagation();
@@ -82,11 +92,10 @@ export function WeekScrollableGrid({
       >
         <div 
           className={cn(
-            "grid gap-px bg-border w-full",
+            "grid",
             isMobile ? "grid-cols-2" : "grid-cols-8"
           )}
           onDragOver={e => {
-            console.log('[WeekScrollableGrid] onDragOver on grid inner div');
             if (onExternalTaskDrop) {
               e.preventDefault();
               e.stopPropagation();
@@ -111,12 +120,6 @@ export function WeekScrollableGrid({
                 scrollSentinelRef={dayIndex === 0 ? scrollSentinelRef ?? undefined : undefined}
                 sentinelHour={sentinelHour}
                 onExternalTaskDrop={onExternalTaskDrop ? (task, date, hour, minute) => {
-                  console.log('[WeekScrollableGrid] Forwarding onExternalTaskDrop to DayColumn:', {
-                    task,
-                    date: date.toISOString(),
-                    hour,
-                    minute,
-                  });
                   onExternalTaskDrop(task, date, hour, minute);
                 } : undefined}
                 onExternalTaskDragOver={onExternalTaskDragOver}
@@ -131,5 +134,3 @@ export function WeekScrollableGrid({
 }
 
 export default WeekScrollableGrid;
-
-

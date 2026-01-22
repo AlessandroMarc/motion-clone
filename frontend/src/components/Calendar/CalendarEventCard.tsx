@@ -6,9 +6,8 @@ import {
   type Task,
 } from '@shared/types';
 import { formatEventTime } from '@/utils/calendarUtils';
-import { Badge } from '@/components/ui/badge';
-import { Card } from '@/components/ui/card';
-import { AlertTriangle } from 'lucide-react';
+import { AlertTriangle, CheckCircle2 } from 'lucide-react';
+import { cn } from '@/lib/utils';
 import {
   Tooltip,
   TooltipContent,
@@ -37,60 +36,50 @@ export function CalendarEventCard({
     task.due_date &&
     new Date(event.start_time) > new Date(task.due_date);
 
-  const getEventColor = () => {
-    if (isTaskEvent) {
-      if (isAfterDeadline) {
-        return 'bg-red-50 border-red-300 text-red-900 hover:bg-red-100';
-      }
-      if (isCompleted) {
-        return 'bg-blue-50 border-blue-300 text-blue-800 hover:bg-blue-100';
-      }
-      return 'bg-blue-100 border-blue-200 text-blue-900 hover:bg-blue-200';
-    }
-    return 'bg-gray-100 border-gray-200 text-gray-900 hover:bg-gray-200';
-  };
-
-  const getEventIcon = () => {
-    if (isTaskEvent) return '📋';
-    return '📅';
-  };
-
   return (
-    <Card
-      className={`calendar-event-card h-full overflow-hidden p-1.5 text-[10px] cursor-pointer border rounded-sm animate-scale-in ${getEventColor()} ${isCompleted ? 'animate-task-complete' : ''}`}
+    <div
+      className={cn(
+        'calendar-event-card h-full overflow-hidden rounded-md cursor-pointer transition-all',
+        'text-[10px] leading-tight',
+        // Base styles - using primary color like the landing page demo
+        isTaskEvent
+          ? isAfterDeadline
+            ? 'bg-red-500/80 text-white shadow-sm'
+            : isCompleted
+              ? 'bg-primary/40 text-primary-foreground/70'
+              : 'bg-primary/70 text-primary-foreground shadow-sm hover:bg-primary/80'
+          : 'bg-muted text-muted-foreground hover:bg-muted/80',
+        isCompleted && 'opacity-60'
+      )}
       style={style}
     >
-      <div className="flex items-start gap-0.5">
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-0.5">
-            <span className="text-[10px] shrink-0">{getEventIcon()}</span>
-            <span
-              className={`font-medium truncate leading-tight ${
-                isCompleted ? 'line-through opacity-70' : ''
-              }`}
-            >
-              {event.title}
-            </span>
-          </div>
-
-          <div className="text-[9px] opacity-75 leading-tight">
-            {formatEventTime(event.start_time, event.end_time)}
-          </div>
+      <div className="p-1.5 h-full flex flex-col">
+        <div className="flex items-start gap-1 flex-1 min-w-0">
+          <span
+            className={cn(
+              'font-medium truncate flex-1',
+              isCompleted && 'line-through'
+            )}
+          >
+            {event.title}
+          </span>
+          {isCompleted && (
+            <CheckCircle2 className="h-2.5 w-2.5 shrink-0 opacity-70" />
+          )}
         </div>
-      </div>
 
-      {isTaskEvent && isAfterDeadline && (
-        <div className="mt-0.5">
+        <div className="text-[9px] opacity-80 mt-0.5">
+          {formatEventTime(event.start_time, event.end_time)}
+        </div>
+
+        {isTaskEvent && isAfterDeadline && (
           <TooltipProvider>
             <Tooltip>
               <TooltipTrigger asChild>
-                <Badge
-                  variant="destructive"
-                  className="text-[9px] px-1 py-0 h-4 flex items-center gap-0.5"
-                >
+                <div className="flex items-center gap-0.5 mt-0.5 text-[9px] font-medium">
                   <AlertTriangle className="h-2.5 w-2.5" />
-                  Late
-                </Badge>
+                  <span>Past deadline</span>
+                </div>
               </TooltipTrigger>
               <TooltipContent>
                 <p>
@@ -103,8 +92,8 @@ export function CalendarEventCard({
               </TooltipContent>
             </Tooltip>
           </TooltipProvider>
-        </div>
-      )}
-    </Card>
+        )}
+      </div>
+    </div>
   );
 }

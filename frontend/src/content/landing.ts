@@ -1,127 +1,143 @@
-/**
- * Landing Page Content
- * 
- * All text content for the landing/onboarding page.
- * Edit this file to update copy without touching components.
- */
-
 export const landingContent = {
-  // Navigation
   nav: {
     brand: 'Nexto',
-    cta: 'Get Started',
-    dashboard: 'Go to Dashboard',
+    cta: 'Start Free Trial',
+    dashboard: 'Dashboard',
   },
 
-  // Hero Section
   hero: {
-    headline: 'Your Time, Intelligently Scheduled',
-    subheadline:
-      'Stop juggling calendars and to-do lists. Nexto automatically schedules your tasks around your life, so you can focus on what actually matters.',
-    primaryCta: 'Start Scheduling for Free',
-    secondaryCta: 'See How It Works',
-    badge: 'AI-Powered Scheduling',
+    headline: 'Stop Planning Your Day. Start Doing It.',
+    subheadline: 'Your tasks, automatically scheduled around your calendar. No manual planning, no missed deadlines.',
+    primaryCta: 'Try Free for 14 Days',
+    secondaryCta: 'Watch Demo',
+    badge: 'No Credit Card Required',
   },
 
-  // Features Section
+  sellingPoints: {
+    items: [
+      {
+        id: 'zero-planning',
+        title: 'Add Tasks, Get a Schedule',
+        description:
+          'Add your task. Set a deadline and time estimate. Nexto slots it into your calendar automatically, working around your meetings and availability. Takes 10 seconds per task, saves hours of mental planning.',
+        icon: 'Sparkles',
+      },
+      {
+        id: 'adapts-to-you',
+        title: 'Meetings Run Over? Schedule Updates Instantly',
+        description:
+          "Your 2pm call went to 3pm? Nexto automatically reshuffles everything that comes after. No manual reorganization, no forgotten tasks, no deadline anxiety. Your schedule stays realistic without you lifting a finger.",
+        icon: 'RefreshCw',
+      },
+      {
+        id: 'always-know',
+        title: 'Open Calendar, See Next Task, Work',
+        description:
+          "No staring at overwhelming to-do lists. No decision paralysis about what to work on next. Your calendar shows you exactly what you should be doing right now, prioritized and time-blocked. Just execute.",
+        icon: 'Compass',
+      },
+      {
+        id: 'smash-deadlines',
+        title: 'Hit Every Deadline Without Last-Minute Panic',
+        description:
+          "Nexto backfills from your deadlines, ensuring you start tasks with enough time to finish. No more 11pm scrambles. No more 'sorry, I forgot about that.' You'll see overload coming days in advance.",
+        icon: 'Rocket',
+      },
+    ],
+  },
+
   features: {
-    sectionTitle: 'Scheduling That Thinks for You',
+    sectionTitle: 'Automatic Scheduling That Actually Works',
     sectionSubtitle:
-      'Drop in your tasks, set your priorities, and let the algorithm do the heavy lifting.',
+      'Built by developers who were tired of task apps that made us do all the work.',
     items: [
       {
         id: 'smart-scheduling',
-        title: 'Smart Auto-Scheduling',
+        title: 'Deadline-Aware Scheduling',
         description:
-          'Tasks automatically find the perfect slot in your calendar based on deadlines, priority, and your working hours.',
+          'Algorithm schedules backward from deadlines, factoring in task duration, priority, and your availability. Never start too late again.',
         icon: 'Brain',
       },
       {
         id: 'priority-aware',
-        title: 'Priority-Aware Planning',
+        title: 'Priority-Based Placement',
         description:
-          'High-priority items get scheduled first. Low-priority tasks fill the gaps. No more decision fatigue.',
+          'High-priority tasks grab the best time slots. Lower priority work fills gaps. Your energy goes where it matters most.',
         icon: 'Target',
       },
       {
         id: 'calendar-sync',
-        title: 'Calendar Integration',
+        title: 'Google Calendar Sync',
         description:
-          'Syncs with Google Calendar to work around your existing meetings and commitments seamlessly.',
+          'Reads your existing meetings and blocks. Schedules tasks around them, not through them. One source of truth for your time.',
         icon: 'Calendar',
       },
       {
         id: 'flexible-reschedule',
-        title: 'Flexible Rescheduling',
+        title: 'Drag to Reschedule',
         description:
-          'Plans change. Drag and drop to reschedule, or let the system automatically adjust when things shift.',
+          'Need to move something? Drag it. Everything else adjusts automatically. Or let the system reschedule when things change.',
         icon: 'RefreshCw',
       },
     ],
   },
 
-  // Benefits Section
   benefits: {
-    sectionTitle: 'Why Teams Love Nexto',
+    sectionTitle: 'What You Get Back',
     items: [
       {
         id: 'save-time',
-        metric: '2+ hours',
-        label: 'saved weekly on planning',
+        metric: 'Hours',
+        label: 'saved on weekly planning sessions',
       },
       {
         id: 'focus',
-        metric: '40%',
-        label: 'more deep work time',
+        metric: 'Zero',
+        label: 'decision fatigue about what to do next',
       },
       {
         id: 'deadlines',
-        metric: '95%',
-        label: 'on-time task completion',
+        metric: 'Earlier',
+        label: 'deadline warnings, not last-minute stress',
       },
     ],
   },
 
-  // How It Works Section
   howItWorks: {
     sectionTitle: 'How It Works',
-    sectionSubtitle: 'Three steps to a stress-free schedule',
+    sectionSubtitle: 'Three inputs, one output: a workable schedule',
     steps: [
       {
         number: '01',
         title: 'Add Your Tasks',
         description:
-          'Create tasks with deadlines, estimated duration, and priority levels.',
+          'Name, deadline, time estimate, priority. That\'s it.',
       },
       {
         number: '02',
-        title: 'Set Your Availability',
+        title: 'Connect Your Calendar',
         description:
-          'Define your working hours and sync your calendar to block off existing commitments.',
+          'Sync Google Calendar once. Nexto learns your meetings and working hours.',
       },
       {
         number: '03',
-        title: 'Let It Schedule',
+        title: 'Check Your Calendar',
         description:
-          'Watch as tasks automatically populate your calendar in the optimal order.',
+          'Every task is scheduled. Just follow the plan. Update as life happens.',
       },
     ],
   },
 
-  // Final CTA Section
   finalCta: {
-    headline: 'Ready to Reclaim Your Time?',
+    headline: 'Your Calendar, Actually Manageable',
     subheadline:
-      'Join thousands of professionals who have stopped overthinking their schedule.',
-    primaryCta: "Get Started — It's Free",
-    note: 'No credit card required',
+      'Stop planning. Start doing. Try it free for 14 days.',
+    primaryCta: 'Start Free Trial',
+    note: 'No credit card • Cancel anytime',
   },
 
-  // Footer
   footer: {
-    copyright: '© 2025 Nexto. All rights reserved.',
-    tagline: 'Built for people who value their time.',
+    copyright: '© 2025 Nexto',
+    tagline: 'Made by people who hate scheduling as much as you do.',
   },
 };
-
-export type LandingContent = typeof landingContent;

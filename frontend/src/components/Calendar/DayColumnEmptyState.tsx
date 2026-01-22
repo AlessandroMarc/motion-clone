@@ -12,7 +12,7 @@ export function DayColumnEmptyState({ date, onAddEvent }: DayColumnEmptyStatePro
   const isPast = date < new Date() && !isToday;
 
   // Position the empty state at around 10am-11am area (comfortable viewing position)
-  const topPosition = 10 * 64 + 16; // 10 hours * 64px per hour + some padding
+  const topPosition = 10 * 48 + 12; // 10 hours * 48px per hour + some padding
 
   const handleClick = () => {
     // Default to 9am for adding events

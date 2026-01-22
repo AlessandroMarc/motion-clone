@@ -4,7 +4,54 @@ import { useEffect, useState } from 'react';
 import type { Task, Project } from '@shared/types';
 import { taskService } from '@/services/taskService';
 import { projectService } from '@/services/projectService';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card } from '@/components/ui/card';
+import {
+  Calendar,
+  Folder,
+  CheckCircle2,
+  Circle,
+  Loader2,
+  AlertCircle,
+} from 'lucide-react';
+import { cn } from '@/lib/utils';
+import { isOverdue } from '@/utils/dateUtils';
+
+const STATUS_CONFIG: Record<
+  string,
+  { icon: typeof Circle; className: string }
+> = {
+  pending: {
+    icon: Circle,
+    className: 'text-muted-foreground',
+  },
+  'not-started': {
+    icon: Circle,
+    className: 'text-muted-foreground',
+  },
+  'in-progress': {
+    icon: Loader2,
+    className: 'text-blue-500',
+  },
+  completed: {
+    icon: CheckCircle2,
+    className: 'text-emerald-500',
+  },
+};
+
+const PRIORITY_CONFIG: Record<Task['priority'], { dotClass: string; borderClass: string }> = {
+  high: {
+    dotClass: 'bg-red-500',
+    borderClass: 'border-l-red-500',
+  },
+  medium: {
+    dotClass: 'bg-amber-500',
+    borderClass: 'border-l-amber-500',
+  },
+  low: {
+    dotClass: 'bg-slate-400',
+    borderClass: 'border-l-slate-400',
+  },
+};
 
 export function SimpleTaskCards() {
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -36,53 +83,111 @@ export function SimpleTaskCards() {
 
   if (loading) {
     return (
-      <div className="space-y-2">
-        <div className="h-5 w-40 bg-muted animate-pulse rounded" />
-        <div className="h-20 w-full bg-muted animate-pulse rounded" />
-        <div className="h-20 w-full bg-muted animate-pulse rounded" />
+      <div className="space-y-3">
+        {[1, 2, 3].map((i) => (
+          <div key={i} className="h-20 w-full bg-muted animate-pulse rounded-lg" />
+        ))}
       </div>
     );
   }
 
   if (error) {
-    return <div className="text-sm text-destructive">{error}</div>;
+    return (
+      <div className="text-sm text-destructive p-4 bg-destructive/10 rounded-lg">
+        {error}
+      </div>
+    );
   }
 
   if (tasks.length === 0) {
-    return <div className="text-sm text-muted-foreground">No tasks</div>;
+    return (
+      <div className="text-sm text-muted-foreground p-6 text-center bg-muted/30 rounded-lg">
+        No tasks yet
+      </div>
+    );
   }
 
   return (
     <div className="space-y-3">
-      {tasks.map(task => {
+      {tasks.map((task) => {
         const project = task.project_id ? projectsById[task.project_id] : undefined;
+        const isCompleted = task.status === 'completed';
+        const taskIsOverdue = task.due_date && isOverdue(task.due_date) && !isCompleted;
+        const statusConfig = STATUS_CONFIG[task.status] ?? STATUS_CONFIG['pending'];
+        const priorityConfig = PRIORITY_CONFIG[task.priority] ?? PRIORITY_CONFIG['medium'];
+        const StatusIcon = statusConfig.icon;
+
         return (
-          <Card key={task.id} className="border">
-            <CardContent className="p-3">
-              <div className="flex items-start justify-between gap-2">
-                <div className="min-w-0">
-                  <div className="font-medium truncate">{task.title}</div>
-                  {task.description ? (
-                    <div className="text-xs text-muted-foreground truncate">
+          <Card
+            key={task.id}
+            className={cn(
+              'border-l-[3px] transition-all hover:shadow-sm',
+              priorityConfig.borderClass,
+              isCompleted && 'opacity-60'
+            )}
+          >
+            <div className="p-3">
+              <div className="flex items-start gap-3">
+                {/* Status Icon */}
+                <div className={cn('mt-0.5', statusConfig.className)}>
+                  <StatusIcon
+                    className={cn(
+                      'h-4 w-4',
+                      task.status === 'in-progress' && 'animate-spin'
+                    )}
+                  />
+                </div>
+
+                {/* Content */}
+                <div className="flex-1 min-w-0">
+                  <div
+                    className={cn(
+                      'font-medium truncate',
+                      isCompleted && 'line-through text-muted-foreground'
+                    )}
+                  >
+                    {task.title}
+                  </div>
+
+                  {task.description && (
+                    <p className="text-xs text-muted-foreground mt-0.5 truncate">
                       {task.description}
-                    </div>
-                  ) : null}
-                  <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-                    <span className="inline-flex items-center rounded bg-muted px-1.5 py-0.5">
-                      {task.status}
+                    </p>
+                  )}
+
+                  {/* Metadata */}
+                  <div className="mt-2 flex flex-wrap items-center gap-2 text-xs">
+                    {/* Priority Dot */}
+                    <span className="inline-flex items-center gap-1.5 text-muted-foreground">
+                      <span className={cn('h-1.5 w-1.5 rounded-full', priorityConfig.dotClass)} />
+                      {task.priority}
                     </span>
-                    {project ? (
-                      <span className="truncate">Project: {project.name}</span>
-                    ) : null}
-                    {task.due_date ? (
-                      <span>
-                        Due: {new Date(task.due_date).toLocaleDateString()}
+
+                    {/* Project */}
+                    {project && (
+                      <span className="inline-flex items-center gap-1 text-muted-foreground">
+                        <Folder className="h-3 w-3" />
+                        {project.name}
                       </span>
-                    ) : null}
+                    )}
+
+                    {/* Due Date */}
+                    {task.due_date && (
+                      <span
+                        className={cn(
+                          'inline-flex items-center gap-1',
+                          taskIsOverdue ? 'text-red-500' : 'text-muted-foreground'
+                        )}
+                      >
+                        <Calendar className="h-3 w-3" />
+                        {new Date(task.due_date).toLocaleDateString()}
+                        {taskIsOverdue && <AlertCircle className="h-3 w-3" />}
+                      </span>
+                    )}
                   </div>
                 </div>
               </div>
-            </CardContent>
+            </div>
           </Card>
         );
       })}
@@ -91,11 +196,3 @@ export function SimpleTaskCards() {
 }
 
 export default SimpleTaskCards;
-
-
-
-
-
-
-
-

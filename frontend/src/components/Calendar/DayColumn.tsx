@@ -68,7 +68,7 @@ export function DayColumn({
 
   return (
     <div
-      className="bg-background relative"
+      className="relative border-r border-border/20 last:border-r-0"
       ref={setDayRef}
       onDragOver={e => {
         if (!onExternalTaskDrop) return;

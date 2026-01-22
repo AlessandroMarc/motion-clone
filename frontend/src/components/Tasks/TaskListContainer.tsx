@@ -73,6 +73,25 @@ export function TaskListContainer({ refreshTrigger, onTaskUpdate }: TaskListCont
     setSelectedTask(updatedTask);
   };
 
+  const handleQuickCreateTask = async (title: string, projectId: string | null) => {
+    try {
+      await taskService.createTask({
+        title,
+        project_id: projectId ?? undefined,
+        priority: 'medium',
+        plannedDurationMinutes: 30,
+        actualDurationMinutes: 0,
+      });
+      await reload();
+      onTaskUpdate?.();
+      toast.success('Task created');
+    } catch (e) {
+      logger.error('[TaskList] Failed to create task', e);
+      toast.error('Failed to create task');
+      throw e;
+    }
+  };
+
   return (
     <TaskListView
       tasks={tasks}
@@ -84,6 +103,7 @@ export function TaskListContainer({ refreshTrigger, onTaskUpdate }: TaskListCont
       onDeleteTask={handleDeleteTask}
       onTaskUpdate={handleTaskUpdate}
       onSelectTask={handleSelectTask}
+      onQuickCreateTask={handleQuickCreateTask}
       selectedTask={selectedTask}
       detailsOpen={detailsOpen}
       onDetailsOpenChange={handleDetailsOpenChange}
@@ -91,5 +111,3 @@ export function TaskListContainer({ refreshTrigger, onTaskUpdate }: TaskListCont
     />
   );
 }
-
-

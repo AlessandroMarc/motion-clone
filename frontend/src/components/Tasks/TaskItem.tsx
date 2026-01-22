@@ -1,13 +1,21 @@
-import { Card, CardContent } from '@/components/ui/card';
+'use client';
+
+import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Calendar, AlertCircle, Timer } from 'lucide-react';
-import { getPriorityColor } from '@/utils/statusUtils';
+import {
+  Calendar,
+  AlertCircle,
+  Clock,
+  Trash2,
+  CheckCircle2,
+  Circle,
+  Loader2,
+  CalendarCheck,
+} from 'lucide-react';
 import { formatDate, isOverdue } from '@/utils/dateUtils';
-import { taskService } from '@/services/taskService';
-import { TaskProjectSection } from './TaskProjectSection';
 import type { Task, Project } from '@shared/types';
-import { logger } from '@/lib/logger';
+import { cn } from '@/lib/utils';
+import { TaskProjectSection } from './TaskProjectSection';
 
 interface TaskItemProps {
   task: Task;
@@ -19,21 +27,50 @@ interface TaskItemProps {
   onSelect?: (task: Task) => void;
 }
 
-const STATUS_BADGE_STYLES: Record<
-  Task['status'],
-  { label: string; className: string }
+const STATUS_CONFIG: Record<
+  string,
+  { label: string; icon: typeof Circle; className: string }
 > = {
+  pending: {
+    label: 'Pending',
+    icon: Circle,
+    className: 'text-muted-foreground',
+  },
   'not-started': {
     label: 'Not Started',
-    className: 'bg-muted text-muted-foreground',
+    icon: Circle,
+    className: 'text-muted-foreground',
   },
   'in-progress': {
     label: 'In Progress',
-    className: 'bg-blue-100 text-blue-700 border-blue-200',
+    icon: Loader2,
+    className: 'text-blue-500',
   },
   completed: {
     label: 'Completed',
-    className: 'bg-emerald-100 text-emerald-700 border-emerald-200',
+    icon: CheckCircle2,
+    className: 'text-emerald-500',
+  },
+};
+
+const PRIORITY_CONFIG: Record<
+  Task['priority'],
+  { label: string; dotClass: string; bgClass: string }
+> = {
+  high: {
+    label: 'High',
+    dotClass: 'bg-red-500',
+    bgClass: 'bg-red-500/10 text-red-600 dark:text-red-400',
+  },
+  medium: {
+    label: 'Medium',
+    dotClass: 'bg-amber-500',
+    bgClass: 'bg-amber-500/10 text-amber-600 dark:text-amber-400',
+  },
+  low: {
+    label: 'Low',
+    dotClass: 'bg-slate-400',
+    bgClass: 'bg-slate-500/10 text-slate-600 dark:text-slate-400',
   },
 };
 
@@ -46,132 +83,132 @@ export function TaskItem({
   isPlanned = false,
   onSelect,
 }: TaskItemProps) {
-  const handleProjectSelect = async (projectId: string) => {
-    try {
-      const updatedTask = await taskService.updateTask(task.id, {
-        project_id: projectId,
-      });
-      onTaskUpdate?.(updatedTask);
-    } catch (error) {
-      logger.error('Failed to link project:', error);
-    }
-  };
-
-  const handleProjectUnlink = async () => {
-    try {
-      const updatedTask = await taskService.updateTask(task.id, {
-        project_id: null,
-      });
-      onTaskUpdate?.(updatedTask);
-    } catch (error) {
-      logger.error('Failed to unlink project:', error);
-    }
-  };
   const isCompleted = task.status === 'completed';
-  
+  const taskIsOverdue = task.due_date && isOverdue(task.due_date) && !isCompleted;
+  const statusConfig = STATUS_CONFIG[task.status] ?? STATUS_CONFIG['pending'];
+  const priorityConfig = PRIORITY_CONFIG[task.priority] ?? PRIORITY_CONFIG['medium'];
+  const StatusIcon = statusConfig.icon;
+
   return (
     <Card
-      className={`task-item hover:shadow-sm cursor-pointer animate-scale-in ${isCompleted ? 'opacity-75' : ''}`}
+      className={cn(
+        'group relative overflow-hidden transition-all duration-200 hover:shadow-md cursor-pointer',
+        'border-l-[3px]',
+        task.priority === 'high' && 'border-l-red-500',
+        task.priority === 'medium' && 'border-l-amber-500',
+        task.priority === 'low' && 'border-l-slate-400',
+        isCompleted && 'opacity-60'
+      )}
       onClick={() => onSelect?.(task)}
     >
-      <CardContent className="p-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3 flex-1 min-w-0">
+      <div className="p-4">
+        {/* Header: Title + Actions */}
+        <div className="flex items-start justify-between gap-3 mb-2">
+          <div className="flex items-start gap-3 flex-1 min-w-0">
+            {/* Status Icon */}
+            <div className={cn('mt-0.5', statusConfig.className)}>
+              <StatusIcon
+                className={cn(
+                  'h-5 w-5',
+                  task.status === 'in-progress' && 'animate-spin'
+                )}
+              />
+            </div>
+
+            {/* Title & Description */}
             <div className="flex-1 min-w-0">
               <h3
-                className={`text-sm font-medium transition-all duration-200 ${
-                  isCompleted
-                    ? 'line-through text-muted-foreground'
-                    : ''
-                }`}
+                className={cn(
+                  'font-semibold text-base leading-tight',
+                  isCompleted && 'line-through text-muted-foreground'
+                )}
               >
                 {task.title}
               </h3>
               {task.description && (
-                <p className="text-xs text-muted-foreground mt-1 truncate">
+                <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
                   {task.description}
                 </p>
               )}
-              <div className="mt-1 flex items-center gap-2 flex-wrap">
-                <TaskProjectSection
-                  project={project}
-                  availableProjects={availableProjects}
-                  onProjectSelect={handleProjectSelect}
-                  onProjectUnlink={handleProjectUnlink}
-                />
-                <Badge
-                  variant="outline"
-                  className="text-[10px] px-1.5 py-0.5 flex items-center gap-1"
-                >
-                  <Timer className="h-3 w-3" />
-                  Planned: {task.planned_duration_minutes}m
-                </Badge>
-                <Badge
-                  variant="outline"
-                  className="text-[10px] px-1.5 py-0.5 flex items-center gap-1"
-                >
-                  <Timer className="h-3 w-3" />
-                  Actual: {task.actual_duration_minutes}m
-                </Badge>
-                {isPlanned && (
-                  <Badge
-                    variant="outline"
-                    className="text-[10px] px-1.5 py-0.5"
-                  >
-                    Planned in calendar
-                  </Badge>
-                )}
-                <Badge
-                  variant="outline"
-                  className={`text-[10px] px-1.5 py-0.5 ${STATUS_BADGE_STYLES[task.status]?.className ?? ''}`}
-                >
-                  {STATUS_BADGE_STYLES[task.status]?.label ?? task.status}
-                </Badge>
-              </div>
             </div>
           </div>
 
-          <div className="flex items-center gap-2 flex-shrink-0">
-            <div
-              className={`h-2 w-2 rounded-full ${getPriorityColor(task.priority)}`}
-            />
-            <Badge variant="secondary" className="text-xs px-1.5 py-0.5">
-              {task.priority}
-            </Badge>
-
-            {task.due_date && (
-              <div
-                className={`flex items-center gap-1 text-xs ${
-                  isOverdue(task.due_date) && task.status !== 'completed'
-                    ? 'text-red-500'
-                    : 'text-muted-foreground'
-                }`}
-                onClick={event => event.stopPropagation()}
-              >
-                <Calendar className="h-3 w-3" />
-                <span>{formatDate(task.due_date)}</span>
-                {isOverdue(task.due_date) && task.status !== 'completed' && (
-                  <AlertCircle className="h-3 w-3 text-red-500" />
-                )}
-              </div>
-            )}
-
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={event => {
-                event.stopPropagation();
-                onDelete(task.id);
-              }}
-              className="cursor-pointer text-red-600 bg-red-50 hover:text-red-50 hover:bg-red-800 h-9 w-9 md:h-8 md:w-8 min-h-[36px] min-w-[36px] shrink-0"
-              title="Delete task"
-            >
-              <span className="sr-only">Delete</span>
-              X
-            </Button>
-          </div>
+          {/* Delete Button */}
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={(e) => {
+              e.stopPropagation();
+              onDelete(task.id);
+            }}
+            className="opacity-0 group-hover:opacity-100 transition-opacity h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10 shrink-0"
+            title="Delete task"
+          >
+            <Trash2 className="h-4 w-4" />
+          </Button>
         </div>
-      </CardContent>
+
+        {/* Metadata Row */}
+        <div className="flex items-center gap-2 flex-wrap mt-3 pl-8">
+          {/* Priority Badge */}
+          <span
+            className={cn(
+              'inline-flex items-center gap-1.5 px-2 py-1 rounded-md text-xs font-medium',
+              priorityConfig.bgClass
+            )}
+          >
+            <span className={cn('h-1.5 w-1.5 rounded-full', priorityConfig.dotClass)} />
+            {priorityConfig.label}
+          </span>
+
+          {/* Due Date */}
+          {task.due_date && (
+            <span
+              className={cn(
+                'inline-flex items-center gap-1.5 px-2 py-1 rounded-md text-xs font-medium',
+                taskIsOverdue
+                  ? 'bg-red-500/10 text-red-600 dark:text-red-400'
+                  : 'bg-muted text-muted-foreground'
+              )}
+            >
+              <Calendar className="h-3.5 w-3.5" />
+              {formatDate(task.due_date)}
+              {taskIsOverdue && <AlertCircle className="h-3.5 w-3.5" />}
+            </span>
+          )}
+
+          {/* Duration */}
+          {task.planned_duration_minutes > 0 && (
+            <span className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md text-xs font-medium bg-muted text-muted-foreground">
+              <Clock className="h-3.5 w-3.5" />
+              {task.planned_duration_minutes}m
+              {task.actual_duration_minutes > 0 && (
+                <span className="text-muted-foreground/70">
+                  / {task.actual_duration_minutes}m
+                </span>
+              )}
+            </span>
+          )}
+
+          {/* Planned in Calendar */}
+          {isPlanned && (
+            <span className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md text-xs font-medium bg-primary/10 text-primary">
+              <CalendarCheck className="h-3.5 w-3.5" />
+              Scheduled
+            </span>
+          )}
+        </div>
+
+        {/* Project Section */}
+        <div className="mt-3 pl-8">
+          <TaskProjectSection
+            task={task}
+            project={project}
+            availableProjects={availableProjects}
+            onTaskUpdate={onTaskUpdate}
+          />
+        </div>
+      </div>
     </Card>
   );
 }

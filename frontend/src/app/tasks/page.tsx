@@ -47,32 +47,35 @@ export default function TasksPage() {
 
   return (
     <ProtectedRoute>
-      <div className="flex-1 p-3 md:p-6">
-        <div className="max-w-4xl mx-auto">
-          {/* Header */}
-          <div className="mb-6 md:mb-8">
-            <h1 className="text-2xl md:text-4xl font-bold text-foreground mb-2">
-              Task Manager
-            </h1>
-            <p className="text-sm md:text-base text-muted-foreground">
-              Organize your tasks and boost your productivity
-            </p>
-          </div>
+      <div className="flex-1 flex flex-col min-h-0">
+        {/* Header - constrained width */}
+        <div className="px-3 md:px-6 pt-3 md:pt-6">
+          <div className="max-w-4xl">
+            <div className="mb-4 md:mb-6">
+              <h1 className="text-2xl md:text-3xl font-bold text-foreground mb-1">
+                Task Manager
+              </h1>
+              <p className="text-sm text-muted-foreground">
+                Organize your tasks and boost your productivity
+              </p>
+            </div>
 
-          {/* Main Content */}
-          <div className="space-y-4 md:space-y-6">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-              <h2 className="text-xl md:text-2xl font-semibold">Your Tasks</h2>
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
+              <h2 className="text-lg md:text-xl font-semibold">Your Tasks</h2>
               <TaskCreateForm
                 onTaskCreate={handleTaskCreate}
                 isLoading={isCreatingTask}
               />
             </div>
-            <TaskList
-              refreshTrigger={refreshTrigger}
-              onTaskUpdate={handleTaskUpdate}
-            />
           </div>
+        </div>
+
+        {/* Kanban Board - full width */}
+        <div className="flex-1 min-h-0 px-3 md:px-6 pb-3 md:pb-6">
+          <TaskList
+            refreshTrigger={refreshTrigger}
+            onTaskUpdate={handleTaskUpdate}
+          />
         </div>
       </div>
     </ProtectedRoute>

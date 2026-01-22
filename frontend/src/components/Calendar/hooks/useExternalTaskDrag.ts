@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import type { CalendarEventTask, CalendarEventUnion } from '@shared/types';
 import { logger } from '@/lib/logger';
 
-const HOUR_PX = 64;
+const HOUR_PX = 48; // Match dayColumnLayout.ts
 
 type DraggedTask = { id: string; title: string; description?: string };
 

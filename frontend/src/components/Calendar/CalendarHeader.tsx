@@ -1,6 +1,6 @@
 'use client';
 
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   getWeekRangeString,
@@ -43,15 +43,15 @@ export function CalendarHeader({
     });
 
     return (
-      <div className="flex flex-col gap-4 mb-6">
+      <div className="flex flex-col gap-3 mb-4">
         <div className="flex items-center justify-between">
-          <h1 className="text-xl font-bold">Calendar</h1>
+          <h1 className="text-lg font-semibold">Calendar</h1>
           <div className="flex items-center gap-2">
             <Button
-              variant="outline"
+              variant="ghost"
               size="sm"
               onClick={onCurrentWeek}
-              className="text-xs h-11 min-h-[44px] px-4"
+              className="text-xs h-8 px-3"
             >
               Today
             </Button>
@@ -60,9 +60,10 @@ export function CalendarHeader({
                 variant="default"
                 size="sm"
                 onClick={onAutoSchedule}
-                className="text-xs h-11 min-h-[44px] px-4 cursor-pointer hover:bg-primary hover:text-white"  
+                className="text-xs h-8 px-3 gap-1.5"
               >
-                Auto-Schedule
+                <Sparkles className="h-3 w-3" />
+                Auto
               </Button>
             )}
           </div>
@@ -70,30 +71,30 @@ export function CalendarHeader({
 
         <div className="flex items-center justify-between">
           <Button 
-            variant="outline" 
+            variant="ghost" 
             size="icon"
             onClick={onPreviousDay}
-            className="h-11 w-11 min-h-[44px] min-w-[44px] p-0"
+            className="h-8 w-8"
           >
-            <ChevronLeft className="h-5 w-5" />
+            <ChevronLeft className="h-4 w-4" />
           </Button>
 
           <div className="text-center flex-1 px-4">
-            <div className="text-sm font-medium text-muted-foreground">
+            <div className="text-xs text-muted-foreground">
               {dayName}
             </div>
-            <div className="text-lg font-semibold">
+            <div className="text-sm font-medium">
               {dayDate}
             </div>
           </div>
 
           <Button 
-            variant="outline" 
+            variant="ghost" 
             size="icon"
             onClick={onNextDay}
-            className="h-11 w-11 min-h-[44px] min-w-[44px] p-0"
+            className="h-8 w-8"
           >
-            <ChevronRight className="h-5 w-5" />
+            <ChevronRight className="h-4 w-4" />
           </Button>
         </div>
       </div>
@@ -102,39 +103,39 @@ export function CalendarHeader({
 
   // Desktop view: show week navigation
   return (
-    <div className="flex items-center justify-between mb-6">
-      <div className="flex items-center space-x-4">
-        <h1 className="text-2xl font-bold">Calendar</h1>
+    <div className="flex items-center justify-between mb-4">
+      <div className="flex items-center gap-3">
+        <h1 className="text-lg font-semibold">Calendar</h1>
         <Button
-          variant="outline"
+          variant="ghost"
           size="sm"
           onClick={onCurrentWeek}
-          className="text-sm"
+          className="text-xs h-7 px-2.5"
         >
           Today
         </Button>
         {onAutoSchedule && (
           <Button
-            variant="default"
             size="sm"
             onClick={onAutoSchedule}
-            className="text-sm cursor-pointer hover:bg-primary hover:text-white"  
+            className="text-xs h-7 px-2.5 gap-1.5"
           >
-            Auto-Schedule Tasks
+            <Sparkles className="h-3 w-3" />
+            Auto-Schedule
           </Button>
         )}
       </div>
 
-      <div className="flex items-center space-x-2">
-        <Button variant="outline" size="sm" onClick={onPreviousWeek}>
+      <div className="flex items-center gap-1">
+        <Button variant="ghost" size="icon" onClick={onPreviousWeek} className="h-7 w-7">
           <ChevronLeft className="h-4 w-4" />
         </Button>
 
-        <div className="text-lg font-semibold min-w-[200px] text-center">
+        <div className="text-sm font-medium min-w-[160px] text-center text-muted-foreground">
           {getWeekRangeString(weekDates)}
         </div>
 
-        <Button variant="outline" size="sm" onClick={onNextWeek}>
+        <Button variant="ghost" size="icon" onClick={onNextWeek} className="h-7 w-7">
           <ChevronRight className="h-4 w-4" />
         </Button>
       </div>

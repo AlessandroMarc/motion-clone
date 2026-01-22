@@ -5,14 +5,11 @@ import type { Task, Project, CalendarEventUnion } from '@shared/types';
 import { taskService } from '@/services/taskService';
 import { projectService } from '@/services/projectService';
 import { calendarService } from '@/services/calendarService';
-import { Card, CardContent } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { CalendarPlus } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { TaskScheduleDialog } from './TaskScheduleDialog';
+import { CompactTaskCard } from './CompactTaskCard';
 
 interface CalendarTasksPanelProps {
   currentWeekStart: Date;
@@ -25,11 +22,11 @@ export function CalendarTasksPanel({ currentWeekStart, refreshTrigger }: Calenda
   const [weekEvents, setWeekEvents] = useState<CalendarEventUnion[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  
+
   // Mobile scheduling state
   const [scheduleDialogOpen, setScheduleDialogOpen] = useState(false);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
-  
+
   const isMobile = useIsMobile();
   const { user } = useAuth();
 
@@ -45,7 +42,6 @@ export function CalendarTasksPanel({ currentWeekStart, refreshTrigger }: Calenda
 
   useEffect(() => {
     const load = async () => {
-      console.log('[CalendarTasksPanel] Loading data, refreshTrigger:', refreshTrigger);
       try {
         setLoading(true);
         setError(null);
@@ -53,12 +49,7 @@ export function CalendarTasksPanel({ currentWeekStart, refreshTrigger }: Calenda
           taskService.getAllTasks(),
           projectService.getAllProjects(),
         ]);
-        
-        console.log('[CalendarTasksPanel] Fetched tasks:', {
-          count: fetchedTasks.length,
-          taskIds: fetchedTasks.map(t => t.id),
-        });
-        
+
         setTasks(fetchedTasks);
         const map: Record<string, Project> = {};
         for (const p of fetchedProjects) map[p.id] = p as Project;
@@ -66,22 +57,7 @@ export function CalendarTasksPanel({ currentWeekStart, refreshTrigger }: Calenda
 
         const startDate = weekDates[0].toISOString().split('T')[0];
         const endDate = weekDates[6].toISOString().split('T')[0];
-        console.log('[CalendarTasksPanel] Fetching calendar events for date range:', {
-          startDate,
-          endDate,
-        });
-        
         const events = await calendarService.getCalendarEventsByDateRange(startDate, endDate);
-        
-        console.log('[CalendarTasksPanel] Fetched calendar events:', {
-          count: events.length,
-          events: events.map(e => ({
-            id: e.id,
-            title: e.title,
-            linked_task_id: e.linked_task_id,
-          })),
-        });
-        
         setWeekEvents(events);
       } catch (e) {
         console.error('[CalendarTasksPanel] Error loading data:', e);
@@ -93,27 +69,22 @@ export function CalendarTasksPanel({ currentWeekStart, refreshTrigger }: Calenda
     load();
   }, [weekDates, refreshTrigger]);
 
-  const linkedTaskIds = useMemo(
+  const plannedTaskIds = useMemo(
     () =>
       new Set(
         weekEvents
-          .filter(ev => !!ev.linked_task_id)
-          .map(ev => ev.linked_task_id as string)
+          .filter((ev) => !!ev.linked_task_id)
+          .map((ev) => ev.linked_task_id as string)
       ),
     [weekEvents]
   );
-  const plannedTaskIds = linkedTaskIds;
 
   const handleOpenScheduleDialog = (task: Task) => {
     setSelectedTask(task);
     setScheduleDialogOpen(true);
   };
 
-  const handleScheduleTask = async (
-    task: Task,
-    startTime: Date,
-    endTime: Date
-  ) => {
+  const handleScheduleTask = async (task: Task, startTime: Date, endTime: Date) => {
     if (!user) {
       toast.error('You must be logged in to schedule tasks');
       return;
@@ -135,10 +106,7 @@ export function CalendarTasksPanel({ currentWeekStart, refreshTrigger }: Calenda
       // Refresh the events to update the planned status
       const startDate = weekDates[0].toISOString().split('T')[0];
       const endDate = weekDates[6].toISOString().split('T')[0];
-      const events = await calendarService.getCalendarEventsByDateRange(
-        startDate,
-        endDate
-      );
+      const events = await calendarService.getCalendarEventsByDateRange(startDate, endDate);
       setWeekEvents(events);
     } catch (err) {
       console.error('[CalendarTasksPanel] Failed to schedule task:', err);
@@ -146,110 +114,58 @@ export function CalendarTasksPanel({ currentWeekStart, refreshTrigger }: Calenda
       throw err;
     }
   };
-  
+
   if (loading) {
     return (
       <div className="space-y-2">
-        <div className="h-5 w-40 bg-muted animate-pulse rounded" />
-        <div className="h-20 w-full bg-muted animate-pulse rounded" />
-        <div className="h-20 w-full bg-muted animate-pulse rounded" />
+        {[1, 2, 3].map((i) => (
+          <div key={i} className="h-12 w-full bg-muted animate-pulse rounded-md" />
+        ))}
       </div>
     );
   }
 
   if (error) {
-    return <div className="text-sm text-destructive">{error}</div>;
+    return (
+      <div className="text-xs text-destructive p-3 bg-destructive/10 rounded-md">{error}</div>
+    );
   }
 
   if (tasks.length === 0) {
-    return <div className="text-sm text-muted-foreground">No tasks to schedule</div>;
+    return (
+      <div className="text-xs text-muted-foreground p-4 text-center bg-muted/30 rounded-md">
+        No tasks to schedule
+      </div>
+    );
   }
 
   return (
     <>
-      <div className="space-y-3">
-        {tasks.map(task => {
+      <div className="space-y-1.5">
+        {tasks.map((task) => {
           const isPlanned = plannedTaskIds.has(task.id);
           const project = task.project_id ? projectsById[task.project_id] : undefined;
-          const canSchedule = !isPlanned && task.status !== 'completed';
-          
+          const canDrag = !isPlanned && !isMobile && task.status !== 'completed';
+
           return (
-            <Card
+            <CompactTaskCard
               key={task.id}
-              className={`border transition ${
-                isPlanned
-                  ? 'bg-muted/40 text-muted-foreground cursor-default'
-                  : isMobile
-                    ? 'cursor-pointer active:bg-accent'
-                    : 'cursor-grab active:cursor-grabbing'
-              }`}
-              draggable={!isPlanned && !isMobile}
-              onDragStart={e => {
-                if (isPlanned || isMobile) {
-                  e.preventDefault();
-                  return;
-                }
+              task={task}
+              isPlanned={isPlanned}
+              project={project}
+              showDragHandle={canDrag}
+              draggable={canDrag}
+              disabled={isPlanned}
+              onDragStart={(e) => {
                 e.dataTransfer.setData('application/x-task-id', task.id);
                 e.dataTransfer.setData('application/x-task-title', task.title);
                 if (task.description) {
                   e.dataTransfer.setData('application/x-task-description', task.description);
                 }
               }}
-              onClick={() => {
-                if (isMobile && canSchedule) {
-                  handleOpenScheduleDialog(task);
-                }
-              }}
-              title={
-                isPlanned
-                  ? 'Task already scheduled in calendar'
-                  : isMobile
-                    ? 'Tap to schedule'
-                    : 'Drag to calendar to schedule'
-              }
-            >
-              <CardContent className="p-3">
-                <div className="flex items-start gap-2">
-                  <div className="min-w-0 flex-1">
-                    <div className="font-medium truncate">{task.title}</div>
-                    {task.description ? (
-                      <div className="text-xs text-muted-foreground truncate">
-                        {task.description}
-                      </div>
-                    ) : null}
-                    <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-                      <span className="inline-flex items-center rounded bg-muted px-1.5 py-0.5">
-                        {task.status}
-                      </span>
-                      {project ? (
-                        <span className="truncate">Project: {project.name}</span>
-                      ) : null}
-                      {isPlanned && (
-                        <Badge variant="outline" className="text-[10px] px-1.5 py-0.5">
-                          Planned
-                        </Badge>
-                      )}
-                    </div>
-                  </div>
-                  
-                  {/* Schedule button - always visible on mobile, hidden on desktop */}
-                  {canSchedule && (
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className={`shrink-0 ${isMobile ? 'h-11 w-11 min-h-[44px] min-w-[44px]' : 'h-8 w-8 hidden group-hover:flex'}`}
-                      onClick={e => {
-                        e.stopPropagation();
-                        handleOpenScheduleDialog(task);
-                      }}
-                      title="Schedule task"
-                    >
-                      <CalendarPlus className={isMobile ? 'h-5 w-5' : 'h-4 w-4'} />
-                    </Button>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
+              onSchedule={handleOpenScheduleDialog}
+              onSelect={isMobile ? handleOpenScheduleDialog : undefined}
+            />
           );
         })}
       </div>
@@ -265,9 +181,3 @@ export function CalendarTasksPanel({ currentWeekStart, refreshTrigger }: Calenda
 }
 
 export default CalendarTasksPanel;
-
-
-
-
-
-

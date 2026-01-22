@@ -1,13 +1,59 @@
 'use client';
 
 import { Badge } from '@/components/ui/badge';
-import { AlertTriangle, Clock } from 'lucide-react';
+import {
+  AlertTriangle,
+  Calendar,
+  CheckCircle2,
+  Circle,
+  Loader2,
+  ListChecks,
+} from 'lucide-react';
 import type { Task } from '@shared/types';
+import { cn } from '@/lib/utils';
+import { formatDate } from '@/utils/dateUtils';
 
 type TaskEventBlock = {
   task: Task;
   events: Array<{ start_time: Date; end_time: Date }>;
   violations: Array<{ start_time: Date; end_time: Date }>;
+};
+
+const STATUS_CONFIG: Record<
+  string,
+  { icon: typeof Circle; className: string }
+> = {
+  pending: {
+    icon: Circle,
+    className: 'text-muted-foreground',
+  },
+  'not-started': {
+    icon: Circle,
+    className: 'text-muted-foreground',
+  },
+  'in-progress': {
+    icon: Loader2,
+    className: 'text-blue-500',
+  },
+  completed: {
+    icon: CheckCircle2,
+    className: 'text-emerald-500',
+  },
+};
+
+const PRIORITY_CONFIG: Record<Task['priority'], { dotClass: string; borderClass: string }> = {
+  high: {
+    dotClass: 'bg-red-500',
+    borderClass: 'border-l-red-500',
+  },
+  medium: {
+    dotClass: 'bg-amber-500',
+    borderClass: 'border-l-amber-500',
+  },
+  low: {
+    dotClass: 'bg-slate-400',
+    borderClass: 'border-l-slate-400',
+  },
 };
 
 function TaskRow({
@@ -19,28 +65,67 @@ function TaskRow({
   eventsCount: number;
   violationsCount?: number;
 }) {
+  const statusConfig = STATUS_CONFIG[task.status] ?? STATUS_CONFIG['pending'];
+  const priorityConfig = PRIORITY_CONFIG[task.priority] ?? PRIORITY_CONFIG['medium'];
+  const StatusIcon = statusConfig.icon;
+  const hasViolations = violationsCount && violationsCount > 0;
+
   return (
-    <div className="p-3 border rounded-lg space-y-1">
-      <div className="flex items-center justify-between">
-        <span className="font-medium text-sm">{task.title}</span>
-        <div className="flex items-center gap-2">
-          <Badge variant="outline" className="text-xs">
-            {eventsCount} events
-          </Badge>
-          {violationsCount && violationsCount > 0 ? (
-            <Badge variant="destructive" className="text-xs flex items-center gap-1">
-              <AlertTriangle className="h-3 w-3" />
-              {violationsCount} after deadline
-            </Badge>
-          ) : null}
+    <div
+      className={cn(
+        'p-3 border rounded-lg border-l-[3px] transition-colors hover:bg-accent/30',
+        priorityConfig.borderClass
+      )}
+    >
+      <div className="flex items-start gap-2">
+        {/* Status Icon */}
+        <div className={cn('mt-0.5', statusConfig.className)}>
+          <StatusIcon
+            className={cn('h-4 w-4', task.status === 'in-progress' && 'animate-spin')}
+          />
+        </div>
+
+        {/* Content */}
+        <div className="flex-1 min-w-0">
+          <div className="flex items-start justify-between gap-2">
+            <span className="font-medium text-sm truncate">{task.title}</span>
+            <div className="flex items-center gap-1.5 shrink-0">
+              <Badge variant="secondary" className="text-xs font-normal">
+                <ListChecks className="h-3 w-3 mr-1" />
+                {eventsCount}
+              </Badge>
+              {hasViolations && (
+                <Badge variant="destructive" className="text-xs font-normal">
+                  <AlertTriangle className="h-3 w-3 mr-1" />
+                  {violationsCount} late
+                </Badge>
+              )}
+            </div>
+          </div>
+
+          {/* Metadata */}
+          <div className="mt-1.5 flex items-center gap-2 text-xs text-muted-foreground">
+            {/* Priority */}
+            <span className="inline-flex items-center gap-1">
+              <span className={cn('h-1.5 w-1.5 rounded-full', priorityConfig.dotClass)} />
+              {task.priority}
+            </span>
+
+            {/* Due Date */}
+            {task.due_date && (
+              <span
+                className={cn(
+                  'inline-flex items-center gap-1',
+                  hasViolations && 'text-red-500'
+                )}
+              >
+                <Calendar className="h-3 w-3" />
+                {formatDate(task.due_date)}
+              </span>
+            )}
+          </div>
         </div>
       </div>
-      {task.due_date ? (
-        <div className="text-xs text-muted-foreground flex items-center gap-1">
-          <Clock className="h-3 w-3" />
-          Due: {new Date(task.due_date).toLocaleDateString()}
-        </div>
-      ) : null}
     </div>
   );
 }
@@ -54,15 +139,19 @@ export function AutoScheduleTaskSections({
   tasksWithDeadlineCount: number;
   tasksWithoutDeadlineCount: number;
 }) {
-  const deadlineBlocks = taskEvents.filter(te => te.task.due_date !== null);
-  const noDeadlineBlocks = taskEvents.filter(te => te.task.due_date === null);
+  const deadlineBlocks = taskEvents.filter((te) => te.task.due_date !== null);
+  const noDeadlineBlocks = taskEvents.filter((te) => te.task.due_date === null);
 
   return (
     <>
       {tasksWithDeadlineCount > 0 && (
-        <div className="space-y-2">
-          <h3 className="font-semibold text-sm">
-            Tasks with Deadline ({tasksWithDeadlineCount})
+        <div className="space-y-3">
+          <h3 className="font-semibold text-sm flex items-center gap-2">
+            <Calendar className="h-4 w-4 text-primary" />
+            Tasks with Deadline
+            <Badge variant="outline" className="font-normal">
+              {tasksWithDeadlineCount}
+            </Badge>
           </h3>
           <div className="space-y-2 max-h-48 overflow-y-auto">
             {deadlineBlocks.map(({ task, events, violations }) => (
@@ -78,9 +167,13 @@ export function AutoScheduleTaskSections({
       )}
 
       {tasksWithoutDeadlineCount > 0 && (
-        <div className="space-y-2">
-          <h3 className="font-semibold text-sm">
-            Tasks without Deadline ({tasksWithoutDeadlineCount})
+        <div className="space-y-3">
+          <h3 className="font-semibold text-sm flex items-center gap-2">
+            <ListChecks className="h-4 w-4 text-muted-foreground" />
+            Tasks without Deadline
+            <Badge variant="outline" className="font-normal">
+              {tasksWithoutDeadlineCount}
+            </Badge>
           </h3>
           <div className="space-y-2 max-h-48 overflow-y-auto">
             {noDeadlineBlocks.map(({ task, events }) => (
@@ -91,13 +184,14 @@ export function AutoScheduleTaskSections({
       )}
 
       {taskEvents.length === 0 && (
-        <div className="text-center py-8 text-muted-foreground">
-          No events to create. All tasks are either completed or already fully
-          scheduled.
+        <div className="text-center py-8 text-muted-foreground bg-muted/30 rounded-lg">
+          <CheckCircle2 className="h-8 w-8 mx-auto mb-2 text-emerald-500" />
+          <p>All caught up!</p>
+          <p className="text-xs mt-1">
+            No events to create. All tasks are either completed or already scheduled.
+          </p>
         </div>
       )}
     </>
   );
 }
-
-
