@@ -1,13 +1,13 @@
 import type { Metadata } from 'next';
 import { Toaster } from 'sonner';
-import { Sidebar } from '@/components/Sidebar';
 import { AuthProvider } from '@/contexts/AuthContext';
 import { ThemeProvider } from '@/components/ThemeProvider';
+import { LayoutWrapper } from '@/components/LayoutWrapper';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'Motion Clone',
-  description: 'A Next.js app for task management',
+  title: 'FlowTask - Intelligent Scheduling',
+  description: 'Stop juggling calendars and to-do lists. FlowTask automatically schedules your tasks around your life.',
 };
 
 export default function RootLayout({
@@ -23,10 +23,7 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           <AuthProvider>
-            <div className="flex h-screen">
-              <Sidebar />
-              <main className="flex-1 overflow-auto md:pt-0 pt-16">{children}</main>
-            </div>
+            <LayoutWrapper>{children}</LayoutWrapper>
             <Toaster position="top-right" richColors />
           </AuthProvider>
         </ThemeProvider>
