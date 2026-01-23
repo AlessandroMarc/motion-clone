@@ -186,6 +186,35 @@
   font-family: 'Hubot Sans', system-ui, sans-serif;
 }
 
+/* Typography utility classes for varied font usage */
+.font-heading {
+  font-family: 'Mona Sans', system-ui, sans-serif;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.font-subheading {
+  font-family: 'Mona Sans', system-ui, sans-serif;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.font-title {
+  font-family: 'Mona Sans', system-ui, sans-serif;
+  font-weight: 800;
+  letter-spacing: -0.025em;
+}
+
+.font-label {
+  font-family: 'Hubot Sans', system-ui, sans-serif;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+
+.font-mono {
+  font-family: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, 'Liberation Mono', monospace;
+}
+
 /* Page transition animations */
 @keyframes fadeIn {
   from {

@@ -45,7 +45,7 @@ export function CalendarHeader({
     return (
       <div className="flex flex-col gap-3 mb-4">
         <div className="flex items-center justify-between">
-          <h1 className="text-lg font-semibold">Calendar</h1>
+          <h1 className="text-lg font-heading">Calendar</h1>
           <div className="flex items-center gap-2">
             <Button
               variant="ghost"
@@ -106,7 +106,7 @@ export function CalendarHeader({
   return (
     <div className="flex items-center justify-between mb-4">
       <div className="flex items-center gap-3">
-        <h1 className="text-lg font-semibold">Calendar</h1>
+        <h1 className="text-lg font-heading">Calendar</h1>
         <Button
           variant="ghost"
           size="sm"

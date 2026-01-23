@@ -136,7 +136,7 @@ export function Sidebar() {
       <>
         <header className="md:hidden fixed top-0 left-0 right-0 z-50 h-16 border-b bg-background">
           <div className="flex h-full items-center justify-between px-4">
-            <h1 className="text-xl font-semibold">Nexto</h1>
+            <h1 className="text-xl font-heading">Nexto</h1>
             <div className="flex items-center gap-1">
               <ThemeToggle />
               <Button
@@ -169,7 +169,7 @@ export function Sidebar() {
   return (
     <div className="hidden md:flex h-full w-48 flex-col border-r bg-background">
       <div className="flex h-14 items-center justify-between border-b px-3">
-        <h1 className="text-base font-semibold">Nexto</h1>
+        <h1 className="text-base font-heading">Nexto</h1>
         <ThemeToggle />
       </div>
       <NavigationContent />

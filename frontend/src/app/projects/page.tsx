@@ -51,10 +51,10 @@ export default function ProjectsPage() {
         <div className="max-w-4xl mx-auto">
           {/* Header */}
           <div className="mb-6 md:mb-8">
-            <h1 className="text-2xl md:text-4xl font-bold text-foreground mb-2">
+            <h1 className="text-2xl md:text-4xl font-title text-foreground mb-2">
               Project Manager
             </h1>
-            <p className="text-sm md:text-base text-muted-foreground">
+            <p className="text-sm md:text-base font-body text-muted-foreground">
               Organize your larger goals and track project progress
             </p>
           </div>
@@ -62,7 +62,7 @@ export default function ProjectsPage() {
           {/* Main Content */}
           <div className="space-y-4 md:space-y-6">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-              <h2 className="text-xl md:text-2xl font-semibold">Your Projects</h2>
+              <h2 className="text-xl md:text-2xl font-subheading">Your Projects</h2>
               <ProjectCreateForm
                 onProjectCreate={handleProjectCreate}
                 isLoading={isCreatingProject}

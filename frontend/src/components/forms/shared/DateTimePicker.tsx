@@ -1,13 +1,10 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Calendar, Clock } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { DatePicker } from './DatePicker';
 
 interface DateTimePickerProps {
-  value: string; // ISO datetime string or empty
+  value: string; // ISO datetime string or empty (format: YYYY-MM-DDTHH:mm)
   onChange: (value: string) => void;
   label?: string;
   id?: string;
@@ -17,7 +14,7 @@ interface DateTimePickerProps {
 }
 
 /**
- * Better datetime picker with separate date and time inputs
+ * DateTime picker using shadcn/ui DatePicker with time support
  * More intuitive than the native datetime-local picker
  */
 export function DateTimePicker({
@@ -29,104 +26,103 @@ export function DateTimePicker({
   error = false,
   disabled = false,
 }: DateTimePickerProps) {
-  // Parse the datetime value into date and time parts
+  // Parse the datetime value into Date and time string
   const getDateAndTime = (isoString: string) => {
-    if (!isoString) return { date: '', time: '' };
+    if (!isoString) return { date: undefined, time: '' };
     
     try {
       const date = new Date(isoString);
-      const year = date.getFullYear();
-      const month = String(date.getMonth() + 1).padStart(2, '0');
-      const day = String(date.getDate()).padStart(2, '0');
+      if (isNaN(date.getTime())) {
+        return { date: undefined, time: '' };
+      }
       const hours = String(date.getHours()).padStart(2, '0');
       const minutes = String(date.getMinutes()).padStart(2, '0');
       
       return {
-        date: `${year}-${month}-${day}`,
+        date,
         time: `${hours}:${minutes}`,
       };
     } catch {
-      return { date: '', time: '' };
+      return { date: undefined, time: '' };
     }
   };
 
   const { date: initialDate, time: initialTime } = getDateAndTime(value);
-  const [date, setDate] = useState(initialDate);
-  const [time, setTime] = useState(initialTime);
+  const [dateValue, setDateValue] = useState<Date | undefined>(initialDate);
+  const [timeValue, setTimeValue] = useState<string>(initialTime);
 
   // Update local state when value prop changes
   useEffect(() => {
     const { date: newDate, time: newTime } = getDateAndTime(value);
-    setDate(newDate);
-    setTime(newTime);
+    setDateValue(newDate);
+    setTimeValue(newTime);
   }, [value]);
 
-  const handleDateChange = (newDate: string) => {
-    setDate(newDate);
-    if (newDate && time) {
-      const datetime = `${newDate}T${time}`;
-      onChange(datetime);
-    } else if (newDate) {
+  const handleDateChange = (date: Date | undefined) => {
+    setDateValue(date);
+    if (date && timeValue) {
+      // Combine date and time
+      const [hours, minutes] = timeValue.split(':');
+      const combined = new Date(date);
+      combined.setHours(parseInt(hours, 10), parseInt(minutes, 10), 0, 0);
+      // Format as datetime-local string (YYYY-MM-DDTHH:mm)
+      const year = combined.getFullYear();
+      const month = String(combined.getMonth() + 1).padStart(2, '0');
+      const day = String(combined.getDate()).padStart(2, '0');
+      onChange(`${year}-${month}-${day}T${timeValue}`);
+    } else if (date) {
       // If only date is set, use current time or default to 09:00
-      const defaultTime = time || '09:00';
-      onChange(`${newDate}T${defaultTime}`);
-      setTime(defaultTime);
+      const defaultTime = timeValue || '09:00';
+      const combined = new Date(date);
+      const [hours, minutes] = defaultTime.split(':');
+      combined.setHours(parseInt(hours, 10), parseInt(minutes, 10), 0, 0);
+      const year = combined.getFullYear();
+      const month = String(combined.getMonth() + 1).padStart(2, '0');
+      const day = String(combined.getDate()).padStart(2, '0');
+      setTimeValue(defaultTime);
+      onChange(`${year}-${month}-${day}T${defaultTime}`);
+    } else {
+      onChange('');
     }
   };
 
-  const handleTimeChange = (newTime: string) => {
-    setTime(newTime);
-    if (date && newTime) {
-      const datetime = `${date}T${newTime}`;
-      onChange(datetime);
-    } else if (newTime) {
+  const handleTimeChange = (time: string) => {
+    setTimeValue(time);
+    if (dateValue && time) {
+      // Combine date and time
+      const [hours, minutes] = time.split(':');
+      const combined = new Date(dateValue);
+      combined.setHours(parseInt(hours, 10), parseInt(minutes, 10), 0, 0);
+      // Format as datetime-local string
+      const year = combined.getFullYear();
+      const month = String(combined.getMonth() + 1).padStart(2, '0');
+      const day = String(combined.getDate()).padStart(2, '0');
+      onChange(`${year}-${month}-${day}T${time}`);
+    } else if (time) {
       // If only time is set, use today's date
       const today = new Date();
+      const [hours, minutes] = time.split(':');
+      today.setHours(parseInt(hours, 10), parseInt(minutes, 10), 0, 0);
+      setDateValue(today);
       const year = today.getFullYear();
       const month = String(today.getMonth() + 1).padStart(2, '0');
       const day = String(today.getDate()).padStart(2, '0');
-      const todayStr = `${year}-${month}-${day}`;
-      setDate(todayStr);
-      onChange(`${todayStr}T${newTime}`);
+      onChange(`${year}-${month}-${day}T${time}`);
     }
   };
 
   return (
-    <div className={cn('space-y-2', className)}>
-      {label && <Label htmlFor={id}>{label}</Label>}
-      <div className="grid grid-cols-2 gap-2">
-        {/* Date input */}
-        <div className="relative">
-          <Input
-            id={id ? `${id}-date` : undefined}
-            type="date"
-            value={date}
-            onChange={e => handleDateChange(e.target.value)}
-            disabled={disabled}
-            className={cn(
-              'pr-10',
-              error && 'border-red-500'
-            )}
-          />
-          <Calendar className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground pointer-events-none" />
-        </div>
-        
-        {/* Time input */}
-        <div className="relative">
-          <Input
-            id={id ? `${id}-time` : undefined}
-            type="time"
-            value={time}
-            onChange={e => handleTimeChange(e.target.value)}
-            disabled={disabled}
-            className={cn(
-              'pr-10',
-              error && 'border-red-500'
-            )}
-          />
-          <Clock className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground pointer-events-none" />
-        </div>
-      </div>
-    </div>
+    <DatePicker
+      value={dateValue}
+      onChange={handleDateChange}
+      label={label}
+      id={id}
+      className={className}
+      error={error}
+      disabled={disabled}
+      showTime={true}
+      timeValue={timeValue}
+      onTimeChange={handleTimeChange}
+    />
   );
 }

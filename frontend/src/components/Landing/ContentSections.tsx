@@ -60,10 +60,10 @@ export function SellingPointsSection({ content }: SectionProps) {
                   </div>
                 </div>
                 <div className={cn('flex-1', isEven ? 'md:text-left' : 'md:text-right', 'text-center')}>
-                  <h3 className="text-2xl sm:text-3xl font-bold text-foreground mb-4">
+                  <h3 className="text-2xl sm:text-3xl font-subheading text-foreground mb-4">
                     {point.title}
                   </h3>
-                  <p className="text-muted-foreground text-lg leading-relaxed">
+                  <p className="font-body text-muted-foreground text-lg leading-relaxed">
                     {point.description}
                   </p>
                 </div>
@@ -83,10 +83,10 @@ export function FeaturesSection({ content }: SectionProps) {
     <section className="py-24 px-4 sm:px-6 lg:px-8 bg-muted/30">
       <div className="max-w-6xl mx-auto">
         <div className="text-center mb-16">
-          <h2 className="text-3xl sm:text-4xl font-bold text-foreground mb-4">
+          <h2 className="text-3xl sm:text-4xl font-heading text-foreground mb-4">
             {content.features.sectionTitle}
           </h2>
-          <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+          <p className="font-body text-lg text-muted-foreground max-w-2xl mx-auto">
             {content.features.sectionSubtitle}
           </p>
         </div>
@@ -107,10 +107,10 @@ export function FeaturesSection({ content }: SectionProps) {
                     <Icon className="w-6 h-6 text-primary" />
                   </div>
                   <div>
-                    <h3 className="text-lg sm:text-xl font-semibold text-foreground mb-2">
+                    <h3 className="text-lg sm:text-xl font-label text-foreground mb-2">
                       {feature.title}
                     </h3>
-                    <p className="text-muted-foreground leading-relaxed">
+                    <p className="font-body text-muted-foreground leading-relaxed">
                       {feature.description}
                     </p>
                   </div>
@@ -130,16 +130,16 @@ export function BenefitsSection({ content }: SectionProps) {
   return (
     <section className="py-24 px-4 sm:px-6 lg:px-8">
       <div className="max-w-5xl mx-auto">
-        <h2 className="text-3xl sm:text-4xl font-bold text-foreground text-center mb-16">
+        <h2 className="text-3xl sm:text-4xl font-heading text-foreground text-center mb-16">
           {content.benefits.sectionTitle}
         </h2>
         <div className="grid sm:grid-cols-3 gap-8 sm:gap-12">
           {content.benefits.items.map((benefit) => (
             <div key={benefit.id} className="text-center">
-              <div className="text-4xl sm:text-5xl lg:text-6xl font-bold text-primary mb-2">
+              <div className="text-4xl sm:text-5xl lg:text-6xl font-title text-primary mb-2">
                 {benefit.metric}
               </div>
-              <p className="text-muted-foreground text-lg">
+              <p className="font-body text-muted-foreground text-lg">
                 {benefit.label}
               </p>
             </div>
@@ -157,10 +157,10 @@ export function HowItWorksSection({ content }: SectionProps) {
     <section id="how-it-works" className="py-24 px-4 sm:px-6 lg:px-8 bg-muted/30">
       <div className="max-w-5xl mx-auto">
         <div className="text-center mb-16">
-          <h2 className="text-3xl sm:text-4xl font-bold text-foreground mb-4">
+          <h2 className="text-3xl sm:text-4xl font-heading text-foreground mb-4">
             {content.howItWorks.sectionTitle}
           </h2>
-          <p className="text-lg text-muted-foreground">
+          <p className="font-body text-lg text-muted-foreground">
             {content.howItWorks.sectionSubtitle}
           </p>
         </div>

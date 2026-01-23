@@ -5,7 +5,6 @@ import type {
   CalendarEventUnion,
   Schedule,
 } from '@shared/types';
-import { logger } from '@/lib/logger';
 
 export interface TaskSchedulingConfig {
   eventDurationMinutes: number;
@@ -113,14 +112,6 @@ function isSlotOccupied(
 ): boolean {
   const overlappingEvent = findOverlappingEvent(slot, existingEvents);
   if (overlappingEvent) {
-    const eventStart = new Date(overlappingEvent.start_time);
-    const eventEnd = new Date(overlappingEvent.end_time);
-        title: overlappingEvent.title,
-        start: eventStart.toISOString(),
-        end: eventEnd.toISOString(),
-        syncedFromGoogle: overlappingEvent.synced_from_google,
-      },
-    });
     return true;
   }
   return false;

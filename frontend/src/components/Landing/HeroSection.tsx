@@ -35,7 +35,7 @@ export function HeroSection({ content, user, loading, onGetStarted }: HeroSectio
         </div>
 
         {/* Headline */}
-        <h1 className="animate-in text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold tracking-tight text-foreground mb-6 leading-[1.1]" style={{ animationDelay: '0.1s' }}>
+        <h1 className="animate-in text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-title tracking-tight text-foreground mb-6 leading-[1.1]" style={{ animationDelay: '0.1s' }}>
           {content.hero.headline.split(' ').map((word, i) => (
             <span
               key={i}

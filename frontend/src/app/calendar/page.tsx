@@ -55,7 +55,7 @@ export default function CalendarPage() {
             taskPanelOpen ? "translate-x-0" : "translate-x-full"
           )}>
             <div className="p-3 h-full overflow-y-auto">
-              <h2 className="text-sm font-semibold mb-3">Tasks</h2>
+              <h2 className="text-sm font-label mb-3">Tasks</h2>
               <CalendarTasksPanel
                 currentWeekStart={new Date()}
                 refreshTrigger={taskPanelRefresh}

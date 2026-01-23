@@ -51,16 +51,16 @@ export default function TasksPage() {
         <div className="px-3 md:px-6 pt-3 md:pt-6">
           <div className="max-w-4xl">
             <div className="mb-4 md:mb-6">
-              <h1 className="text-2xl md:text-3xl font-bold text-foreground mb-1">
+              <h1 className="text-2xl md:text-3xl font-title text-foreground mb-1">
                 Task Manager
               </h1>
-              <p className="text-sm text-muted-foreground">
+              <p className="text-sm font-body text-muted-foreground">
                 Organize your tasks and boost your productivity
               </p>
             </div>
 
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
-              <h2 className="text-lg md:text-xl font-semibold">Your Tasks</h2>
+              <h2 className="text-lg md:text-xl font-subheading">Your Tasks</h2>
               <TaskCreateForm
                 onTaskCreate={handleTaskCreate}
                 isLoading={isCreatingTask}

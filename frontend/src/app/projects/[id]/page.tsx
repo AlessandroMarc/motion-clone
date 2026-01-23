@@ -152,10 +152,10 @@ export default function ProjectDetailPage({ params }: ProjectDetailPageProps) {
       <div className="flex-1 p-6">
         <div className="max-w-4xl mx-auto">
           <div className="text-center">
-            <h1 className="text-2xl font-bold text-destructive mb-4">
+            <h1 className="text-2xl font-heading text-destructive mb-4">
               Project Not Found
             </h1>
-            <p className="text-muted-foreground mb-4">
+            <p className="font-body text-muted-foreground mb-4">
               {error || 'The project you are looking for does not exist.'}
             </p>
             <Button onClick={handleBack}>
@@ -182,10 +182,10 @@ export default function ProjectDetailPage({ params }: ProjectDetailPageProps) {
               <ArrowLeft className="h-4 w-4 mr-2" />
               Back to Projects
             </Button>
-            <h1 className="text-4xl font-bold text-foreground mb-2">
+            <h1 className="text-4xl font-title text-foreground mb-2">
               {project.name}
             </h1>
-            <p className="text-muted-foreground">
+            <p className="font-body text-muted-foreground">
               Manage your project details and tasks
             </p>
           </div>
