@@ -131,10 +131,10 @@ export function ProjectList({
       <Card className="border-dashed border-2 border-muted-foreground/25">
         <CardContent className="flex flex-col items-center justify-center p-8 text-center">
           <Folder className="h-12 w-12 text-muted-foreground/50 mb-4" />
-          <h3 className="text-lg font-medium text-muted-foreground mb-2">
+          <h3 className="text-lg font-subheading text-muted-foreground mb-2">
             No projects yet
           </h3>
-          <p className="text-sm text-muted-foreground">
+          <p className="text-sm font-body text-muted-foreground">
             Create your first project to organize your larger goals and
             milestones.
           </p>

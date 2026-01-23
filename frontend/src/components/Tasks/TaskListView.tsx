@@ -58,10 +58,10 @@ export function TaskListView({
       <Card className="border-dashed border-2 border-muted-foreground/25">
         <CardContent className="flex flex-col items-center justify-center p-8 text-center">
           <Circle className="h-12 w-12 text-muted-foreground/50 mb-4" />
-          <h3 className="text-lg font-medium text-muted-foreground mb-2">
+          <h3 className="text-lg font-subheading text-muted-foreground mb-2">
             No tasks yet
           </h3>
-          <p className="text-sm text-muted-foreground">
+          <p className="text-sm font-body text-muted-foreground">
             Create your first task to get started with your productivity journey.
           </p>
         </CardContent>

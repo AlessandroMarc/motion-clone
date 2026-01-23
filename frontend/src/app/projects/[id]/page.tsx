@@ -118,10 +118,10 @@ export default function ProjectDetailPage({ params }: ProjectDetailPageProps) {
       <div className="flex-1 p-6">
         <div className="max-w-4xl mx-auto">
           <div className="text-center">
-            <h1 className="text-2xl font-bold text-destructive mb-4">
+            <h1 className="text-2xl font-title text-destructive mb-4">
               Invalid Project ID
             </h1>
-            <p className="text-muted-foreground mb-4">
+            <p className="font-body text-muted-foreground mb-4">
               The project ID is missing or invalid.
             </p>
             <Button onClick={handleBack}>
@@ -140,7 +140,7 @@ export default function ProjectDetailPage({ params }: ProjectDetailPageProps) {
         <div className="max-w-4xl mx-auto">
           <div className="flex items-center justify-center h-64">
             <Loader2 className="h-8 w-8 animate-spin" />
-            <span className="ml-2">Loading project...</span>
+            <span className="ml-2 font-body">Loading project...</span>
           </div>
         </div>
       </div>
@@ -152,7 +152,7 @@ export default function ProjectDetailPage({ params }: ProjectDetailPageProps) {
       <div className="flex-1 p-6">
         <div className="max-w-4xl mx-auto">
           <div className="text-center">
-            <h1 className="text-2xl font-heading text-destructive mb-4">
+            <h1 className="text-2xl font-title text-destructive mb-4">
               Project Not Found
             </h1>
             <p className="font-body text-muted-foreground mb-4">

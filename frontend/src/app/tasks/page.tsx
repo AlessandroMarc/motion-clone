@@ -31,7 +31,7 @@ export default function TasksPage() {
       });
       setRefreshTrigger(prev => prev + 1);
     } catch (error) {
-      logger.error('Failed to create task:', error);
+      console.error('Failed to create task:', error);
       const message =
         error instanceof Error ? error.message : 'Failed to create task';
       toast.error(message);

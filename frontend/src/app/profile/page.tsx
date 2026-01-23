@@ -15,7 +15,12 @@ export default function ProfilePage() {
     return (
       <div className="flex-1 p-4 md:p-8">
         <div className="max-w-4xl mx-auto">
-          <h1 className="text-2xl md:text-3xl font-heading mb-6 md:mb-8">Profile Settings</h1>
+          <div className="mb-6 md:mb-8">
+            <h1 className="text-2xl md:text-3xl font-title text-foreground mb-2">Profile Settings</h1>
+            <p className="text-sm font-body text-muted-foreground">
+              Manage your account preferences and schedule settings
+            </p>
+          </div>
         </div>
       </div>
     );
@@ -25,7 +30,12 @@ export default function ProfilePage() {
     <ProtectedRoute>
       <div className="flex-1 p-4 md:p-8">
         <div className="max-w-4xl mx-auto">
-          <h1 className="text-2xl md:text-3xl font-heading mb-6 md:mb-8">Profile Settings</h1>
+          <div className="mb-6 md:mb-8">
+            <h1 className="text-2xl md:text-3xl font-title text-foreground mb-2">Profile Settings</h1>
+            <p className="text-sm font-body text-muted-foreground">
+              Manage your account preferences and schedule settings
+            </p>
+          </div>
           <ProfileSettings />
         </div>
       </div>
