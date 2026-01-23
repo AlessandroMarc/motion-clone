@@ -90,10 +90,30 @@ router.post('/', async (req: Request, res: Response) => {
   try {
     console.log('[CalendarEventsRoute] POST /api/calendar-events called');
     console.log('[CalendarEventsRoute] Request body:', req.body);
-    const input: CreateCalendarEventInput = req.body;
-    const event = await calendarEventService.createCalendarEvent(input);
-    console.log('[CalendarEventsRoute] Calendar event created:', event);
-    ResponseHelper.created(res, event, 'Calendar event created successfully');
+    
+    // Check if this is a batch request
+    if (Array.isArray(req.body)) {
+      const inputs: CreateCalendarEventInput[] = req.body;
+      const results = await calendarEventService.createCalendarEventsBatch(inputs);
+      
+      // Return results with success/failure for each event
+      ResponseHelper.success(
+        res,
+        {
+          results,
+          total: results.length,
+          successful: results.filter(r => r.success).length,
+          failed: results.filter(r => !r.success).length,
+        },
+        'Batch calendar events creation completed'
+      );
+    } else {
+      // Single event creation
+      const input: CreateCalendarEventInput = req.body;
+      const event = await calendarEventService.createCalendarEvent(input);
+      console.log('[CalendarEventsRoute] Calendar event created:', event);
+      ResponseHelper.created(res, event, 'Calendar event created successfully');
+    }
   } catch (error) {
     console.error(
       '[CalendarEventsRoute] Error creating calendar event:',
@@ -127,6 +147,46 @@ router.put('/:id', async (req: Request, res: Response) => {
           ? error.message
           : 'Bad request';
     ResponseHelper.badRequest(res, message);
+  }
+});
+
+// DELETE /api/calendar-events/batch - Batch delete calendar events
+router.delete('/batch', async (req: Request, res: Response) => {
+  try {
+    const { ids } = req.body;
+    
+    if (!Array.isArray(ids) || ids.length === 0) {
+      return ResponseHelper.badRequest(
+        res,
+        'Array of event IDs is required for batch delete'
+      );
+    }
+
+    // Validate all IDs are strings
+    if (!ids.every(id => typeof id === 'string')) {
+      return ResponseHelper.badRequest(
+        res,
+        'All event IDs must be strings'
+      );
+    }
+
+    const results = await calendarEventService.deleteCalendarEventsBatch(ids);
+    
+    ResponseHelper.success(
+      res,
+      {
+        results,
+        total: results.length,
+        successful: results.filter(r => r.success).length,
+        failed: results.filter(r => !r.success).length,
+      },
+      'Batch calendar events deletion completed'
+    );
+  } catch (error) {
+    ResponseHelper.internalError(
+      res,
+      error instanceof Error ? error.message : 'Internal server error'
+    );
   }
 });
 

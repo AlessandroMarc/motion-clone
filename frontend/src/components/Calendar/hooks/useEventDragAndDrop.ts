@@ -1,5 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
-import { CalendarEventUnion } from '@shared/types';
+import {
+  CalendarEventUnion,
+  type UpdateCalendarEventInput,
+} from '@shared/types';
 import { calendarService } from '@/services/calendarService';
 
 const dragThresholdPx = 5;
@@ -68,7 +71,7 @@ export function useEventDragAndDrop(
         setDragPreview(pending.event);
         pending.active = false;
         window.removeEventListener('mousemove', handlePendingMouseMove);
-        window.removeEventListener('mouseup', handlePendingMouseUp as any);
+        window.removeEventListener('mouseup', handlePendingMouseUp);
       }
     };
 
@@ -80,7 +83,7 @@ export function useEventDragAndDrop(
       }
       if (pending) pending.active = false;
       window.removeEventListener('mousemove', handlePendingMouseMove);
-      window.removeEventListener('mouseup', handlePendingMouseUp as any);
+      window.removeEventListener('mouseup', handlePendingMouseUp);
     };
 
     window.addEventListener('mousemove', handlePendingMouseMove);
@@ -158,7 +161,7 @@ export function useEventDragAndDrop(
         await calendarService.updateCalendarEvent(preview.id, {
           start_time: (preview.start_time as Date).toISOString(),
           end_time: (preview.end_time as Date).toISOString(),
-        } as any);
+        } as UpdateCalendarEventInput);
 
         // Notify parent of update
         if (onEventUpdate) {
@@ -180,7 +183,7 @@ export function useEventDragAndDrop(
     window.addEventListener('mouseup', handleMouseUp, { once: true });
     return () => {
       window.removeEventListener('mousemove', handleMouseMove);
-      window.removeEventListener('mouseup', handleMouseUp as any);
+      window.removeEventListener('mouseup', handleMouseUp);
     };
   }, [draggingEventId, dragPreview, weekDates, dayRefs, onEventUpdate]);
 

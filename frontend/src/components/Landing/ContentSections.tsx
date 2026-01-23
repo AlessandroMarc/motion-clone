@@ -14,7 +14,7 @@ import {
   Sparkles,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import type { landingContent as LandingContent } from '@/content/landing';
+import type { landingContent as LandingContent } from '@/content/content';
 
 const iconMap = {
   Brain,

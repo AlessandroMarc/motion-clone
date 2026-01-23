@@ -27,7 +27,7 @@ interface WeekScrollableGridProps {
   isMobile?: boolean;
 }
 
-export function WeekScrollableGrid({
+function WeekScrollableGrid({
   weekDates,
   eventsByDay,
   onGridCellClick,

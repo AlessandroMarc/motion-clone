@@ -16,7 +16,6 @@ interface TaskListContainerProps {
 export function TaskListContainer({ refreshTrigger, onTaskUpdate }: TaskListContainerProps) {
   const { data, loading, error, reload } = useTaskListData(refreshTrigger);
   const projects = data?.projects ?? [];
-  const calendarEvents: CalendarEventUnion[] = data?.calendarEvents ?? [];
 
   const [tasks, setTasks] = useState<Task[]>([]);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
@@ -27,13 +26,14 @@ export function TaskListContainer({ refreshTrigger, onTaskUpdate }: TaskListCont
   }, [data]);
 
   const linkedTaskIds = useMemo(() => {
+    const calendarEvents: CalendarEventUnion[] = data?.calendarEvents ?? [];
     return new Set(
       calendarEvents
         .filter(isCalendarEventTask)
         .map(ev => ev.linked_task_id)
         .filter(Boolean)
     );
-  }, [calendarEvents]);
+  }, [data?.calendarEvents]);
 
   const handleDeleteTask = async (taskId: string) => {
     try {

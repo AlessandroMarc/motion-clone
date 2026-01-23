@@ -1,4 +1,7 @@
-import { CalendarEventUnion } from '@shared/types';
+import {
+  CalendarEventUnion,
+  type CreateCalendarEventInput,
+} from '@shared/types';
 import { calendarService } from '@/services/calendarService';
 import { toast } from 'sonner';
 
@@ -14,14 +17,6 @@ export function useExternalTaskDrop(
     hour: number,
     minute: number
   ) => {
-    console.log('[useExternalTaskDrop] handleExternalTaskDrop called', {
-      task,
-      date: date.toISOString(),
-      hour,
-      minute,
-      user: user?.id,
-    });
-
     try {
       if (!user) {
         console.error('[useExternalTaskDrop] No user found when dropping task');
@@ -43,18 +38,8 @@ export function useExternalTaskDrop(
         user_id: user.id,
       };
 
-      console.log(
-        '[useExternalTaskDrop] Creating calendar event with data:',
-        eventData
-      );
-
-      const created = await calendarService.createCalendarEvent(
-        eventData as any
-      );
-
-      console.log(
-        '[useExternalTaskDrop] Calendar event created successfully:',
-        created
+      await calendarService.createCalendarEvent(
+        eventData as CreateCalendarEventInput
       );
 
       // Refresh calendar events to ensure we have the latest data
@@ -62,7 +47,6 @@ export function useExternalTaskDrop(
 
       toast.success('Task scheduled successfully');
 
-      console.log('[useExternalTaskDrop] Calling onTaskDropped callback');
       // Notify parent component to refresh task panel
       onTaskDropped?.();
     } catch (err) {

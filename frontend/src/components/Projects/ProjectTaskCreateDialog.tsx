@@ -12,7 +12,7 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Plus } from 'lucide-react';
-import { useTaskForm } from '@/hooks/useTaskForm';
+import { useTaskForm, type TaskFormData } from '@/hooks/useTaskForm';
 import { TaskTitleField } from '@/components/Tasks/forms/TaskTitleField';
 import { TaskDescriptionField } from '@/components/Tasks/forms/TaskDescriptionField';
 import { TaskDueDateField } from '@/components/Tasks/forms/TaskDueDateField';
@@ -56,7 +56,7 @@ export function ProjectTaskCreateDialog({
     setIsDialogOpen(false);
   });
 
-  const handleFormSubmit = async (data: any) => {
+  const handleFormSubmit = async (data: TaskFormData) => {
     await originalOnSubmit(data);
   };
 

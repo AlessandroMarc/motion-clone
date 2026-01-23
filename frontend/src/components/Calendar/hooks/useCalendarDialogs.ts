@@ -2,6 +2,8 @@ import { useState } from 'react';
 import {
   CalendarEventUnion,
   isCalendarEventTask,
+  type CreateCalendarEventInput,
+  type UpdateCalendarEventInput,
 } from '@shared/types';
 import { calendarService } from '@/services/calendarService';
 import { toast } from 'sonner';
@@ -64,7 +66,7 @@ export function useCalendarDialogs(
         end_time: eventEndIso,
         description: description || undefined,
         user_id: user.id,
-      } as any);
+      } as CreateCalendarEventInput);
 
       await refreshEvents();
       setCreateOpen(false);
@@ -95,7 +97,7 @@ export function useCalendarDialogs(
   ) => {
     if (!editEventId) return;
     try {
-      const updateData: any = {
+      const updateData: UpdateCalendarEventInput = {
         title: editTitle,
         description: editDescription || undefined,
         start_time: new Date(editStartTime).toISOString(),
@@ -111,11 +113,6 @@ export function useCalendarDialogs(
           // Unchecking: explicitly set to null to remove completion
           updateData.completed_at = null;
         }
-        console.log('[useCalendarDialogs] Updating task event completion:', {
-          eventId: editEventId,
-          completed: editCompleted,
-          completed_at: updateData.completed_at,
-        });
       }
 
       const updated = await calendarService.updateCalendarEvent(

@@ -11,11 +11,13 @@ import {
   getFieldError,
   getPriorityColor,
 } from '@/utils/formUtils';
+import type { FieldErrors } from 'react-hook-form';
+import type { TaskFormData } from '@/hooks/useTaskForm';
 
 interface TaskPriorityFieldProps {
   value: 'low' | 'medium' | 'high';
   onValueChange: (value: 'low' | 'medium' | 'high') => void;
-  errors: any;
+  errors: FieldErrors<TaskFormData>;
   id?: string;
   className?: string;
   placeholder?: string;

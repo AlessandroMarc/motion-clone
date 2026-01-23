@@ -5,6 +5,7 @@ import { z } from 'zod';
 import { toast } from 'sonner';
 import type { Project, WorkItemStatus } from '@shared/types';
 import { useAuth } from '@/contexts/AuthContext';
+import { useOnboarding } from '@/hooks/useOnboarding';
 import posthog from 'posthog-js';
 
 // Project form schema
@@ -34,6 +35,7 @@ export function useProjectForm(
 ) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { user } = useAuth();
+  const { advanceToNextStep } = useOnboarding();
 
   const {
     register,
@@ -77,6 +79,14 @@ export function useProjectForm(
         has_description: !!data.description,
         has_deadline: !!data.deadline,
       });
+
+      // Advance onboarding step if in onboarding flow
+      try {
+        await advanceToNextStep('project');
+      } catch (error) {
+        // Silently fail - onboarding advancement is not critical
+        console.error('Failed to advance onboarding step:', error);
+      }
     } catch (error) {
       console.error('Failed to create project:', error);
       toast.error('Failed to create project. Please try again.');

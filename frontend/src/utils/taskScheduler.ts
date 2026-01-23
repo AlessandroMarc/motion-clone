@@ -115,13 +115,6 @@ function isSlotOccupied(
   if (overlappingEvent) {
     const eventStart = new Date(overlappingEvent.start_time);
     const eventEnd = new Date(overlappingEvent.end_time);
-    logger.debug('[taskScheduler] Slot overlaps with event:', {
-      slot: {
-        start: slot.start_time.toISOString(),
-        end: slot.end_time.toISOString(),
-      },
-      event: {
-        id: overlappingEvent.id,
         title: overlappingEvent.title,
         start: eventStart.toISOString(),
         end: eventEnd.toISOString(),
@@ -234,10 +227,20 @@ export function distributeEvents(
     return [];
   }
 
-  // Start from provided time or round current time to next 15 minutes
-  let currentTime = startFrom
-    ? new Date(startFrom)
-    : roundToNext15Minutes(new Date());
+  // Start from provided time, or use working hours start if current time is before it
+  let currentTime: Date;
+  if (startFrom) {
+    currentTime = new Date(startFrom);
+  } else {
+    const now = new Date();
+    const roundedNow = roundToNext15Minutes(now);
+    const workingHoursStart = new Date(now);
+    workingHoursStart.setHours(config.workingHoursStart, 0, 0, 0);
+    workingHoursStart.setSeconds(0);
+    workingHoursStart.setMilliseconds(0);
+    // Use the later of: working hours start or current time (rounded)
+    currentTime = roundedNow > workingHoursStart ? roundedNow : workingHoursStart;
+  }
 
   // Determine end date
   let endDate: Date;
@@ -267,17 +270,6 @@ export function distributeEvents(
 
   // Track scheduled events to avoid overlaps within the same batch
   const scheduledEvents: CalendarEventUnion[] = [...allExistingEvents];
-
-  logger.debug('[taskScheduler] distributeEvents called:', {
-    taskId: task.id,
-    taskTitle: task.title,
-    requiredEvents,
-    existingEventsCount: allExistingEvents.length,
-    syncedFromGoogleCount: allExistingEvents.filter(
-      e => e.synced_from_google === true
-    ).length,
-    startFrom: startFrom?.toISOString(),
-  });
 
   for (let i = 0; i < requiredEvents; i++) {
     // Get next available slot starting from current time

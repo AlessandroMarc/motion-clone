@@ -6,7 +6,7 @@ import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import {
-  Home,
+
   CheckSquare,
   FolderOpen,
   Calendar,
@@ -31,12 +31,7 @@ const navigation = [
     name: 'Calendar',
     href: '/calendar',
     icon: Calendar,
-  },
-  {
-    name: 'Welcome',
-    href: '/',
-    icon: Home,
-  },
+  },  
   {
     name: 'Tasks',
     href: '/tasks',

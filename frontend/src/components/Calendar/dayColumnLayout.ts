@@ -1,6 +1,6 @@
 import type { CalendarEventUnion } from '@shared/types';
 
-export const HOUR_PX = 48; // 48px per hour to match time gutter (h-12)
+export const HOUR_PX = 64; // 64px per hour to match time gutter (h-16)
 export const GAP_PX = 4; // horizontal gap between side-by-side items
 
 type LayoutInfo = { column: number; columns: number };

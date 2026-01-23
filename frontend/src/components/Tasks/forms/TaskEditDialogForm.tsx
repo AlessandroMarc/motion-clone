@@ -145,7 +145,7 @@ export function TaskEditDialogForm({
     return () => {
       isCancelled = true;
     };
-  }, [task?.id, open]);
+  }, [task, open]);
 
   const handleDialogOpenChange = (isOpen: boolean) => {
     if (!isOpen && task) {

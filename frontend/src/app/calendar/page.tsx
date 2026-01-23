@@ -7,6 +7,7 @@ import { CalendarTasksPanel } from '@/components/Tasks';
 import { Button } from '@/components/ui/button';
 import { PanelRightClose, PanelRightOpen } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { OnboardingWelcomeBanner } from '@/components/Onboarding/OnboardingWelcomeBanner';
 
 export default function CalendarPage() {
   const [taskPanelRefresh, setTaskPanelRefresh] = useState(0);
@@ -26,6 +27,7 @@ export default function CalendarPage() {
             "flex-1 transition-all duration-300",
             taskPanelOpen ? "lg:mr-[280px]" : ""
           )}>
+            <OnboardingWelcomeBanner />
             <WeekCalendar onTaskDropped={handleTaskDropped} />
           </div>
           

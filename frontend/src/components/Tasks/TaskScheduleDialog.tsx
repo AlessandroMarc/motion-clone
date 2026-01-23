@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -9,7 +9,6 @@ import {
   DialogTitle,
   DialogDescription,
 } from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import {
@@ -20,7 +19,8 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Loader2, CalendarPlus } from 'lucide-react';
-import type { Task } from '@shared/types';
+import type { Task, Schedule } from '@shared/types';
+import { DateTimePicker } from '@/components/forms/shared/DateTimePicker';
 
 interface TaskScheduleDialogProps {
   task: Task | null;
@@ -31,6 +31,7 @@ interface TaskScheduleDialogProps {
     startTime: Date,
     endTime: Date
   ) => Promise<void>;
+  activeSchedule?: Schedule | null;
 }
 
 export function TaskScheduleDialog({
@@ -38,27 +39,67 @@ export function TaskScheduleDialog({
   open,
   onOpenChange,
   onSchedule,
+  activeSchedule,
 }: TaskScheduleDialogProps) {
   const [startDateTime, setStartDateTime] = useState('');
   const [duration, setDuration] = useState('60');
   const [isScheduling, setIsScheduling] = useState(false);
 
+  // Memoize schedule values to ensure stable dependencies
+  const workingHoursStart = useMemo(
+    () => activeSchedule?.working_hours_start ?? 10,
+    [activeSchedule?.working_hours_start]
+  );
+  const workingHoursEnd = useMemo(
+    () => activeSchedule?.working_hours_end ?? 22,
+    [activeSchedule?.working_hours_end]
+  );
+
   // Set default start time when dialog opens
   useEffect(() => {
     if (open && task) {
-      // Default to next hour
       const now = new Date();
-      now.setMinutes(0, 0, 0);
-      now.setHours(now.getHours() + 1);
+      
+      // Create a date for today at working hours start
+      const todayStart = new Date(now);
+      todayStart.setHours(workingHoursStart, 0, 0, 0);
+      todayStart.setSeconds(0);
+      todayStart.setMilliseconds(0);
+      
+      let defaultStart: Date;
+      
+      // If we're before working hours today, use today's working hours start
+      if (now < todayStart) {
+        defaultStart = todayStart;
+      } else {
+        // We're past working hours start today
+        // Try next hour if still within working hours
+        const nextHour = new Date(now);
+        nextHour.setMinutes(0, 0, 0);
+        nextHour.setHours(nextHour.getHours() + 1);
+        
+        // If next hour is still today and within working hours, use it
+        if (nextHour.getDate() === now.getDate() && nextHour.getHours() < workingHoursEnd) {
+          defaultStart = nextHour;
+        } else {
+          // Otherwise, use tomorrow's working hours start
+          const tomorrowStart = new Date(now);
+          tomorrowStart.setDate(tomorrowStart.getDate() + 1);
+          tomorrowStart.setHours(workingHoursStart, 0, 0, 0);
+          tomorrowStart.setSeconds(0);
+          tomorrowStart.setMilliseconds(0);
+          defaultStart = tomorrowStart;
+        }
+      }
       
       // Format for datetime-local input
-      const formatted = formatDateTimeLocal(now);
+      const formatted = formatDateTimeLocal(defaultStart);
       setStartDateTime(formatted);
       
       // Use task's planned duration if available, otherwise default to 60
       setDuration(String(task.planned_duration_minutes || 60));
     }
-  }, [open, task]);
+  }, [open, task, workingHoursStart, workingHoursEnd]);
 
   const handleSchedule = async () => {
     if (!task || !startDateTime) return;
@@ -102,16 +143,12 @@ export function TaskScheduleDialog({
         </DialogHeader>
 
         <div className="space-y-4 py-2">
-          <div className="space-y-2">
-            <Label htmlFor="schedule-datetime">Start Time</Label>
-            <Input
-              id="schedule-datetime"
-              type="datetime-local"
-              value={startDateTime}
-              onChange={e => setStartDateTime(e.target.value)}
-              className="h-11"
-            />
-          </div>
+          <DateTimePicker
+            value={startDateTime}
+            onChange={setStartDateTime}
+            label="Start Time"
+            id="schedule-datetime"
+          />
 
           <div className="space-y-2">
             <Label htmlFor="schedule-duration">Duration</Label>

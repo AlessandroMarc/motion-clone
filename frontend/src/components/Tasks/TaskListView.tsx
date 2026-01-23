@@ -5,7 +5,6 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Circle } from 'lucide-react';
 import type { Project, Task } from '@shared/types';
 import {
-  EmptyStateCard,
   ErrorState,
   LoadingState,
 } from '@/components/shared';

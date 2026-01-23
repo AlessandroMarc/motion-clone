@@ -12,6 +12,7 @@ import { FolderPlus } from 'lucide-react';
 import {
   useProjectForm,
   type ProjectCreateFormProps,
+  type ProjectFormData,
 } from '@/hooks/useProjectForm';
 import { ProjectNameField } from './ProjectNameField';
 import { ProjectDescriptionField } from './ProjectDescriptionField';
@@ -32,7 +33,7 @@ export function ProjectCreateDialogForm({
     handleCancel,
   } = useProjectForm(onProjectCreate);
 
-  const handleFormSubmit = async (data: any) => {
+  const handleFormSubmit = async (data: ProjectFormData) => {
     await onSubmit(data);
     setIsDialogOpen(false);
   };
@@ -45,7 +46,7 @@ export function ProjectCreateDialogForm({
   return (
     <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
       <DialogTrigger asChild>
-        <Button className="gap-2">
+        <Button className="gap-2" data-onboarding-step="create-project">
           <FolderPlus className="h-4 w-4" />
           Create Project
         </Button>

@@ -6,6 +6,7 @@ import * as z from 'zod';
 import type { Task } from '@shared/types';
 import { transformFormDataToTask } from '@/utils/formUtils';
 import { useAuth } from '@/contexts/AuthContext';
+import { useOnboarding } from '@/hooks/useOnboarding';
 import posthog from 'posthog-js';
 
 // Form validation schema
@@ -54,6 +55,7 @@ export interface TaskCreateFormProps {
 export function useTaskForm(onTaskCreate: TaskCreateFormProps['onTaskCreate']) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { user } = useAuth();
+  const { advanceToNextStep } = useOnboarding();
 
   const form = useForm<TaskFormData>({
     resolver: zodResolver(taskSchema),
@@ -78,8 +80,6 @@ export function useTaskForm(onTaskCreate: TaskCreateFormProps['onTaskCreate']) {
   const priority = watch('priority');
 
   const onSubmit = async (data: TaskFormData) => {
-    console.log('useTaskForm: onSubmit called with data:', data);
-    console.log('useTaskForm: Form values:', form.getValues());
     setIsSubmitting(true);
     try {
       if (!user) {
@@ -87,7 +87,6 @@ export function useTaskForm(onTaskCreate: TaskCreateFormProps['onTaskCreate']) {
       }
 
       const taskData = transformFormDataToTask(data, user.id);
-      console.log('useTaskForm: Calling onTaskCreate with:', taskData);
       await onTaskCreate(taskData);
       reset();
       toast.success('Task created successfully!');
@@ -100,6 +99,14 @@ export function useTaskForm(onTaskCreate: TaskCreateFormProps['onTaskCreate']) {
         planned_duration_minutes: data.planned_duration_minutes,
         has_dependencies: (data.blockedBy?.length || 0) > 0,
       });
+
+      // Advance onboarding step if in onboarding flow
+      try {
+        await advanceToNextStep('task');
+      } catch (error) {
+        // Silently fail - onboarding advancement is not critical
+        console.error('Failed to advance onboarding step:', error);
+      }
 
       return true;
     } catch (error) {

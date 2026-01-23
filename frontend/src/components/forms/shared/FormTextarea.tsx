@@ -1,10 +1,11 @@
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { hasFieldError, getFieldError } from '@/utils/formUtils';
+import type { UseFormRegisterReturn, FieldErrors } from 'react-hook-form';
 
 interface FormTextareaProps {
-  register: any;
-  errors: any;
+  register: UseFormRegisterReturn;
+  errors: FieldErrors<Record<string, unknown>>;
   name: string;
   label: string;
   placeholder?: string;
@@ -34,7 +35,7 @@ export function FormTextarea({
         id={fieldId}
         placeholder={placeholder}
         rows={rows}
-        {...register(name)}
+        {...register}
         className={`${hasError ? 'border-red-500' : ''} ${className}`}
       />
       {hasError && <p className="text-sm text-red-500">{errorMessage}</p>}

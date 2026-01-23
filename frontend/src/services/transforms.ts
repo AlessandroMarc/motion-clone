@@ -5,11 +5,14 @@ import type {
 } from '@shared/types';
 import { isCalendarEventTask } from '@shared/types';
 
-type UnknownRecord = Record<string, any>;
+export type UnknownRecord = Record<string, unknown>;
 
 export function toDate(value: unknown): Date {
   if (value instanceof Date) return value;
-  return new Date(value as any);
+  if (typeof value === 'string' || typeof value === 'number') {
+    return new Date(value);
+  }
+  return new Date(String(value));
 }
 
 export function toOptionalDate(value: unknown): Date | null {
@@ -45,7 +48,7 @@ export function toCalendarEventUnion(raw: UnknownRecord): CalendarEventUnion {
   if (isCalendarEventTask(base)) {
     return {
       ...base,
-      completed_at: toOptionalDate((raw as any).completed_at),
+      completed_at: toOptionalDate(raw.completed_at),
     } as CalendarEventTask;
   }
 

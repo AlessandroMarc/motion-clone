@@ -15,9 +15,7 @@ export function useCalendarEvents(weekDates: Date[]) {
     // Use only the first date (Monday) as the key - if Monday is the same, it's the same week
     const mondayDate = weekDates[0];
     return mondayDate.toISOString().split('T')[0];
-  }, [
-    weekDates.length > 0 ? weekDates[0].getTime() : 0
-  ]);
+  }, [weekDates]);
   
   const weekKeyRef = useRef<string>('');
 
@@ -46,44 +44,24 @@ export function useCalendarEvents(weekDates: Date[]) {
     
     const fetchEvents = async () => {
       try {
-        console.log('[useCalendarEvents] Fetching calendar events for week');
         setLoading(true);
         setError(null);
 
         const { startIso, endIso } = getWeekRangeIso();
-
-        console.log('[useCalendarEvents] Fetching events for date range:', {
-          startIso,
-          endIso,
-          weekKey,
-        });
 
         const weekEvents = await calendarService.getCalendarEventsByDateRange(
           startIso,
           endIso
         );
 
-        console.log('[useCalendarEvents] Fetched calendar events:', {
-          count: weekEvents.length,
-          events: weekEvents.map(e => ({
-            id: e.id,
-            title: e.title,
-            linked_task_id: e.linked_task_id,
-            start_time: e.start_time,
-            end_time: e.end_time,
-          })),
-        });
-
         setEvents(weekEvents);
       } catch (err) {
-        console.error('[useCalendarEvents] Failed to fetch calendar events:', err);
-        console.error('[useCalendarEvents] Error details:', {
-          message: err instanceof Error ? err.message : 'Unknown error',
-          error: err,
-        });
-        setError(
-          err instanceof Error ? err.message : 'Failed to load calendar events'
-        );
+        const errorMessage = err instanceof Error ? err.message : 'Failed to load calendar events';
+        // Only log to console in development
+        if (process.env.NODE_ENV === 'development') {
+          console.error('[useCalendarEvents] Failed to fetch calendar events:', err);
+        }
+        setError(errorMessage);
       } finally {
         setLoading(false);
       }

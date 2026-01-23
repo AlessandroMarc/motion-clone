@@ -18,9 +18,11 @@ import { Check, ChevronsUpDown, Folder } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { projectService } from '@/services/projectService';
 import type { Project } from '@shared/types';
+import type { FieldErrors } from 'react-hook-form';
+import type { TaskFormData } from '@/hooks/useTaskForm';
 
 interface TaskProjectFieldProps {
-  errors?: any;
+  errors?: FieldErrors<TaskFormData>;
 }
 
 export function TaskProjectField({ errors }: TaskProjectFieldProps) {
@@ -31,14 +33,6 @@ export function TaskProjectField({ errors }: TaskProjectFieldProps) {
 
   const { setValue, watch } = useFormContext();
   const selectedProjectId = watch('project_id');
-
-  // Debug log for projectId value
-  useEffect(() => {
-    console.log(
-      'TaskProjectField: Current projectId value:',
-      selectedProjectId
-    );
-  }, [selectedProjectId]);
 
   // Fetch projects on component mount
   useEffect(() => {
@@ -67,22 +61,18 @@ export function TaskProjectField({ errors }: TaskProjectFieldProps) {
   );
 
   const handleSelect = (projectId: string) => {
-    console.log('TaskProjectField: Selecting project:', projectId);
     if (projectId === selectedProjectId) {
       setValue('project_id', null, { shouldValidate: true, shouldDirty: true });
-      console.log('TaskProjectField: Cleared project selection');
     } else {
       setValue('project_id', projectId, {
         shouldValidate: true,
         shouldDirty: true,
       });
-      console.log('TaskProjectField: Set project to:', projectId);
     }
     setOpen(false);
   };
 
   const handleClear = () => {
-    console.log('TaskProjectField: Clearing project selection');
     setValue('project_id', null, { shouldValidate: true, shouldDirty: true });
     setOpen(false);
   };
@@ -172,8 +162,8 @@ export function TaskProjectField({ errors }: TaskProjectFieldProps) {
           </Command>
         </PopoverContent>
       </Popover>
-      {errors?.projectId && (
-        <p className="text-sm text-destructive">{errors.projectId.message}</p>
+      {errors?.project_id && (
+        <p className="text-sm text-destructive">{errors.project_id.message}</p>
       )}
     </div>
   );

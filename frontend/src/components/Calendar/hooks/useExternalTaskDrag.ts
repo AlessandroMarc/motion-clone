@@ -1,8 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import type { CalendarEventTask, CalendarEventUnion } from '@shared/types';
 import { logger } from '@/lib/logger';
-
-const HOUR_PX = 48; // Match dayColumnLayout.ts
+import { HOUR_PX } from '../dayColumnLayout';
 
 type DraggedTask = { id: string; title: string; description?: string };
 
@@ -36,7 +35,6 @@ export function useExternalTaskDrag(
       const task = readTaskFromDataTransfer(e.dataTransfer);
       if (!task) return;
       draggedTaskDataRef.current = task;
-      logger.debug('[useExternalTaskDrag] Captured dragged task data', task);
     };
 
     const handleDragEnd = () => {

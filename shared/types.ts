@@ -113,10 +113,23 @@ interface Schedule {
   updated_at: Date;
 }
 
+type OnboardingStep = 'task_created' | 'project_created' | 'scheduled' | null;
+
+interface OnboardingStatus {
+  completed: boolean;
+  step: OnboardingStep;
+  started_at: Date | null;
+  completed_at: Date | null;
+}
+
 interface UserSettings {
   id: string;
   user_id: string;
   active_schedule_id: string | null;
+  onboarding_completed?: boolean;
+  onboarding_step?: OnboardingStep;
+  onboarding_started_at?: Date | null;
+  onboarding_completed_at?: Date | null;
   created_at: Date;
   updated_at: Date;
 }
@@ -132,5 +145,7 @@ export type {
   UpdateCalendarEventInput,
   Schedule,
   UserSettings,
+  OnboardingStatus,
+  OnboardingStep,
 };
 export { isCalendarEventTask };

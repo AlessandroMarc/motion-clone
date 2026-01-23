@@ -1,6 +1,6 @@
 // Standard API response types for consistent structure
 
-export interface ApiResponse<T = any> {
+export interface ApiResponse<T = unknown> {
   success: boolean;
   data?: T;
   error?: string;
@@ -13,7 +13,7 @@ export interface ApiError {
   message?: string;
 }
 
-export interface ApiSuccess<T = any> {
+export interface ApiSuccess<T = unknown> {
   success: true;
   data: T;
   message?: string;

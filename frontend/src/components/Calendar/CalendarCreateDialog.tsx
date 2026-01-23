@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
+import { DateTimePicker } from '@/components/forms/shared/DateTimePicker';
 
 interface CalendarCreateDialogProps {
   open: boolean;
@@ -20,7 +21,7 @@ interface CalendarCreateDialogProps {
   onCreate: () => void;
 }
 
-export function CalendarCreateDialog({
+function CalendarCreateDialog({
   open,
   onOpenChange,
   title,
@@ -50,24 +51,18 @@ export function CalendarCreateDialog({
             />
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="calendar-start">Start</Label>
-              <Input
-                id="calendar-start"
-                type="datetime-local"
-                value={startTime}
-                onChange={e => setStartTime(e.target.value)}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="calendar-end">End</Label>
-              <Input
-                id="calendar-end"
-                type="datetime-local"
-                value={endTime}
-                onChange={e => setEndTime(e.target.value)}
-              />
-            </div>
+            <DateTimePicker
+              value={startTime}
+              onChange={setStartTime}
+              label="Start"
+              id="calendar-start"
+            />
+            <DateTimePicker
+              value={endTime}
+              onChange={setEndTime}
+              label="End"
+              id="calendar-end"
+            />
           </div>
           <div className="space-y-2">
             <Label htmlFor="calendar-description">Description</Label>
@@ -94,5 +89,3 @@ export function CalendarCreateDialog({
 }
 
 export default CalendarCreateDialog;
-
-

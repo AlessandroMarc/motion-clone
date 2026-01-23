@@ -10,7 +10,7 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Plus } from 'lucide-react';
-import { useTaskForm, type TaskCreateFormProps } from '@/hooks/useTaskForm';
+import { useTaskForm, type TaskCreateFormProps, type TaskFormData } from '@/hooks/useTaskForm';
 import { TaskTitleField } from './TaskTitleField';
 import { TaskDescriptionField } from './TaskDescriptionField';
 import { TaskDueDateField } from './TaskDueDateField';
@@ -35,7 +35,7 @@ export function TaskCreateDialogForm({ onTaskCreate }: TaskCreateFormProps) {
     setPriority,
   } = useTaskForm(onTaskCreate);
 
-  const handleFormSubmit = async (data: any) => {
+  const handleFormSubmit = async (data: TaskFormData) => {
     const success = await onSubmit(data);
     if (success) {
       setIsDialogOpen(false);
@@ -50,7 +50,7 @@ export function TaskCreateDialogForm({ onTaskCreate }: TaskCreateFormProps) {
   return (
     <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
       <DialogTrigger asChild>
-        <Button className="gap-2">
+        <Button className="gap-2" data-onboarding-step="create-task">
           <Plus className="h-4 w-4" />
           Create Task
         </Button>

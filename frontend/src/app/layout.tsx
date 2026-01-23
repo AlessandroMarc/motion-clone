@@ -3,6 +3,7 @@ import { Toaster } from 'sonner';
 import { AuthProvider } from '@/contexts/AuthContext';
 import { ThemeProvider } from '@/components/ThemeProvider';
 import { LayoutWrapper } from '@/components/LayoutWrapper';
+import { OnboardingProvider } from '@/components/Onboarding/OnboardingProvider';
 import './globals.css';
 
 export const metadata: Metadata = {
@@ -10,9 +11,13 @@ export const metadata: Metadata = {
   description: 'Stop juggling calendars and to-do lists. Nexto automatically schedules your tasks around your life.',
 };
 
+interface RootLayoutProps {
+  children: React.ReactNode;
+}
+
 export default function RootLayout({
   children,
-}: any) {
+}: RootLayoutProps) {
   return (
     <html lang="en" suppressHydrationWarning>
       <body className="antialiased">
@@ -23,8 +28,10 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           <AuthProvider>
-            <LayoutWrapper>{children}</LayoutWrapper>
-            <Toaster position="top-right" richColors />
+            <OnboardingProvider>
+              <LayoutWrapper>{children}</LayoutWrapper>
+              <Toaster position="top-right" richColors />
+            </OnboardingProvider>
           </AuthProvider>
         </ThemeProvider>
       </body>

@@ -173,4 +173,3 @@ function getSkeletonEventsForDay(dayIndex: number) {
   return patterns[dayIndex % patterns.length];
 }
 
-export default CalendarSkeleton;

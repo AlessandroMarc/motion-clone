@@ -6,6 +6,7 @@ import type {
   CreateUserSettingsInput,
   UpdateUserSettingsInput,
 } from '../services/userSettingsService.js';
+import type { OnboardingStep } from '@shared/types.js';
 import { ResponseHelper } from '../utils/responseHelpers.js';
 
 const router = express.Router();
@@ -163,6 +164,83 @@ router.put('/', async (req: Request, res: Response) => {
       input
     );
     ResponseHelper.success(res, settings, 'User settings updated successfully');
+  } catch (error) {
+    ResponseHelper.badRequest(
+      res,
+      error instanceof Error ? error.message : 'Bad request'
+    );
+  }
+});
+
+// GET /api/user-settings/onboarding/status - Get onboarding status
+router.get('/onboarding/status', async (req: Request, res: Response) => {
+  try {
+    const userId = req.query?.user_id as string;
+
+    if (!userId) {
+      return ResponseHelper.badRequest(res, 'User ID is required');
+    }
+
+    const status = await userSettingsService.getOnboardingStatus(userId);
+    ResponseHelper.success(
+      res,
+      status,
+      'Onboarding status retrieved successfully'
+    );
+  } catch (error) {
+    ResponseHelper.internalError(
+      res,
+      error instanceof Error ? error.message : 'Internal server error'
+    );
+  }
+});
+
+// PUT /api/user-settings/onboarding/step - Update onboarding step
+router.put('/onboarding/step', async (req: Request, res: Response) => {
+  try {
+    const userId = (req.query?.user_id || req.body?.user_id) as string;
+    const step = req.body?.step as OnboardingStep;
+
+    if (!userId) {
+      return ResponseHelper.badRequest(res, 'User ID is required');
+    }
+
+    if (step !== null && step !== 'task_created' && step !== 'project_created' && step !== 'scheduled') {
+      return ResponseHelper.badRequest(
+        res,
+        'Invalid onboarding step. Must be: task_created, project_created, scheduled, or null'
+      );
+    }
+
+    const settings = await userSettingsService.updateOnboardingStep(userId, step);
+    ResponseHelper.success(
+      res,
+      settings,
+      'Onboarding step updated successfully'
+    );
+  } catch (error) {
+    ResponseHelper.badRequest(
+      res,
+      error instanceof Error ? error.message : 'Bad request'
+    );
+  }
+});
+
+// PUT /api/user-settings/onboarding/complete - Complete onboarding
+router.put('/onboarding/complete', async (req: Request, res: Response) => {
+  try {
+    const userId = (req.query?.user_id || req.body?.user_id) as string;
+
+    if (!userId) {
+      return ResponseHelper.badRequest(res, 'User ID is required');
+    }
+
+    const settings = await userSettingsService.completeOnboarding(userId);
+    ResponseHelper.success(
+      res,
+      settings,
+      'Onboarding completed successfully'
+    );
   } catch (error) {
     ResponseHelper.badRequest(
       res,

@@ -13,6 +13,9 @@ Sentry.init({
   // Enable logs to be sent to Sentry
   enableLogs: true,
 
+  // Disable debug logging in development
+  debug: false,
+
   // Enable sending user PII (Personally Identifiable Information)
   // https://docs.sentry.io/platforms/javascript/guides/nextjs/configuration/options/#sendDefaultPii
   sendDefaultPii: true,

@@ -56,19 +56,22 @@ export function useAutoSchedulePreview(params: {
     );
     const regularEvents = allCalendarEvents.filter(event => !isCalendarEventTask(event));
 
-    logger.debug('[AutoScheduleDialog] Using regular+completed events as blockers', {
-      totalEvents: allCalendarEvents.length,
-      regularEvents: regularEvents.length,
-      completedTaskEvents: completedTaskEvents.length,
-    });
-
     const accumulatedScheduledEvents: CalendarEventUnion[] = [
       ...regularEvents,
       ...completedTaskEvents,
     ];
 
     const taskEvents: TaskEventBlock[] = [];
-    let currentStartTime = roundToNext15Minutes(new Date());
+    // Start from schedule's working hours start, or current time if later
+    const now = new Date();
+    const workingHoursStart = new Date(now);
+    workingHoursStart.setHours(config.workingHoursStart, 0, 0, 0);
+    workingHoursStart.setSeconds(0);
+    workingHoursStart.setMilliseconds(0);
+    
+    // Use the later of: working hours start or current time (rounded to next 15 min)
+    const roundedNow = roundToNext15Minutes(now);
+    let currentStartTime = roundedNow > workingHoursStart ? roundedNow : workingHoursStart;
 
     for (const task of sortedTasks) {
       const taskExistingEvents = existingEvents.filter(

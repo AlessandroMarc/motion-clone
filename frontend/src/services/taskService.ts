@@ -1,6 +1,6 @@
 import type { Task } from '@shared/types';
 import { request } from './apiClient';
-import { toTask, toTasks } from './transforms';
+import { toTask, toTasks, type UnknownRecord } from './transforms';
 
 export interface CreateTaskInput {
   title: string;
@@ -38,7 +38,7 @@ class TaskService {
       actual_duration_minutes: input.actualDurationMinutes ?? 0,
     };
 
-    const response = await request<any>('/tasks', {
+    const response = await request<UnknownRecord>('/tasks', {
       method: 'POST',
       body: JSON.stringify(payload),
     });
@@ -51,7 +51,7 @@ class TaskService {
   }
 
   async getAllTasks(): Promise<Task[]> {
-    const response = await request<any[]>('/tasks');
+    const response = await request<UnknownRecord[]>('/tasks');
 
     if (!response.success || !response.data) {
       throw new Error(response.error || 'Failed to fetch tasks');
@@ -61,7 +61,7 @@ class TaskService {
   }
 
   async getTaskById(id: string): Promise<Task> {
-    const response = await request<any>(`/tasks/${id}`);
+    const response = await request<UnknownRecord>(`/tasks/${id}`);
 
     if (!response.success || !response.data) {
       throw new Error(response.error || 'Failed to fetch task');
@@ -71,15 +71,18 @@ class TaskService {
   }
 
   async updateTask(id: string, input: UpdateTaskInput): Promise<Task> {
-    const response = await request<any>(`/tasks/${id}`, {
+    // Build payload without dueDate (we use due_date instead)
+    const { dueDate, blockedBy, plannedDurationMinutes, actualDurationMinutes, ...rest } = input;
+    
+    const response = await request<UnknownRecord>(`/tasks/${id}`, {
       method: 'PUT',
       body: JSON.stringify({
-        ...input,
-        due_date: input.dueDate?.toISOString(),
+        ...rest,
+        due_date: dueDate?.toISOString() ?? null,
         project_id: input.project_id,
-        blocked_by: input.blockedBy,
-        planned_duration_minutes: input.plannedDurationMinutes,
-        actual_duration_minutes: input.actualDurationMinutes,
+        blocked_by: blockedBy,
+        planned_duration_minutes: plannedDurationMinutes,
+        actual_duration_minutes: actualDurationMinutes,
       }),
     });
 
@@ -101,7 +104,7 @@ class TaskService {
   }
 
   async getTasksByProject(projectId: string): Promise<Task[]> {
-    const response = await request<any[]>(`/tasks?project_id=${projectId}`);
+    const response = await request<UnknownRecord[]>(`/tasks?project_id=${projectId}`);
 
     if (!response.success || !response.data) {
       throw new Error(response.error || 'Failed to fetch tasks by project');
@@ -113,7 +116,7 @@ class TaskService {
   async getTasksByStatus(
     status: 'pending' | 'in-progress' | 'completed'
   ): Promise<Task[]> {
-    const response = await request<any[]>(`/tasks?status=${status}`);
+    const response = await request<UnknownRecord[]>(`/tasks?status=${status}`);
 
     if (!response.success || !response.data) {
       throw new Error(response.error || 'Failed to fetch tasks by status');

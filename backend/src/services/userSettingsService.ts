@@ -1,5 +1,5 @@
 import { supabase } from '../config/supabase.js';
-import type { Schedule, UserSettings } from '@shared/types.js';
+import type { Schedule, UserSettings, OnboardingStatus, OnboardingStep } from '@shared/types.js';
 
 export interface CreateScheduleInput {
   user_id: string;
@@ -242,6 +242,144 @@ export class UserSettingsService {
       ...data,
       created_at: new Date(data.created_at),
       updated_at: new Date(data.updated_at),
+    };
+  }
+
+  // Get onboarding status for a user
+  async getOnboardingStatus(userId: string): Promise<OnboardingStatus> {
+    const { data, error } = await supabase
+      .from('user_settings')
+      .select('onboarding_completed, onboarding_step, onboarding_started_at, onboarding_completed_at')
+      .eq('user_id', userId)
+      .single();
+
+    if (error) {
+      if (error.code === 'PGRST116') {
+        // No settings found, create default record and return default status
+        try {
+          const { data: newData, error: createError } = await supabase
+            .from('user_settings')
+            .insert([
+              {
+                user_id: userId,
+                onboarding_completed: false,
+                onboarding_step: null,
+              },
+            ])
+            .select('onboarding_completed, onboarding_step, onboarding_started_at, onboarding_completed_at')
+            .single();
+
+          if (createError) {
+            // If creation fails, still return default status
+            console.error('Failed to create user_settings:', createError);
+            return {
+              completed: false,
+              step: null,
+              started_at: null,
+              completed_at: null,
+            };
+          }
+
+          return {
+            completed: newData?.onboarding_completed ?? false,
+            step: (newData?.onboarding_step as OnboardingStep) ?? null,
+            started_at: newData?.onboarding_started_at ? new Date(newData.onboarding_started_at) : null,
+            completed_at: newData?.onboarding_completed_at ? new Date(newData.onboarding_completed_at) : null,
+          };
+        } catch (createErr) {
+          // If creation fails, return default status
+          console.error('Failed to create user_settings:', createErr);
+          return {
+            completed: false,
+            step: null,
+            started_at: null,
+            completed_at: null,
+          };
+        }
+      }
+      throw new Error(`Failed to fetch onboarding status: ${error.message}`);
+    }
+
+    return {
+      completed: data?.onboarding_completed ?? false,
+      step: (data?.onboarding_step as OnboardingStep) ?? null,
+      started_at: data?.onboarding_started_at ? new Date(data.onboarding_started_at) : null,
+      completed_at: data?.onboarding_completed_at ? new Date(data.onboarding_completed_at) : null,
+    };
+  }
+
+  // Update onboarding step
+  async updateOnboardingStep(userId: string, step: OnboardingStep): Promise<UserSettings> {
+    // First, ensure user_settings exists
+    const existingSettings = await this.getUserSettings(userId);
+    
+    const updateData: {
+      onboarding_step: OnboardingStep;
+      onboarding_started_at?: string;
+    } = {
+      onboarding_step: step,
+    };
+
+    // Set started_at if this is the first step
+    if (!existingSettings?.onboarding_started_at && step !== null) {
+      updateData.onboarding_started_at = new Date().toISOString();
+    }
+
+    const { data, error } = await supabase
+      .from('user_settings')
+      .upsert(
+        {
+          user_id: userId,
+          ...updateData,
+        },
+        {
+          onConflict: 'user_id',
+        }
+      )
+      .select()
+      .single();
+
+    if (error) {
+      throw new Error(`Failed to update onboarding step: ${error.message}`);
+    }
+
+    return {
+      ...data,
+      created_at: new Date(data.created_at),
+      updated_at: new Date(data.updated_at),
+      onboarding_started_at: data.onboarding_started_at ? new Date(data.onboarding_started_at) : null,
+      onboarding_completed_at: data.onboarding_completed_at ? new Date(data.onboarding_completed_at) : null,
+    };
+  }
+
+  // Complete onboarding
+  async completeOnboarding(userId: string): Promise<UserSettings> {
+    const { data, error } = await supabase
+      .from('user_settings')
+      .update({
+        onboarding_completed: true,
+        onboarding_completed_at: new Date().toISOString(),
+      })
+      .eq('user_id', userId)
+      .select()
+      .single();
+
+    if (error) {
+      // If settings don't exist, create them
+      if (error.code === 'PGRST116') {
+        return await this.upsertUserSettings({
+          user_id: userId,
+        }).then(() => this.completeOnboarding(userId));
+      }
+      throw new Error(`Failed to complete onboarding: ${error.message}`);
+    }
+
+    return {
+      ...data,
+      created_at: new Date(data.created_at),
+      updated_at: new Date(data.updated_at),
+      onboarding_started_at: data.onboarding_started_at ? new Date(data.onboarding_started_at) : null,
+      onboarding_completed_at: data.onboarding_completed_at ? new Date(data.onboarding_completed_at) : null,
     };
   }
 }

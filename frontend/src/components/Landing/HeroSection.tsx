@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { ArrowRight, Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { AnimatedCalendarDemo } from './AnimatedCalendarDemo';
-import type { landingContent as LandingContent } from '@/content/landing';
+import type { landingContent as LandingContent } from '@/content/content';
 
 interface HeroSectionProps {
   content: typeof LandingContent;

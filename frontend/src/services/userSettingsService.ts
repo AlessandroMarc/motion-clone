@@ -1,4 +1,4 @@
-import type { Schedule, UserSettings } from '@shared/types';
+import type { Schedule, UserSettings, OnboardingStatus, OnboardingStep } from '@shared/types';
 import { request } from './apiClient';
 
 class UserSettingsService {
@@ -141,6 +141,70 @@ class UserSettingsService {
 
     if (!response.success || !response.data) {
       throw new Error(response.error || 'Failed to update active schedule');
+    }
+
+    return {
+      ...response.data,
+      created_at: new Date(response.data.created_at),
+      updated_at: new Date(response.data.updated_at),
+    };
+  }
+
+  // Get onboarding status
+  async getOnboardingStatus(userId: string): Promise<OnboardingStatus> {
+    const response = await request<OnboardingStatus>(
+      `/user-settings/onboarding/status?user_id=${userId}`
+    );
+
+    if (!response.success || !response.data) {
+      // Return default status if not found
+      return {
+        completed: false,
+        step: null,
+        started_at: null,
+        completed_at: null,
+      };
+    }
+
+    return {
+      ...response.data,
+      started_at: response.data.started_at ? new Date(response.data.started_at) : null,
+      completed_at: response.data.completed_at ? new Date(response.data.completed_at) : null,
+    };
+  }
+
+  // Update onboarding step
+  async updateOnboardingStep(userId: string, step: OnboardingStep): Promise<UserSettings> {
+    const response = await request<UserSettings>(
+      `/user-settings/onboarding/step?user_id=${userId}`,
+      {
+        method: 'PUT',
+        body: JSON.stringify({ step }),
+      }
+    );
+
+    if (!response.success || !response.data) {
+      throw new Error(response.error || 'Failed to update onboarding step');
+    }
+
+    return {
+      ...response.data,
+      created_at: new Date(response.data.created_at),
+      updated_at: new Date(response.data.updated_at),
+    };
+  }
+
+  // Complete onboarding
+  async completeOnboarding(userId: string): Promise<UserSettings> {
+    const response = await request<UserSettings>(
+      `/user-settings/onboarding/complete?user_id=${userId}`,
+      {
+        method: 'PUT',
+      }
+    );
+
+    if (!response.success || !response.data) {
+      throw new Error(response.error || 'Failed to complete onboarding');
     }
 
     return {

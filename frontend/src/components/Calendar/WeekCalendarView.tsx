@@ -13,40 +13,41 @@ import WeekScrollableGrid from './WeekScrollableGrid';
 import CalendarCreateDialog from './CalendarCreateDialog';
 import CalendarEditDialog from './CalendarEditDialog';
 import { AutoScheduleDialog } from './AutoScheduleDialog';
+import { DeadlineViolationsBar } from './DeadlineViolationsBar';
 
 type Dialogs = {
   createOpen: boolean;
-  setCreateOpen: (open: boolean) => void;
+  setCreateOpen: React.Dispatch<React.SetStateAction<boolean>>;
   title: string;
-  setTitle: (v: string) => void;
+  setTitle: React.Dispatch<React.SetStateAction<string>>;
   description: string;
-  setDescription: (v: string) => void;
+  setDescription: React.Dispatch<React.SetStateAction<string>>;
   startTime: string;
-  setStartTime: (v: string) => void;
+  setStartTime: React.Dispatch<React.SetStateAction<string>>;
   endTime: string;
-  setEndTime: (v: string) => void;
+  setEndTime: React.Dispatch<React.SetStateAction<string>>;
   handleCreate: () => Promise<void>;
 
   editOpen: boolean;
-  setEditOpen: (open: boolean) => void;
+  setEditOpen: React.Dispatch<React.SetStateAction<boolean>>;
   editTitle: string;
-  setEditTitle: (v: string) => void;
+  setEditTitle: React.Dispatch<React.SetStateAction<string>>;
   editDescription: string;
-  setEditDescription: (v: string) => void;
+  setEditDescription: React.Dispatch<React.SetStateAction<string>>;
   editStartTime: string;
-  setEditStartTime: (v: string) => void;
+  setEditStartTime: React.Dispatch<React.SetStateAction<string>>;
   editEndTime: string;
-  setEditEndTime: (v: string) => void;
+  setEditEndTime: React.Dispatch<React.SetStateAction<string>>;
   editEvent: CalendarEventUnion | null;
   editCompleted: boolean;
-  setEditCompleted: (v: boolean) => void;
+  setEditCompleted: React.Dispatch<React.SetStateAction<boolean>>;
   openCreateDialog: (date: Date, hour: number, minute: number) => void;
   openEditDialog: (event: CalendarEventUnion) => void;
   handleSaveEdit: (
-    setEvents: (updater: (curr: CalendarEventUnion[]) => CalendarEventUnion[]) => void
+    setEvents: React.Dispatch<React.SetStateAction<CalendarEventUnion[]>>
   ) => Promise<void>;
   handleDeleteEdit: (
-    setEvents: (updater: (curr: CalendarEventUnion[]) => CalendarEventUnion[]) => void
+    setEvents: React.Dispatch<React.SetStateAction<CalendarEventUnion[]>>
   ) => Promise<void>;
 };
 
@@ -56,17 +57,26 @@ interface WeekCalendarViewProps {
   displayDates: Date[];
   displayEventsByDay: Record<string, CalendarEventUnion[]>;
   events: CalendarEventUnion[];
-  setEvents: (updater: (curr: CalendarEventUnion[]) => CalendarEventUnion[]) => void;
+  setEvents: React.Dispatch<React.SetStateAction<CalendarEventUnion[]>>;
   draggingEventId: string | null;
-  dragPreview: any;
-  externalDragPreview: any;
-  onEventMouseDown: any;
+  dragPreview: CalendarEventUnion | null;
+  externalDragPreview: CalendarEventUnion | null;
+  onEventMouseDown: (
+    e: React.MouseEvent,
+    event: CalendarEventUnion,
+    eventDayIndex: number
+  ) => void;
   setDayRef: (idx: number, el: HTMLDivElement | null) => void;
   gridRef: RefObject<HTMLDivElement | null>;
   scrollSentinelRef: RefObject<HTMLDivElement | null>;
   sentinelHour: number;
-  onExternalTaskDrop: any;
-  onExternalTaskDragOver: any;
+  onExternalTaskDrop: (
+    task: { id: string; title: string; description?: string },
+    date: Date,
+    hour: number,
+    minute: number
+  ) => void;
+  onExternalTaskDragOver: (date: Date, hour: number, minute: number) => void;
   tasksMap: Map<string, Task>;
 
   currentDay?: Date;
@@ -85,7 +95,14 @@ interface WeekCalendarViewProps {
   setAutoScheduleOpen: (open: boolean) => void;
   tasks: Task[];
   handleAutoScheduleClick: () => Promise<void>;
-  handleAutoSchedule: (events: any[]) => Promise<void>;
+  handleAutoSchedule: (eventsToCreate: Array<{
+    title: string;
+    start_time: string;
+    end_time: string;
+    description?: string;
+    linked_task_id: string;
+    user_id: string;
+  }>) => Promise<void>;
 }
 
 export function WeekCalendarView({
@@ -123,6 +140,8 @@ export function WeekCalendarView({
 }: WeekCalendarViewProps) {
   return (
     <div className="space-y-4">
+      <DeadlineViolationsBar events={events} tasksMap={tasksMap} />
+      
       <CalendarHeader
         weekDates={weekDates}
         onPreviousWeek={onPreviousWeek}

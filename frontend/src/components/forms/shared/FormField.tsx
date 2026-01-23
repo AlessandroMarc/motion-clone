@@ -1,10 +1,11 @@
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { hasFieldError, getFieldError } from '@/utils/formUtils';
+import type { UseFormRegisterReturn, FieldErrors } from 'react-hook-form';
 
 interface FormFieldProps {
-  register: any;
-  errors: any;
+  register: UseFormRegisterReturn;
+  errors: FieldErrors<Record<string, unknown>>;
   name: string;
   label: string;
   type?: string;
@@ -38,7 +39,7 @@ export function FormField({
         id={fieldId}
         type={type}
         placeholder={placeholder}
-        {...register(name)}
+        {...register}
         className={`${hasError ? 'border-red-500' : ''} ${className}`}
       />
       {hasError && <p className="text-sm text-red-500">{errorMessage}</p>}

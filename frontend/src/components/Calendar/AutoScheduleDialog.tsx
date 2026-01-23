@@ -26,6 +26,7 @@ import { logger } from '@/lib/logger';
 import { useAutoSchedulePreview } from './hooks/useAutoSchedulePreview';
 import { AutoScheduleSummary } from './AutoScheduleSummary';
 import { AutoScheduleTaskSections } from './AutoScheduleTaskSections';
+import { useOnboarding } from '@/hooks/useOnboarding';
 
 interface AutoScheduleDialogProps {
   open: boolean;
@@ -64,6 +65,7 @@ export function AutoScheduleDialog({
   const [schedulingPhase, setSchedulingPhase] = useState<SchedulingPhase>('idle');
   const [schedulingProgress, setSchedulingProgress] = useState(0);
   const [schedulingMessage, setSchedulingMessage] = useState('');
+  const { advanceToNextStep } = useOnboarding();
 
   const {
     taskEvents,
@@ -114,6 +116,14 @@ export function AutoScheduleDialog({
       setSchedulingPhase('done');
       setSchedulingProgress(100);
       setSchedulingMessage('Schedule complete!');
+
+      // Advance onboarding step if in onboarding flow
+      try {
+        await advanceToNextStep('schedule');
+      } catch (error) {
+        // Silently fail - onboarding advancement is not critical
+        console.error('Failed to advance onboarding step:', error);
+      }
 
       // Show completion state briefly before closing
       await new Promise(resolve => setTimeout(resolve, 800));

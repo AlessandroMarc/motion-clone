@@ -8,7 +8,6 @@ export function transformFormDataToTask(
   data: TaskFormData,
   userId: string
 ): Omit<Task, 'id' | 'created_at' | 'updated_at' | 'status' | 'dependencies'> {
-  console.log('Form data received:', data);
   const planned = Math.max(data.planned_duration_minutes, 0);
   const actual = Math.min(
     Math.max(data.actual_duration_minutes ?? 0, 0),
@@ -25,7 +24,6 @@ export function transformFormDataToTask(
     actual_duration_minutes: actual,
     blockedBy: data.blockedBy || [],
   };
-  console.log('Transformed task data:', transformed);
   return transformed;
 }
 

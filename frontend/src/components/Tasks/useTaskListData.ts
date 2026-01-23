@@ -23,6 +23,7 @@ export function useTaskListData(refreshTrigger?: number) {
       ]);
       return { tasks, projects, calendarEvents };
     },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [refreshTrigger]
   );
 

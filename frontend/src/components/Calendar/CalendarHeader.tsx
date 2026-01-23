@@ -61,6 +61,7 @@ export function CalendarHeader({
                 size="sm"
                 onClick={onAutoSchedule}
                 className="text-xs h-8 px-3 gap-1.5"
+                data-onboarding-step="schedule"
               >
                 <Sparkles className="h-3 w-3" />
                 Auto
@@ -119,6 +120,7 @@ export function CalendarHeader({
             size="sm"
             onClick={onAutoSchedule}
             className="text-xs h-7 px-2.5 gap-1.5"
+            data-onboarding-step="schedule"
           >
             <Sparkles className="h-3 w-3" />
             Auto-Schedule

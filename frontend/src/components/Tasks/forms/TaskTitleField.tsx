@@ -1,10 +1,12 @@
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { hasFieldError, getFieldError } from '@/utils/formUtils';
+import type { UseFormRegister, FieldErrors } from 'react-hook-form';
+import type { TaskFormData } from '@/hooks/useTaskForm';
 
 interface TaskTitleFieldProps {
-  register: any;
-  errors: any;
+  register: UseFormRegister<TaskFormData>;
+  errors: FieldErrors<TaskFormData>;
   id?: string;
   className?: string;
   placeholder?: string;

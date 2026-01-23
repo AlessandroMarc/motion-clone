@@ -97,13 +97,13 @@ export function DayColumnGrid({
           }}
         >
           <div
-            className="h-6 border-b border-border/10 cursor-pointer hover:bg-primary/5 transition-colors relative z-10"
+            className="h-8 border-b border-border/10 cursor-pointer hover:bg-primary/5 transition-colors relative z-10"
             onClick={() => onGridCellClick(date, hour, 0)}
             onDragOver={e => handleDragOver(e, hour, 0)}
             onDrop={e => handleDrop(e, hour, 0)}
           />
           <div
-            className="h-6 cursor-pointer hover:bg-primary/5 transition-colors relative z-10"
+            className="h-8 cursor-pointer hover:bg-primary/5 transition-colors relative z-10"
             onClick={() => onGridCellClick(date, hour, 30)}
             onDragOver={e => handleDragOver(e, hour, 30)}
             onDrop={e => handleDrop(e, hour, 30)}

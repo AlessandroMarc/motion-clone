@@ -20,7 +20,6 @@ export default function TasksPage() {
   ) => {
     setIsCreatingTask(true);
     try {
-      logger.debug('TasksPage: handleTaskCreate called with:', taskData);
       await taskService.createTask({
         title: taskData.title,
         description: taskData.description,

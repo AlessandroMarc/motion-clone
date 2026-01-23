@@ -5,7 +5,11 @@ import type {
   UpdateCalendarEventInput,
 } from '@shared/types';
 import { request } from './apiClient';
-import { toCalendarEventUnion, toCalendarEventUnions } from './transforms';
+import {
+  toCalendarEventUnion,
+  toCalendarEventUnions,
+  type UnknownRecord,
+} from './transforms';
 
 class CalendarService {
   async getAllCalendarEvents(): Promise<CalendarEventUnion[]> {
@@ -15,7 +19,7 @@ class CalendarService {
       throw new Error(response.error || 'Failed to fetch calendar events');
     }
 
-    return toCalendarEventUnions(response.data as any[]);
+    return toCalendarEventUnions(response.data as unknown as UnknownRecord[]);
   }
 
   async getCalendarEventsByDateRange(
@@ -30,7 +34,7 @@ class CalendarService {
       throw new Error(response.error || 'Failed to fetch calendar events');
     }
 
-    return toCalendarEventUnions(response.data as any[]);
+    return toCalendarEventUnions(response.data as unknown as UnknownRecord[]);
   }
 
   async getCalendarEventsByTaskId(
@@ -46,9 +50,9 @@ class CalendarService {
       );
     }
 
-    return toCalendarEventUnions(response.data as any[]).filter(
-      isCalendarEventTask
-    ) as CalendarEventTask[];
+    return toCalendarEventUnions(
+      response.data as unknown as UnknownRecord[]
+    ).filter(isCalendarEventTask) as CalendarEventTask[];
   }
 
   async getCalendarEventById(id: string): Promise<CalendarEventUnion> {
@@ -60,7 +64,7 @@ class CalendarService {
       throw new Error(response.error || 'Failed to fetch calendar event');
     }
 
-    return toCalendarEventUnion(response.data as any);
+    return toCalendarEventUnion(response.data as unknown as UnknownRecord);
   }
 
   async createCalendarEvent(
@@ -92,7 +96,7 @@ class CalendarService {
       );
     }
 
-    return toCalendarEventUnion(response.data as any);
+    return toCalendarEventUnion(response.data as unknown as UnknownRecord);
   }
 
   async updateCalendarEvent(
@@ -130,7 +134,7 @@ class CalendarService {
       );
     }
 
-    return toCalendarEventUnion(response.data as any);
+    return toCalendarEventUnion(response.data as unknown as UnknownRecord);
   }
 
   async deleteCalendarEvent(id: string): Promise<boolean> {
@@ -146,10 +150,61 @@ class CalendarService {
   }
 
   /**
-   * Batch create multiple calendar events
+   * Batch delete multiple calendar events using the backend batch endpoint
    * Returns array of results with success/failure status for each event
-   * Creates events sequentially to avoid overlap issues
-   * If an event fails due to overlap, it will be skipped and the next event will be tried
+   */
+  async deleteCalendarEventsBatch(
+    ids: string[]
+  ): Promise<
+    Array<{
+      success: boolean;
+      id: string;
+      error?: string;
+    }>
+  > {
+    if (ids.length === 0) {
+      return [];
+    }
+
+    try {
+      const response = await request<{
+        results: Array<{
+          success: boolean;
+          id: string;
+          error?: string;
+        }>;
+        total: number;
+        successful: number;
+        failed: number;
+      }>('/calendar-events/batch', {
+        method: 'DELETE',
+        body: JSON.stringify({ ids }),
+      });
+
+      if (!response.success || !response.data) {
+        throw new Error(
+          response.error || 'Failed to delete calendar events batch'
+        );
+      }
+
+      return response.data.results;
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : 'Unknown error';
+
+      // If batch delete fails entirely, return failure for all events
+      return ids.map(id => ({
+        success: false,
+        id,
+        error: errorMessage,
+      }));
+    }
+  }
+
+  /**
+   * Batch create multiple calendar events using the backend batch endpoint
+   * Returns array of results with success/failure status for each event
+   * The backend handles overlap checking and excludes events in the same batch
    */
   async createCalendarEventsBatch(
     events: Array<{
@@ -169,40 +224,45 @@ class CalendarService {
       index: number;
     }>
   > {
-    // Create events sequentially to ensure overlap checks work correctly
-    // Each event is checked against all previously created events
-    const results: Array<{
-      success: boolean;
-      event?: CalendarEventUnion;
-      error?: string;
-      index: number;
-    }> = [];
+    try {
+      // Send all events as an array to the batch endpoint
+      const response = await request<{
+        results: Array<{
+          success: boolean;
+          event?: CalendarEventUnion;
+          error?: string;
+          index: number;
+        }>;
+        total: number;
+        successful: number;
+        failed: number;
+      }>('/calendar-events', {
+        method: 'POST',
+        body: JSON.stringify(events),
+      });
 
-    for (let index = 0; index < events.length; index++) {
-      const eventData = events[index];
-      try {
-        const event = await this.createCalendarEvent(eventData);
-        results.push({ success: true, event, index });
-      } catch (error) {
-        const errorMessage =
-          error instanceof Error ? error.message : 'Unknown error';
-        const isOverlapError = errorMessage.includes('overlaps');
-
-        results.push({
-          success: false,
-          error: errorMessage,
-          index,
-        });
-
-        // If it's an overlap error, continue with next event
-        // The scheduling logic should have prevented this, but we'll skip it anyway
-        if (isOverlapError) {
-          console.log('Overlap error:', errorMessage);
-        }
+      if (!response.success || !response.data) {
+        throw new Error(response.error || 'Failed to create calendar events batch');
       }
-    }
 
-    return results;
+      // Transform events in results to CalendarEventUnion format
+      const transformedResults = response.data.results.map(result => ({
+        ...result,
+        event: result.event ? toCalendarEventUnion(result.event as unknown as UnknownRecord) : undefined,
+      }));
+
+      return transformedResults;
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : 'Unknown error';
+
+      // If batch creation fails entirely, return failure for all events
+      return events.map((_, index) => ({
+        success: false,
+        error: errorMessage,
+        index,
+      }));
+    }
   }
 }
 

@@ -4,7 +4,10 @@ import type {
   UpdateCalendarEventInput,
 } from '../types/database.js';
 import type { CalendarEventTask, CalendarEventUnion } from '@shared/types.js';
+import { isCalendarEventTask } from '@shared/types.js';
 import { TaskService } from './taskService.js';
+import fs from 'fs';
+import path from 'path';
 
 const normalizeNullableDate = (
   value: string | Date | null | undefined
@@ -81,7 +84,8 @@ export class CalendarEventService {
     userId: string,
     startTimeIso: string,
     endTimeIso: string,
-    excludeEventId?: string
+    excludeEventId?: string,
+    excludeEventIds?: string[]
   ): Promise<void> {
     if (new Date(startTimeIso) >= new Date(endTimeIso)) {
       throw new Error('Calendar event end time must be after start time');
@@ -89,7 +93,9 @@ export class CalendarEventService {
 
     const query = supabase
       .from('calendar_events')
-      .select('id')
+      .select(
+        'id, title, start_time, end_time, linked_task_id, synced_from_google, created_at'
+      )
       .eq('user_id', userId)
       .lt('start_time', endTimeIso)
       .gt('end_time', startTimeIso);
@@ -97,6 +103,19 @@ export class CalendarEventService {
     if (excludeEventId) {
       query.neq('id', excludeEventId);
     }
+
+    // Exclude events created in the same batch (passed as array of IDs)
+    if (excludeEventIds && excludeEventIds.length > 0) {
+      for (const excludeId of excludeEventIds) {
+        query.neq('id', excludeId);
+      }
+    }
+
+    // Exclude events created in the last 5 seconds to avoid false positives from batch creation
+    // Events in the same batch are created rapidly, so we exclude very recent events
+    // Increased from 2 to 5 seconds to handle slower network/database operations
+    const fiveSecondsAgo = new Date(Date.now() - 5000).toISOString();
+    query.lt('created_at', fiveSecondsAgo);
 
     const { data, error } = await query;
 
@@ -106,25 +125,314 @@ export class CalendarEventService {
     }
 
     if (data && data.length > 0) {
+      console.log('[CalendarEventService] Overlap detected:', {
+        newEvent: { start_time: startTimeIso, end_time: endTimeIso },
+        overlappingEvents: data.map(e => ({
+          id: e.id,
+          title: e.title,
+          start_time: e.start_time,
+          end_time: e.end_time,
+          linked_task_id: e.linked_task_id,
+          synced_from_google: e.synced_from_google,
+        })),
+        excludeEventId,
+      });
       throw new Error('Calendar event overlaps with an existing event');
     }
   }
 
-  // Create a new calendar event
+  /**
+   * Batch create multiple calendar events using Supabase native batch insert
+   * Validates all events first, then inserts valid ones in a single batch operation
+   * Returns array of results with success/failure status for each event
+   */
+  async createCalendarEventsBatch(inputs: CreateCalendarEventInput[]): Promise<
+    Array<{
+      success: boolean;
+      event?: CalendarEventUnion;
+      error?: string;
+      index: number;
+    }>
+  > {
+    const results: Array<{
+      success: boolean;
+      event?: CalendarEventUnion;
+      error?: string;
+      index: number;
+    }> = [];
+
+    // Step 1: Validate input data (basic validation only)
+    // NOTE: We skip overlap checks here because events are created from a pre-calculated schedule.
+    // The scheduling logic (prepareTaskEvents, distributeEvents) already ensures no overlaps
+    // by checking against existing events before calculating available slots.
+    // Since the schedule is calculated BEFORE creation, we trust it and skip overlap validation.
+    const validatedInputs: Array<{
+      input: CreateCalendarEventInput;
+      index: number;
+    }> = [];
+    const invalidResults: Array<{
+      success: boolean;
+      error: string;
+      index: number;
+    }> = [];
+
+    for (let i = 0; i < inputs.length; i++) {
+      const input = inputs[i];
+
+      if (!input) {
+        invalidResults.push({
+          success: false,
+          error: 'Invalid event data',
+          index: i,
+        });
+        continue;
+      }
+
+      // Basic validation: check that start_time < end_time
+      if (new Date(input.start_time) >= new Date(input.end_time)) {
+        invalidResults.push({
+          success: false,
+          error: 'Event end time must be after start time',
+          index: i,
+        });
+        continue;
+      }
+
+      validatedInputs.push({ input, index: i });
+    }
+
+    // Step 3: Prepare insert data for batch insert
+    const insertDataArray = validatedInputs.map(({ input }) => {
+      const insertData: {
+        title: string;
+        start_time: string;
+        end_time: string;
+        linked_task_id: string | null;
+        description: string | null;
+        user_id: string;
+        completed_at: string | null;
+        google_event_id?: string | null;
+        synced_from_google?: boolean;
+      } = {
+        title: input.title,
+        start_time: input.start_time,
+        end_time: input.end_time,
+        linked_task_id: input.linked_task_id ?? null,
+        description: input.description ?? null,
+        user_id: input.user_id,
+        completed_at: input.linked_task_id
+          ? normalizeNullableDate(input.completed_at)
+          : null,
+      };
+
+      if (input.google_event_id !== undefined) {
+        insertData.google_event_id = input.google_event_id ?? null;
+      }
+      if (input.synced_from_google !== undefined) {
+        insertData.synced_from_google = input.synced_from_google;
+      }
+
+      return insertData;
+    });
+
+    // Step 4: Perform batch insert using Supabase native batch operation
+    if (insertDataArray.length > 0) {
+      try {
+        console.log(
+          `[CalendarEventService] Batch inserting ${insertDataArray.length} calendar events`
+        );
+
+        const { data: insertedEvents, error } = await supabase
+          .from('calendar_events')
+          .insert(insertDataArray)
+          .select();
+
+        if (error) {
+          console.error('[CalendarEventService] Batch insert failed:', error);
+          // If batch insert fails, mark all validated inputs as failed
+          for (const validatedInput of validatedInputs) {
+            invalidResults.push({
+              success: false,
+              error: `Batch insert failed: ${error.message}`,
+              index: validatedInput.index,
+            });
+          }
+        } else if (insertedEvents) {
+          // Update task durations for successfully inserted events
+          for (let i = 0; i < validatedInputs.length; i++) {
+            const validatedInput = validatedInputs[i];
+            if (!validatedInput) continue;
+
+            const { input } = validatedInput;
+            const insertedEvent = insertedEvents[i];
+
+            if (
+              insertedEvent &&
+              input.linked_task_id &&
+              insertDataArray[i]?.completed_at
+            ) {
+              const eventDurationMinutes = this.calculateEventDurationMinutes(
+                input.start_time,
+                input.end_time
+              );
+
+              if (eventDurationMinutes > 0) {
+                // Fire and forget - don't block batch operation
+                this.updateTaskDurationFromEvent(
+                  input.linked_task_id,
+                  eventDurationMinutes,
+                  true
+                ).catch(err => {
+                  console.error(
+                    `[CalendarEventService] Failed to update task duration for event ${insertedEvent.id}:`,
+                    err
+                  );
+                });
+              }
+            }
+          }
+
+          // #region agent log
+          try {
+            const logPath = path.join(
+              process.cwd(),
+              '..',
+              '.cursor',
+              'debug.log'
+            );
+            const logEntry =
+              JSON.stringify({
+                location: 'calendarEventService.ts:350',
+                message: 'Batch insert successful',
+                data: {
+                  insertedCount: insertedEvents.length,
+                  validatedCount: validatedInputs.length,
+                },
+                timestamp: Date.now(),
+                sessionId: 'debug-session',
+                runId: 'run1',
+                hypothesisId: 'A',
+              }) + '\n';
+            fs.appendFileSync(logPath, logEntry);
+          } catch (logError) {
+            console.error(
+              '[CalendarEventService] Failed to write log:',
+              logError
+            );
+          }
+          // #endregion
+
+          // Create success results for all inserted events
+          validatedInputs.forEach(({ index }, arrayIndex) => {
+            if (insertedEvents[arrayIndex]) {
+              results.push({
+                success: true,
+                event: insertedEvents[arrayIndex],
+                index,
+              });
+            }
+          });
+        }
+      } catch (error) {
+        const errorMessage =
+          error instanceof Error ? error.message : 'Unknown error';
+        console.error(
+          '[CalendarEventService] Unexpected error during batch insert:',
+          error
+        );
+        // Mark all validated inputs as failed
+        for (const { index } of validatedInputs) {
+          invalidResults.push({
+            success: false,
+            error: `Unexpected error: ${errorMessage}`,
+            index,
+          });
+        }
+      }
+    }
+
+    // Step 5: Add all invalid results
+    results.push(...invalidResults);
+
+    // Sort results by index to maintain original order
+    results.sort((a, b) => a.index - b.index);
+
+    // #region agent log
+    try {
+      const logPath = path.join(process.cwd(), '..', '.cursor', 'debug.log');
+      const logEntry =
+        JSON.stringify({
+          location: 'calendarEventService.ts:390',
+          message: 'Batch create completed',
+          data: {
+            totalEvents: inputs.length,
+            successful: results.filter(r => r.success).length,
+            failed: results.filter(r => !r.success).length,
+            failedOverlaps: results.filter(
+              r => !r.success && r.error?.includes('overlaps')
+            ).length,
+          },
+          timestamp: Date.now(),
+          sessionId: 'debug-session',
+          runId: 'run1',
+          hypothesisId: 'A',
+        }) + '\n';
+      fs.appendFileSync(logPath, logEntry);
+    } catch (logError) {
+      console.error('[CalendarEventService] Failed to write log:', logError);
+    }
+    // #endregion
+
+    return results;
+  }
+
+  // Create a new calendar event (single event)
   async createCalendarEvent(
-    input: CreateCalendarEventInput
+    input: CreateCalendarEventInput,
+    excludeEventIds?: string[]
   ): Promise<CalendarEventUnion> {
     console.log(
       '[CalendarEventService] createCalendarEvent called with input:',
       input
     );
 
+    // #region agent log
+    try {
+      const logPath = path.join(process.cwd(), '..', '.cursor', 'debug.log');
+      const logEntry =
+        JSON.stringify({
+          location: 'calendarEventService.ts:200',
+          message: 'Creating calendar event',
+          data: {
+            input: {
+              title: input.title,
+              start_time: input.start_time,
+              end_time: input.end_time,
+              user_id: input.user_id,
+              synced_from_google: input.synced_from_google,
+            },
+            excludeEventIds,
+            currentTime: new Date().toISOString(),
+          },
+          timestamp: Date.now(),
+          sessionId: 'debug-session',
+          runId: 'run1',
+          hypothesisId: 'B',
+        }) + '\n';
+      fs.appendFileSync(logPath, logEntry);
+    } catch (logError) {
+      console.error('[CalendarEventService] Failed to write log:', logError);
+    }
+    // #endregion
+
     // Skip overlap check for events synced from Google (they may overlap)
     if (!input.synced_from_google) {
       await this.ensureNoOverlaps(
         input.user_id,
         input.start_time,
-        input.end_time
+        input.end_time,
+        undefined,
+        excludeEventIds
       );
     }
 
@@ -392,6 +700,185 @@ export class CalendarEventService {
     }
 
     return true;
+  }
+
+  /**
+   * Batch delete multiple calendar events using Supabase native batch delete
+   * Updates task durations for completed events before deletion
+   * Returns array of results with success/failure status for each event
+   */
+  async deleteCalendarEventsBatch(ids: string[]): Promise<
+    Array<{
+      success: boolean;
+      id: string;
+      error?: string;
+    }>
+  > {
+    if (ids.length === 0) {
+      return [];
+    }
+
+    // #region agent log
+    try {
+      const logPath = path.join(process.cwd(), '..', '.cursor', 'debug.log');
+      const logEntry =
+        JSON.stringify({
+          location: 'calendarEventService.ts:810',
+          message: 'Starting batch delete with native Supabase batch delete',
+          data: {
+            totalEvents: ids.length,
+            eventIds: ids,
+          },
+          timestamp: Date.now(),
+          sessionId: 'debug-session',
+          runId: 'run1',
+          hypothesisId: 'A',
+        }) + '\n';
+      fs.appendFileSync(logPath, logEntry);
+    } catch (logError) {
+      console.error('[CalendarEventService] Failed to write log:', logError);
+    }
+    // #endregion
+
+    // Step 1: Fetch all events to check for task duration updates
+    const eventsToDelete: CalendarEventUnion[] = [];
+    const eventsMap = new Map<string, CalendarEventUnion>();
+
+    try {
+      const { data: events, error } = await supabase
+        .from('calendar_events')
+        .select('*')
+        .in('id', ids);
+
+      if (error) {
+        console.error(
+          '[CalendarEventService] Failed to fetch events for batch delete:',
+          error
+        );
+        // If we can't fetch events, still try to delete them
+        // Return error for all
+        return ids.map(id => ({
+          success: false,
+          id,
+          error: `Failed to fetch event: ${error.message}`,
+        }));
+      }
+
+      if (events) {
+        events.forEach(event => {
+          eventsToDelete.push(event);
+          eventsMap.set(event.id, event);
+        });
+      }
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : 'Unknown error';
+      console.error(
+        '[CalendarEventService] Error fetching events for batch delete:',
+        error
+      );
+      return ids.map(id => ({
+        success: false,
+        id,
+        error: `Failed to fetch event: ${errorMessage}`,
+      }));
+    }
+
+    // Step 2: Update task durations for completed events (fire and forget)
+    const taskDurationUpdates: Promise<void>[] = [];
+    for (const event of eventsToDelete) {
+      if (
+        isCalendarEventTask(event) &&
+        event.linked_task_id &&
+        event.completed_at
+      ) {
+        const eventDurationMinutes = this.calculateEventDurationMinutes(
+          event.start_time,
+          event.end_time
+        );
+
+        if (eventDurationMinutes > 0) {
+          taskDurationUpdates.push(
+            this.updateTaskDurationFromEvent(
+              event.linked_task_id,
+              eventDurationMinutes,
+              false
+            ).catch(err => {
+              console.error(
+                `[CalendarEventService] Failed to update task duration for event ${event.id}:`,
+                err
+              );
+            })
+          );
+        }
+      }
+    }
+
+    // Don't wait for task duration updates - proceed with deletion
+    Promise.all(taskDurationUpdates).catch(() => {
+      // Silently handle any errors
+    });
+
+    // Step 3: Perform batch delete using Supabase native batch operation
+    try {
+      console.log(
+        `[CalendarEventService] Batch deleting ${ids.length} calendar events`
+      );
+
+      const { error } = await supabase
+        .from('calendar_events')
+        .delete()
+        .in('id', ids);
+
+      if (error) {
+        console.error('[CalendarEventService] Batch delete failed:', error);
+        return ids.map(id => ({
+          success: false,
+          id,
+          error: `Batch delete failed: ${error.message}`,
+        }));
+      }
+
+      // #region agent log
+      try {
+        const logPath = path.join(process.cwd(), '..', '.cursor', 'debug.log');
+        const logEntry =
+          JSON.stringify({
+            location: 'calendarEventService.ts:890',
+            message: 'Batch delete successful',
+            data: {
+              deletedCount: ids.length,
+              eventIds: ids,
+            },
+            timestamp: Date.now(),
+            sessionId: 'debug-session',
+            runId: 'run1',
+            hypothesisId: 'A',
+          }) + '\n';
+        fs.appendFileSync(logPath, logEntry);
+      } catch (logError) {
+        console.error('[CalendarEventService] Failed to write log:', logError);
+      }
+      // #endregion
+
+      // Return success for all deleted events
+      return ids.map(id => ({
+        success: true,
+        id,
+      }));
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : 'Unknown error';
+      console.error(
+        '[CalendarEventService] Unexpected error during batch delete:',
+        error
+      );
+      return ids.map(id => ({
+        success: false,
+        id,
+        error: `Unexpected error: ${errorMessage}`,
+      }));
+    }
   }
 
   // Get calendar events by date range

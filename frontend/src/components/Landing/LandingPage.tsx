@@ -1,7 +1,7 @@
 'use client';
 
 import { useAuth } from '@/contexts/AuthContext';
-import { landingContent } from '@/content/landing';
+import { landingContent } from '@/content/content';
 import { ScreenshotShowcase } from './ScreenshotShowcase';
 import { HeroSection } from './HeroSection';
 import {

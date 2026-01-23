@@ -33,10 +33,10 @@ export async function request<T>(
   endpoint: string,
   options: RequestInit = {}
 ): Promise<ApiResponse<T>> {
-  try {
-    const baseUrl = resolveApiBaseUrl();
-    const url = `${baseUrl}${endpoint}`;
+  const baseUrl = resolveApiBaseUrl();
+  const url = `${baseUrl}${endpoint}`;
 
+  try {
     const headers = new Headers(options.headers);
 
     if (shouldSetJsonContentType(options)) {
@@ -70,10 +70,22 @@ export async function request<T>(
     const text = await response.text();
     return { success: true, message: 'OK', data: text as unknown as T };
   } catch (error) {
+    // Provide more specific error messages for common network errors
+    let errorMessage = 'Unknown error';
+    if (error instanceof Error) {
+      errorMessage = error.message;
+      // Check for common network error patterns
+      if (errorMessage.includes('Failed to fetch') || errorMessage.includes('NetworkError')) {
+        errorMessage = `Unable to connect to backend server at ${baseUrl}. Please ensure the backend is running on port 3003.`;
+      } else if (errorMessage.includes('CORS')) {
+        errorMessage = 'CORS error: The backend server may not be configured to allow requests from this origin.';
+      }
+    }
+
     return {
       success: false,
       message: 'Failed to connect to the server',
-      error: error instanceof Error ? error.message : 'Unknown error',
+      error: errorMessage,
     };
   }
 }

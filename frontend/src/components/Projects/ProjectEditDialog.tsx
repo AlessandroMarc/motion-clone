@@ -24,6 +24,7 @@ import {
 } from '@/components/ui/select';
 import { projectService } from '@/services/projectService';
 import type { Project, WorkItemStatus } from '@shared/types';
+import type { ProjectFormData } from '@/hooks/useProjectForm';
 
 // Helper function to format date for input field
 const formatDateForInput = (date: Date | null): string => {
@@ -47,7 +48,7 @@ export function ProjectEditDialog({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [status, setStatus] = useState(project.status);
 
-  const form = useForm({
+  const form = useForm<ProjectFormData>({
     defaultValues: {
       name: project.name,
       description: project.description || '',
@@ -73,7 +74,7 @@ export function ProjectEditDialog({
     }
   }, [isDialogOpen, project, reset]);
 
-  const onSubmit = async (data: any) => {
+  const onSubmit = async (data: ProjectFormData) => {
     setIsSubmitting(true);
     try {
       const updateData = {

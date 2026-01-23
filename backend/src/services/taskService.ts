@@ -40,13 +40,23 @@ export class TaskService {
 
     const status = this.determineStatus(normalizedPlanned, normalizedActual);
 
+    // Handle both Date objects and ISO strings (from JSON)
+    let dueDateString: string | null = null;
+    if (input.due_date !== null && input.due_date !== undefined) {
+      if (typeof input.due_date === 'string') {
+        dueDateString = input.due_date;
+      } else if (input.due_date instanceof Date) {
+        dueDateString = input.due_date.toISOString();
+      }
+    }
+
     const { data, error } = await supabase
       .from('tasks')
       .insert([
         {
           title: input.title,
           description: input.description,
-          due_date: input.due_date?.toISOString(),
+          due_date: dueDateString,
           priority: input.priority,
           status,
           dependencies: input.dependencies || [],
@@ -125,8 +135,18 @@ export class TaskService {
     if (input.title !== undefined) updateData.title = input.title;
     if (input.description !== undefined)
       updateData.description = input.description;
-    if (input.due_date !== undefined)
-      updateData.due_date = input.due_date?.toISOString() ?? null;
+    if (input.due_date !== undefined) {
+      // Handle both Date objects and ISO strings (from JSON)
+      if (input.due_date === null) {
+        updateData.due_date = null;
+      } else if (typeof input.due_date === 'string') {
+        updateData.due_date = input.due_date;
+      } else if (input.due_date instanceof Date) {
+        updateData.due_date = input.due_date.toISOString();
+      } else {
+        updateData.due_date = null;
+      }
+    }
     if (input.priority !== undefined) updateData.priority = input.priority;
     if (input.dependencies !== undefined)
       updateData.dependencies = input.dependencies;

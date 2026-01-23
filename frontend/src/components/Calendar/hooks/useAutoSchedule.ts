@@ -80,24 +80,28 @@ export function useAutoSchedule(
         event => isCalendarEventTask(event) && !event.completed_at
       );
 
-      logger.debug(
-        `[useAutoSchedule] Deleting ${nonCompletedTaskEvents.length} non-completed task events before rescheduling`,
-        {
-          eventIds: nonCompletedTaskEvents.map(e => e.id),
-          eventTasks: nonCompletedTaskEvents.map(e =>
-            isCalendarEventTask(e) ? e.linked_task_id : null
-          ),
+
+      // Use batch delete for better performance
+      if (nonCompletedTaskEvents.length > 0) {
+        const eventIds = nonCompletedTaskEvents.map(e => e.id);
+        const deleteResults = await calendarService.deleteCalendarEventsBatch(
+          eventIds
+        );
+
+        const failedDeletes = deleteResults.filter(r => !r.success);
+        if (failedDeletes.length > 0) {
+          logger.error(
+            `[useAutoSchedule] Failed to delete ${failedDeletes.length} events:`,
+            failedDeletes.map(r => ({ id: r.id, error: r.error }))
+          );
         }
-      );
+      }
 
-      const deletePromises = nonCompletedTaskEvents.map(event =>
-        calendarService.deleteCalendarEvent(event.id).catch(err => {
-          logger.error(`Failed to delete event ${event.id}:`, err);
-          return null;
-        })
-      );
+      // Refresh events again after deletion to ensure we have the latest state
+      const eventsAfterDeletion = await refreshEvents();
 
-      await Promise.all(deletePromises);
+      // Add a small delay to ensure deletion is fully processed
+      await new Promise(resolve => setTimeout(resolve, 500));
 
       // Now create the new events
       const results = await calendarService.createCalendarEventsBatch(

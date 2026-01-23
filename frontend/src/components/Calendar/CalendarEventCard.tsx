@@ -28,6 +28,9 @@ export function CalendarEventCard({
 }: CalendarEventCardProps) {
   const isTaskEvent = isCalendarEventTask(event);
   const isCompleted = isTaskEvent && !!event.completed_at;
+  const now = new Date();
+  const eventEnd = new Date(event.end_time);
+  const isPast = eventEnd < now;
 
   // Check if event is after deadline
   const isAfterDeadline =
@@ -49,7 +52,11 @@ export function CalendarEventCard({
               ? 'bg-primary/40 text-primary-foreground/70'
               : 'bg-primary/70 text-primary-foreground shadow-sm hover:bg-primary/80'
           : 'bg-muted text-muted-foreground hover:bg-muted/80',
-        isCompleted && 'opacity-60'
+        isCompleted && 'opacity-60',
+        // Grey out past events
+        isPast &&
+          !isCompleted &&
+          'opacity-20 grayscale dark:opacity-20 dark:grayscale'
       )}
       style={style}
     >

@@ -28,7 +28,7 @@ export function CalendarTasksPanel({ currentWeekStart, refreshTrigger }: Calenda
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
 
   const isMobile = useIsMobile();
-  const { user } = useAuth();
+  const { user, activeSchedule } = useAuth();
 
   const weekDates = useMemo(() => {
     const start = new Date(currentWeekStart);
@@ -139,23 +139,33 @@ export function CalendarTasksPanel({ currentWeekStart, refreshTrigger }: Calenda
     );
   }
 
+  // Filter out planned tasks - only show unplanned tasks in the drawer
+  const unplannedTasks = tasks.filter(task => !plannedTaskIds.has(task.id));
+
+  if (unplannedTasks.length === 0) {
+    return (
+      <div className="text-xs text-muted-foreground p-4 text-center bg-muted/30 rounded-md">
+        No unplanned tasks to schedule
+      </div>
+    );
+  }
+
   return (
     <>
       <div className="space-y-1.5">
-        {tasks.map((task) => {
-          const isPlanned = plannedTaskIds.has(task.id);
+        {unplannedTasks.map((task) => {
           const project = task.project_id ? projectsById[task.project_id] : undefined;
-          const canDrag = !isPlanned && !isMobile && task.status !== 'completed';
+          const canDrag = !isMobile && task.status !== 'completed';
 
           return (
             <CompactTaskCard
               key={task.id}
               task={task}
-              isPlanned={isPlanned}
+              isPlanned={false}
               project={project}
               showDragHandle={canDrag}
               draggable={canDrag}
-              disabled={isPlanned}
+              disabled={false}
               onDragStart={(e) => {
                 e.dataTransfer.setData('application/x-task-id', task.id);
                 e.dataTransfer.setData('application/x-task-title', task.title);
@@ -175,6 +185,7 @@ export function CalendarTasksPanel({ currentWeekStart, refreshTrigger }: Calenda
         open={scheduleDialogOpen}
         onOpenChange={setScheduleDialogOpen}
         onSchedule={handleScheduleTask}
+        activeSchedule={activeSchedule}
       />
     </>
   );

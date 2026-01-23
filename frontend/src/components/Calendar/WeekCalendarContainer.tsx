@@ -18,6 +18,7 @@ import {
 import { useWeekCalendarNavigation } from './useWeekCalendarNavigation';
 import { logger } from '@/lib/logger';
 import { WeekCalendarView } from './WeekCalendarView';
+import { HOUR_PX } from './dayColumnLayout';
 
 interface WeekCalendarContainerProps {
   onTaskDropped?: () => void;
@@ -42,35 +43,6 @@ export function WeekCalendarContainer({
       : new Date(navigation.currentDateKey + 'T00:00:00');
     return getWeekDates(dateToUse);
   }, [navigation.currentDateKey, isMobile, navigation.currentDay]);
-
-  // One-time initial scroll to center around mid-day using an in-grid sentinel
-  useEffect(() => {
-    if (hasAutoScrolledRef.current) return;
-    const sentinel = scrollSentinelRef.current;
-    if (!sentinel) return;
-
-    const run = () => {
-      if (window.scrollY > 50) return;
-      try {
-        sentinel.scrollIntoView({ block: 'center', behavior: 'auto' });
-      } catch (e) {
-        logger.debug('[WeekCalendar] Error scrolling to sentinel', e);
-      }
-      hasAutoScrolledRef.current = true;
-    };
-
-    let id2: number | null = null;
-    const id1 = requestAnimationFrame(() => {
-      id2 = requestAnimationFrame(() => {
-        setTimeout(run, 0);
-      });
-    });
-
-    return () => {
-      if (id1) cancelAnimationFrame(id1);
-      if (id2) cancelAnimationFrame(id2);
-    };
-  }, []);
 
   const { events, setEvents, eventsByDay, loading, error, refreshEvents } =
     useCalendarEvents(weekDates);
@@ -137,6 +109,66 @@ export function WeekCalendarContainer({
     return { 'day-0': [] };
   }, [isMobile, eventsByDay, weekDates, navigation.currentDay]);
 
+  // Calculate sentinel hour based on active schedule's working hours start
+  // Default to 9am if no schedule is set
+  const sentinelHour = useMemo(() => {
+    return activeSchedule?.working_hours_start ?? 9;
+  }, [activeSchedule]);
+
+  // Reset scroll flag when sentinel hour changes
+  useEffect(() => {
+    hasAutoScrolledRef.current = false;
+  }, [sentinelHour]);
+
+  // One-time initial scroll to center around working hours start using an in-grid sentinel
+  useEffect(() => {
+    if (hasAutoScrolledRef.current) {
+      return;
+    }
+
+    const scrollContainer = gridRef.current;
+    const sentinel = scrollSentinelRef.current;
+    
+    if (!scrollContainer || !sentinel) {
+      return;
+    }
+
+    const run = () => {
+      const currentScrollTop = scrollContainer.scrollTop;
+      if (currentScrollTop > 50) {
+        return;
+      }
+      
+      try {
+        const containerHeight = scrollContainer.clientHeight;
+        // Calculate scroll position directly: sentinel is at sentinelHour * HOUR_PX from top of scrollable content
+        // Center it in viewport: scrollTarget = sentinelPosition - (viewportHeight / 2)
+        const sentinelPosition = sentinelHour * HOUR_PX;
+        const scrollTarget = sentinelPosition - (containerHeight / 2);
+        
+        scrollContainer.scrollTo({
+          top: Math.max(0, scrollTarget),
+          behavior: 'auto'
+        });
+        
+        hasAutoScrolledRef.current = true;
+      } catch (e) {
+      }
+    };
+
+    let id2: number | null = null;
+    const id1 = requestAnimationFrame(() => {
+      id2 = requestAnimationFrame(() => {
+        setTimeout(run, 100);
+      });
+    });
+
+    return () => {
+      if (id1) cancelAnimationFrame(id1);
+      if (id2) cancelAnimationFrame(id2);
+    };
+  }, [sentinelHour]);
+
   if (loading) return <CalendarSkeleton />;
   if (error) return <ErrorState message={error} onRetry={refreshEvents} />;
 
@@ -157,7 +189,7 @@ export function WeekCalendarContainer({
       setDayRef={(idx, el) => (dayRefs.current[idx] = el)}
       gridRef={gridRef}
       scrollSentinelRef={scrollSentinelRef}
-      sentinelHour={13}
+      sentinelHour={sentinelHour}
       onExternalTaskDrop={handleExternalTaskDrop}
       onExternalTaskDragOver={handleExternalTaskDragOver}
       tasksMap={tasksMap}
@@ -167,7 +199,7 @@ export function WeekCalendarContainer({
       onCurrentWeek={navigation.goCurrentWeek}
       onPreviousDay={navigation.goPreviousDay}
       onNextDay={navigation.goNextDay}
-      dialogs={dialogs as any}
+      dialogs={dialogs}
       user={user ? { id: user.id } : null}
       activeSchedule={activeSchedule}
       autoScheduleOpen={autoScheduleOpen}

@@ -11,6 +11,7 @@ import { FolderPlus } from 'lucide-react';
 import {
   useProjectForm,
   type ProjectCreateFormProps,
+  type ProjectFormData,
 } from '@/hooks/useProjectForm';
 import { ProjectNameField } from './ProjectNameField';
 import { ProjectDescriptionField } from './ProjectDescriptionField';
@@ -31,7 +32,7 @@ export function ProjectCreateCardForm({
     handleCancel,
   } = useProjectForm(onProjectCreate);
 
-  const handleFormSubmit = async (data: any) => {
+  const handleFormSubmit = async (data: ProjectFormData) => {
     await onSubmit(data);
     setIsExpanded(false);
   };

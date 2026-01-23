@@ -1,11 +1,13 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import type { CalendarEventUnion, Task } from '@shared/types';
 import { isSameDay } from '@/utils/calendarUtils';
 import { computeOverlapLayout } from './dayColumnLayout';
 import { DayColumnEvents } from './DayColumnEvents';
 import { DayColumnGrid } from './DayColumnGrid';
 import { DayColumnEmptyState } from './DayColumnEmptyState';
+import { HOUR_PX } from './dayColumnLayout';
 
 interface DayColumnProps {
   date: Date;
@@ -37,7 +39,7 @@ interface DayColumnProps {
   tasksMap?: Map<string, Task>;
 }
 
-export function DayColumn({
+function DayColumn({
   date,
   dayIndex,
   dayEvents,
@@ -53,6 +55,19 @@ export function DayColumn({
   tasksMap,
 }: DayColumnProps) {
   const hours = Array.from({ length: 24 }, (_, i) => i);
+  const [currentTime, setCurrentTime] = useState(new Date());
+  const isToday = isSameDay(date, currentTime);
+
+  // Update current time every minute
+  useEffect(() => {
+    if (!isToday) return;
+
+    const interval = setInterval(() => {
+      setCurrentTime(new Date());
+    }, 60000); // Update every minute
+
+    return () => clearInterval(interval);
+  }, [isToday]);
 
   const previewBelongsHere =
     dragPreview && isSameDay(dragPreview.start_time as Date, date);
@@ -65,6 +80,16 @@ export function DayColumn({
   const layoutMap = computeOverlapLayout(eventsForLayout);
 
   const hasEvents = dayEvents.length > 0 || (previewBelongsHere && dragPreview);
+
+  // Calculate current time position
+  const getCurrentTimePosition = () => {
+    if (!isToday) return null;
+    const now = new Date();
+    const minutesFromMidnight = now.getHours() * 60 + now.getMinutes();
+    return (minutesFromMidnight / 60) * HOUR_PX;
+  };
+
+  const currentTimeTop = getCurrentTimePosition();
 
   return (
     <div
@@ -95,6 +120,21 @@ export function DayColumn({
         onEventMouseDown={onEventMouseDown}
         tasksMap={tasksMap}
       />
+
+      {/* Current time indicator */}
+      {isToday && currentTimeTop !== null && (
+        <div
+          className="absolute left-0 right-0 z-20 pointer-events-none"
+          style={{ top: `${currentTimeTop}px` }}
+        >
+          <div className="relative">
+            {/* Red line */}
+            <div className="absolute left-0 right-0 h-0.5 bg-red-500 dark:bg-red-400" />
+            {/* Red circle */}
+            <div className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-1/2 w-2 h-2 rounded-full bg-red-500 dark:bg-red-400 border-2 border-background dark:border-background" />
+          </div>
+        </div>
+      )}
 
       {!hasEvents && (
         <DayColumnEmptyState date={date} onAddEvent={onGridCellClick} />
