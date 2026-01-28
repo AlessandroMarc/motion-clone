@@ -39,7 +39,7 @@
     "prettier": "^3.7.4"
   },
   "dependencies": {
-    "@sentry/nextjs": "^10.35.0",
+    "@sentry/nextjs": "^10.37.0",
     "next": "^16.1.4",
     "posthog-js": "^1.331.0",
     "react": "^19.2.3",
