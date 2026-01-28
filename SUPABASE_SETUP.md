@@ -93,6 +93,27 @@ CREATE POLICY "Users can insert own projects" ON projects
   FOR INSERT WITH CHECK (auth.uid()::text = user_id);
 ```
 
+## Step 6.1: Deploying on Vercel (avoid 404 after Google sign-in)
+
+After Google sign-in, Supabase redirects the user back to your app. If that URL is wrong or points to a deleted/expired deployment, Vercel returns **404 DEPLOYMENT_NOT_FOUND**. To fix it:
+
+1. **Set a canonical app URL in Vercel**
+   - In the Vercel project → **Settings** → **Environment Variables**, add:
+   - `NEXT_PUBLIC_APP_URL` = your production URL, e.g. `https://your-project.vercel.app`
+   - Use that same value for production (and optionally preview if you want auth on preview URLs).
+   - Redeploy after adding it.
+
+2. **Allow that URL in Supabase**
+   - In [Supabase Dashboard](https://supabase.com/dashboard) → **Authentication** → **URL Configuration**:
+   - **Site URL**: set to `https://your-project.vercel.app` (or your custom domain).
+   - **Redirect URLs**: add:
+     - `https://your-project.vercel.app`
+     - `https://your-project.vercel.app/**`
+     - If you use a custom domain, add it (and `https://your-domain.com/**`) as well.
+   - Save.
+
+The app uses `NEXT_PUBLIC_APP_URL` for the OAuth `redirectTo` when it is set, so the redirect always goes to a valid deployment. If `NEXT_PUBLIC_APP_URL` is not set, it falls back to `window.location.origin` (fine for localhost and when every URL you use is explicitly added to Supabase Redirect URLs).
+
 ## Step 7: Test the Setup
 
 1. Start your development servers:
@@ -124,11 +145,16 @@ CREATE POLICY "Users can insert own projects" ON projects
    - Check that the variable names start with `NEXT_PUBLIC_`
    - Restart your development server after adding environment variables
 
-3. **API requests failing with 401**:
+3. **404 DEPLOYMENT_NOT_FOUND on Vercel after “Log in with Google”**:
+   - Set `NEXT_PUBLIC_APP_URL` in Vercel to your production URL (e.g. `https://your-app.vercel.app`).
+   - In Supabase → **Authentication** → **URL Configuration**, set **Site URL** and add that same URL (and `https://your-app.vercel.app/**`) under **Redirect URLs**.
+   - See **Step 6.1: Deploying on Vercel** above.
+
+4. **API requests failing with 401**:
    - Check that the backend is running on port 3003
    - Verify that the Supabase service role key is configured in the backend
 
-4. **Database connection issues**:
+5. **Database connection issues**:
    - Ensure the database schema has been applied
    - Check that RLS policies are properly configured
 

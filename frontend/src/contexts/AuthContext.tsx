@@ -78,7 +78,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (event === 'SIGNED_IN' && session?.user) {
         posthog.identify(session.user.id, {
           email: session.user.email,
-          name: session.user.user_metadata?.full_name || session.user.user_metadata?.name,
+          name:
+            session.user.user_metadata?.full_name ||
+            session.user.user_metadata?.name,
         });
         posthog.capture('user_signed_in', {
           auth_provider: 'google',
@@ -91,10 +93,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signInWithGoogle = async () => {
     try {
+      const baseUrl =
+        typeof process.env.NEXT_PUBLIC_APP_URL === 'string' &&
+        process.env.NEXT_PUBLIC_APP_URL
+          ? process.env.NEXT_PUBLIC_APP_URL.replace(/\/$/, '')
+          : window.location.origin;
+      const redirectTo = `${baseUrl}/`;
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${window.location.origin}/`,
+          redirectTo,
         },
       });
       if (error) {
