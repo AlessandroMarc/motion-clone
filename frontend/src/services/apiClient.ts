@@ -75,10 +75,14 @@ export async function request<T>(
     if (error instanceof Error) {
       errorMessage = error.message;
       // Check for common network error patterns
-      if (errorMessage.includes('Failed to fetch') || errorMessage.includes('NetworkError')) {
+      if (
+        errorMessage.includes('Failed to fetch') ||
+        errorMessage.includes('NetworkError')
+      ) {
         errorMessage = `Unable to connect to backend server at ${baseUrl}. Please ensure the backend is running on port 3003.`;
       } else if (errorMessage.includes('CORS')) {
-        errorMessage = 'CORS error: The backend server may not be configured to allow requests from this origin.';
+        errorMessage =
+          'CORS error: The backend server may not be configured to allow requests from this origin.';
       }
     }
 

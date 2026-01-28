@@ -82,14 +82,14 @@ instrumentation-client.ts      # Client-side PostHog initialization
 ### Client-side initialization (instrumentation-client.ts)
 
 ```typescript
-import posthog from "posthog-js"
+import posthog from 'posthog-js';
 
 posthog.init(process.env.NEXT_PUBLIC_POSTHOG_KEY!, {
-  api_host: "/ingest",
-  ui_host: "https://us.posthog.com",
+  api_host: '/ingest',
+  ui_host: 'https://us.posthog.com',
   defaults: '2025-05-24',
   capture_exceptions: true,
-  debug: process.env.NODE_ENV === "development",
+  debug: process.env.NODE_ENV === 'development',
 });
 ```
 
@@ -168,17 +168,17 @@ NEXT_PUBLIC_POSTHOG_HOST=https://us.i.posthog.com
 ## instrumentation-client.ts
 
 ```ts
-import posthog from "posthog-js"
+import posthog from 'posthog-js';
 
 posthog.init(process.env.NEXT_PUBLIC_POSTHOG_KEY!, {
-  api_host: "/ingest",
-  ui_host: "https://us.posthog.com",
+  api_host: '/ingest',
+  ui_host: 'https://us.posthog.com',
   // Include the defaults option as required by PostHog
   defaults: '2025-05-24',
   // Enables capturing unhandled exceptions via Error Tracking
   capture_exceptions: true,
   // Turn on debug in development mode
-  debug: process.env.NODE_ENV === "development",
+  debug: process.env.NODE_ENV === 'development',
 });
 
 //IMPORTANT: Never combine this approach with other client-side PostHog initialization approaches, especially components like a PostHogProvider. instrumentation-client.ts is the correct solution for initializating client-side PostHog in Next.js 15.3+ apps.
@@ -189,19 +189,19 @@ posthog.init(process.env.NEXT_PUBLIC_POSTHOG_KEY!, {
 ## next.config.ts
 
 ```ts
-import type { NextConfig } from "next";
+import type { NextConfig } from 'next';
 
 const nextConfig: NextConfig = {
   /* config options here */
   async rewrites() {
     return [
       {
-        source: "/ingest/static/:path*",
-        destination: "https://us-assets.i.posthog.com/static/:path*",
+        source: '/ingest/static/:path*',
+        destination: 'https://us-assets.i.posthog.com/static/:path*',
       },
       {
-        source: "/ingest/:path*",
-        destination: "https://us.i.posthog.com/:path*",
+        source: '/ingest/:path*',
+        destination: 'https://us.i.posthog.com/:path*',
       },
     ];
   },
@@ -210,7 +210,6 @@ const nextConfig: NextConfig = {
 };
 
 export default nextConfig;
-
 ```
 
 ---
@@ -221,18 +220,24 @@ export default nextConfig;
 import { NextResponse } from 'next/server';
 import { getPostHogClient } from '@/lib/posthog-server';
 
-const users = new Map<string, { username: string; burritoConsiderations: number }>();
+const users = new Map<
+  string,
+  { username: string; burritoConsiderations: number }
+>();
 
 export async function POST(request: Request) {
   const { username, password } = await request.json();
 
   if (!username || !password) {
-    return NextResponse.json({ error: 'Username and password required' }, { status: 400 });
+    return NextResponse.json(
+      { error: 'Username and password required' },
+      { status: 400 }
+    );
   }
 
   let user = users.get(username);
   const isNewUser = !user;
-  
+
   if (!user) {
     user = { username, burritoConsiderations: 0 };
     users.set(username, user);
@@ -246,8 +251,8 @@ export async function POST(request: Request) {
     properties: {
       username: username,
       isNewUser: isNewUser,
-      source: 'api'
-    }
+      source: 'api',
+    },
   });
 
   // Identify user on server side
@@ -255,8 +260,8 @@ export async function POST(request: Request) {
     distinctId: username,
     properties: {
       username: username,
-      createdAt: isNewUser ? new Date().toISOString() : undefined
-    }
+      createdAt: isNewUser ? new Date().toISOString() : undefined,
+    },
   });
 
   return NextResponse.json({ success: true, user });
@@ -290,7 +295,7 @@ export default function BurritoPage() {
     incrementBurritoConsiderations();
     setHasConsidered(true);
     setTimeout(() => setHasConsidered(false), 2000);
-    
+
     // Capture burrito consideration event
     posthog.capture('burrito_considered', {
       total_considerations: user.burritoConsiderations + 1,
@@ -302,22 +307,20 @@ export default function BurritoPage() {
     <div className="container">
       <h1>Burrito consideration zone</h1>
       <p>Take a moment to truly consider the potential of burritos.</p>
-      
+
       <div style={{ textAlign: 'center' }}>
-        <button 
-          onClick={handleConsideration}
-          className="btn-burrito"
-        >
+        <button onClick={handleConsideration} className="btn-burrito">
           I have considered the burrito potential
         </button>
-        
+
         {hasConsidered && (
           <p className="success">
-            Thank you for your consideration! Count: {user.burritoConsiderations}
+            Thank you for your consideration! Count:{' '}
+            {user.burritoConsiderations}
           </p>
         )}
       </div>
-      
+
       <div className="stats">
         <h3>Consideration stats</h3>
         <p>Total considerations: {user.burritoConsiderations}</p>
@@ -332,14 +335,14 @@ export default function BurritoPage() {
 ## src/app/layout.tsx
 
 ```tsx
-import type { Metadata } from "next";
-import "./globals.css";
-import { AuthProvider } from "@/contexts/AuthContext";
-import Header from "@/components/Header";
+import type { Metadata } from 'next';
+import './globals.css';
+import { AuthProvider } from '@/contexts/AuthContext';
+import Header from '@/components/Header';
 
 export const metadata: Metadata = {
-  title: "Burrito Consideration App",
-  description: "Consider the potential of burritos",
+  title: 'Burrito Consideration App',
+  description: 'Consider the potential of burritos',
 };
 
 export default function RootLayout({
@@ -358,7 +361,6 @@ export default function RootLayout({
     </html>
   );
 }
-
 ```
 
 ---
@@ -380,7 +382,7 @@ export default function Home() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
-    
+
     try {
       const success = await login(username, password);
       if (success) {
@@ -412,7 +414,7 @@ export default function Home() {
     <div className="container">
       <h1>Welcome to Burrito Consideration App</h1>
       <p>Please sign in to begin your burrito journey</p>
-      
+
       <form onSubmit={handleSubmit} className="form">
         <div className="form-group">
           <label htmlFor="username">Username:</label>
@@ -420,27 +422,29 @@ export default function Home() {
             type="text"
             id="username"
             value={username}
-            onChange={(e) => setUsername(e.target.value)}
+            onChange={e => setUsername(e.target.value)}
             placeholder="Enter any username"
           />
         </div>
-        
+
         <div className="form-group">
           <label htmlFor="password">Password:</label>
           <input
             type="password"
             id="password"
             value={password}
-            onChange={(e) => setPassword(e.target.value)}
+            onChange={e => setPassword(e.target.value)}
             placeholder="Enter any password"
           />
         </div>
-        
+
         {error && <p className="error">{error}</p>}
-        
-        <button type="submit" className="btn-primary">Sign In</button>
+
+        <button type="submit" className="btn-primary">
+          Sign In
+        </button>
       </form>
-      
+
       <p className="note">
         Note: This is a demo app. Use any username and password to sign in.
       </p>
@@ -483,23 +487,34 @@ export default function ProfilePage() {
   return (
     <div className="container">
       <h1>User Profile</h1>
-      
+
       <div className="stats">
         <h2>Your Information</h2>
-        <p><strong>Username:</strong> {user.username}</p>
-        <p><strong>Burrito Considerations:</strong> {user.burritoConsiderations}</p>
+        <p>
+          <strong>Username:</strong> {user.username}
+        </p>
+        <p>
+          <strong>Burrito Considerations:</strong> {user.burritoConsiderations}
+        </p>
       </div>
-      
+
       <div style={{ marginTop: '2rem' }}>
-        <button onClick={triggerTestError} className="btn-primary" style={{ backgroundColor: '#dc3545' }}>
+        <button
+          onClick={triggerTestError}
+          className="btn-primary"
+          style={{ backgroundColor: '#dc3545' }}
+        >
           Trigger Test Error (for PostHog)
         </button>
       </div>
-      
+
       <div style={{ marginTop: '2rem' }}>
         <h3>Your Burrito Journey</h3>
         {user.burritoConsiderations === 0 ? (
-          <p>You haven&apos;t considered any burritos yet. Visit the Burrito Consideration page to start!</p>
+          <p>
+            You haven&apos;t considered any burritos yet. Visit the Burrito
+            Consideration page to start!
+          </p>
         ) : user.burritoConsiderations === 1 ? (
           <p>You&apos;ve considered the burrito potential once. Keep going!</p>
         ) : user.burritoConsiderations < 5 ? (
@@ -599,7 +614,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return null;
   });
 
-  const login = async (username: string, password: string): Promise<boolean> => {
+  const login = async (
+    username: string,
+    password: string
+  ): Promise<boolean> => {
     try {
       const response = await fetch('/api/auth/login', {
         method: 'POST',
@@ -618,17 +636,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
         setUser(localUser);
         localStorage.setItem('currentUser', username);
-        
+
         // Identify user in PostHog using username as distinct ID
         posthog.identify(username, {
           username: username,
         });
-        
+
         // Capture login event
         posthog.capture('user_logged_in', {
           username: username,
         });
-        
+
         return true;
       }
       return false;
@@ -642,7 +660,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Capture logout event before resetting
     posthog.capture('user_logged_out');
     posthog.reset();
-    
+
     setUser(null);
     localStorage.removeItem('currentUser');
   };
@@ -656,7 +674,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, logout, incrementBurritoConsiderations }}>
+    <AuthContext.Provider
+      value={{ user, login, logout, incrementBurritoConsiderations }}
+    >
       {children}
     </AuthContext.Provider>
   );
@@ -682,14 +702,11 @@ let posthogClient: PostHog | null = null;
 
 export function getPostHogClient() {
   if (!posthogClient) {
-    posthogClient = new PostHog(
-      process.env.NEXT_PUBLIC_POSTHOG_KEY!,
-      { 
-        host: process.env.NEXT_PUBLIC_POSTHOG_HOST,
-        flushAt: 1,
-        flushInterval: 0
-      }
-    );
+    posthogClient = new PostHog(process.env.NEXT_PUBLIC_POSTHOG_KEY!, {
+      host: process.env.NEXT_PUBLIC_POSTHOG_HOST,
+      flushAt: 1,
+      flushInterval: 0,
+    });
     posthogClient.debug(true);
   }
   return posthogClient;
@@ -703,4 +720,3 @@ export async function shutdownPostHog() {
 ```
 
 ---
-

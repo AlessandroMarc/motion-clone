@@ -38,7 +38,8 @@ export const TASK_PRIORITY_RANK: Record<Task['priority'], number> = {
 /** Comparator for sorting tasks by priority (high first). Use with Array.prototype.sort. */
 export function compareTaskPriority(a: Task, b: Task): number {
   return (
-    (TASK_PRIORITY_RANK[b.priority] ?? 0) - (TASK_PRIORITY_RANK[a.priority] ?? 0)
+    (TASK_PRIORITY_RANK[b.priority] ?? 0) -
+    (TASK_PRIORITY_RANK[a.priority] ?? 0)
   );
 }
 

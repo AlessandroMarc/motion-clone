@@ -1,7 +1,4 @@
-import {
-  CalendarEventUnion,
-  type CreateCalendarEventInput,
-} from '@/types';
+import { CalendarEventUnion, type CreateCalendarEventInput } from '@/types';
 import { calendarService } from '@/services/calendarService';
 import { toast } from 'sonner';
 
@@ -67,4 +64,3 @@ export function useExternalTaskDrop(
 
   return { handleExternalTaskDrop };
 }
-

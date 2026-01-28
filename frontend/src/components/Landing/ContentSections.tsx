@@ -59,7 +59,13 @@ export function SellingPointsSection({ content }: SectionProps) {
                     <Icon className="w-10 h-10 text-primary" />
                   </div>
                 </div>
-                <div className={cn('flex-1', isEven ? 'md:text-left' : 'md:text-right', 'text-center')}>
+                <div
+                  className={cn(
+                    'flex-1',
+                    isEven ? 'md:text-left' : 'md:text-right',
+                    'text-center'
+                  )}
+                >
                   <h3 className="text-2xl sm:text-3xl font-subheading text-foreground mb-4">
                     {point.title}
                   </h3>
@@ -134,7 +140,7 @@ export function BenefitsSection({ content }: SectionProps) {
           {content.benefits.sectionTitle}
         </h2>
         <div className="grid sm:grid-cols-3 gap-8 sm:gap-12">
-          {content.benefits.items.map((benefit) => (
+          {content.benefits.items.map(benefit => (
             <div key={benefit.id} className="text-center">
               <div className="text-4xl sm:text-5xl lg:text-6xl font-title text-primary mb-2">
                 {benefit.metric}
@@ -154,7 +160,10 @@ export function BenefitsSection({ content }: SectionProps) {
 
 export function HowItWorksSection({ content }: SectionProps) {
   return (
-    <section id="how-it-works" className="py-24 px-4 sm:px-6 lg:px-8 bg-muted/30">
+    <section
+      id="how-it-works"
+      className="py-24 px-4 sm:px-6 lg:px-8 bg-muted/30"
+    >
       <div className="max-w-5xl mx-auto">
         <div className="text-center mb-16">
           <h2 className="text-3xl sm:text-4xl font-heading text-foreground mb-4">
@@ -192,7 +201,12 @@ export function HowItWorksSection({ content }: SectionProps) {
 
 // --- Final CTA Section ---
 
-export function FinalCtaSection({ content, user, loading, onGetStarted }: AuthSectionProps) {
+export function FinalCtaSection({
+  content,
+  user,
+  loading,
+  onGetStarted,
+}: AuthSectionProps) {
   return (
     <section className="py-24 px-4 sm:px-6 lg:px-8">
       <div className="max-w-3xl mx-auto text-center">
@@ -207,7 +221,11 @@ export function FinalCtaSection({ content, user, loading, onGetStarted }: AuthSe
         </p>
         <div className="flex flex-col items-center gap-4">
           {user ? (
-            <Button asChild size="lg" className="h-14 px-10 text-lg font-semibold shadow-lg shadow-primary/25">
+            <Button
+              asChild
+              size="lg"
+              className="h-14 px-10 text-lg font-semibold shadow-lg shadow-primary/25"
+            >
               <Link href="/calendar">
                 {content.nav.dashboard}
                 <ArrowRight className="w-5 h-5 ml-2" />

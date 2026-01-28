@@ -53,15 +53,19 @@ class TaskService {
 
   async updateTask(id: string, input: UpdateTaskInput): Promise<Task> {
     // Build payload without dueDate (we use due_date instead)
-    const { dueDate, blockedBy, plannedDurationMinutes, actualDurationMinutes, ...rest } = input;
-    
+    const {
+      dueDate,
+      blockedBy,
+      plannedDurationMinutes,
+      actualDurationMinutes,
+      ...rest
+    } = input;
+
     const response = await request<UnknownRecord>(`/tasks/${id}`, {
       method: 'PUT',
       body: JSON.stringify({
         ...rest,
-        due_date: dueDate
-          ? normalizeToMidnight(dueDate).toISOString()
-          : null,
+        due_date: dueDate ? normalizeToMidnight(dueDate).toISOString() : null,
         project_id: input.project_id,
         blocked_by: blockedBy,
         planned_duration_minutes: plannedDurationMinutes,
@@ -87,7 +91,9 @@ class TaskService {
   }
 
   async getTasksByProject(projectId: string): Promise<Task[]> {
-    const response = await request<UnknownRecord[]>(`/tasks?project_id=${projectId}`);
+    const response = await request<UnknownRecord[]>(
+      `/tasks?project_id=${projectId}`
+    );
 
     if (!response.success || !response.data) {
       throw new Error(response.error || 'Failed to fetch tasks by project');

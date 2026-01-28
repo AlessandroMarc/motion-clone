@@ -38,11 +38,6 @@ router.get('/', async (req: Request, res: Response) => {
 
     console.log('[CalendarEventsRoute] Returning events:', {
       count: events.length,
-      events: events.map(e => ({
-        id: e.id,
-        title: e.title,
-        linked_task_id: e.linked_task_id,
-      })),
     });
 
     ResponseHelper.list(
@@ -90,12 +85,13 @@ router.post('/', async (req: Request, res: Response) => {
   try {
     console.log('[CalendarEventsRoute] POST /api/calendar-events called');
     console.log('[CalendarEventsRoute] Request body:', req.body);
-    
+
     // Check if this is a batch request
     if (Array.isArray(req.body)) {
       const inputs: CreateCalendarEventInput[] = req.body;
-      const results = await calendarEventService.createCalendarEventsBatch(inputs);
-      
+      const results =
+        await calendarEventService.createCalendarEventsBatch(inputs);
+
       // Return results with success/failure for each event
       ResponseHelper.success(
         res,
@@ -154,7 +150,7 @@ router.put('/:id', async (req: Request, res: Response) => {
 router.delete('/batch', async (req: Request, res: Response) => {
   try {
     const { ids } = req.body;
-    
+
     if (!Array.isArray(ids) || ids.length === 0) {
       return ResponseHelper.badRequest(
         res,
@@ -164,14 +160,11 @@ router.delete('/batch', async (req: Request, res: Response) => {
 
     // Validate all IDs are strings
     if (!ids.every(id => typeof id === 'string')) {
-      return ResponseHelper.badRequest(
-        res,
-        'All event IDs must be strings'
-      );
+      return ResponseHelper.badRequest(res, 'All event IDs must be strings');
     }
 
     const results = await calendarEventService.deleteCalendarEventsBatch(ids);
-    
+
     ResponseHelper.success(
       res,
       {

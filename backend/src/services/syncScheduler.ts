@@ -60,16 +60,15 @@ export class SyncScheduler {
         return;
       }
 
-      console.log(
-        `[SyncScheduler] Found ${tokens.length} users to sync`
-      );
+      console.log(`[SyncScheduler] Found ${tokens.length} users to sync`);
 
       const results = await Promise.allSettled(
-        tokens.map(async (token) => {
+        tokens.map(async token => {
           try {
-            const result = await this.googleCalendarService.syncEventsFromGoogle(
-              token.user_id
-            );
+            const result =
+              await this.googleCalendarService.syncEventsFromGoogle(
+                token.user_id
+              );
             return {
               userId: token.user_id,
               success: result.success,
@@ -94,7 +93,7 @@ export class SyncScheduler {
       );
 
       const successful = results.filter(
-        (r) => r.status === 'fulfilled' && r.value.success
+        r => r.status === 'fulfilled' && r.value.success
       ).length;
       const failed = results.length - successful;
       const totalSynced = results.reduce((sum, r) => {
@@ -112,4 +111,3 @@ export class SyncScheduler {
     }
   }
 }
-

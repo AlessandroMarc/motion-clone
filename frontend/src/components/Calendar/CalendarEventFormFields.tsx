@@ -37,7 +37,7 @@ export function CalendarEventFormFields({
         <Input
           id="calendar-title"
           value={title}
-          onChange={(e) => setTitle(e.target.value)}
+          onChange={e => setTitle(e.target.value)}
           placeholder="Event title"
         />
       </div>
@@ -66,7 +66,7 @@ export function CalendarEventFormFields({
         <Textarea
           id="calendar-description"
           value={description}
-          onChange={(e) => setDescription(e.target.value)}
+          onChange={e => setDescription(e.target.value)}
           placeholder="Optional description"
           rows={3}
         />

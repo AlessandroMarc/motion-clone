@@ -44,7 +44,8 @@ export function CompactTaskCard({
 }: CompactTaskCardProps) {
   const isCompleted = isTaskCompleted(task);
   const taskIsOverdue = isTaskOverdue(task);
-  const priorityConfig = PRIORITY_CONFIG[task.priority] ?? PRIORITY_CONFIG['medium'];
+  const priorityConfig =
+    PRIORITY_CONFIG[task.priority] ?? PRIORITY_CONFIG['medium'];
   const canSchedule = Boolean(onSchedule && !isPlanned && !isCompleted);
 
   return (

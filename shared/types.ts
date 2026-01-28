@@ -82,8 +82,10 @@ interface CalendarEvent {
   completed_at?: never;
 }
 
-interface CalendarEventTask
-  extends Omit<CalendarEvent, 'linked_task_id' | 'completed_at'> {
+interface CalendarEventTask extends Omit<
+  CalendarEvent,
+  'linked_task_id' | 'completed_at'
+> {
   linked_task_id: string; // required for task events
   completed_at: Date | null;
 }

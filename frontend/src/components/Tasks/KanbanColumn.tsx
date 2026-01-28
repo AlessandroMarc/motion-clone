@@ -63,14 +63,16 @@ export function KanbanColumn({
         <CardHeader className="p-2.5 pb-2">
           <div className="flex items-center justify-between gap-2">
             <div className="flex items-center gap-2 flex-1 min-w-0">
-              <div className={cn('p-1 rounded-md shrink-0', color || 'bg-muted')}>
+              <div
+                className={cn('p-1 rounded-md shrink-0', color || 'bg-muted')}
+              >
                 {icon}
               </div>
               {projectId ? (
                 <Link
                   href={`/projects/${projectId}`}
                   className="text-xs font-semibold truncate hover:underline flex-1 min-w-0"
-                  onClick={(e) => e.stopPropagation()}
+                  onClick={e => e.stopPropagation()}
                 >
                   {title}
                 </Link>
@@ -89,7 +91,7 @@ export function KanbanColumn({
         {/* Tasks + Add Task (inline) */}
         <CardContent className="flex-1 p-2 pt-0 overflow-y-auto">
           <div className="space-y-1.5">
-            {tasks.map((task) => (
+            {tasks.map(task => (
               <KanbanTaskCard
                 key={task.id}
                 task={task}
@@ -106,7 +108,7 @@ export function KanbanColumn({
                   autoFocus
                   placeholder="Task title..."
                   value={newTaskTitle}
-                  onChange={(e) => setNewTaskTitle(e.target.value)}
+                  onChange={e => setNewTaskTitle(e.target.value)}
                   className="h-7 text-[11px]"
                   disabled={isSubmitting}
                 />

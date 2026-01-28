@@ -42,7 +42,8 @@ export function TaskItem({
 }: TaskItemProps) {
   const isCompleted = isTaskCompleted(task);
   const taskIsOverdue = isTaskOverdue(task);
-  const statusConfig = STATUS_CONFIG[task.status] ?? STATUS_CONFIG['not-started'];
+  const statusConfig =
+    STATUS_CONFIG[task.status] ?? STATUS_CONFIG['not-started'];
   const priorityConfig =
     PRIORITY_CONFIG[task.priority] ?? PRIORITY_CONFIG['medium'];
   const StatusIcon = statusConfig.icon;
@@ -93,7 +94,7 @@ export function TaskItem({
           <Button
             variant="ghost"
             size="icon"
-            onClick={(e) => {
+            onClick={e => {
               e.stopPropagation();
               onDelete(task.id);
             }}
@@ -113,7 +114,12 @@ export function TaskItem({
               priorityConfig.bgClass
             )}
           >
-            <span className={cn('h-1.5 w-1.5 rounded-full', priorityConfig.dotClass)} />
+            <span
+              className={cn(
+                'h-1.5 w-1.5 rounded-full',
+                priorityConfig.dotClass
+              )}
+            />
             {priorityConfig.label}
           </span>
 

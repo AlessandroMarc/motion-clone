@@ -1,8 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import {
-  CalendarEventUnion,
-  type UpdateCalendarEventInput,
-} from '@/types';
+import { CalendarEventUnion, type UpdateCalendarEventInput } from '@/types';
 import { calendarService } from '@/services/calendarService';
 
 const dragThresholdPx = 5;

@@ -46,7 +46,9 @@ export function useOnboarding() {
   }, [isOnboardingActive, status, pathname]);
 
   // Avanza allo step successivo quando un'azione viene completata
-  const advanceToNextStep = async (currentAction: 'task' | 'project' | 'schedule') => {
+  const advanceToNextStep = async (
+    currentAction: 'task' | 'project' | 'schedule'
+  ) => {
     if (!user || !status || status.completed) return;
 
     try {

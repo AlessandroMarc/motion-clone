@@ -32,9 +32,7 @@ function toIntervals(events: CalendarEventUnion[]): EventInterval[] {
  * Compute side-by-side layout info for overlapping events in a single day column.
  * Output: { [eventId]: { column, columns } }.
  */
-export function computeOverlapLayout(
-  events: CalendarEventUnion[]
-): LayoutMap {
+export function computeOverlapLayout(events: CalendarEventUnion[]): LayoutMap {
   const intervals = toIntervals(events).sort(
     (a, b) => a.startMin - b.startMin || a.endMin - b.endMin
   );
@@ -87,5 +85,3 @@ export function getEventBoxStyle(
     width: `calc(${widthPct}% - ${GAP_PX}px)`,
   };
 }
-
-

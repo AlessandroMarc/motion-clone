@@ -1,8 +1,4 @@
-import type {
-  CalendarEventTask,
-  CalendarEventUnion,
-  Task,
-} from '@/types';
+import type { CalendarEventTask, CalendarEventUnion, Task } from '@/types';
 import { isCalendarEventTask } from '@/types';
 
 export type UnknownRecord = Record<string, unknown>;

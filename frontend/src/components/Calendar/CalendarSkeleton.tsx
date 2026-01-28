@@ -60,7 +60,11 @@ export function CalendarSkeleton() {
 
             {/* Day columns with random skeleton events */}
             {Array.from({ length: days }).map((_, dayIndex) => (
-              <DayColumnSkeleton key={dayIndex} hours={hours} dayIndex={dayIndex} />
+              <DayColumnSkeleton
+                key={dayIndex}
+                hours={hours}
+                dayIndex={dayIndex}
+              />
             ))}
           </div>
         </div>
@@ -122,10 +126,7 @@ function DayColumnSkeleton({
     <div className="bg-background relative">
       {/* Hour cells */}
       {hours.map(hour => (
-        <div
-          key={hour}
-          className="h-16 border-b border-border"
-        />
+        <div key={hour} className="h-16 border-b border-border" />
       ))}
 
       {/* Skeleton events */}
@@ -172,4 +173,3 @@ function getSkeletonEventsForDay(dayIndex: number) {
 
   return patterns[dayIndex % patterns.length];
 }
-

@@ -74,9 +74,7 @@ function DayColumn({
 
   // Build layout map including drag preview if it belongs here
   const eventsForLayout: CalendarEventUnion[] =
-    previewBelongsHere && dragPreview
-      ? [...dayEvents, dragPreview]
-      : dayEvents;
+    previewBelongsHere && dragPreview ? [...dayEvents, dragPreview] : dayEvents;
   const layoutMap = computeOverlapLayout(eventsForLayout);
 
   const hasEvents = dayEvents.length > 0 || (previewBelongsHere && dragPreview);

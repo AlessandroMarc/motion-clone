@@ -13,4 +13,3 @@ export function ProjectDisplay({ project }: ProjectDisplayProps) {
     </div>
   );
 }
-

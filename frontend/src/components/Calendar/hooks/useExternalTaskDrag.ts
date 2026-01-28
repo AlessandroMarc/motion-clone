@@ -5,13 +5,19 @@ import { HOUR_PX } from '../dayColumnLayout';
 
 type DraggedTask = { id: string; title: string; description?: string };
 
-function readTaskFromDataTransfer(dt: DataTransfer | null | undefined): DraggedTask | null {
+function readTaskFromDataTransfer(
+  dt: DataTransfer | null | undefined
+): DraggedTask | null {
   const taskId = dt?.getData('application/x-task-id');
   const taskTitle = dt?.getData('application/x-task-title');
   if (!taskId || !taskTitle) return null;
 
   const taskDescription = dt?.getData('application/x-task-description');
-  return { id: taskId, title: taskTitle, description: taskDescription || undefined };
+  return {
+    id: taskId,
+    title: taskTitle,
+    description: taskDescription || undefined,
+  };
 }
 
 export function useExternalTaskDrag(
@@ -109,7 +115,9 @@ export function useExternalTaskDrag(
       });
 
       if (dayIndex === -1) {
-        logger.warn('[useExternalTaskDrag] Document drop outside of day columns');
+        logger.warn(
+          '[useExternalTaskDrag] Document drop outside of day columns'
+        );
         return;
       }
 
@@ -164,4 +172,3 @@ export function useExternalTaskDrag(
     handleExternalTaskDragOver,
   };
 }
-

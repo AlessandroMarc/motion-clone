@@ -64,7 +64,9 @@ export function useProjectForm(
       const projectData = {
         name: data.name,
         description: data.description || undefined,
-        deadline: data.deadline ? normalizeToMidnight(new Date(data.deadline)) : null,
+        deadline: data.deadline
+          ? normalizeToMidnight(new Date(data.deadline))
+          : null,
         status: 'not-started' as WorkItemStatus,
         user_id: user.id,
       };

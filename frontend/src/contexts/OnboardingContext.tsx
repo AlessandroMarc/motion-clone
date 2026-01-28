@@ -1,6 +1,12 @@
 'use client';
 
-import { createContext, useContext, useEffect, useState, useCallback } from 'react';
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useState,
+  useCallback,
+} from 'react';
 import type { OnboardingStatus, OnboardingStep } from '@/types';
 import { userSettingsService } from '@/services/userSettingsService';
 import { useAuth } from './AuthContext';
@@ -15,9 +21,15 @@ interface OnboardingContextType {
   refreshStatus: () => Promise<void>;
 }
 
-const OnboardingContext = createContext<OnboardingContextType | undefined>(undefined);
+const OnboardingContext = createContext<OnboardingContextType | undefined>(
+  undefined
+);
 
-export function OnboardingProvider({ children }: { children: React.ReactNode }) {
+export function OnboardingProvider({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   const { user } = useAuth();
   const [status, setStatus] = useState<OnboardingStatus | null>(null);
   const [loading, setLoading] = useState(true);
@@ -30,7 +42,9 @@ export function OnboardingProvider({ children }: { children: React.ReactNode }) 
     }
 
     try {
-      const onboardingStatus = await userSettingsService.getOnboardingStatus(user.id);
+      const onboardingStatus = await userSettingsService.getOnboardingStatus(
+        user.id
+      );
       setStatus(onboardingStatus);
     } catch (error) {
       console.error('Failed to load onboarding status:', error);
@@ -50,25 +64,30 @@ export function OnboardingProvider({ children }: { children: React.ReactNode }) 
     loadStatus();
   }, [loadStatus]);
 
-  const updateStep = useCallback(async (step: OnboardingStep) => {
-    if (!user?.id) return;
+  const updateStep = useCallback(
+    async (step: OnboardingStep) => {
+      if (!user?.id) return;
 
-    try {
-      await userSettingsService.updateOnboardingStep(user.id, step);
-      const newStatus = await userSettingsService.getOnboardingStatus(user.id);
-      setStatus(newStatus);
+      try {
+        await userSettingsService.updateOnboardingStep(user.id, step);
+        const newStatus = await userSettingsService.getOnboardingStatus(
+          user.id
+        );
+        setStatus(newStatus);
 
-      // PostHog: Track step completion
-      if (step) {
-        posthog.capture('onboarding_step_completed', {
-          step,
-        });
+        // PostHog: Track step completion
+        if (step) {
+          posthog.capture('onboarding_step_completed', {
+            step,
+          });
+        }
+      } catch (error) {
+        console.error('Failed to update onboarding step:', error);
+        throw error;
       }
-    } catch (error) {
-      console.error('Failed to update onboarding step:', error);
-      throw error;
-    }
-  }, [user?.id]);
+    },
+    [user?.id]
+  );
 
   const completeOnboarding = useCallback(async () => {
     if (!user?.id) return;

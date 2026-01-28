@@ -7,7 +7,10 @@ interface DayColumnEmptyStateProps {
   onAddEvent: (date: Date, hour: number, minute: number) => void;
 }
 
-export function DayColumnEmptyState({ date, onAddEvent }: DayColumnEmptyStateProps) {
+export function DayColumnEmptyState({
+  date,
+  onAddEvent,
+}: DayColumnEmptyStateProps) {
   const isToday = isSameDate(date, new Date());
   const isPast = date < new Date() && !isToday;
 
@@ -29,7 +32,8 @@ export function DayColumnEmptyState({ date, onAddEvent }: DayColumnEmptyStatePro
       style={{ top: `${topPosition}px` }}
     >
       <div className="flex flex-col items-center justify-center text-center py-4 px-2">
-        <div className="rounded-lg bg-muted/30 border border-dashed border-muted-foreground/20 p-4 pointer-events-auto hover:bg-muted/50 hover:border-muted-foreground/40 transition-colors cursor-pointer group"
+        <div
+          className="rounded-lg bg-muted/30 border border-dashed border-muted-foreground/20 p-4 pointer-events-auto hover:bg-muted/50 hover:border-muted-foreground/40 transition-colors cursor-pointer group"
           onClick={handleClick}
         >
           <CalendarPlus className="h-6 w-6 mx-auto mb-2 text-muted-foreground/50 group-hover:text-muted-foreground transition-colors" />
@@ -52,4 +56,3 @@ function isSameDate(date1: Date, date2: Date): boolean {
     date1.getDate() === date2.getDate()
   );
 }
-

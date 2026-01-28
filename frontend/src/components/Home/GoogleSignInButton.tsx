@@ -15,7 +15,7 @@ export function GoogleSignInButton({
   return (
     <Button onClick={onSignIn} disabled={isLoading} size="lg" className="mb-8">
       {isLoading ? (
-        <>       
+        <>
           <Loader2 className="mr-2 h-4 w-4 animate-spin" />
           Signing in...
         </>

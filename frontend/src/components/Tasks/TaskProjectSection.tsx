@@ -66,7 +66,10 @@ export function TaskProjectSection({
           <span className="font-medium text-foreground">{project.name}</span>
         </div>
         <div className="flex items-center border-l border-border/50">
-          <Link href={`/projects/${project.id}`} onClick={(e) => e.stopPropagation()}>
+          <Link
+            href={`/projects/${project.id}`}
+            onClick={e => e.stopPropagation()}
+          >
             <Button
               variant="ghost"
               size="sm"
@@ -92,7 +95,7 @@ export function TaskProjectSection({
     <Button
       variant="ghost"
       size="sm"
-      onClick={(e) => {
+      onClick={e => {
         e.stopPropagation();
         setIsLinkingProject(true);
       }}

@@ -4,10 +4,7 @@ import { toast } from 'sonner';
 import { Card, CardContent } from '@/components/ui/card';
 import { Circle } from 'lucide-react';
 import type { Project, Task } from '@/types';
-import {
-  ErrorState,
-  LoadingState,
-} from '@/components/shared';
+import { ErrorState, LoadingState } from '@/components/shared';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { MobileTaskList } from './MobileTaskList';
 import { ProjectKanbanBoard } from './ProjectKanbanBoard';
@@ -53,7 +50,11 @@ export function TaskListView({
 
   if (error) {
     return (
-      <ErrorState title="Error loading tasks" message={error} onRetry={onRetry} />
+      <ErrorState
+        title="Error loading tasks"
+        message={error}
+        onRetry={onRetry}
+      />
     );
   }
 
@@ -66,7 +67,8 @@ export function TaskListView({
             No tasks yet
           </h3>
           <p className="text-sm font-body text-muted-foreground">
-            Create your first task to get started with your productivity journey.
+            Create your first task to get started with your productivity
+            journey.
           </p>
         </CardContent>
       </Card>
@@ -80,9 +82,11 @@ export function TaskListView({
           tasks={tasks}
           projects={projects}
           onSelectTask={onSelectTask}
-          onDeleteTask={(id) => {
+          onDeleteTask={id => {
             void onDeleteTask(id).catch(err => {
-              toast.error(err instanceof Error ? err.message : 'Failed to delete task');
+              toast.error(
+                err instanceof Error ? err.message : 'Failed to delete task'
+              );
             });
           }}
         />
@@ -91,9 +95,11 @@ export function TaskListView({
           tasks={tasks}
           projects={projects}
           linkedTaskIds={linkedTaskIds}
-          onDeleteTask={(id) => {
+          onDeleteTask={id => {
             void onDeleteTask(id).catch(err => {
-              toast.error(err instanceof Error ? err.message : 'Failed to delete task');
+              toast.error(
+                err instanceof Error ? err.message : 'Failed to delete task'
+              );
             });
           }}
           onSelectTask={onSelectTask}

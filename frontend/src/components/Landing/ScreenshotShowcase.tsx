@@ -10,21 +10,24 @@ const APP_SCREENSHOTS = [
     src: '/screenshots/Scheduling Screen.png',
     alt: 'Nexto Calendar View - Smart scheduling interface',
     title: 'Smart Scheduling',
-    description: 'Your week at a glance with intelligently auto-scheduled tasks that adapt to your calendar',
+    description:
+      'Your week at a glance with intelligently auto-scheduled tasks that adapt to your calendar',
     icon: CalendarDays,
   },
   {
     src: '/screenshots/Task Screen.png',
     alt: 'Nexto Task Board - Kanban view organized by project',
     title: 'Task Management',
-    description: 'Organize and visualize all your tasks by project with our intuitive Kanban board',
+    description:
+      'Organize and visualize all your tasks by project with our intuitive Kanban board',
     icon: LayoutGrid,
   },
   {
     src: '/screenshots/Project Screen.png',
     alt: 'Nexto Project View - Project details and linked tasks',
     title: 'Project Overview',
-    description: 'Track progress, manage deadlines, and keep all project tasks in one place',
+    description:
+      'Track progress, manage deadlines, and keep all project tasks in one place',
     icon: FolderKanban,
   },
 ];
@@ -52,7 +55,7 @@ export function ScreenshotShowcase() {
               </div>
             </div>
           </div>
-          
+
           {/* Main Image */}
           <div className="relative aspect-video overflow-hidden">
             <Image
@@ -116,18 +119,26 @@ export function ScreenshotShowcase() {
                     <div className="absolute inset-0 bg-background/40 group-hover:bg-background/20 transition-colors" />
                   )}
                 </div>
-                
+
                 {/* Thumbnail Info */}
                 <div className="p-3">
                   <div className="flex items-center gap-2">
-                    <Icon className={cn(
-                      'w-4 h-4 transition-colors',
-                      isActive ? 'text-primary' : 'text-muted-foreground group-hover:text-primary'
-                    )} />
-                    <span className={cn(
-                      'text-sm font-medium transition-colors',
-                      isActive ? 'text-foreground' : 'text-muted-foreground group-hover:text-foreground'
-                    )}>
+                    <Icon
+                      className={cn(
+                        'w-4 h-4 transition-colors',
+                        isActive
+                          ? 'text-primary'
+                          : 'text-muted-foreground group-hover:text-primary'
+                      )}
+                    />
+                    <span
+                      className={cn(
+                        'text-sm font-medium transition-colors',
+                        isActive
+                          ? 'text-foreground'
+                          : 'text-muted-foreground group-hover:text-foreground'
+                      )}
+                    >
                       {screenshot.title}
                     </span>
                   </div>

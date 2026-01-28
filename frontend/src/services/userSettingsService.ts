@@ -1,4 +1,9 @@
-import type { Schedule, UserSettings, OnboardingStatus, OnboardingStep } from '@/types';
+import type {
+  Schedule,
+  UserSettings,
+  OnboardingStatus,
+  OnboardingStep,
+} from '@/types';
 import { request } from './apiClient';
 
 class UserSettingsService {
@@ -168,13 +173,20 @@ class UserSettingsService {
 
     return {
       ...response.data,
-      started_at: response.data.started_at ? new Date(response.data.started_at) : null,
-      completed_at: response.data.completed_at ? new Date(response.data.completed_at) : null,
+      started_at: response.data.started_at
+        ? new Date(response.data.started_at)
+        : null,
+      completed_at: response.data.completed_at
+        ? new Date(response.data.completed_at)
+        : null,
     };
   }
 
   // Update onboarding step
-  async updateOnboardingStep(userId: string, step: OnboardingStep): Promise<UserSettings> {
+  async updateOnboardingStep(
+    userId: string,
+    step: OnboardingStep
+  ): Promise<UserSettings> {
     const response = await request<UserSettings>(
       `/user-settings/onboarding/step?user_id=${userId}`,
       {

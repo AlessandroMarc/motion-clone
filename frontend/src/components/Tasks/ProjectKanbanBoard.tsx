@@ -36,12 +36,17 @@ export function ProjectKanbanBoard({
   onSelectTask,
   onQuickCreateTask,
 }: ProjectKanbanBoardProps) {
-  const tasksByProject = useMemo((): { unassigned: Task[] } & Record<string, Task[]> => {
+  const tasksByProject = useMemo((): { unassigned: Task[] } & Record<
+    string,
+    Task[]
+  > => {
     const { unassigned, byProject } = groupTasksByProject(tasks, projects);
     const byId = Object.fromEntries(
       byProject.map(({ project, tasks: t }) => [project.id, t])
     );
-    const result: { unassigned: Task[] } & Record<string, Task[]> = { unassigned };
+    const result: { unassigned: Task[] } & Record<string, Task[]> = {
+      unassigned,
+    };
     for (const p of projects) {
       result[p.id] = byId[p.id] ?? [];
     }

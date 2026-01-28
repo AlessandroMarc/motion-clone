@@ -67,9 +67,3 @@ export function getFrontendUrl(): string {
   cachedFrontendUrl = requireHttpUrlEnv('FRONTEND_URL');
   return cachedFrontendUrl;
 }
-
-
-
-
-
-

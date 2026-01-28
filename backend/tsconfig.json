@@ -45,8 +45,5 @@
     "moduleDetection": "force",
     "skipLibCheck": true
   },
-  "include": [
-    "src/**/*",
-    "../shared/**/*"
-  ]
+  "include": ["src/**/*", "../shared/**/*"]
 }

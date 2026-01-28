@@ -1,10 +1,6 @@
 'use client';
 
-import {
-  CalendarEventUnion,
-  isCalendarEventTask,
-  type Task,
-} from '@/types';
+import { CalendarEventUnion, isCalendarEventTask, type Task } from '@/types';
 import { formatEventTime } from '@/utils/calendarUtils';
 import { AlertTriangle, CheckCircle2 } from 'lucide-react';
 import { cn } from '@/lib/utils';

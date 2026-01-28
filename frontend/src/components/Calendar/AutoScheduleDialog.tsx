@@ -62,7 +62,8 @@ export function AutoScheduleDialog({
 }: AutoScheduleDialogProps) {
   const [eventDuration, setEventDuration] = useState<number>(60);
   const [isScheduling, setIsScheduling] = useState(false);
-  const [schedulingPhase, setSchedulingPhase] = useState<SchedulingPhase>('idle');
+  const [schedulingPhase, setSchedulingPhase] =
+    useState<SchedulingPhase>('idle');
   const [schedulingProgress, setSchedulingProgress] = useState(0);
   const [schedulingMessage, setSchedulingMessage] = useState('');
   const { advanceToNextStep } = useOnboarding();

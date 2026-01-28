@@ -19,10 +19,7 @@ interface MobileDayScrollViewProps {
   onZenMode?: () => void;
 }
 
-function formatEventTimeSafe(
-  start: string | Date,
-  end: string | Date
-): string {
+function formatEventTimeSafe(start: string | Date, end: string | Date): string {
   return formatEventTime(new Date(start), new Date(end));
 }
 
@@ -125,16 +122,17 @@ export function MobileDayScrollView({
                 </p>
               ) : (
                 <ul className="space-y-3 list-none">
-                  {dayEvents.map((event) => {
+                  {dayEvents.map(event => {
                     const isTaskEvent = isCalendarEventTask(event);
                     const task = isTaskEvent
                       ? tasksMap.get(
-                          (event as { linked_task_id?: string }).linked_task_id ??
-                            ''
+                          (event as { linked_task_id?: string })
+                            .linked_task_id ?? ''
                         )
                       : undefined;
                     const isCompleted =
-                      isTaskEvent && !!(event as { completed_at?: string | null })
+                      isTaskEvent &&
+                      !!(event as { completed_at?: string | null })
                         .completed_at;
                     const eventEnd = new Date(event.end_time);
                     const isPast = eventEnd < new Date();

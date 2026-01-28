@@ -72,13 +72,13 @@ export function validateEnvOrThrow(): void {
 
   if (result.warnings.length > 0) {
     console.warn('Environment variable warnings:');
-    result.warnings.forEach((warning) => console.warn(`  - ${warning}`));
+    result.warnings.forEach(warning => console.warn(`  - ${warning}`));
   }
 
   if (!result.valid) {
     const errorMessage = [
       'Environment variable validation failed:',
-      ...result.errors.map((error) => `  - ${error}`),
+      ...result.errors.map(error => `  - ${error}`),
       '',
       'Please check your .env file and ensure all required variables are set.',
       'Required variables:',
@@ -89,7 +89,8 @@ export function validateEnvOrThrow(): void {
     // In CI environments (GitHub Actions, etc.), only warn but don't fail the build
     // This allows CI to test that code compiles without requiring real env vars
     // In production deployments (Vercel), we want to fail fast if env vars are missing
-    const isCI = process.env.CI === 'true' || process.env.GITHUB_ACTIONS === 'true';
+    const isCI =
+      process.env.CI === 'true' || process.env.GITHUB_ACTIONS === 'true';
 
     if (isCI) {
       console.warn(
@@ -104,4 +105,3 @@ export function validateEnvOrThrow(): void {
     throw new Error(errorMessage);
   }
 }
-

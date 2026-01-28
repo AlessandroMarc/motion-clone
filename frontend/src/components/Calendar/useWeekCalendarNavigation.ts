@@ -58,10 +58,3 @@ export function useWeekCalendarNavigation() {
     goNextDay,
   };
 }
-
-
-
-
-
-
-

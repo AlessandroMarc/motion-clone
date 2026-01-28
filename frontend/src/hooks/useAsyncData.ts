@@ -34,10 +34,3 @@ export function useAsyncData<T>(
 
   return { data, loading, error, reload };
 }
-
-
-
-
-
-
-

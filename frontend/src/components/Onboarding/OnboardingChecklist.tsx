@@ -18,26 +18,28 @@ export function OnboardingChecklist() {
     if (!status.step) {
       return stepId === 'task_created' ? 'current' : 'pending';
     }
-    
+
     switch (stepId) {
       case 'task_created':
-        return status.step === 'task_created' || status.step === 'project_created' || status.step === 'scheduled'
+        return status.step === 'task_created' ||
+          status.step === 'project_created' ||
+          status.step === 'scheduled'
           ? 'completed'
           : status.step === null
-          ? 'current'
-          : 'pending';
+            ? 'current'
+            : 'pending';
       case 'project_created':
         return status.step === 'project_created' || status.step === 'scheduled'
           ? 'completed'
           : status.step === 'task_created'
-          ? 'current'
-          : 'pending';
+            ? 'current'
+            : 'pending';
       case 'scheduled':
         return status.step === 'scheduled'
           ? 'completed'
           : status.step === 'project_created'
-          ? 'current'
-          : 'pending';
+            ? 'current'
+            : 'pending';
       default:
         return 'pending';
     }
@@ -47,7 +49,7 @@ export function OnboardingChecklist() {
     <div className="p-4 bg-muted/50 rounded-lg border mb-4">
       <h3 className="text-sm font-semibold mb-3">Onboarding</h3>
       <div className="space-y-2">
-        {steps.map((step) => {
+        {steps.map(step => {
           const stepStatus = getStepStatus(step.id);
           return (
             <div
@@ -64,7 +66,9 @@ export function OnboardingChecklist() {
                 <Circle
                   className={cn(
                     'h-4 w-4',
-                    stepStatus === 'current' ? 'text-primary' : 'text-muted-foreground'
+                    stepStatus === 'current'
+                      ? 'text-primary'
+                      : 'text-muted-foreground'
                   )}
                 />
               )}

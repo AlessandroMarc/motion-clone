@@ -16,7 +16,10 @@ interface CalendarTasksPanelProps {
   refreshTrigger?: number;
 }
 
-export function CalendarTasksPanel({ currentWeekStart, refreshTrigger }: CalendarTasksPanelProps) {
+export function CalendarTasksPanel({
+  currentWeekStart,
+  refreshTrigger,
+}: CalendarTasksPanelProps) {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [projectsById, setProjectsById] = useState<Record<string, Project>>({});
   const [weekEvents, setWeekEvents] = useState<CalendarEventUnion[]>([]);
@@ -57,7 +60,10 @@ export function CalendarTasksPanel({ currentWeekStart, refreshTrigger }: Calenda
 
         const startDate = weekDates[0].toISOString().split('T')[0];
         const endDate = weekDates[6].toISOString().split('T')[0];
-        const events = await calendarService.getCalendarEventsByDateRange(startDate, endDate);
+        const events = await calendarService.getCalendarEventsByDateRange(
+          startDate,
+          endDate
+        );
         setWeekEvents(events);
       } catch (e) {
         const errorMessage =
@@ -82,8 +88,8 @@ export function CalendarTasksPanel({ currentWeekStart, refreshTrigger }: Calenda
     () =>
       new Set(
         weekEvents
-          .filter((ev) => !!ev.linked_task_id)
-          .map((ev) => ev.linked_task_id as string)
+          .filter(ev => !!ev.linked_task_id)
+          .map(ev => ev.linked_task_id as string)
       ),
     [weekEvents]
   );
@@ -93,7 +99,11 @@ export function CalendarTasksPanel({ currentWeekStart, refreshTrigger }: Calenda
     setScheduleDialogOpen(true);
   };
 
-  const handleScheduleTask = async (task: Task, startTime: Date, endTime: Date) => {
+  const handleScheduleTask = async (
+    task: Task,
+    startTime: Date,
+    endTime: Date
+  ) => {
     if (!user) {
       toast.error('You must be logged in to schedule tasks');
       return;
@@ -115,7 +125,10 @@ export function CalendarTasksPanel({ currentWeekStart, refreshTrigger }: Calenda
       // Refresh the events to update the planned status
       const startDate = weekDates[0].toISOString().split('T')[0];
       const endDate = weekDates[6].toISOString().split('T')[0];
-      const events = await calendarService.getCalendarEventsByDateRange(startDate, endDate);
+      const events = await calendarService.getCalendarEventsByDateRange(
+        startDate,
+        endDate
+      );
       setWeekEvents(events);
     } catch (err) {
       const errorMessage =
@@ -135,8 +148,11 @@ export function CalendarTasksPanel({ currentWeekStart, refreshTrigger }: Calenda
   if (loading) {
     return (
       <div className="space-y-2">
-        {[1, 2, 3].map((i) => (
-          <div key={i} className="h-12 w-full bg-muted animate-pulse rounded-md" />
+        {[1, 2, 3].map(i => (
+          <div
+            key={i}
+            className="h-12 w-full bg-muted animate-pulse rounded-md"
+          />
         ))}
       </div>
     );
@@ -144,7 +160,9 @@ export function CalendarTasksPanel({ currentWeekStart, refreshTrigger }: Calenda
 
   if (error) {
     return (
-      <div className="text-xs text-destructive p-3 bg-destructive/10 rounded-md">{error}</div>
+      <div className="text-xs text-destructive p-3 bg-destructive/10 rounded-md">
+        {error}
+      </div>
     );
   }
 
@@ -170,8 +188,10 @@ export function CalendarTasksPanel({ currentWeekStart, refreshTrigger }: Calenda
   return (
     <>
       <div className="space-y-1.5">
-        {unplannedTasks.map((task) => {
-          const project = task.project_id ? projectsById[task.project_id] : undefined;
+        {unplannedTasks.map(task => {
+          const project = task.project_id
+            ? projectsById[task.project_id]
+            : undefined;
           const canDrag = !isMobile && task.status !== 'completed';
 
           return (
@@ -183,11 +203,14 @@ export function CalendarTasksPanel({ currentWeekStart, refreshTrigger }: Calenda
               showDragHandle={canDrag}
               draggable={canDrag}
               disabled={false}
-              onDragStart={(e) => {
+              onDragStart={e => {
                 e.dataTransfer.setData('application/x-task-id', task.id);
                 e.dataTransfer.setData('application/x-task-title', task.title);
                 if (task.description) {
-                  e.dataTransfer.setData('application/x-task-description', task.description);
+                  e.dataTransfer.setData(
+                    'application/x-task-description',
+                    task.description
+                  );
                 }
               }}
               onSchedule={handleOpenScheduleDialog}

@@ -20,5 +20,3 @@ export function loadEnv(): void {
     dotenv.config({ path: path.join(process.cwd(), '.env') });
   }
 }
-
-

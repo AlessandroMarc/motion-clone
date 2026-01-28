@@ -21,7 +21,12 @@ interface WeekScrollableGridProps {
   gridRef: React.Ref<HTMLDivElement>;
   scrollSentinelRef: React.Ref<HTMLDivElement> | null;
   sentinelHour?: number;
-  onExternalTaskDrop?: (task: { id: string; title: string; description?: string }, date: Date, hour: number, minute: number) => void;
+  onExternalTaskDrop?: (
+    task: { id: string; title: string; description?: string },
+    date: Date,
+    hour: number,
+    minute: number
+  ) => void;
   onExternalTaskDragOver?: (date: Date, hour: number, minute: number) => void;
   tasksMap?: Map<string, Task>;
   isMobile?: boolean;
@@ -50,14 +55,14 @@ function WeekScrollableGrid({
   return (
     <div className="rounded-xl bg-card border border-border/50 overflow-hidden h-[calc(100vh-120px)]">
       {/* Day Headers */}
-      <div className={cn(
-        "grid border-b border-border/50",
-        isMobile ? "grid-cols-2" : "grid-cols-8"
-      )}>
+      <div
+        className={cn(
+          'grid border-b border-border/50',
+          isMobile ? 'grid-cols-2' : 'grid-cols-8'
+        )}
+      >
         {/* Time column header */}
-        <div className="p-2 text-[10px] font-medium text-muted-foreground/60 text-right pr-3">
-          
-        </div>
+        <div className="p-2 text-[10px] font-medium text-muted-foreground/60 text-right pr-3"></div>
         {weekDates.map((date, index) => {
           const isToday = date.getTime() === today.getTime();
           return (
@@ -65,10 +70,12 @@ function WeekScrollableGrid({
               <div className="text-[10px] font-medium text-muted-foreground/70 uppercase tracking-wider">
                 {getDayAbbreviation(date)}
               </div>
-              <div className={cn(
-                "text-sm font-semibold mt-0.5",
-                isToday && "text-primary"
-              )}>
+              <div
+                className={cn(
+                  'text-sm font-semibold mt-0.5',
+                  isToday && 'text-primary'
+                )}
+              >
                 {getMonthDay(date)}
                 {isToday && (
                   <span className="ml-1 inline-block w-1.5 h-1.5 rounded-full bg-primary" />
@@ -80,8 +87,8 @@ function WeekScrollableGrid({
       </div>
 
       {/* Scrollable Grid */}
-      <div 
-        ref={gridRef} 
+      <div
+        ref={gridRef}
         className="h-[calc(100%-60px)] overflow-y-auto"
         onDragOver={e => {
           if (onExternalTaskDrop) {
@@ -90,11 +97,8 @@ function WeekScrollableGrid({
           }
         }}
       >
-        <div 
-          className={cn(
-            "grid",
-            isMobile ? "grid-cols-2" : "grid-cols-8"
-          )}
+        <div
+          className={cn('grid', isMobile ? 'grid-cols-2' : 'grid-cols-8')}
           onDragOver={e => {
             if (onExternalTaskDrop) {
               e.preventDefault();
@@ -117,11 +121,17 @@ function WeekScrollableGrid({
                 draggingEventId={draggingEventId}
                 dragPreview={dragPreview}
                 setDayRef={el => setDayRef(dayIndex, el)}
-                scrollSentinelRef={dayIndex === 0 ? scrollSentinelRef ?? undefined : undefined}
+                scrollSentinelRef={
+                  dayIndex === 0 ? (scrollSentinelRef ?? undefined) : undefined
+                }
                 sentinelHour={sentinelHour}
-                onExternalTaskDrop={onExternalTaskDrop ? (task, date, hour, minute) => {
-                  onExternalTaskDrop(task, date, hour, minute);
-                } : undefined}
+                onExternalTaskDrop={
+                  onExternalTaskDrop
+                    ? (task, date, hour, minute) => {
+                        onExternalTaskDrop(task, date, hour, minute);
+                      }
+                    : undefined
+                }
                 onExternalTaskDragOver={onExternalTaskDragOver}
                 tasksMap={tasksMap}
               />

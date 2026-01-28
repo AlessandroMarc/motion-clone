@@ -20,7 +20,7 @@ export function DesktopNavContent({
   return (
     <>
       <nav className="flex-1 space-y-0.5 p-2">
-        {sidebarNavigation.map((item) => {
+        {sidebarNavigation.map(item => {
           const isActive = pathname === item.href;
           return (
             <Link key={item.name} href={item.href} onClick={onLinkClick}>

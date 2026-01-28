@@ -35,7 +35,7 @@ export function TaskDueDateField({
       // Extract date part if it's a datetime string (YYYY-MM-DDTHH:mm or ISO)
       const datePart = value.includes('T') ? value.split('T')[0] : value;
       const [year, month, day] = datePart.split('-').map(Number);
-      
+
       if (isNaN(year) || isNaN(month) || isNaN(day)) {
         return undefined;
       }

@@ -47,8 +47,11 @@ export function SimpleTaskCards() {
   if (loading) {
     return (
       <div className="space-y-3">
-        {[1, 2, 3].map((i) => (
-          <div key={i} className="h-20 w-full bg-muted animate-pulse rounded-lg" />
+        {[1, 2, 3].map(i => (
+          <div
+            key={i}
+            className="h-20 w-full bg-muted animate-pulse rounded-lg"
+          />
         ))}
       </div>
     );
@@ -72,8 +75,10 @@ export function SimpleTaskCards() {
 
   return (
     <div className="space-y-3">
-      {tasks.map((task) => {
-        const project = task.project_id ? projectsById[task.project_id] : undefined;
+      {tasks.map(task => {
+        const project = task.project_id
+          ? projectsById[task.project_id]
+          : undefined;
         const isCompleted = isTaskCompleted(task);
         const taskIsOverdue = isTaskOverdue(task);
         const statusConfig =
@@ -124,7 +129,12 @@ export function SimpleTaskCards() {
                   <div className="mt-2 flex flex-wrap items-center gap-2 text-xs">
                     {/* Priority Dot */}
                     <span className="inline-flex items-center gap-1.5 text-muted-foreground">
-                      <span className={cn('h-1.5 w-1.5 rounded-full', priorityConfig.dotClass)} />
+                      <span
+                        className={cn(
+                          'h-1.5 w-1.5 rounded-full',
+                          priorityConfig.dotClass
+                        )}
+                      />
                       {priorityConfig.label}
                     </span>
 
@@ -141,7 +151,9 @@ export function SimpleTaskCards() {
                       <span
                         className={cn(
                           'inline-flex items-center gap-1',
-                          taskIsOverdue ? 'text-red-500' : 'text-muted-foreground'
+                          taskIsOverdue
+                            ? 'text-red-500'
+                            : 'text-muted-foreground'
                         )}
                       >
                         <Calendar className="h-3 w-3" />

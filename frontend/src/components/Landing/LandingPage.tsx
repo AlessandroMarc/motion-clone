@@ -46,7 +46,8 @@ export function LandingPage() {
               See It In Action
             </h2>
             <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-              A clean, intuitive interface designed to help you focus on what matters
+              A clean, intuitive interface designed to help you focus on what
+              matters
             </p>
           </div>
           <ScreenshotShowcase />

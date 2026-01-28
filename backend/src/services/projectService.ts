@@ -25,9 +25,7 @@ export class ProjectService {
         {
           name: input.name,
           description: input.description,
-          deadline: input.deadline
-            ? normalizeToMidnight(input.deadline)
-            : null,
+          deadline: input.deadline ? normalizeToMidnight(input.deadline) : null,
           status: input.status || 'not-started',
         },
       ])

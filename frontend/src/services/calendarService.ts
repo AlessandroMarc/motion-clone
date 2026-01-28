@@ -153,9 +153,7 @@ class CalendarService {
    * Batch delete multiple calendar events using the backend batch endpoint
    * Returns array of results with success/failure status for each event
    */
-  async deleteCalendarEventsBatch(
-    ids: string[]
-  ): Promise<
+  async deleteCalendarEventsBatch(ids: string[]): Promise<
     Array<{
       success: boolean;
       id: string;
@@ -242,13 +240,17 @@ class CalendarService {
       });
 
       if (!response.success || !response.data) {
-        throw new Error(response.error || 'Failed to create calendar events batch');
+        throw new Error(
+          response.error || 'Failed to create calendar events batch'
+        );
       }
 
       // Transform events in results to CalendarEventUnion format
       const transformedResults = response.data.results.map(result => ({
         ...result,
-        event: result.event ? toCalendarEventUnion(result.event as unknown as UnknownRecord) : undefined,
+        event: result.event
+          ? toCalendarEventUnion(result.event as unknown as UnknownRecord)
+          : undefined,
       }));
 
       return transformedResults;

@@ -7,7 +7,7 @@ export function useCalendarEvents(weekDates: Date[]) {
   const [events, setEvents] = useState<CalendarEventUnion[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  
+
   // Stable key for the date range to prevent unnecessary re-fetches (supports 7-day week or N-day mobile range)
   const weekKey = useMemo(() => {
     if (weekDates.length === 0) return '';
@@ -38,9 +38,9 @@ export function useCalendarEvents(weekDates: Date[]) {
     if (weekKeyRef.current === weekKey) {
       return;
     }
-    
+
     weekKeyRef.current = weekKey;
-    
+
     const fetchEvents = async () => {
       try {
         setLoading(true);
@@ -124,4 +124,3 @@ export function useCalendarEvents(weekDates: Date[]) {
     getWeekRangeIso,
   };
 }
-

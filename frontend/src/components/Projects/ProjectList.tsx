@@ -4,11 +4,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { toast } from 'sonner';
 import { Card, CardContent } from '@/components/ui/card';
 import { Folder } from 'lucide-react';
-import type {
-  Project,
-  Task,
-  CalendarEventUnion,
-} from '@/types';
+import type { Project, Task, CalendarEventUnion } from '@/types';
 import { projectService } from '@/services/projectService';
 import { taskService } from '@/services/taskService';
 import { calendarService } from '@/services/calendarService';

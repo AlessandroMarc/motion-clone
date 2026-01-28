@@ -12,7 +12,9 @@ const tourSteps = [
     selector: '[data-onboarding-step="create-task"]',
     content: (
       <div className="p-6 space-y-4">
-        <h3 className="font-semibold text-xl mb-3">{onboardingContent.steps.createTask.title}</h3>
+        <h3 className="font-semibold text-xl mb-3">
+          {onboardingContent.steps.createTask.title}
+        </h3>
         <p className="text-base text-muted-foreground leading-relaxed">
           {onboardingContent.steps.createTask.description}
         </p>
@@ -23,7 +25,9 @@ const tourSteps = [
     selector: '[data-onboarding-step="create-project"]',
     content: (
       <div className="p-6 space-y-4">
-        <h3 className="font-semibold text-xl mb-3">{onboardingContent.steps.createProject.title}</h3>
+        <h3 className="font-semibold text-xl mb-3">
+          {onboardingContent.steps.createProject.title}
+        </h3>
         <p className="text-base text-muted-foreground leading-relaxed">
           {onboardingContent.steps.createProject.description}
         </p>
@@ -34,7 +38,9 @@ const tourSteps = [
     selector: '[data-onboarding-step="schedule"]',
     content: (
       <div className="p-6 space-y-4">
-        <h3 className="font-semibold text-xl mb-3">{onboardingContent.steps.schedule.title}</h3>
+        <h3 className="font-semibold text-xl mb-3">
+          {onboardingContent.steps.schedule.title}
+        </h3>
         <p className="text-base text-muted-foreground leading-relaxed">
           {onboardingContent.steps.schedule.description}
         </p>
@@ -51,12 +57,15 @@ function OnboardingTourController() {
   useEffect(() => {
     if (shouldShowTour && !isOpen) {
       let stepIndex = 0;
-      
+
       if (pathname === '/tasks' && currentStep === null) {
         stepIndex = 0;
       } else if (pathname === '/projects' && currentStep === 'task_created') {
         stepIndex = 1;
-      } else if (pathname === '/calendar' && currentStep === 'project_created') {
+      } else if (
+        pathname === '/calendar' &&
+        currentStep === 'project_created'
+      ) {
         stepIndex = 2;
       } else {
         return;
@@ -72,7 +81,14 @@ function OnboardingTourController() {
 
       return () => clearTimeout(timer);
     }
-  }, [shouldShowTour, pathname, currentStep, setIsOpen, setCurrentStep, isOpen]);
+  }, [
+    shouldShowTour,
+    pathname,
+    currentStep,
+    setIsOpen,
+    setCurrentStep,
+    isOpen,
+  ]);
 
   return null;
 }
@@ -89,7 +105,7 @@ function OnboardingTourCloseHandler() {
     } else if (wasOpen && !isOpen) {
       // Il tour è stato chiuso dopo essere stato aperto, avanza allo step successivo
       setWasOpen(false);
-      
+
       // Avanza allo step successivo basandosi sullo step corrente
       if (currentStep === null && pathname === '/tasks') {
         // Step 1 chiuso → avanza a step 2 (create project)
@@ -99,7 +115,10 @@ function OnboardingTourCloseHandler() {
         // Step 2 chiuso → avanza a step 3 (schedule)
         // Il tour si aprirà automaticamente quando l'utente va su /calendar
         updateStep('project_created');
-      } else if (currentStep === 'project_created' && pathname === '/calendar') {
+      } else if (
+        currentStep === 'project_created' &&
+        pathname === '/calendar'
+      ) {
         // Step 3 chiuso → completa l'onboarding
         completeOnboarding();
       }
@@ -109,12 +128,16 @@ function OnboardingTourCloseHandler() {
   return null;
 }
 
-export function OnboardingProvider({ children }: { children: React.ReactNode }) {
+export function OnboardingProvider({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   return (
     <OnboardingContextProvider>
       <TourProvider
         steps={tourSteps}
-        afterOpen={(target) => {
+        afterOpen={target => {
           // Scroll to target element
           target?.scrollIntoView({ behavior: 'smooth', block: 'center' });
         }}
@@ -122,20 +145,21 @@ export function OnboardingProvider({ children }: { children: React.ReactNode }) 
           setIsOpen(false);
         }}
         styles={{
-          popover: (base) => ({
+          popover: base => ({
             ...base,
             '--reactour-accent': 'hsl(var(--primary))',
             borderRadius: '12px',
             padding: '0',
             maxWidth: '500px',
-            boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
+            boxShadow:
+              '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
           }),
-          maskArea: (base) => ({ ...base, rx: 8 }),
-          badge: (base) => ({ ...base, left: 'auto', transform: 'none' }),
-          controls: (base) => ({ ...base, marginTop: 20 }),
-          close: (base) => ({ 
-            ...base, 
-            right: 8, 
+          maskArea: base => ({ ...base, rx: 8 }),
+          badge: base => ({ ...base, left: 'auto', transform: 'none' }),
+          controls: base => ({ ...base, marginTop: 20 }),
+          close: base => ({
+            ...base,
+            right: 8,
             top: 8,
             width: '24px',
             height: '24px',

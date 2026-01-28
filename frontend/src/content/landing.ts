@@ -7,7 +7,8 @@ export const landingContent = {
 
   hero: {
     headline: 'Stop Planning Your Day. Start Doing It.',
-    subheadline: 'Your tasks, automatically scheduled around your calendar. No manual planning, no missed deadlines.',
+    subheadline:
+      'Your tasks, automatically scheduled around your calendar. No manual planning, no missed deadlines.',
     primaryCta: 'Try Free for 14 Days',
     secondaryCta: 'Watch Demo',
     badge: 'No Credit Card Required',
@@ -26,14 +27,14 @@ export const landingContent = {
         id: 'adapts-to-you',
         title: 'Meetings Run Over? Schedule Updates Instantly',
         description:
-          "Your 2pm call went to 3pm? Nexto automatically reshuffles everything that comes after. No manual reorganization, no forgotten tasks, no deadline anxiety. Your schedule stays realistic without you lifting a finger.",
+          'Your 2pm call went to 3pm? Nexto automatically reshuffles everything that comes after. No manual reorganization, no forgotten tasks, no deadline anxiety. Your schedule stays realistic without you lifting a finger.',
         icon: 'RefreshCw',
       },
       {
         id: 'always-know',
         title: 'Open Calendar, See Next Task, Work',
         description:
-          "No staring at overwhelming to-do lists. No decision paralysis about what to work on next. Your calendar shows you exactly what you should be doing right now, prioritized and time-blocked. Just execute.",
+          'No staring at overwhelming to-do lists. No decision paralysis about what to work on next. Your calendar shows you exactly what you should be doing right now, prioritized and time-blocked. Just execute.',
         icon: 'Compass',
       },
       {
@@ -110,8 +111,7 @@ export const landingContent = {
       {
         number: '01',
         title: 'Add Your Tasks',
-        description:
-          'Name, deadline, time estimate, priority. That\'s it.',
+        description: "Name, deadline, time estimate, priority. That's it.",
       },
       {
         number: '02',
@@ -130,8 +130,7 @@ export const landingContent = {
 
   finalCta: {
     headline: 'Your Calendar, Actually Manageable',
-    subheadline:
-      'Stop planning. Start doing. Try it free for 14 days.',
+    subheadline: 'Stop planning. Start doing. Try it free for 14 days.',
     primaryCta: 'Start Free Trial',
     note: 'No credit card • Cancel anytime',
   },

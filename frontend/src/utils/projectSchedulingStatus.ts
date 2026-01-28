@@ -1,4 +1,9 @@
-import { Task, CalendarEventTask, CalendarEventUnion, isCalendarEventTask } from '@/types';
+import {
+  Task,
+  CalendarEventTask,
+  CalendarEventUnion,
+  isCalendarEventTask,
+} from '@/types';
 
 export interface ProjectSchedulingStatus {
   allTasksScheduled: boolean;
@@ -45,17 +50,19 @@ export function checkProjectSchedulingStatus(
   // Check each incomplete task
   for (const task of incompleteTasks) {
     const taskEvents = eventsByTaskId.get(task.id) || [];
-    
+
     // Calculate total scheduled duration from non-completed events
     const scheduledDuration = taskEvents
       .filter(event => !event.completed_at) // Only count non-completed events
       .reduce((total, event) => {
-        const duration = (event.end_time.getTime() - event.start_time.getTime()) / (1000 * 60);
+        const duration =
+          (event.end_time.getTime() - event.start_time.getTime()) / (1000 * 60);
         return total + duration;
       }, 0);
 
     // Check if task has enough scheduled time
-    const remainingDuration = task.planned_duration_minutes - (task.actual_duration_minutes || 0);
+    const remainingDuration =
+      task.planned_duration_minutes - (task.actual_duration_minutes || 0);
     const isFullyScheduled = scheduledDuration >= remainingDuration;
 
     if (isFullyScheduled) {
@@ -78,9 +85,9 @@ export function checkProjectSchedulingStatus(
     }
   }
 
-  const allTasksScheduled = 
-    incompleteTasks.length > 0 && 
-    scheduledTasksCount === incompleteTasks.length && 
+  const allTasksScheduled =
+    incompleteTasks.length > 0 &&
+    scheduledTasksCount === incompleteTasks.length &&
     !hasDeadlineViolations;
 
   return {
@@ -91,4 +98,3 @@ export function checkProjectSchedulingStatus(
     totalTasksCount: projectTasks.length,
   };
 }
-

@@ -2,7 +2,11 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
-import { isCalendarEventTask, type CalendarEventUnion, type Task } from '@/types';
+import {
+  isCalendarEventTask,
+  type CalendarEventUnion,
+  type Task,
+} from '@/types';
 import { taskService } from '@/services/taskService';
 import { logger } from '@/lib/logger';
 import { useTaskListData } from './useTaskListData';
@@ -13,7 +17,10 @@ interface TaskListContainerProps {
   onTaskUpdate?: () => void;
 }
 
-export function TaskListContainer({ refreshTrigger, onTaskUpdate }: TaskListContainerProps) {
+export function TaskListContainer({
+  refreshTrigger,
+  onTaskUpdate,
+}: TaskListContainerProps) {
   const { data, loading, error, reload } = useTaskListData(refreshTrigger);
   const projects = data?.projects ?? [];
 
@@ -48,10 +55,15 @@ export function TaskListContainer({ refreshTrigger, onTaskUpdate }: TaskListCont
     }
   };
 
-  const handleTaskUpdate = (updatedTask: Task, options: { showToast?: boolean } = {}) => {
+  const handleTaskUpdate = (
+    updatedTask: Task,
+    options: { showToast?: boolean } = {}
+  ) => {
     // Lightweight optimistic update: keep dialog + list in sync without refetch.
     // If callers need canonical server state, they can trigger refreshTrigger.
-    setTasks(prev => prev.map(t => (t.id === updatedTask.id ? updatedTask : t)));
+    setTasks(prev =>
+      prev.map(t => (t.id === updatedTask.id ? updatedTask : t))
+    );
     onTaskUpdate?.();
     if (options.showToast !== false) {
       toast.success('Task updated successfully');
@@ -73,7 +85,10 @@ export function TaskListContainer({ refreshTrigger, onTaskUpdate }: TaskListCont
     setSelectedTask(updatedTask);
   };
 
-  const handleQuickCreateTask = async (title: string, projectId: string | null) => {
+  const handleQuickCreateTask = async (
+    title: string,
+    projectId: string | null
+  ) => {
     try {
       await taskService.createTask({
         title,

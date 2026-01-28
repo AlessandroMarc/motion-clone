@@ -1,10 +1,11 @@
-@import "tailwindcss";
-@import "tw-animate-css";
+@import 'tailwindcss';
+@import 'tw-animate-css';
 
 /* Mona Sans - Display/Headlines font */
 @font-face {
   font-family: 'Mona Sans';
-  src: url('/fonts/Mona_Sans/MonaSans-VariableFont_wdth,wght.ttf') format('truetype');
+  src: url('/fonts/Mona_Sans/MonaSans-VariableFont_wdth,wght.ttf')
+    format('truetype');
   font-weight: 200 900;
   font-style: normal;
   font-display: swap;
@@ -12,7 +13,8 @@
 
 @font-face {
   font-family: 'Mona Sans';
-  src: url('/fonts/Mona_Sans/MonaSans-Italic-VariableFont_wdth,wght.ttf') format('truetype');
+  src: url('/fonts/Mona_Sans/MonaSans-Italic-VariableFont_wdth,wght.ttf')
+    format('truetype');
   font-weight: 200 900;
   font-style: italic;
   font-display: swap;
@@ -21,7 +23,8 @@
 /* Hubot Sans - Body text font */
 @font-face {
   font-family: 'Hubot Sans';
-  src: url('/fonts/Hubot_Sans/HubotSans-VariableFont_wdth,wght.ttf') format('truetype');
+  src: url('/fonts/Hubot_Sans/HubotSans-VariableFont_wdth,wght.ttf')
+    format('truetype');
   font-weight: 200 900;
   font-style: normal;
   font-display: swap;
@@ -29,7 +32,8 @@
 
 @font-face {
   font-family: 'Hubot Sans';
-  src: url('/fonts/Hubot_Sans/HubotSans-Italic-VariableFont_wdth,wght.ttf') format('truetype');
+  src: url('/fonts/Hubot_Sans/HubotSans-Italic-VariableFont_wdth,wght.ttf')
+    format('truetype');
   font-weight: 200 900;
   font-style: italic;
   font-display: swap;
@@ -212,7 +216,9 @@
 }
 
 .font-mono {
-  font-family: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, 'Liberation Mono', monospace;
+  font-family:
+    ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, 'Liberation Mono',
+    monospace;
 }
 
 /* Page transition animations */
@@ -285,7 +291,8 @@
 }
 
 @keyframes pulse-subtle {
-  0%, 100% {
+  0%,
+  100% {
     opacity: 1;
   }
   50% {
@@ -327,7 +334,10 @@
 
 /* Calendar event card transitions */
 .calendar-event-card {
-  transition: transform 0.15s ease-out, box-shadow 0.15s ease-out, opacity 0.2s ease-out;
+  transition:
+    transform 0.15s ease-out,
+    box-shadow 0.15s ease-out,
+    opacity 0.2s ease-out;
 }
 
 .calendar-event-card:hover {
@@ -341,7 +351,10 @@
 
 /* Task item transitions */
 .task-item {
-  transition: background-color 0.15s ease-out, transform 0.15s ease-out, opacity 0.2s ease-out;
+  transition:
+    background-color 0.15s ease-out,
+    transform 0.15s ease-out,
+    opacity 0.2s ease-out;
 }
 
 .task-item:hover {
@@ -349,11 +362,21 @@
 }
 
 /* Stagger animation delays for lists */
-.stagger-1 { animation-delay: 0.05s; }
-.stagger-2 { animation-delay: 0.1s; }
-.stagger-3 { animation-delay: 0.15s; }
-.stagger-4 { animation-delay: 0.2s; }
-.stagger-5 { animation-delay: 0.25s; }
+.stagger-1 {
+  animation-delay: 0.05s;
+}
+.stagger-2 {
+  animation-delay: 0.1s;
+}
+.stagger-3 {
+  animation-delay: 0.15s;
+}
+.stagger-4 {
+  animation-delay: 0.2s;
+}
+.stagger-5 {
+  animation-delay: 0.25s;
+}
 
 /* Reduced motion support */
 @media (prefers-reduced-motion: reduce) {

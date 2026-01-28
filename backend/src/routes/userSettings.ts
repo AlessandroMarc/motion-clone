@@ -205,14 +205,22 @@ router.put('/onboarding/step', async (req: Request, res: Response) => {
       return ResponseHelper.badRequest(res, 'User ID is required');
     }
 
-    if (step !== null && step !== 'task_created' && step !== 'project_created' && step !== 'scheduled') {
+    if (
+      step !== null &&
+      step !== 'task_created' &&
+      step !== 'project_created' &&
+      step !== 'scheduled'
+    ) {
       return ResponseHelper.badRequest(
         res,
         'Invalid onboarding step. Must be: task_created, project_created, scheduled, or null'
       );
     }
 
-    const settings = await userSettingsService.updateOnboardingStep(userId, step);
+    const settings = await userSettingsService.updateOnboardingStep(
+      userId,
+      step
+    );
     ResponseHelper.success(
       res,
       settings,
@@ -236,11 +244,7 @@ router.put('/onboarding/complete', async (req: Request, res: Response) => {
     }
 
     const settings = await userSettingsService.completeOnboarding(userId);
-    ResponseHelper.success(
-      res,
-      settings,
-      'Onboarding completed successfully'
-    );
+    ResponseHelper.success(res, settings, 'Onboarding completed successfully');
   } catch (error) {
     ResponseHelper.badRequest(
       res,

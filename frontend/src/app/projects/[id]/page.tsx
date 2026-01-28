@@ -24,7 +24,7 @@ export default function ProjectDetailPage({ params }: ProjectDetailPageProps) {
   const urlParams = useParams();
   // Use params from props if available, otherwise fall back to useParams hook
   const projectId = params?.id || (urlParams?.id as string);
-  
+
   const [project, setProject] = useState<Project | null>(null);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [isLoading, setIsLoading] = useState(true);

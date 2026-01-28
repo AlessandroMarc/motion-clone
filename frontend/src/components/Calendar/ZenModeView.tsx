@@ -9,7 +9,11 @@ import { calendarService } from '@/services/calendarService';
 import { cn } from '@/lib/utils';
 import { isSameDay } from '@/utils/calendarUtils';
 import { formatTimeRange, formatDateLong } from '@/utils/dateUtils';
-import { isTaskCompleted, sortTasksByPriority, TASK_COMPLETED_CLASS } from '@/utils/taskUtils';
+import {
+  isTaskCompleted,
+  sortTasksByPriority,
+  TASK_COMPLETED_CLASS,
+} from '@/utils/taskUtils';
 import { STATUS_CONFIG } from '@/components/Tasks/taskCardConfig';
 
 interface ZenModeViewProps {
@@ -56,10 +60,8 @@ export function ZenModeView({ onExit }: ZenModeViewProps) {
 
   // Today's task-linked events (for start/end time display)
   const todayTaskEvents = useMemo(() => {
-    const taskEvents: Map<
-      string,
-      { start_time: Date; end_time: Date }
-    > = new Map();
+    const taskEvents: Map<string, { start_time: Date; end_time: Date }> =
+      new Map();
     for (const event of events) {
       if (!isCalendarEventTask(event)) continue;
       const eventDate = new Date(event.start_time);
@@ -155,7 +157,9 @@ export function ZenModeView({ onExit }: ZenModeViewProps) {
                       statusConfig.className,
                       isCompleted && 'hover:opacity-90'
                     )}
-                    aria-label={isCompleted ? 'Mark incomplete' : 'Mark complete'}
+                    aria-label={
+                      isCompleted ? 'Mark incomplete' : 'Mark complete'
+                    }
                   >
                     <StatusIcon
                       className={cn(

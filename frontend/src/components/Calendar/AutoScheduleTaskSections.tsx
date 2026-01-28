@@ -1,11 +1,19 @@
 'use client';
 
 import { Badge } from '@/components/ui/badge';
-import { AlertTriangle, Calendar, CheckCircle2, ListChecks } from 'lucide-react';
+import {
+  AlertTriangle,
+  Calendar,
+  CheckCircle2,
+  ListChecks,
+} from 'lucide-react';
 import type { Task } from '@/types';
 import { cn } from '@/lib/utils';
 import { formatDate } from '@/utils/dateUtils';
-import { STATUS_CONFIG, PRIORITY_CONFIG } from '@/components/Tasks/taskCardConfig';
+import {
+  STATUS_CONFIG,
+  PRIORITY_CONFIG,
+} from '@/components/Tasks/taskCardConfig';
 
 type TaskEventBlock = {
   task: Task;
@@ -22,7 +30,8 @@ function TaskRow({
   eventsCount: number;
   violationsCount?: number;
 }) {
-  const statusConfig = STATUS_CONFIG[task.status] ?? STATUS_CONFIG['not-started'];
+  const statusConfig =
+    STATUS_CONFIG[task.status] ?? STATUS_CONFIG['not-started'];
   const priorityConfig =
     PRIORITY_CONFIG[task.priority] ?? PRIORITY_CONFIG['medium'];
   const StatusIcon = statusConfig.icon;
@@ -39,7 +48,10 @@ function TaskRow({
         {/* Status Icon */}
         <div className={cn('mt-0.5', statusConfig.className)}>
           <StatusIcon
-            className={cn('h-4 w-4', task.status === 'in-progress' && 'animate-spin')}
+            className={cn(
+              'h-4 w-4',
+              task.status === 'in-progress' && 'animate-spin'
+            )}
           />
         </div>
 
@@ -65,7 +77,12 @@ function TaskRow({
           <div className="mt-1.5 flex items-center gap-2 text-xs text-muted-foreground">
             {/* Priority */}
             <span className="inline-flex items-center gap-1">
-              <span className={cn('h-1.5 w-1.5 rounded-full', priorityConfig.dotClass)} />
+              <span
+                className={cn(
+                  'h-1.5 w-1.5 rounded-full',
+                  priorityConfig.dotClass
+                )}
+              />
               {priorityConfig.label}
             </span>
 
@@ -97,8 +114,8 @@ export function AutoScheduleTaskSections({
   tasksWithDeadlineCount: number;
   tasksWithoutDeadlineCount: number;
 }) {
-  const deadlineBlocks = taskEvents.filter((te) => te.task.due_date !== null);
-  const noDeadlineBlocks = taskEvents.filter((te) => te.task.due_date === null);
+  const deadlineBlocks = taskEvents.filter(te => te.task.due_date !== null);
+  const noDeadlineBlocks = taskEvents.filter(te => te.task.due_date === null);
 
   return (
     <>
@@ -146,7 +163,8 @@ export function AutoScheduleTaskSections({
           <CheckCircle2 className="h-8 w-8 mx-auto mb-2 text-emerald-500" />
           <p>All caught up!</p>
           <p className="text-xs mt-1">
-            No events to create. All tasks are either completed or already scheduled.
+            No events to create. All tasks are either completed or already
+            scheduled.
           </p>
         </div>
       )}

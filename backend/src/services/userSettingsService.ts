@@ -1,5 +1,10 @@
 import { supabase } from '../config/supabase.js';
-import type { Schedule, UserSettings, OnboardingStatus, OnboardingStep } from '../types/database.js';
+import type {
+  Schedule,
+  UserSettings,
+  OnboardingStatus,
+  OnboardingStep,
+} from '../types/database.js';
 import type {
   CreateScheduleInput,
   UpdateScheduleInput,
@@ -231,7 +236,9 @@ export class UserSettingsService {
   async getOnboardingStatus(userId: string): Promise<OnboardingStatus> {
     const { data, error } = await supabase
       .from('user_settings')
-      .select('onboarding_completed, onboarding_step, onboarding_started_at, onboarding_completed_at')
+      .select(
+        'onboarding_completed, onboarding_step, onboarding_started_at, onboarding_completed_at'
+      )
       .eq('user_id', userId)
       .single();
 
@@ -248,7 +255,9 @@ export class UserSettingsService {
                 onboarding_step: null,
               },
             ])
-            .select('onboarding_completed, onboarding_step, onboarding_started_at, onboarding_completed_at')
+            .select(
+              'onboarding_completed, onboarding_step, onboarding_started_at, onboarding_completed_at'
+            )
             .single();
 
           if (createError) {
@@ -265,8 +274,12 @@ export class UserSettingsService {
           return {
             completed: newData?.onboarding_completed ?? false,
             step: (newData?.onboarding_step as OnboardingStep) ?? null,
-            started_at: newData?.onboarding_started_at ? new Date(newData.onboarding_started_at) : null,
-            completed_at: newData?.onboarding_completed_at ? new Date(newData.onboarding_completed_at) : null,
+            started_at: newData?.onboarding_started_at
+              ? new Date(newData.onboarding_started_at)
+              : null,
+            completed_at: newData?.onboarding_completed_at
+              ? new Date(newData.onboarding_completed_at)
+              : null,
           };
         } catch (createErr) {
           // If creation fails, return default status
@@ -285,16 +298,23 @@ export class UserSettingsService {
     return {
       completed: data?.onboarding_completed ?? false,
       step: (data?.onboarding_step as OnboardingStep) ?? null,
-      started_at: data?.onboarding_started_at ? new Date(data.onboarding_started_at) : null,
-      completed_at: data?.onboarding_completed_at ? new Date(data.onboarding_completed_at) : null,
+      started_at: data?.onboarding_started_at
+        ? new Date(data.onboarding_started_at)
+        : null,
+      completed_at: data?.onboarding_completed_at
+        ? new Date(data.onboarding_completed_at)
+        : null,
     };
   }
 
   // Update onboarding step
-  async updateOnboardingStep(userId: string, step: OnboardingStep): Promise<UserSettings> {
+  async updateOnboardingStep(
+    userId: string,
+    step: OnboardingStep
+  ): Promise<UserSettings> {
     // First, ensure user_settings exists
     const existingSettings = await this.getUserSettings(userId);
-    
+
     const updateData: {
       onboarding_step: OnboardingStep;
       onboarding_started_at?: string;
@@ -329,8 +349,12 @@ export class UserSettingsService {
       ...data,
       created_at: new Date(data.created_at),
       updated_at: new Date(data.updated_at),
-      onboarding_started_at: data.onboarding_started_at ? new Date(data.onboarding_started_at) : null,
-      onboarding_completed_at: data.onboarding_completed_at ? new Date(data.onboarding_completed_at) : null,
+      onboarding_started_at: data.onboarding_started_at
+        ? new Date(data.onboarding_started_at)
+        : null,
+      onboarding_completed_at: data.onboarding_completed_at
+        ? new Date(data.onboarding_completed_at)
+        : null,
     };
   }
 
@@ -360,8 +384,12 @@ export class UserSettingsService {
       ...data,
       created_at: new Date(data.created_at),
       updated_at: new Date(data.updated_at),
-      onboarding_started_at: data.onboarding_started_at ? new Date(data.onboarding_started_at) : null,
-      onboarding_completed_at: data.onboarding_completed_at ? new Date(data.onboarding_completed_at) : null,
+      onboarding_started_at: data.onboarding_started_at
+        ? new Date(data.onboarding_started_at)
+        : null,
+      onboarding_completed_at: data.onboarding_completed_at
+        ? new Date(data.onboarding_completed_at)
+        : null,
     };
   }
 }

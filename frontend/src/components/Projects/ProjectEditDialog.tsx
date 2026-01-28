@@ -81,7 +81,9 @@ export function ProjectEditDialog({
       const updateData = {
         name: data.name,
         description: data.description || undefined,
-        deadline: data.deadline ? normalizeToMidnight(new Date(data.deadline)) : null,
+        deadline: data.deadline
+          ? normalizeToMidnight(new Date(data.deadline))
+          : null,
         status: status as 'not-started' | 'in-progress' | 'completed',
       };
 

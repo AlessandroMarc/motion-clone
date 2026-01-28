@@ -77,10 +77,7 @@ export function useApiConnection() {
 
         // Exponential backoff: delay increases with each attempt
         // But cap it at 5 seconds max
-        const delay = Math.min(
-          baseDelay * Math.pow(1.5, attempt),
-          5000
-        );
+        const delay = Math.min(baseDelay * Math.pow(1.5, attempt), 5000);
 
         if (isMounted) {
           setIsApiConnected(false);

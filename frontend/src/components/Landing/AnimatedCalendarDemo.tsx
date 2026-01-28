@@ -4,7 +4,12 @@ import { useState, useEffect } from 'react';
 import { CheckCircle2, Plus } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-type AnimationPhase = 'initial' | 'newTask' | 'moving' | 'shifted' | 'notification';
+type AnimationPhase =
+  | 'initial'
+  | 'newTask'
+  | 'moving'
+  | 'shifted'
+  | 'notification';
 
 const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'];
 
@@ -72,7 +77,9 @@ export function AnimatedCalendarDemo() {
               <div className="w-3 h-3 rounded-full bg-yellow-400" />
               <div className="w-3 h-3 rounded-full bg-green-400" />
             </div>
-            <div className="text-xs text-muted-foreground font-medium">Your Week</div>
+            <div className="text-xs text-muted-foreground font-medium">
+              Your Week
+            </div>
           </div>
 
           {/* Calendar grid */}
@@ -103,21 +110,25 @@ export function AnimatedCalendarDemo() {
                   <div
                     className={cn(
                       'space-y-1.5 transition-all duration-500 ease-out',
-                      dayIndex === 0 && mondayShifted ? 'translate-y-[calc(1.5rem+6px)] sm:translate-y-[calc(2rem+6px)]' : ''
+                      dayIndex === 0 && mondayShifted
+                        ? 'translate-y-[calc(1.5rem+6px)] sm:translate-y-[calc(2rem+6px)]'
+                        : ''
                     )}
                   >
-                    {[...Array(TASKS_PER_DAY[dayIndex])].map((_, blockIndex) => (
-                      <div
-                        key={blockIndex}
-                        className={cn(
-                          'h-6 sm:h-8 rounded-md',
-                          blockIndex === 0 && 'bg-primary/80',
-                          blockIndex === 1 && 'bg-primary/50',
-                          blockIndex === 2 && 'bg-primary/30',
-                          blockIndex >= 3 && 'bg-primary/20'
-                        )}
-                      />
-                    ))}
+                    {[...Array(TASKS_PER_DAY[dayIndex])].map(
+                      (_, blockIndex) => (
+                        <div
+                          key={blockIndex}
+                          className={cn(
+                            'h-6 sm:h-8 rounded-md',
+                            blockIndex === 0 && 'bg-primary/80',
+                            blockIndex === 1 && 'bg-primary/50',
+                            blockIndex === 2 && 'bg-primary/30',
+                            blockIndex >= 3 && 'bg-primary/20'
+                          )}
+                        />
+                      )
+                    )}
                   </div>
                 </div>
               </div>
@@ -128,7 +139,9 @@ export function AnimatedCalendarDemo() {
               className={cn(
                 'absolute h-6 sm:h-8 rounded-md bg-green-500 shadow-lg shadow-green-500/30 transition-all duration-700 ease-out flex items-center justify-center z-10',
                 !newBlockVisible && 'opacity-0 scale-75',
-                newBlockVisible && !newBlockInPosition && 'opacity-100 scale-100',
+                newBlockVisible &&
+                  !newBlockInPosition &&
+                  'opacity-100 scale-100',
                 newBlockInPosition && 'opacity-0 scale-100'
               )}
               style={{
@@ -142,9 +155,7 @@ export function AnimatedCalendarDemo() {
                     : 'translate(-50%, -50%) scale(0.75)',
               }}
             >
-              {!newBlockInPosition && (
-                <Plus className="w-4 h-4 text-white" />
-              )}
+              {!newBlockInPosition && <Plus className="w-4 h-4 text-white" />}
             </div>
           </div>
         </div>
@@ -164,8 +175,12 @@ export function AnimatedCalendarDemo() {
             <CheckCircle2 className="w-4 h-4 text-green-500" />
           </div>
           <div>
-            <p className="text-xs sm:text-sm font-medium">Task Auto-Scheduled</p>
-            <p className="text-[10px] sm:text-xs text-muted-foreground">Mon 9:00 AM - 10:00 AM</p>
+            <p className="text-xs sm:text-sm font-medium">
+              Task Auto-Scheduled
+            </p>
+            <p className="text-[10px] sm:text-xs text-muted-foreground">
+              Mon 9:00 AM - 10:00 AM
+            </p>
           </div>
         </div>
       </div>

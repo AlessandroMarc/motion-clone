@@ -26,7 +26,8 @@ export function TaskCardHeader({
   onSchedule,
   onDelete,
 }: TaskCardHeaderProps) {
-  const statusConfig = STATUS_CONFIG[task.status] ?? STATUS_CONFIG['not-started'];
+  const statusConfig =
+    STATUS_CONFIG[task.status] ?? STATUS_CONFIG['not-started'];
   const StatusIcon = statusConfig.icon;
   const isCompleted = isTaskCompleted(task);
 
@@ -62,7 +63,7 @@ export function TaskCardHeader({
           <Button
             variant="ghost"
             size="icon"
-            onClick={(e) => {
+            onClick={e => {
               e.stopPropagation();
               onSchedule(task);
             }}
@@ -76,7 +77,7 @@ export function TaskCardHeader({
           <Button
             variant="ghost"
             size="icon"
-            onClick={(e) => {
+            onClick={e => {
               e.stopPropagation();
               onDelete(task.id);
             }}

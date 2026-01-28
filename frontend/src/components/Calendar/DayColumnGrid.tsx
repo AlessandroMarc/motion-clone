@@ -90,7 +90,9 @@ export function DayColumnGrid({
             e.preventDefault();
             e.stopPropagation();
 
-            const rect = (e.currentTarget as HTMLDivElement).getBoundingClientRect();
+            const rect = (
+              e.currentTarget as HTMLDivElement
+            ).getBoundingClientRect();
             const relativeY = e.clientY - rect.top;
             const minute = relativeY < rect.height / 2 ? 0 : 30;
             handleDrop(e, hour, minute);
