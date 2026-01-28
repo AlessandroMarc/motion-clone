@@ -49,6 +49,17 @@ npm start
 
 The server will run on `http://localhost:3003`
 
+### Build output (aligned with Vercel)
+
+The backend is built from the **repo root**: `backend/` and `shared/` are both part of the compilation. Types import from `shared` via a relative path (`../../../shared/types.js`), not a package alias, so the same layout works locally and on Vercel.
+
+- Run `npm run build` from the **backend** directory.
+- Output layout:
+  - `dist/backend/src/index.js` – entry (used by `npm start`)
+  - `dist/backend/src/` – routes, services, types, etc.
+  - `dist/shared/types.js` – shared types used by the backend
+- Do not add an `@shared` path alias; use relative imports only so the built output resolves correctly in every environment.
+
 ## API Endpoints
 
 ### Tasks
