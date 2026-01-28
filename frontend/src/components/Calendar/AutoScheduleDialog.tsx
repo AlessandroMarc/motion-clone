@@ -20,8 +20,8 @@ import {
 } from '@/components/ui/select';
 import { Progress } from '@/components/ui/progress';
 import { Loader2, CheckCircle2, Calendar } from 'lucide-react';
-import type { Task, CalendarEventTask, CalendarEventUnion } from '@shared/types';
-import type { Schedule } from '@shared/types';
+import type { Task, CalendarEventTask, CalendarEventUnion } from '@/types';
+import type { Schedule } from '@/types';
 import { logger } from '@/lib/logger';
 import { useAutoSchedulePreview } from './hooks/useAutoSchedulePreview';
 import { AutoScheduleSummary } from './AutoScheduleSummary';

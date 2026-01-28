@@ -14,7 +14,7 @@ import {
   PopoverTrigger,
 } from '@/components/ui/popover';
 import { Folder, Check } from 'lucide-react';
-import type { Project } from '@shared/types';
+import type { Project } from '@/types';
 
 interface ProjectSelectionPopoverProps {
   availableProjects: Project[];

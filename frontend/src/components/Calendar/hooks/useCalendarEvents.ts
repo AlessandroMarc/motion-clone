@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
-import { CalendarEventUnion } from '@shared/types';
+import { CalendarEventUnion } from '@/types';
 import { calendarService } from '@/services/calendarService';
 import { isSameDay } from '@/utils/calendarUtils';
 
@@ -8,15 +8,14 @@ export function useCalendarEvents(weekDates: Date[]) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   
-  // Create a stable key from the first date of the week to prevent unnecessary re-fetches
-  // Extract the date string directly to avoid dependency on array reference
+  // Stable key for the date range to prevent unnecessary re-fetches (supports 7-day week or N-day mobile range)
   const weekKey = useMemo(() => {
     if (weekDates.length === 0) return '';
-    // Use only the first date (Monday) as the key - if Monday is the same, it's the same week
-    const mondayDate = weekDates[0];
-    return mondayDate.toISOString().split('T')[0];
+    const first = weekDates[0].toISOString().split('T')[0];
+    const last = weekDates[weekDates.length - 1].toISOString().split('T')[0];
+    return `${first}_${last}`;
   }, [weekDates]);
-  
+
   const weekKeyRef = useRef<string>('');
 
   const getWeekRangeIso = () => {
@@ -25,11 +24,11 @@ export function useCalendarEvents(weekDates: Date[]) {
     }
     const startDate = new Date(weekDates[0]);
     startDate.setHours(0, 0, 0, 0);
-    const endDate = new Date(weekDates[6]);
-    endDate.setHours(23, 59, 59, 999);
+    const lastDate = new Date(weekDates[weekDates.length - 1]);
+    lastDate.setHours(23, 59, 59, 999);
     return {
       startIso: startDate.toISOString(),
-      endIso: endDate.toISOString(),
+      endIso: lastDate.toISOString(),
     };
   };
 
@@ -56,18 +55,24 @@ export function useCalendarEvents(weekDates: Date[]) {
 
         setEvents(weekEvents);
       } catch (err) {
-        const errorMessage = err instanceof Error ? err.message : 'Failed to load calendar events';
-        // Only log to console in development
-        if (process.env.NODE_ENV === 'development') {
-          console.error('[useCalendarEvents] Failed to fetch calendar events:', err);
-        }
+        const errorMessage =
+          err instanceof Error
+            ? err.message.includes('Unable to connect')
+              ? err.message
+              : 'Failed to load calendar events. Please ensure the backend server is running.'
+            : 'Failed to load calendar events';
+        // Error is handled via error state - no need to log to console
+        // The error will be displayed in the UI via ErrorState component
         setError(errorMessage);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchEvents();
+    // Explicitly handle promise rejection to prevent console errors
+    fetchEvents().catch(() => {
+      // Already handled in try-catch, this prevents unhandled rejection
+    });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [weekKey]);
 
@@ -86,13 +91,27 @@ export function useCalendarEvents(weekDates: Date[]) {
   }, [events, weekDates]);
 
   const refreshEvents = async () => {
-    const { startIso, endIso } = getWeekRangeIso();
-    const weekEvents = await calendarService.getCalendarEventsByDateRange(
-      startIso,
-      endIso
-    );
-    setEvents(weekEvents);
-    return weekEvents;
+    try {
+      setError(null);
+      const { startIso, endIso } = getWeekRangeIso();
+      const weekEvents = await calendarService.getCalendarEventsByDateRange(
+        startIso,
+        endIso
+      );
+      setEvents(weekEvents);
+      return weekEvents;
+    } catch (err) {
+      const errorMessage =
+        err instanceof Error
+          ? err.message.includes('Unable to connect')
+            ? err.message
+            : 'Failed to load calendar events. Please ensure the backend server is running.'
+          : 'Failed to load calendar events';
+      // Error is handled via error state - no need to log to console
+      // Callers will show toast notifications if needed
+      setError(errorMessage);
+      throw err; // Re-throw so callers can handle if needed
+    }
   };
 
   return {

@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import type { Task, Project, CalendarEventUnion } from '@shared/types';
+import type { Task, Project, CalendarEventUnion } from '@/types';
 import { taskService } from '@/services/taskService';
 import { projectService } from '@/services/projectService';
 import { calendarService } from '@/services/calendarService';
@@ -60,13 +60,22 @@ export function CalendarTasksPanel({ currentWeekStart, refreshTrigger }: Calenda
         const events = await calendarService.getCalendarEventsByDateRange(startDate, endDate);
         setWeekEvents(events);
       } catch (e) {
-        console.error('[CalendarTasksPanel] Error loading data:', e);
-        setError(e instanceof Error ? e.message : 'Failed to load tasks');
+        const errorMessage =
+          e instanceof Error
+            ? e.message.includes('Unable to connect')
+              ? e.message
+              : 'Failed to load tasks. Please ensure the backend server is running.'
+            : 'Failed to load tasks';
+        // Error is handled via error state and displayed in UI - no need to log to console
+        setError(errorMessage);
       } finally {
         setLoading(false);
       }
     };
-    load();
+    // Explicitly handle promise rejection to prevent console errors
+    load().catch(() => {
+      // Already handled in try-catch, this prevents unhandled rejection
+    });
   }, [weekDates, refreshTrigger]);
 
   const plannedTaskIds = useMemo(
@@ -109,8 +118,16 @@ export function CalendarTasksPanel({ currentWeekStart, refreshTrigger }: Calenda
       const events = await calendarService.getCalendarEventsByDateRange(startDate, endDate);
       setWeekEvents(events);
     } catch (err) {
-      console.error('[CalendarTasksPanel] Failed to schedule task:', err);
-      toast.error('Failed to schedule task. Please try again.');
+      const errorMessage =
+        err instanceof Error
+          ? err.message.includes('Unable to connect')
+            ? err.message
+            : 'Failed to schedule task. Please ensure the backend server is running.'
+          : 'Failed to schedule task. Please try again.';
+      if (process.env.NODE_ENV === 'development') {
+        console.error('[CalendarTasksPanel] Failed to schedule task:', err);
+      }
+      toast.error(errorMessage);
       throw err;
     }
   };

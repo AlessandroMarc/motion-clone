@@ -3,7 +3,7 @@ import type {
   CreateMilestoneInput,
   UpdateMilestoneInput,
 } from '../types/database.js';
-import type { Milestone } from '@shared/types.js';
+import type { Milestone } from '../types/database.js';
 
 export class MilestoneService {
   // Create a new milestone

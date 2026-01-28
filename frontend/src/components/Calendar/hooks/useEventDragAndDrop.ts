@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import {
   CalendarEventUnion,
   type UpdateCalendarEventInput,
-} from '@shared/types';
+} from '@/types';
 import { calendarService } from '@/services/calendarService';
 
 const dragThresholdPx = 5;

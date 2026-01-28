@@ -4,7 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Folder, ExternalLink, X } from 'lucide-react';
-import type { Task, Project } from '@shared/types';
+import type { Task, Project } from '@/types';
 import { taskService } from '@/services/taskService';
 import { logger } from '@/lib/logger';
 import { ProjectSelectionPopover } from './ProjectSelectionPopover';

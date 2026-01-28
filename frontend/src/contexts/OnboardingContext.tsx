@@ -1,7 +1,7 @@
 'use client';
 
 import { createContext, useContext, useEffect, useState, useCallback } from 'react';
-import type { OnboardingStatus, OnboardingStep } from '@shared/types';
+import type { OnboardingStatus, OnboardingStep } from '@/types';
 import { userSettingsService } from '@/services/userSettingsService';
 import { useAuth } from './AuthContext';
 import posthog from 'posthog-js';

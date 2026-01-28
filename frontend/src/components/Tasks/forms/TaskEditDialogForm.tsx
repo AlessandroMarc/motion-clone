@@ -14,8 +14,9 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { taskService } from '@/services/taskService';
 import { calendarService } from '@/services/calendarService';
-import type { Task, CalendarEventTask } from '@shared/types';
+import type { Task, CalendarEventTask } from '@/types';
 import { taskSchema, type TaskFormData } from '@/hooks/useTaskForm';
+import { normalizeToMidnight } from '@/utils/dateUtils';
 import { TaskTitleField } from './TaskTitleField';
 import { TaskDescriptionField } from './TaskDescriptionField';
 import { TaskDueDateField } from './TaskDueDateField';
@@ -45,20 +46,17 @@ const emptyFormValues: TaskFormData = {
   blockedBy: [],
 };
 
-const formatDateTimeLocal = (date: Date) => {
-  const pad = (value: number) => value.toString().padStart(2, '0');
+const formatDateOnly = (date: Date): string => {
   const year = date.getFullYear();
-  const month = pad(date.getMonth() + 1);
-  const day = pad(date.getDate());
-  const hours = pad(date.getHours());
-  const minutes = pad(date.getMinutes());
-  return `${year}-${month}-${day}T${hours}:${minutes}`;
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
 };
 
 const mapTaskToFormValues = (task: Task): TaskFormData => ({
   title: task.title,
   description: task.description ?? '',
-  dueDate: task.due_date ? formatDateTimeLocal(new Date(task.due_date)) : '',
+  dueDate: task.due_date ? formatDateOnly(new Date(task.due_date)) : '',
   priority: task.priority,
   project_id: task.project_id ?? null,
   planned_duration_minutes: task.planned_duration_minutes ?? 60,
@@ -173,7 +171,9 @@ export function TaskEditDialogForm({
       const updatedTask = await taskService.updateTask(task.id, {
         title: data.title,
         description: data.description,
-        dueDate: data.dueDate ? new Date(data.dueDate) : null,
+        dueDate: data.dueDate
+          ? normalizeToMidnight(new Date(data.dueDate))
+          : null,
         priority: data.priority,
         project_id: data.project_id ?? null,
         plannedDurationMinutes: data.planned_duration_minutes,
@@ -204,7 +204,9 @@ export function TaskEditDialogForm({
       toast.error(message);
 
       // PostHog: Capture task update error
-      posthog.captureException(error instanceof Error ? error : new Error(message));
+      posthog.captureException(
+        error instanceof Error ? error : new Error(message)
+      );
     } finally {
       setIsSubmitting(false);
     }

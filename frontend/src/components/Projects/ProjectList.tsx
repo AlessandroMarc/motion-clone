@@ -8,7 +8,7 @@ import type {
   Project,
   Task,
   CalendarEventUnion,
-} from '@shared/types';
+} from '@/types';
 import { projectService } from '@/services/projectService';
 import { taskService } from '@/services/taskService';
 import { calendarService } from '@/services/calendarService';

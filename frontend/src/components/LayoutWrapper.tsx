@@ -9,10 +9,10 @@ interface LayoutWrapperProps {
 
 export function LayoutWrapper({ children }: LayoutWrapperProps) {
   const pathname = usePathname();
-  
+
   // Hide sidebar on landing page
   const isLandingPage = pathname === '/';
-  
+
   if (isLandingPage) {
     return <main className="flex-1 overflow-auto">{children}</main>;
   }
@@ -20,7 +20,9 @@ export function LayoutWrapper({ children }: LayoutWrapperProps) {
   return (
     <div className="flex h-screen">
       <Sidebar />
-      <main className="flex-1 overflow-auto md:pt-0 pt-16">{children}</main>
+      <main className="flex-1 overflow-auto pt-14 pb-24 md:pt-0 md:pb-0">
+        {children}
+      </main>
     </div>
   );
 }

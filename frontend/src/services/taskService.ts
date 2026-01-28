@@ -1,35 +1,16 @@
-import type { Task } from '@shared/types';
+import type { Task, CreateTaskInput, UpdateTaskInput } from '@/types';
 import { request } from './apiClient';
 import { toTask, toTasks, type UnknownRecord } from './transforms';
-
-export interface CreateTaskInput {
-  title: string;
-  description?: string;
-  dueDate?: Date | null;
-  priority: 'low' | 'medium' | 'high';
-  project_id?: string;
-  blockedBy?: string[];
-  plannedDurationMinutes: number;
-  actualDurationMinutes?: number;
-}
-
-export interface UpdateTaskInput {
-  title?: string;
-  description?: string;
-  dueDate?: Date | null;
-  priority?: 'low' | 'medium' | 'high';
-  project_id?: string | null;
-  blockedBy?: string[];
-  plannedDurationMinutes?: number;
-  actualDurationMinutes?: number;
-}
+import { normalizeToMidnight } from '@/utils/dateUtils';
 
 class TaskService {
   async createTask(input: CreateTaskInput): Promise<Task> {
     const payload = {
       title: input.title,
       description: input.description,
-      due_date: input.dueDate?.toISOString(),
+      due_date: input.dueDate
+        ? normalizeToMidnight(input.dueDate).toISOString()
+        : null,
       priority: input.priority,
       dependencies: [],
       blocked_by: input.blockedBy || [],
@@ -78,7 +59,9 @@ class TaskService {
       method: 'PUT',
       body: JSON.stringify({
         ...rest,
-        due_date: dueDate?.toISOString() ?? null,
+        due_date: dueDate
+          ? normalizeToMidnight(dueDate).toISOString()
+          : null,
         project_id: input.project_id,
         blocked_by: blockedBy,
         planned_duration_minutes: plannedDurationMinutes,
@@ -123,6 +106,14 @@ class TaskService {
     }
 
     return toTasks(response.data);
+  }
+
+  /** Set task completed or incomplete via actualDurationMinutes; returns updated task. */
+  async setTaskCompleted(task: Task, completed: boolean): Promise<Task> {
+    const actualDurationMinutes = completed
+      ? Math.max(task.planned_duration_minutes || 1, 1)
+      : 0;
+    return this.updateTask(task.id, { actualDurationMinutes });
   }
 }
 

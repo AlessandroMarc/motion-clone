@@ -1,4 +1,4 @@
-import type { Schedule, UserSettings, OnboardingStatus, OnboardingStep } from '@shared/types';
+import type { Schedule, UserSettings, OnboardingStatus, OnboardingStep } from '@/types';
 import { request } from './apiClient';
 
 class UserSettingsService {

@@ -5,8 +5,8 @@ import type {
   UpdateScheduleInput,
   CreateUserSettingsInput,
   UpdateUserSettingsInput,
-} from '../services/userSettingsService.js';
-import type { OnboardingStep } from '@shared/types.js';
+} from '../types/userSettings.js';
+import type { OnboardingStep } from '../types/database.js';
 import { ResponseHelper } from '../utils/responseHelpers.js';
 
 const router = express.Router();

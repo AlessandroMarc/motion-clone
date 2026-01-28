@@ -15,6 +15,7 @@ interface CalendarHeaderProps {
   onNextWeek: () => void;
   onCurrentWeek: () => void;
   onAutoSchedule?: () => void;
+  onZenMode?: () => void;
   // Mobile-specific props
   currentDay?: Date;
   onPreviousDay?: () => void;
@@ -27,6 +28,7 @@ export function CalendarHeader({
   onNextWeek,
   onCurrentWeek,
   onAutoSchedule,
+  onZenMode,
   currentDay,
   onPreviousDay,
   onNextDay,
@@ -36,10 +38,10 @@ export function CalendarHeader({
   // Mobile view: show single day navigation
   if (isMobile && currentDay && onPreviousDay && onNextDay) {
     const dayName = currentDay.toLocaleDateString('en-US', { weekday: 'long' });
-    const dayDate = currentDay.toLocaleDateString('en-US', { 
-      month: 'short', 
+    const dayDate = currentDay.toLocaleDateString('en-US', {
+      month: 'short',
       day: 'numeric',
-      year: 'numeric'
+      year: 'numeric',
     });
 
     return (
@@ -67,12 +69,24 @@ export function CalendarHeader({
                 Auto
               </Button>
             )}
+            {onZenMode && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={onZenMode}
+                className="text-xs h-8 px-3 gap-1.5"
+                title="Zen Mode"
+              >
+                <Circle className="h-3 w-3" />
+                Zen
+              </Button>
+            )}
           </div>
         </div>
 
         <div className="flex items-center justify-between">
-          <Button 
-            variant="ghost" 
+          <Button
+            variant="ghost"
             size="icon"
             onClick={onPreviousDay}
             className="h-8 w-8"
@@ -81,16 +95,12 @@ export function CalendarHeader({
           </Button>
 
           <div className="text-center flex-1 px-4">
-            <div className="text-xs text-muted-foreground">
-              {dayName}
-            </div>
-            <div className="text-sm font-medium">
-              {dayDate}
-            </div>
+            <div className="text-xs text-muted-foreground">{dayName}</div>
+            <div className="text-sm font-medium">{dayDate}</div>
           </div>
 
-          <Button 
-            variant="ghost" 
+          <Button
+            variant="ghost"
             size="icon"
             onClick={onNextDay}
             className="h-8 w-8"
@@ -126,10 +136,27 @@ export function CalendarHeader({
             Auto-Schedule
           </Button>
         )}
+        {onZenMode && (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={onZenMode}
+            className="text-xs h-7 px-2.5 gap-1.5"
+            title="Zen Mode - Focus on today's tasks"
+          >
+            <Circle className="h-3 w-3" />
+            Zen
+          </Button>
+        )}
       </div>
 
       <div className="flex items-center gap-1">
-        <Button variant="ghost" size="icon" onClick={onPreviousWeek} className="h-7 w-7">
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={onPreviousWeek}
+          className="h-7 w-7"
+        >
           <ChevronLeft className="h-4 w-4" />
         </Button>
 
@@ -137,7 +164,12 @@ export function CalendarHeader({
           {getWeekRangeString(weekDates)}
         </div>
 
-        <Button variant="ghost" size="icon" onClick={onNextWeek} className="h-7 w-7">
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={onNextWeek}
+          className="h-7 w-7"
+        >
           <ChevronRight className="h-4 w-4" />
         </Button>
       </div>

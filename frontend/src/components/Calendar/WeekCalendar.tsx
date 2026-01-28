@@ -4,8 +4,14 @@ import { WeekCalendarContainer } from './WeekCalendarContainer';
 
 interface WeekCalendarProps {
   onTaskDropped?: () => void;
+  onZenMode?: () => void;
 }
 
-export function WeekCalendar({ onTaskDropped }: WeekCalendarProps) {
-  return <WeekCalendarContainer onTaskDropped={onTaskDropped} />;
+export function WeekCalendar({ onTaskDropped, onZenMode }: WeekCalendarProps) {
+  return (
+    <WeekCalendarContainer
+      onTaskDropped={onTaskDropped}
+      onZenMode={onZenMode}
+    />
+  );
 }

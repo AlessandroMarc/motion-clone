@@ -1,7 +1,7 @@
 import {
   CalendarEventUnion,
   type CreateCalendarEventInput,
-} from '@shared/types';
+} from '@/types';
 import { calendarService } from '@/services/calendarService';
 import { toast } from 'sonner';
 

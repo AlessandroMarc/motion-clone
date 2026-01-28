@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { userSettingsService } from '@/services/userSettingsService';
-import type { Schedule } from '@shared/types';
+import type { Schedule } from '@/types';
 import { toast } from 'sonner';
 
 export function useSchedules() {

@@ -46,7 +46,10 @@ export function ProjectCreateDialogForm({
   return (
     <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
       <DialogTrigger asChild>
-        <Button className="gap-2" data-onboarding-step="create-project">
+        <Button
+          className="w-full sm:w-auto gap-2"
+          data-onboarding-step="create-project"
+        >
           <FolderPlus className="h-4 w-4" />
           Create Project
         </Button>

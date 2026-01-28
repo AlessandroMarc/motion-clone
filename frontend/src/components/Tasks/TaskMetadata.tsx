@@ -8,7 +8,7 @@ import {
   Folder,
 } from 'lucide-react';
 import { formatDate } from '@/utils/dateUtils';
-import type { Task, Project } from '@shared/types';
+import type { Task, Project } from '@/types';
 import { cn } from '@/lib/utils';
 
 interface TaskMetadataProps {

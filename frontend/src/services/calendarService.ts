@@ -1,9 +1,9 @@
-import type { CalendarEventTask, CalendarEventUnion } from '@shared/types';
-import { isCalendarEventTask } from '@shared/types';
+import type { CalendarEventTask, CalendarEventUnion } from '@/types';
+import { isCalendarEventTask } from '@/types';
 import type {
   CreateCalendarEventInput,
   UpdateCalendarEventInput,
-} from '@shared/types';
+} from '@/types';
 import { request } from './apiClient';
 import {
   toCalendarEventUnion,

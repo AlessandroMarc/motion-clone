@@ -1,6 +1,6 @@
 'use client';
 
-import type { Task } from '@shared/types';
+import type { Task } from '@/types';
 import { CompactTaskCard } from './CompactTaskCard';
 
 interface KanbanTaskCardProps {

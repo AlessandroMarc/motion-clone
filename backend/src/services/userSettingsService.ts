@@ -1,29 +1,11 @@
 import { supabase } from '../config/supabase.js';
-import type { Schedule, UserSettings, OnboardingStatus, OnboardingStep } from '@shared/types.js';
-
-export interface CreateScheduleInput {
-  user_id: string;
-  name?: string;
-  working_hours_start?: number;
-  working_hours_end?: number;
-  is_default?: boolean;
-}
-
-export interface UpdateScheduleInput {
-  name?: string;
-  working_hours_start?: number;
-  working_hours_end?: number;
-  is_default?: boolean;
-}
-
-export interface CreateUserSettingsInput {
-  user_id: string;
-  active_schedule_id?: string | null;
-}
-
-export interface UpdateUserSettingsInput {
-  active_schedule_id?: string | null;
-}
+import type { Schedule, UserSettings, OnboardingStatus, OnboardingStep } from '../types/database.js';
+import type {
+  CreateScheduleInput,
+  UpdateScheduleInput,
+  CreateUserSettingsInput,
+  UpdateUserSettingsInput,
+} from '../types/userSettings.js';
 
 export class UserSettingsService {
   // Get active schedule for a user (or default if none is active)

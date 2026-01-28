@@ -18,7 +18,7 @@ import { Badge } from '@/components/ui/badge';
 import { Check, ChevronsUpDown, X, AlertCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { taskService } from '@/services/taskService';
-import type { Task } from '@shared/types';
+import type { Task } from '@/types';
 import { TaskFormData } from '@/hooks/useTaskForm';
 
 interface TaskBlockedByFieldProps {

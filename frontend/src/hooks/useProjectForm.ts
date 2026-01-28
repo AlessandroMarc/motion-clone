@@ -3,9 +3,10 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { toast } from 'sonner';
-import type { Project, WorkItemStatus } from '@shared/types';
+import type { Project, WorkItemStatus } from '@/types';
 import { useAuth } from '@/contexts/AuthContext';
 import { useOnboarding } from '@/hooks/useOnboarding';
+import { normalizeToMidnight } from '@/utils/dateUtils';
 import posthog from 'posthog-js';
 
 // Project form schema
@@ -63,7 +64,7 @@ export function useProjectForm(
       const projectData = {
         name: data.name,
         description: data.description || undefined,
-        deadline: data.deadline ? new Date(data.deadline) : null,
+        deadline: data.deadline ? normalizeToMidnight(new Date(data.deadline)) : null,
         status: 'not-started' as WorkItemStatus,
         user_id: user.id,
       };

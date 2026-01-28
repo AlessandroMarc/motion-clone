@@ -1,9 +1,5 @@
 import { useState, useEffect } from 'react';
-import {
-  Task,
-  CalendarEventUnion,
-  isCalendarEventTask,
-} from '@shared/types';
+import { Task, CalendarEventUnion, isCalendarEventTask } from '@/types';
 import { taskService } from '@/services/taskService';
 import { calendarService } from '@/services/calendarService';
 import { toast } from 'sonner';
@@ -29,10 +25,18 @@ export function useAutoSchedule(
         allTasks.forEach(task => map.set(task.id, task));
         setTasksMap(map);
       } catch (err) {
-        logger.error('Failed to load tasks:', err);
+        logger.error('Failed to fetch tasks for auto-scheduling:', err);
+        toast.error(
+          'Failed to load tasks. Please ensure the backend server is running.'
+        );
       }
     };
-    loadTasks();
+    loadTasks().catch(err => {
+      logger.error('Failed to fetch tasks for auto-scheduling:', err);
+      toast.error(
+        'Failed to load tasks. Please ensure the backend server is running.'
+      );
+    });
   }, []);
 
   const handleAutoScheduleClick = async () => {
@@ -50,7 +54,13 @@ export function useAutoSchedule(
       setAutoScheduleOpen(true);
     } catch (err) {
       logger.error('Failed to fetch tasks for auto-scheduling:', err);
-      toast.error('Failed to load tasks');
+      const errorMessage =
+        err instanceof Error
+          ? err.message.includes('Unable to connect')
+            ? err.message
+            : 'Failed to load tasks. Please ensure the backend server is running.'
+          : 'Failed to load tasks';
+      toast.error(errorMessage);
     }
   };
 
@@ -80,13 +90,11 @@ export function useAutoSchedule(
         event => isCalendarEventTask(event) && !event.completed_at
       );
 
-
       // Use batch delete for better performance
       if (nonCompletedTaskEvents.length > 0) {
         const eventIds = nonCompletedTaskEvents.map(e => e.id);
-        const deleteResults = await calendarService.deleteCalendarEventsBatch(
-          eventIds
-        );
+        const deleteResults =
+          await calendarService.deleteCalendarEventsBatch(eventIds);
 
         const failedDeletes = deleteResults.filter(r => !r.success);
         if (failedDeletes.length > 0) {
@@ -98,7 +106,7 @@ export function useAutoSchedule(
       }
 
       // Refresh events again after deletion to ensure we have the latest state
-      const eventsAfterDeletion = await refreshEvents();
+      await refreshEvents();
 
       // Add a small delay to ensure deletion is fully processed
       await new Promise(resolve => setTimeout(resolve, 500));
@@ -155,7 +163,8 @@ export function useAutoSchedule(
         toast.error(
           `Failed to create ${failed} event${failed > 1 ? 's' : ''}`,
           {
-            description: 'Some events could not be scheduled. Please try again.',
+            description:
+              'Some events could not be scheduled. Please try again.',
             duration: 5000,
           }
         );

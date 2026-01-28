@@ -3,7 +3,18 @@ import type {
   CreateProjectInput,
   UpdateProjectInput,
 } from '../types/database.js';
-import type { Project } from '@shared/types.js';
+import type { Project } from '../types/database.js';
+
+/**
+ * Normalize a date to midnight (00:00:00.000) in local time
+ * Used for deadlines to ensure consistent date-only comparison
+ */
+function normalizeToMidnight(date: Date | string): string {
+  const dateObj = typeof date === 'string' ? new Date(date) : date;
+  const normalized = new Date(dateObj);
+  normalized.setHours(0, 0, 0, 0);
+  return normalized.toISOString();
+}
 
 export class ProjectService {
   // Create a new project
@@ -15,9 +26,7 @@ export class ProjectService {
           name: input.name,
           description: input.description,
           deadline: input.deadline
-            ? typeof input.deadline === 'string'
-              ? input.deadline
-              : input.deadline.toISOString()
+            ? normalizeToMidnight(input.deadline)
             : null,
           status: input.status || 'not-started',
         },
@@ -81,9 +90,7 @@ export class ProjectService {
       updateData.description = input.description;
     if (input.deadline !== undefined)
       updateData.deadline = input.deadline
-        ? typeof input.deadline === 'string'
-          ? input.deadline
-          : input.deadline.toISOString()
+        ? normalizeToMidnight(input.deadline)
         : null;
     if (input.status !== undefined) updateData.status = input.status;
 

@@ -371,3 +371,32 @@
     transition: none !important;
   }
 }
+
+/* Calendar fix: Fix flex layout alignment issues */
+.rdp-weekdays {
+  display: flex !important;
+  flex-direction: row !important;
+}
+
+.rdp-weekday {
+  flex: 0 0 36px !important;
+  min-width: 36px !important;
+  max-width: 36px !important;
+  width: 36px !important;
+}
+
+.rdp-week {
+  display: flex !important;
+  flex-direction: row !important;
+  width: 100% !important;
+}
+
+.rdp-cell {
+  flex: 0 0 36px !important;
+  min-width: 36px !important;
+  max-width: 36px !important;
+  width: 36px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}

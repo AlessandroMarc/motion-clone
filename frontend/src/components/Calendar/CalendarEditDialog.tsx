@@ -18,13 +18,10 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { Trash2, CheckCircle2 } from 'lucide-react';
 import confetti from 'canvas-confetti';
-import { DateTimePicker } from '@/components/forms/shared/DateTimePicker';
+import { CalendarEventFormFields } from './CalendarEventFormFields';
 
 interface CalendarEditDialogProps {
   open: boolean;
@@ -77,7 +74,7 @@ function CalendarEditDialog({
   const handleCompleteClick = () => {
     const newCompletedState = !completed;
     onCompletedChange?.(newCompletedState);
-    
+
     // Show confetti when completing the task
     if (newCompletedState) {
       confetti({
@@ -93,42 +90,20 @@ function CalendarEditDialog({
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Edit Taks Block</DialogTitle>
+            <DialogTitle>Edit calendar event</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="calendar-title">Title</Label>
-              <Input
-                id="calendar-title"
-                value={title}
-                onChange={e => setTitle(e.target.value)}
-                placeholder="Event title"
-              />
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <DateTimePicker
-                value={startTime}
-                onChange={setStartTime}
-                label="Start"
-                id="calendar-start"
-              />
-              <DateTimePicker
-                value={endTime}
-                onChange={setEndTime}
-                label="End"
-                id="calendar-end"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="calendar-description">Description</Label>
-              <Textarea
-                id="calendar-description"
-                value={description}
-                onChange={e => setDescription(e.target.value)}
-                placeholder="Optional description"
-                rows={3}
-              />
-            </div>
+            <CalendarEventFormFields
+              title={title}
+              setTitle={setTitle}
+              description={description}
+              setDescription={setDescription}
+              startTime={startTime}
+              setStartTime={setStartTime}
+              endTime={endTime}
+              setEndTime={setEndTime}
+              dateTimeDisabled
+            />
             {isTaskEvent && (
               <div className="space-y-2">
                 <Button
@@ -140,16 +115,16 @@ function CalendarEditDialog({
                   <CheckCircle2
                     className={`h-4 w-4 ${completed ? 'text-green-500' : ''}`}
                   />
-                  {completed ? 'Task Completata' : 'Completa Task'}
+                  {completed ? 'Task completed' : 'Complete task'}
                 </Button>
                 {completedAt && (
                   <p className="text-xs text-muted-foreground text-center">
-                    Completata il:{' '}
-                    {completedAt.toLocaleString('it-IT', {
-                      day: '2-digit',
-                      month: '2-digit',
+                    Completed:{' '}
+                    {completedAt.toLocaleDateString('en-US', {
+                      month: 'short',
+                      day: 'numeric',
                       year: 'numeric',
-                      hour: '2-digit',
+                      hour: 'numeric',
                       minute: '2-digit',
                     })}
                   </p>

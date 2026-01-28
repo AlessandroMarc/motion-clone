@@ -4,7 +4,8 @@ import type {
   CalendarEventTask,
   CalendarEventUnion,
   Schedule,
-} from '@shared/types';
+} from '@/types';
+import { TASK_PRIORITY_RANK } from '@/utils/taskUtils';
 
 export interface TaskSchedulingConfig {
   eventDurationMinutes: number;
@@ -343,8 +344,9 @@ function defaultSortStrategy(tasks: Task[]): Task[] {
     }
 
     // Then by priority (high -> medium -> low)
-    const priorityOrder = { high: 0, medium: 1, low: 2 };
-    return priorityOrder[a.priority] - priorityOrder[b.priority];
+    return (
+      (TASK_PRIORITY_RANK[b.priority] ?? 0) - (TASK_PRIORITY_RANK[a.priority] ?? 0)
+    );
   });
 }
 

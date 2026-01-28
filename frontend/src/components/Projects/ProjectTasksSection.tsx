@@ -2,18 +2,17 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import {
-  Calendar,
-  AlertCircle,
-  X,
-  CheckCircle2,
-  Circle,
-  Loader2,
-  Clock,
-} from 'lucide-react';
-import { formatDate, isOverdue } from '@/utils/dateUtils';
+import { Calendar, AlertCircle, X, CheckCircle2, Clock } from 'lucide-react';
+import { formatDate } from '@/utils/dateUtils';
 import { cn } from '@/lib/utils';
-import type { Task } from '@shared/types';
+import type { Task } from '@/types';
+import {
+  isTaskCompleted,
+  isTaskOverdue,
+  TASK_COMPLETED_CLASS,
+  TASK_COMPLETED_OPACITY_CLASS,
+} from '@/utils/taskUtils';
+import { STATUS_CONFIG, PRIORITY_CONFIG } from '@/components/Tasks/taskCardConfig';
 import { ProjectTaskCreateDialog } from './ProjectTaskCreateDialog';
 
 interface ProjectTasksSectionProps {
@@ -27,43 +26,6 @@ interface ProjectTasksSectionProps {
   ) => Promise<void>;
   onTaskUnlink: (taskId: string) => Promise<void>;
 }
-
-const STATUS_CONFIG: Record<
-  string,
-  { icon: typeof Circle; className: string }
-> = {
-  pending: {
-    icon: Circle,
-    className: 'text-muted-foreground',
-  },
-  'not-started': {
-    icon: Circle,
-    className: 'text-muted-foreground',
-  },
-  'in-progress': {
-    icon: Loader2,
-    className: 'text-blue-500',
-  },
-  completed: {
-    icon: CheckCircle2,
-    className: 'text-emerald-500',
-  },
-};
-
-const PRIORITY_CONFIG: Record<Task['priority'], { dotClass: string; bgClass: string }> = {
-  high: {
-    dotClass: 'bg-red-500',
-    bgClass: 'bg-red-500/10 text-red-600 dark:text-red-400',
-  },
-  medium: {
-    dotClass: 'bg-amber-500',
-    bgClass: 'bg-amber-500/10 text-amber-600 dark:text-amber-400',
-  },
-  low: {
-    dotClass: 'bg-slate-400',
-    bgClass: 'bg-slate-500/10 text-slate-600 dark:text-slate-400',
-  },
-};
 
 export function ProjectTasksSection({
   projectId,
@@ -110,10 +72,12 @@ export function ProjectTasksSection({
         ) : (
           <div className="space-y-2">
             {tasks.map((task) => {
-              const isCompleted = task.status === 'completed';
-              const taskIsOverdue = task.due_date && isOverdue(task.due_date) && !isCompleted;
-              const statusConfig = STATUS_CONFIG[task.status] ?? STATUS_CONFIG['pending'];
-              const priorityConfig = PRIORITY_CONFIG[task.priority] ?? PRIORITY_CONFIG['medium'];
+              const isCompleted = isTaskCompleted(task);
+              const taskIsOverdue = isTaskOverdue(task);
+              const statusConfig =
+                STATUS_CONFIG[task.status] ?? STATUS_CONFIG['not-started'];
+              const priorityConfig =
+                PRIORITY_CONFIG[task.priority] ?? PRIORITY_CONFIG['medium'];
               const StatusIcon = statusConfig.icon;
 
               return (
@@ -122,7 +86,7 @@ export function ProjectTasksSection({
                   className={cn(
                     'group flex items-start gap-3 p-3 rounded-lg border transition-all',
                     'hover:bg-accent/30 hover:border-accent',
-                    isCompleted && 'opacity-60'
+                    isCompleted && TASK_COMPLETED_OPACITY_CLASS
                   )}
                 >
                   {/* Status Icon */}
@@ -140,7 +104,7 @@ export function ProjectTasksSection({
                     <h4
                       className={cn(
                         'text-sm font-medium',
-                        isCompleted && 'line-through text-muted-foreground'
+                        isCompleted && TASK_COMPLETED_CLASS
                       )}
                     >
                       {task.title}
@@ -162,7 +126,7 @@ export function ProjectTasksSection({
                         )}
                       >
                         <span className={cn('h-1.5 w-1.5 rounded-full', priorityConfig.dotClass)} />
-                        {task.priority}
+                        {priorityConfig.label}
                       </span>
 
                       {/* Duration */}

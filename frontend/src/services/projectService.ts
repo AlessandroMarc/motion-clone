@@ -1,19 +1,6 @@
-import type { Project } from '@shared/types';
+import type { Project, CreateProjectData, UpdateProjectData } from '@/types';
 import { request } from './apiClient';
-
-export interface CreateProjectData {
-  name: string;
-  description?: string;
-  deadline?: Date | null;
-  user_id: string;
-}
-
-export interface UpdateProjectData {
-  name?: string;
-  description?: string;
-  deadline?: Date | null;
-  status?: 'not-started' | 'in-progress' | 'completed';
-}
+import { normalizeToMidnight } from '@/utils/dateUtils';
 
 class ProjectService {
   async getAllProjects(): Promise<Project[]> {
@@ -42,9 +29,11 @@ class ProjectService {
       body: JSON.stringify({
         ...data,
         deadline: data.deadline
-          ? data.deadline instanceof Date
-            ? data.deadline.toISOString()
-            : data.deadline
+          ? normalizeToMidnight(
+              data.deadline instanceof Date
+                ? data.deadline
+                : new Date(data.deadline)
+            ).toISOString()
           : null,
       }),
     });
@@ -62,9 +51,11 @@ class ProjectService {
       body: JSON.stringify({
         ...data,
         deadline: data.deadline
-          ? data.deadline instanceof Date
-            ? data.deadline.toISOString()
-            : data.deadline
+          ? normalizeToMidnight(
+              data.deadline instanceof Date
+                ? data.deadline
+                : new Date(data.deadline)
+            ).toISOString()
           : null,
       }),
     });

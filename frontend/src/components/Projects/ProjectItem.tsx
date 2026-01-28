@@ -17,7 +17,7 @@ import {
 import { formatDate, isOverdue } from '@/utils/dateUtils';
 import { StatusIcon } from '@/components/shared';
 import Link from 'next/link';
-import type { Project } from '@shared/types';
+import type { Project } from '@/types';
 import type { ProjectSchedulingStatus } from '@/utils/projectSchedulingStatus';
 
 interface ProjectItemProps {
@@ -121,70 +121,64 @@ export function ProjectItem({
 
   return (
     <Card className="hover:shadow-sm transition-shadow">
-      <CardContent className="p-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3 flex-1 min-w-0">
-            <div className="flex-shrink-0">
-              <StatusIcon status={project.status} type="project" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <Link
-                href={`/projects/${project.id}`}
-                className="block hover:text-primary transition-colors"
-              >
-                <h3
-                  className={`text-sm font-medium ${
-                    project.status === 'completed'
-                      ? 'line-through text-muted-foreground'
-                      : ''
-                  }`}
-                >
-                  {project.name}
-                </h3>
-              </Link>
-              {project.description && (
-                <p className="text-xs text-muted-foreground mt-1 truncate">
-                  {project.description}
-                </p>
-              )}
-            </div>
+      <CardContent className="p-3 sm:p-4">
+        {/* Row 1: icon + name + delete — keeps primary action and title clear */}
+        <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
+          <div className="shrink-0">
+            <StatusIcon status={project.status} type="project" />
           </div>
-
-          <div className="flex items-center gap-2 flex-shrink-0">
-            {renderSchedulingIndicator()}
-
-            <div className="flex items-center gap-1 text-xs text-muted-foreground">
-              <span className="capitalize">
-                {project.status.replace('-', ' ')}
-              </span>
-            </div>
-
-            {project.deadline && (
-              <div
-                className={`flex items-center gap-1 text-xs ${
-                  isOverdue(project.deadline) && project.status !== 'completed'
-                    ? 'text-red-500'
-                    : 'text-muted-foreground'
-                }`}
-              >
-                <Calendar className="h-3 w-3" />
-                <span>{formatDate(project.deadline, false)}</span>
-                {isOverdue(project.deadline) &&
-                  project.status !== 'completed' && (
-                    <AlertCircle className="h-3 w-3 text-red-500" />
-                  )}
-              </div>
-            )}
-
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => onDelete(project.id)}
-              className="text-red-600 hover:text-red-700 hover:bg-red-50 h-7 px-2 text-xs"
+          <Link
+            href={`/projects/${project.id}`}
+            className="flex-1 min-w-0 hover:text-primary transition-colors"
+          >
+            <h3
+              className={`text-sm font-medium truncate ${
+                project.status === 'completed'
+                  ? 'line-through text-muted-foreground'
+                  : ''
+              }`}
             >
-              Delete
-            </Button>
-          </div>
+              {project.name}
+            </h3>
+            {project.description && (
+              <p className="text-xs text-muted-foreground mt-0.5 truncate hidden sm:block">
+                {project.description}
+              </p>
+            )}
+          </Link>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => onDelete(project.id)}
+            className="shrink-0 text-red-600 hover:text-red-700 hover:bg-red-50 h-7 px-2 text-xs"
+            aria-label="Delete project"
+          >
+            Delete
+          </Button>
+        </div>
+
+        {/* Row 2: status + scheduling badge + due date — compact meta line */}
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-2 pl-6">
+          <span className="text-xs text-muted-foreground capitalize order-1">
+            {project.status.replace('-', ' ')}
+          </span>
+          <span className="order-2">{renderSchedulingIndicator()}</span>
+          {project.deadline && (
+            <span
+              className={`flex items-center gap-1 text-xs order-3 ${
+                isOverdue(project.deadline) && project.status !== 'completed'
+                  ? 'text-red-500'
+                  : 'text-muted-foreground'
+              }`}
+            >
+              <Calendar className="h-3 w-3 shrink-0" />
+              {formatDate(project.deadline, false)}
+              {isOverdue(project.deadline) &&
+                project.status !== 'completed' && (
+                  <AlertCircle className="h-3 w-3 text-red-500 shrink-0" />
+                )}
+            </span>
+          )}
         </div>
       </CardContent>
     </Card>

@@ -3,11 +3,13 @@
 import { toast } from 'sonner';
 import { Card, CardContent } from '@/components/ui/card';
 import { Circle } from 'lucide-react';
-import type { Project, Task } from '@shared/types';
+import type { Project, Task } from '@/types';
 import {
   ErrorState,
   LoadingState,
 } from '@/components/shared';
+import { useIsMobile } from '@/hooks/use-mobile';
+import { MobileTaskList } from './MobileTaskList';
 import { ProjectKanbanBoard } from './ProjectKanbanBoard';
 import { TaskEditDialogForm } from './forms';
 
@@ -43,6 +45,8 @@ export function TaskListView({
   onDetailsOpenChange,
   onTaskUpdatedInDialog,
 }: TaskListViewProps) {
+  const isMobile = useIsMobile();
+
   if (loading) {
     return <LoadingState message="Loading tasks..." />;
   }
@@ -71,18 +75,31 @@ export function TaskListView({
 
   return (
     <>
-      <ProjectKanbanBoard
-        tasks={tasks}
-        projects={projects}
-        linkedTaskIds={linkedTaskIds}
-        onDeleteTask={(id) => {
-          void onDeleteTask(id).catch(err => {
-            toast.error(err instanceof Error ? err.message : 'Failed to delete task');
-          });
-        }}
-        onSelectTask={onSelectTask}
-        onQuickCreateTask={onQuickCreateTask}
-      />
+      {isMobile ? (
+        <MobileTaskList
+          tasks={tasks}
+          projects={projects}
+          onSelectTask={onSelectTask}
+          onDeleteTask={(id) => {
+            void onDeleteTask(id).catch(err => {
+              toast.error(err instanceof Error ? err.message : 'Failed to delete task');
+            });
+          }}
+        />
+      ) : (
+        <ProjectKanbanBoard
+          tasks={tasks}
+          projects={projects}
+          linkedTaskIds={linkedTaskIds}
+          onDeleteTask={(id) => {
+            void onDeleteTask(id).catch(err => {
+              toast.error(err instanceof Error ? err.message : 'Failed to delete task');
+            });
+          }}
+          onSelectTask={onSelectTask}
+          onQuickCreateTask={onQuickCreateTask}
+        />
+      )}
 
       <TaskEditDialogForm
         task={selectedTask}

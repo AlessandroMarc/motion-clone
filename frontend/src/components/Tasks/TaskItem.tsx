@@ -7,14 +7,18 @@ import {
   AlertCircle,
   Clock,
   Trash2,
-  CheckCircle2,
-  Circle,
-  Loader2,
   CalendarCheck,
 } from 'lucide-react';
-import { formatDate, isOverdue } from '@/utils/dateUtils';
-import type { Task, Project } from '@shared/types';
+import { formatDate } from '@/utils/dateUtils';
+import type { Task, Project } from '@/types';
 import { cn } from '@/lib/utils';
+import {
+  isTaskCompleted,
+  isTaskOverdue,
+  TASK_COMPLETED_CLASS,
+  TASK_COMPLETED_OPACITY_CLASS,
+} from '@/utils/taskUtils';
+import { STATUS_CONFIG, PRIORITY_CONFIG } from './taskCardConfig';
 import { TaskProjectSection } from './TaskProjectSection';
 
 interface TaskItemProps {
@@ -27,53 +31,6 @@ interface TaskItemProps {
   onSelect?: (task: Task) => void;
 }
 
-const STATUS_CONFIG: Record<
-  string,
-  { label: string; icon: typeof Circle; className: string }
-> = {
-  pending: {
-    label: 'Pending',
-    icon: Circle,
-    className: 'text-muted-foreground',
-  },
-  'not-started': {
-    label: 'Not Started',
-    icon: Circle,
-    className: 'text-muted-foreground',
-  },
-  'in-progress': {
-    label: 'In Progress',
-    icon: Loader2,
-    className: 'text-blue-500',
-  },
-  completed: {
-    label: 'Completed',
-    icon: CheckCircle2,
-    className: 'text-emerald-500',
-  },
-};
-
-const PRIORITY_CONFIG: Record<
-  Task['priority'],
-  { label: string; dotClass: string; bgClass: string }
-> = {
-  high: {
-    label: 'High',
-    dotClass: 'bg-red-500',
-    bgClass: 'bg-red-500/10 text-red-600 dark:text-red-400',
-  },
-  medium: {
-    label: 'Medium',
-    dotClass: 'bg-amber-500',
-    bgClass: 'bg-amber-500/10 text-amber-600 dark:text-amber-400',
-  },
-  low: {
-    label: 'Low',
-    dotClass: 'bg-slate-400',
-    bgClass: 'bg-slate-500/10 text-slate-600 dark:text-slate-400',
-  },
-};
-
 export function TaskItem({
   task,
   project,
@@ -83,10 +40,11 @@ export function TaskItem({
   isPlanned = false,
   onSelect,
 }: TaskItemProps) {
-  const isCompleted = task.status === 'completed';
-  const taskIsOverdue = task.due_date && isOverdue(task.due_date) && !isCompleted;
-  const statusConfig = STATUS_CONFIG[task.status] ?? STATUS_CONFIG['pending'];
-  const priorityConfig = PRIORITY_CONFIG[task.priority] ?? PRIORITY_CONFIG['medium'];
+  const isCompleted = isTaskCompleted(task);
+  const taskIsOverdue = isTaskOverdue(task);
+  const statusConfig = STATUS_CONFIG[task.status] ?? STATUS_CONFIG['not-started'];
+  const priorityConfig =
+    PRIORITY_CONFIG[task.priority] ?? PRIORITY_CONFIG['medium'];
   const StatusIcon = statusConfig.icon;
 
   return (
@@ -94,10 +52,8 @@ export function TaskItem({
       className={cn(
         'group relative overflow-hidden transition-all duration-200 hover:shadow-md cursor-pointer',
         'border-l-[3px]',
-        task.priority === 'high' && 'border-l-red-500',
-        task.priority === 'medium' && 'border-l-amber-500',
-        task.priority === 'low' && 'border-l-slate-400',
-        isCompleted && 'opacity-60'
+        priorityConfig.borderClass,
+        isCompleted && TASK_COMPLETED_OPACITY_CLASS
       )}
       onClick={() => onSelect?.(task)}
     >
@@ -120,7 +76,7 @@ export function TaskItem({
               <h3
                 className={cn(
                   'font-semibold text-base leading-tight',
-                  isCompleted && 'line-through text-muted-foreground'
+                  isCompleted && TASK_COMPLETED_CLASS
                 )}
               >
                 {task.title}

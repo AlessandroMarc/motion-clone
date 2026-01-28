@@ -35,14 +35,14 @@ export function StatusGroupedList<T>({
   );
 
   return (
-    <div className={`space-y-6 ${className}`}>
+    <div className={`space-y-4 sm:space-y-6 ${className}`}>
       {statusConfig.map(({ key, label, icon: Icon, color }) => {
         const statusItems = groupedItems[key] || [];
 
         return (
-          <div key={key} className="space-y-2">
-            <div className="flex items-center gap-2 mb-3">
-              <Icon className={`h-4 w-4 ${color}`} />
+          <div key={key} className="space-y-1.5 sm:space-y-2">
+            <div className="flex items-center gap-2 mb-2 sm:mb-3">
+              <Icon className={`h-4 w-4 shrink-0 ${color}`} />
               <h3 className="text-sm font-medium text-foreground">{label}</h3>
               <Badge variant="secondary" className="text-xs">
                 {statusItems.length}
@@ -52,7 +52,7 @@ export function StatusGroupedList<T>({
             {statusItems.length === 0 ? (
               renderEmptyState({ key, label, icon: Icon, color })
             ) : (
-              <div className="space-y-2">
+              <div className="space-y-1.5 sm:space-y-2">
                 {statusItems.map((item, index) => (
                   <div key={index}>{renderItem(item)}</div>
                 ))}

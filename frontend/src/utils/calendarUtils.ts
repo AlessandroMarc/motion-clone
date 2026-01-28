@@ -1,4 +1,19 @@
-import type { CalendarEventUnion } from '@shared/types';
+import type { CalendarEventUnion } from '@/types';
+
+/**
+ * Get a sequential range of dates starting from the given date
+ */
+export function getDateRange(startDate: Date, numDays: number): Date[] {
+  const start = new Date(startDate);
+  start.setHours(0, 0, 0, 0);
+  const dates: Date[] = [];
+  for (let i = 0; i < numDays; i++) {
+    const d = new Date(start);
+    d.setDate(start.getDate() + i);
+    dates.push(d);
+  }
+  return dates;
+}
 
 /**
  * Get array of dates for the week containing the given date

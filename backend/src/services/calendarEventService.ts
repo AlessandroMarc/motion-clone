@@ -3,8 +3,8 @@ import type {
   CreateCalendarEventInput,
   UpdateCalendarEventInput,
 } from '../types/database.js';
-import type { CalendarEventTask, CalendarEventUnion } from '@shared/types.js';
-import { isCalendarEventTask } from '@shared/types.js';
+import type { CalendarEventTask, CalendarEventUnion } from '../types/database.js';
+import { isCalendarEventTask } from '../types/database.js';
 import { TaskService } from './taskService.js';
 import fs from 'fs';
 import path from 'path';

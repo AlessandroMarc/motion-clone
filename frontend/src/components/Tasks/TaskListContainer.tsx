@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
-import { isCalendarEventTask, type CalendarEventUnion, type Task } from '@shared/types';
+import { isCalendarEventTask, type CalendarEventUnion, type Task } from '@/types';
 import { taskService } from '@/services/taskService';
 import { logger } from '@/lib/logger';
 import { useTaskListData } from './useTaskListData';

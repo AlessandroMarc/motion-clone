@@ -1,9 +1,13 @@
 'use client';
 
 import { Card } from '@/components/ui/card';
-import type { Task, Project } from '@shared/types';
+import type { Task, Project } from '@/types';
 import { cn } from '@/lib/utils';
-import { isOverdue } from '@/utils/dateUtils';
+import {
+  isTaskCompleted,
+  isTaskOverdue,
+  TASK_COMPLETED_OPACITY_CLASS,
+} from '@/utils/taskUtils';
 import { PRIORITY_CONFIG } from './taskCardConfig';
 import { TaskCardHeader } from './TaskCardHeader';
 import { TaskMetadata } from './TaskMetadata';
@@ -38,8 +42,8 @@ export function CompactTaskCard({
   className,
   disabled = false,
 }: CompactTaskCardProps) {
-  const isCompleted = task.status === 'completed';
-  const taskIsOverdue = !!(task.due_date && isOverdue(task.due_date) && !isCompleted);
+  const isCompleted = isTaskCompleted(task);
+  const taskIsOverdue = isTaskOverdue(task);
   const priorityConfig = PRIORITY_CONFIG[task.priority] ?? PRIORITY_CONFIG['medium'];
   const canSchedule = Boolean(onSchedule && !isPlanned && !isCompleted);
 
@@ -49,7 +53,7 @@ export function CompactTaskCard({
         'group relative overflow-hidden transition-all duration-200',
         'border-l-2',
         priorityConfig.borderClass,
-        isCompleted && 'opacity-60',
+        isCompleted && TASK_COMPLETED_OPACITY_CLASS,
         disabled
           ? 'opacity-50 cursor-default'
           : draggable

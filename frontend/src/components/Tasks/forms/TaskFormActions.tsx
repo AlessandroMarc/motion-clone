@@ -1,49 +1,27 @@
-import { type ReactNode } from 'react';
-import { Button } from '@/components/ui/button';
-import { Plus, Loader2 } from 'lucide-react';
+import { Plus } from 'lucide-react';
+import { FormActions, type FormActionsProps } from '@/components/forms/shared';
 
-interface TaskFormActionsProps {
-  isSubmitting: boolean;
-  onCancel: () => void;
+export interface TaskFormActionsProps extends FormActionsProps {
   submitText?: string;
   cancelText?: string;
-  className?: string;
   submittingText?: string;
-  submitIcon?: ReactNode;
+  submitIcon?: FormActionsProps['submitIcon'];
 }
 
 export function TaskFormActions({
-  isSubmitting,
-  onCancel,
   submitText = 'Create Task',
   cancelText = 'Cancel',
-  className = '',
   submittingText = 'Creating...',
-  submitIcon,
+  submitIcon = <Plus className="mr-2 h-4 w-4" />,
+  ...rest
 }: TaskFormActionsProps) {
   return (
-    <div className={`flex justify-end gap-3 ${className}`}>
-      <Button
-        type="button"
-        variant="outline"
-        onClick={onCancel}
-        disabled={isSubmitting}
-      >
-        {cancelText}
-      </Button>
-      <Button type="submit" disabled={isSubmitting}>
-        {isSubmitting ? (
-          <>
-            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            {submittingText}
-          </>
-        ) : (
-          <>
-            {submitIcon ?? <Plus className="mr-2 h-4 w-4" />}
-            {submitText}
-          </>
-        )}
-      </Button>
-    </div>
+    <FormActions
+      {...rest}
+      submitText={submitText}
+      cancelText={cancelText}
+      submittingText={submittingText}
+      submitIcon={submitIcon}
+    />
   );
 }

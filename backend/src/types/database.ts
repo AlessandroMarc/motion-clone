@@ -1,4 +1,4 @@
-// Re-export shared types for convenience
+// Re-export shared entity types so backend code imports only from backend types
 export type {
   Task,
   Project,
@@ -8,7 +8,12 @@ export type {
   CalendarEventUnion,
   CreateCalendarEventInput,
   UpdateCalendarEventInput,
+  Schedule,
+  UserSettings,
+  OnboardingStatus,
+  OnboardingStep,
 } from '@shared/types.js';
+export { isCalendarEventTask } from '@shared/types.js';
 
 // Database-specific types that extend or modify shared types
 export interface CreateTaskInput {

@@ -27,17 +27,37 @@ export function DateTimePicker({
   disabled = false,
 }: DateTimePickerProps) {
   // Parse the datetime value into Date and time string
+  // Handles both ISO strings and datetime-local format (YYYY-MM-DDTHH:mm)
   const getDateAndTime = (isoString: string) => {
     if (!isoString) return { date: undefined, time: '' };
-    
+
     try {
-      const date = new Date(isoString);
+      // Handle datetime-local format (YYYY-MM-DDTHH:mm) or ISO string
+      let date: Date;
+      if (
+        isoString.includes('T') &&
+        !isoString.includes('Z') &&
+        !isoString.includes('+')
+      ) {
+        // datetime-local format: treat as local time
+        const [datePart, timePart] = isoString.split('T');
+        const [year, month, day] = datePart.split('-').map(Number);
+        const [hours, minutes] = timePart
+          ? timePart.split(':').map(Number)
+          : [0, 0];
+        date = new Date(year, month - 1, day, hours, minutes, 0, 0);
+      } else {
+        // ISO string format
+        date = new Date(isoString);
+      }
+
       if (isNaN(date.getTime())) {
         return { date: undefined, time: '' };
       }
+
       const hours = String(date.getHours()).padStart(2, '0');
       const minutes = String(date.getMinutes()).padStart(2, '0');
-      
+
       return {
         date,
         time: `${hours}:${minutes}`,

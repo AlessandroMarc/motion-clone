@@ -1,16 +1,20 @@
 'use client';
 
 import { useMemo } from 'react';
-import type { CalendarEventTask, CalendarEventUnion, Task, CalendarEvent } from '@shared/types';
-import { isCalendarEventTask } from '@shared/types';
+import type {
+  CalendarEventTask,
+  CalendarEventUnion,
+  Task,
+  CalendarEvent,
+} from '@/types';
+import { isCalendarEventTask } from '@/types';
 import {
   createConfigFromSchedule,
   prepareTaskEvents,
   sortTasksForScheduling,
   type TaskSchedulingConfig,
 } from '@/utils/taskScheduler';
-import type { Schedule } from '@shared/types';
-import { logger } from '@/lib/logger';
+import type { Schedule } from '@/types';
 
 type TaskEventBlock = {
   task: Task;
@@ -22,7 +26,9 @@ function roundToNext15Minutes(date: Date): Date {
   const startFrom = new Date(date);
   const minutes = startFrom.getMinutes();
   const remainder = minutes % 15;
-  startFrom.setMinutes(remainder === 0 ? minutes + 15 : minutes + (15 - remainder));
+  startFrom.setMinutes(
+    remainder === 0 ? minutes + 15 : minutes + (15 - remainder)
+  );
   startFrom.setSeconds(0);
   startFrom.setMilliseconds(0);
   return startFrom;
@@ -35,7 +41,13 @@ export function useAutoSchedulePreview(params: {
   activeSchedule: Schedule | null;
   eventDuration: number;
 }) {
-  const { tasks, existingEvents, allCalendarEvents, activeSchedule, eventDuration } = params;
+  const {
+    tasks,
+    existingEvents,
+    allCalendarEvents,
+    activeSchedule,
+    eventDuration,
+  } = params;
 
   return useMemo(() => {
     const incompleteTasks = tasks.filter(
@@ -46,15 +58,24 @@ export function useAutoSchedulePreview(params: {
 
     const sortedTasks = sortTasksForScheduling(incompleteTasks);
 
-    const tasksWithDeadlineCount = sortedTasks.filter(t => t.due_date !== null).length;
-    const tasksWithoutDeadlineCount = sortedTasks.filter(t => t.due_date === null).length;
+    const tasksWithDeadlineCount = sortedTasks.filter(
+      t => t.due_date !== null
+    ).length;
+    const tasksWithoutDeadlineCount = sortedTasks.filter(
+      t => t.due_date === null
+    ).length;
 
-    const config: TaskSchedulingConfig = createConfigFromSchedule(activeSchedule, eventDuration);
+    const config: TaskSchedulingConfig = createConfigFromSchedule(
+      activeSchedule,
+      eventDuration
+    );
 
     const completedTaskEvents = allCalendarEvents.filter(
       event => isCalendarEventTask(event) && event.completed_at !== null
     );
-    const regularEvents = allCalendarEvents.filter(event => !isCalendarEventTask(event));
+    const regularEvents = allCalendarEvents.filter(
+      event => !isCalendarEventTask(event)
+    );
 
     const accumulatedScheduledEvents: CalendarEventUnion[] = [
       ...regularEvents,
@@ -68,10 +89,11 @@ export function useAutoSchedulePreview(params: {
     workingHoursStart.setHours(config.workingHoursStart, 0, 0, 0);
     workingHoursStart.setSeconds(0);
     workingHoursStart.setMilliseconds(0);
-    
+
     // Use the later of: working hours start or current time (rounded to next 15 min)
     const roundedNow = roundToNext15Minutes(now);
-    let currentStartTime = roundedNow > workingHoursStart ? roundedNow : workingHoursStart;
+    let currentStartTime =
+      roundedNow > workingHoursStart ? roundedNow : workingHoursStart;
 
     for (const task of sortedTasks) {
       const taskExistingEvents = existingEvents.filter(
@@ -109,8 +131,14 @@ export function useAutoSchedulePreview(params: {
       currentStartTime.setMinutes(currentStartTime.getMinutes() + 5);
     }
 
-    const totalEvents = taskEvents.reduce((sum, te) => sum + te.events.length, 0);
-    const totalViolations = taskEvents.reduce((sum, te) => sum + te.violations.length, 0);
+    const totalEvents = taskEvents.reduce(
+      (sum, te) => sum + te.events.length,
+      0
+    );
+    const totalViolations = taskEvents.reduce(
+      (sum, te) => sum + te.violations.length,
+      0
+    );
 
     return {
       taskEvents,
@@ -121,5 +149,3 @@ export function useAutoSchedulePreview(params: {
     };
   }, [tasks, existingEvents, allCalendarEvents, activeSchedule, eventDuration]);
 }
-
-

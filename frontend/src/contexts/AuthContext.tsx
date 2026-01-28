@@ -3,7 +3,7 @@
 import { createContext, useContext, useEffect, useState } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase';
-import type { Schedule } from '@shared/types';
+import type { Schedule } from '@/types';
 import { userSettingsService } from '@/services/userSettingsService';
 import posthog from 'posthog-js';
 

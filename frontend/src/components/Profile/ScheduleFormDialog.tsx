@@ -19,7 +19,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import type { Schedule } from '@shared/types';
+import type { Schedule } from '@/types';
 
 interface ScheduleFormDialogProps {
   open: boolean;

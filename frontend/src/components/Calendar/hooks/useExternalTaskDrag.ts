@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import type { CalendarEventTask, CalendarEventUnion } from '@shared/types';
+import type { CalendarEventTask, CalendarEventUnion } from '@/types';
 import { logger } from '@/lib/logger';
 import { HOUR_PX } from '../dayColumnLayout';
 

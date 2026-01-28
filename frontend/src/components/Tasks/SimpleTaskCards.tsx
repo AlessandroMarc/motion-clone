@@ -1,57 +1,20 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import type { Task, Project } from '@shared/types';
+import type { Task, Project } from '@/types';
 import { taskService } from '@/services/taskService';
 import { projectService } from '@/services/projectService';
 import { Card } from '@/components/ui/card';
-import {
-  Calendar,
-  Folder,
-  CheckCircle2,
-  Circle,
-  Loader2,
-  AlertCircle,
-} from 'lucide-react';
+import { Calendar, Folder, AlertCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { isOverdue } from '@/utils/dateUtils';
-
-const STATUS_CONFIG: Record<
-  string,
-  { icon: typeof Circle; className: string }
-> = {
-  pending: {
-    icon: Circle,
-    className: 'text-muted-foreground',
-  },
-  'not-started': {
-    icon: Circle,
-    className: 'text-muted-foreground',
-  },
-  'in-progress': {
-    icon: Loader2,
-    className: 'text-blue-500',
-  },
-  completed: {
-    icon: CheckCircle2,
-    className: 'text-emerald-500',
-  },
-};
-
-const PRIORITY_CONFIG: Record<Task['priority'], { dotClass: string; borderClass: string }> = {
-  high: {
-    dotClass: 'bg-red-500',
-    borderClass: 'border-l-red-500',
-  },
-  medium: {
-    dotClass: 'bg-amber-500',
-    borderClass: 'border-l-amber-500',
-  },
-  low: {
-    dotClass: 'bg-slate-400',
-    borderClass: 'border-l-slate-400',
-  },
-};
+import {
+  isTaskCompleted,
+  isTaskOverdue,
+  TASK_COMPLETED_CLASS,
+  TASK_COMPLETED_OPACITY_CLASS,
+} from '@/utils/taskUtils';
+import { formatDate } from '@/utils/dateUtils';
+import { STATUS_CONFIG, PRIORITY_CONFIG } from './taskCardConfig';
 
 export function SimpleTaskCards() {
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -111,10 +74,12 @@ export function SimpleTaskCards() {
     <div className="space-y-3">
       {tasks.map((task) => {
         const project = task.project_id ? projectsById[task.project_id] : undefined;
-        const isCompleted = task.status === 'completed';
-        const taskIsOverdue = task.due_date && isOverdue(task.due_date) && !isCompleted;
-        const statusConfig = STATUS_CONFIG[task.status] ?? STATUS_CONFIG['pending'];
-        const priorityConfig = PRIORITY_CONFIG[task.priority] ?? PRIORITY_CONFIG['medium'];
+        const isCompleted = isTaskCompleted(task);
+        const taskIsOverdue = isTaskOverdue(task);
+        const statusConfig =
+          STATUS_CONFIG[task.status] ?? STATUS_CONFIG['not-started'];
+        const priorityConfig =
+          PRIORITY_CONFIG[task.priority] ?? PRIORITY_CONFIG['medium'];
         const StatusIcon = statusConfig.icon;
 
         return (
@@ -123,7 +88,7 @@ export function SimpleTaskCards() {
             className={cn(
               'border-l-[3px] transition-all hover:shadow-sm',
               priorityConfig.borderClass,
-              isCompleted && 'opacity-60'
+              isCompleted && TASK_COMPLETED_OPACITY_CLASS
             )}
           >
             <div className="p-3">
@@ -143,7 +108,7 @@ export function SimpleTaskCards() {
                   <div
                     className={cn(
                       'font-medium truncate',
-                      isCompleted && 'line-through text-muted-foreground'
+                      isCompleted && TASK_COMPLETED_CLASS
                     )}
                   >
                     {task.title}
@@ -160,7 +125,7 @@ export function SimpleTaskCards() {
                     {/* Priority Dot */}
                     <span className="inline-flex items-center gap-1.5 text-muted-foreground">
                       <span className={cn('h-1.5 w-1.5 rounded-full', priorityConfig.dotClass)} />
-                      {task.priority}
+                      {priorityConfig.label}
                     </span>
 
                     {/* Project */}
@@ -180,7 +145,7 @@ export function SimpleTaskCards() {
                         )}
                       >
                         <Calendar className="h-3 w-3" />
-                        {new Date(task.due_date).toLocaleDateString()}
+                        {formatDate(task.due_date)}
                         {taskIsOverdue && <AlertCircle className="h-3 w-3" />}
                       </span>
                     )}

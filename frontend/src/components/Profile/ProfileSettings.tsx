@@ -17,7 +17,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Plus } from 'lucide-react';
 import { toast } from 'sonner';
-import type { Schedule } from '@shared/types';
+import type { Schedule } from '@/types';
 import { logger } from '@/lib/logger';
 
 export function ProfileSettings() {
@@ -100,48 +100,51 @@ export function ProfileSettings() {
   };
 
   if (loading) {
-    return <div className="text-center py-8">Loading...</div>;
+    return <div className="text-center py-4">Loading...</div>;
   }
 
   return (
     <div className="flex flex-col gap-4">
       {/* Current Active Schedule */}
-      <Card className="p-4">
-        <CardHeader>
+      <Card className="p-4 gap-4">
+        <CardHeader className="px-0">
           <CardTitle>Active Schedule</CardTitle>
           <CardDescription>
             The schedule currently used for task scheduling
           </CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="px-0">
           <ActiveScheduleCard schedule={activeSchedule} />
         </CardContent>
       </Card>
 
       {/* Schedules List */}
-      <Card className="p-4">
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <div>
+      <Card className="p-4 gap-4">
+        <CardHeader className="px-0">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+            <div className="min-w-0">
               <CardTitle>Schedules</CardTitle>
               <CardDescription>
                 Manage your working hour schedules. You can have multiple
                 schedules and switch between them.
               </CardDescription>
             </div>
-            <Button onClick={openCreateDialog} className="shrink-0">
+            <Button
+              onClick={openCreateDialog}
+              className="w-full shrink-0 sm:w-auto"
+            >
               <Plus className="mr-2 h-4 w-4" />
               Create Schedule
             </Button>
           </div>
         </CardHeader>
-        <CardContent>
+        <CardContent className="px-0">
           {schedules.length === 0 ? (
             <div className="text-center text-muted-foreground">
               No schedules yet. Create your first schedule to get started.
             </div>
           ) : (
-            <div className="space-y-3">
+            <div className="space-y-4">
               {schedules.map(schedule => {
                 const isActive =
                   activeSchedule?.id === schedule.id ||

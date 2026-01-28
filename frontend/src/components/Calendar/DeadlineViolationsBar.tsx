@@ -1,8 +1,8 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import type { CalendarEventUnion, Task } from '@shared/types';
-import { isCalendarEventTask } from '@shared/types';
+import type { CalendarEventUnion, Task } from '@/types';
+import { isCalendarEventTask } from '@/types';
 import { AlertTriangle, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 

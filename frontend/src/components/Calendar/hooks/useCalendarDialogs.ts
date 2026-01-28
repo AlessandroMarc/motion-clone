@@ -4,8 +4,9 @@ import {
   isCalendarEventTask,
   type CreateCalendarEventInput,
   type UpdateCalendarEventInput,
-} from '@shared/types';
+} from '@/types';
 import { calendarService } from '@/services/calendarService';
+import { formatDateTimeLocal } from '@/utils/dateUtils';
 import { toast } from 'sonner';
 
 export function useCalendarDialogs(
@@ -28,16 +29,6 @@ export function useCalendarDialogs(
   const [editCompleted, setEditCompleted] = useState(false);
   const [editEvent, setEditEvent] = useState<CalendarEventUnion | null>(null);
 
-  const toLocalInputValue = (date: Date) => {
-    const pad = (n: number) => String(n).padStart(2, '0');
-    const yyyy = date.getFullYear();
-    const mm = pad(date.getMonth() + 1);
-    const dd = pad(date.getDate());
-    const hh = pad(date.getHours());
-    const min = pad(date.getMinutes());
-    return `${yyyy}-${mm}-${dd}T${hh}:${min}`;
-  };
-
   const openCreateDialog = (date: Date, hour: number, minute: number) => {
     const start = new Date(date);
     start.setHours(hour, minute, 0, 0);
@@ -46,8 +37,8 @@ export function useCalendarDialogs(
 
     setTitle('');
     setDescription('');
-    setStartTime(toLocalInputValue(start));
-    setEndTime(toLocalInputValue(end));
+    setStartTime(formatDateTimeLocal(start));
+    setEndTime(formatDateTimeLocal(end));
     setCreateOpen(true);
   };
 
@@ -83,8 +74,8 @@ export function useCalendarDialogs(
     setEditEventId(event.id);
     setEditTitle(event.title);
     setEditDescription(event.description || '');
-    setEditStartTime(toLocalInputValue(new Date(event.start_time)));
-    setEditEndTime(toLocalInputValue(new Date(event.end_time)));
+    setEditStartTime(formatDateTimeLocal(new Date(event.start_time)));
+    setEditEndTime(formatDateTimeLocal(new Date(event.end_time)));
     setEditCompleted(
       isCalendarEventTask(event) && event.completed_at ? true : false
     );
@@ -135,7 +126,7 @@ export function useCalendarDialogs(
       }
     } catch (err) {
       console.error('Failed to save calendar event:', err);
-      toast.error('Impossibile salvare le modifiche');
+      toast.error('Failed to save changes');
     }
   };
 

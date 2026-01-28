@@ -1,6 +1,6 @@
 'use client';
 
-import type { CalendarEventUnion, Task } from '@shared/types';
+import type { CalendarEventUnion, Task } from '@/types';
 import { CalendarEventCard } from './CalendarEventCard';
 import { getEventBoxStyle } from './dayColumnLayout';
 

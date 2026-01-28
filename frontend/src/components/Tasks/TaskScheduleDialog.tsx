@@ -19,18 +19,19 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Loader2, CalendarPlus } from 'lucide-react';
-import type { Task, Schedule } from '@shared/types';
+import type { Task, Schedule } from '@/types';
 import { DateTimePicker } from '@/components/forms/shared/DateTimePicker';
+import {
+  formatDateTimeLocal,
+  formatDateDisplay,
+  formatTime,
+} from '@/utils/dateUtils';
 
 interface TaskScheduleDialogProps {
   task: Task | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onSchedule: (
-    task: Task,
-    startTime: Date,
-    endTime: Date
-  ) => Promise<void>;
+  onSchedule: (task: Task, startTime: Date, endTime: Date) => Promise<void>;
   activeSchedule?: Schedule | null;
 }
 
@@ -59,15 +60,15 @@ export function TaskScheduleDialog({
   useEffect(() => {
     if (open && task) {
       const now = new Date();
-      
+
       // Create a date for today at working hours start
       const todayStart = new Date(now);
       todayStart.setHours(workingHoursStart, 0, 0, 0);
       todayStart.setSeconds(0);
       todayStart.setMilliseconds(0);
-      
+
       let defaultStart: Date;
-      
+
       // If we're before working hours today, use today's working hours start
       if (now < todayStart) {
         defaultStart = todayStart;
@@ -77,9 +78,12 @@ export function TaskScheduleDialog({
         const nextHour = new Date(now);
         nextHour.setMinutes(0, 0, 0);
         nextHour.setHours(nextHour.getHours() + 1);
-        
+
         // If next hour is still today and within working hours, use it
-        if (nextHour.getDate() === now.getDate() && nextHour.getHours() < workingHoursEnd) {
+        if (
+          nextHour.getDate() === now.getDate() &&
+          nextHour.getHours() < workingHoursEnd
+        ) {
           defaultStart = nextHour;
         } else {
           // Otherwise, use tomorrow's working hours start
@@ -91,11 +95,11 @@ export function TaskScheduleDialog({
           defaultStart = tomorrowStart;
         }
       }
-      
+
       // Format for datetime-local input
       const formatted = formatDateTimeLocal(defaultStart);
       setStartDateTime(formatted);
-      
+
       // Use task's planned duration if available, otherwise default to 60
       setDuration(String(task.planned_duration_minutes || 60));
     }
@@ -120,7 +124,7 @@ export function TaskScheduleDialog({
   };
 
   const endTimeDisplay = startDateTime
-    ? formatTimeDisplay(
+    ? formatTime(
         new Date(
           new Date(startDateTime).getTime() + parseInt(duration, 10) * 60000
         )
@@ -177,7 +181,7 @@ export function TaskScheduleDialog({
                 {formatDateDisplay(new Date(startDateTime))}
               </div>
               <div className="text-muted-foreground">
-                {formatTimeDisplay(new Date(startDateTime))} - {endTimeDisplay}
+                {formatTime(new Date(startDateTime))} - {endTimeDisplay}
               </div>
             </div>
           )}
@@ -210,31 +214,6 @@ export function TaskScheduleDialog({
       </DialogContent>
     </Dialog>
   );
-}
-
-function formatDateTimeLocal(date: Date): string {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
-  const hours = String(date.getHours()).padStart(2, '0');
-  const minutes = String(date.getMinutes()).padStart(2, '0');
-  return `${year}-${month}-${day}T${hours}:${minutes}`;
-}
-
-function formatDateDisplay(date: Date): string {
-  return date.toLocaleDateString('en-US', {
-    weekday: 'long',
-    month: 'short',
-    day: 'numeric',
-  });
-}
-
-function formatTimeDisplay(date: Date): string {
-  return date.toLocaleTimeString('en-US', {
-    hour: 'numeric',
-    minute: '2-digit',
-    hour12: true,
-  });
 }
 
 export default TaskScheduleDialog;

@@ -2,8 +2,9 @@
 
 import { useMemo } from 'react';
 import { Folder, Inbox } from 'lucide-react';
-import type { Task, Project } from '@shared/types';
+import type { Task, Project } from '@/types';
 import { cn } from '@/lib/utils';
+import { groupTasksByProject } from '@/utils/taskUtils';
 import { KanbanColumn } from './KanbanColumn';
 
 interface ProjectKanbanBoardProps {
@@ -35,27 +36,16 @@ export function ProjectKanbanBoard({
   onSelectTask,
   onQuickCreateTask,
 }: ProjectKanbanBoardProps) {
-  // Group tasks by project
-  const tasksByProject = useMemo(() => {
-    const groups: Record<string, Task[]> = {
-      unassigned: [],
-    };
-
-    // Initialize groups for all projects
-    for (const project of projects) {
-      groups[project.id] = [];
+  const tasksByProject = useMemo((): { unassigned: Task[] } & Record<string, Task[]> => {
+    const { unassigned, byProject } = groupTasksByProject(tasks, projects);
+    const byId = Object.fromEntries(
+      byProject.map(({ project, tasks: t }) => [project.id, t])
+    );
+    const result: { unassigned: Task[] } & Record<string, Task[]> = { unassigned };
+    for (const p of projects) {
+      result[p.id] = byId[p.id] ?? [];
     }
-
-    // Group tasks
-    for (const task of tasks) {
-      if (task.project_id && groups[task.project_id]) {
-        groups[task.project_id].push(task);
-      } else {
-        groups.unassigned.push(task);
-      }
-    }
-
-    return groups;
+    return result;
   }, [tasks, projects]);
 
   return (

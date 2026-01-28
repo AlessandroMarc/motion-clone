@@ -8,5 +8,10 @@ interface TaskListProps {
 }
 
 export function TaskList({ refreshTrigger, onTaskUpdate }: TaskListProps) {
-  return <TaskListContainer refreshTrigger={refreshTrigger} onTaskUpdate={onTaskUpdate} />;
+  return (
+    <TaskListContainer
+      refreshTrigger={refreshTrigger}
+      onTaskUpdate={onTaskUpdate}
+    />
+  );
 }

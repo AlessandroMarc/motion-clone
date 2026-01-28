@@ -1,6 +1,17 @@
 import { supabase } from '../config/supabase.js';
 import type { CreateTaskInput, UpdateTaskInput } from '../types/database.js';
-import type { Task } from '@shared/types.js';
+import type { Task } from '../types/database.js';
+
+/**
+ * Normalize a date to midnight (00:00:00.000) in local time
+ * Used for deadlines to ensure consistent date-only comparison
+ */
+function normalizeToMidnight(date: Date | string): string {
+  const dateObj = typeof date === 'string' ? new Date(date) : date;
+  const normalized = new Date(dateObj);
+  normalized.setHours(0, 0, 0, 0);
+  return normalized.toISOString();
+}
 
 export class TaskService {
   private determineStatus(
@@ -41,13 +52,10 @@ export class TaskService {
     const status = this.determineStatus(normalizedPlanned, normalizedActual);
 
     // Handle both Date objects and ISO strings (from JSON)
+    // Normalize to midnight for date-only deadlines
     let dueDateString: string | null = null;
     if (input.due_date !== null && input.due_date !== undefined) {
-      if (typeof input.due_date === 'string') {
-        dueDateString = input.due_date;
-      } else if (input.due_date instanceof Date) {
-        dueDateString = input.due_date.toISOString();
-      }
+      dueDateString = normalizeToMidnight(input.due_date);
     }
 
     const { data, error } = await supabase
@@ -136,15 +144,11 @@ export class TaskService {
     if (input.description !== undefined)
       updateData.description = input.description;
     if (input.due_date !== undefined) {
-      // Handle both Date objects and ISO strings (from JSON)
+      // Normalize to midnight for date-only deadlines
       if (input.due_date === null) {
         updateData.due_date = null;
-      } else if (typeof input.due_date === 'string') {
-        updateData.due_date = input.due_date;
-      } else if (input.due_date instanceof Date) {
-        updateData.due_date = input.due_date.toISOString();
       } else {
-        updateData.due_date = null;
+        updateData.due_date = normalizeToMidnight(input.due_date);
       }
     }
     if (input.priority !== undefined) updateData.priority = input.priority;

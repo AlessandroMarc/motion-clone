@@ -1,12 +1,14 @@
+import { type ReactNode } from 'react';
 import { Button } from '@/components/ui/button';
 import { Plus, Loader2 } from 'lucide-react';
 
-interface FormActionsProps {
+export interface FormActionsProps {
   isSubmitting: boolean;
   onCancel: () => void;
   submitText?: string;
   cancelText?: string;
-  submitIcon?: React.ReactNode;
+  submitIcon?: ReactNode;
+  submittingText?: string;
   className?: string;
 }
 
@@ -16,6 +18,7 @@ export function FormActions({
   submitText = 'Create',
   cancelText = 'Cancel',
   submitIcon = <Plus className="mr-2 h-4 w-4" />,
+  submittingText = 'Creating...',
   className = '',
 }: FormActionsProps) {
   return (
@@ -32,7 +35,7 @@ export function FormActions({
         {isSubmitting ? (
           <>
             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            Creating...
+            {submittingText}
           </>
         ) : (
           <>

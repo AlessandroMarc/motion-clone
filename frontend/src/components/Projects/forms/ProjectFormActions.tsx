@@ -6,6 +6,7 @@ interface ProjectFormActionsProps {
   onCancel: () => void;
   submitText?: string;
   cancelText?: string;
+  submittingText?: string;
   className?: string;
 }
 
@@ -14,6 +15,7 @@ export function ProjectFormActions({
   onCancel,
   submitText = 'Create Project',
   cancelText = 'Cancel',
+  submittingText = 'Creating...',
   className = '',
 }: ProjectFormActionsProps) {
   return (
@@ -22,6 +24,7 @@ export function ProjectFormActions({
       onCancel={onCancel}
       submitText={submitText}
       cancelText={cancelText}
+      submittingText={submittingText}
       submitIcon={<FolderPlus className="mr-2 h-4 w-4" />}
       className={className}
     />

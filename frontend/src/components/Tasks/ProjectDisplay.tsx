@@ -1,5 +1,5 @@
 import { Folder } from 'lucide-react';
-import type { Project } from '@shared/types';
+import type { Project } from '@/types';
 
 interface ProjectDisplayProps {
   project: Project;

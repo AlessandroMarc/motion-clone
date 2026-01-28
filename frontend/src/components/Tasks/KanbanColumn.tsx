@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Plus, X } from 'lucide-react';
-import type { Task } from '@shared/types';
+import type { Task } from '@/types';
 import { cn } from '@/lib/utils';
 import { KanbanTaskCard } from './KanbanTaskCard';
 import Link from 'next/link';

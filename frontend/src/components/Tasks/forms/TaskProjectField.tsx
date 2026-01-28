@@ -17,7 +17,7 @@ import { Button } from '@/components/ui/button';
 import { Check, ChevronsUpDown, Folder } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { projectService } from '@/services/projectService';
-import type { Project } from '@shared/types';
+import type { Project } from '@/types';
 import type { FieldErrors } from 'react-hook-form';
 import type { TaskFormData } from '@/hooks/useTaskForm';
 

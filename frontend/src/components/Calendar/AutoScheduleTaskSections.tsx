@@ -1,59 +1,16 @@
 'use client';
 
 import { Badge } from '@/components/ui/badge';
-import {
-  AlertTriangle,
-  Calendar,
-  CheckCircle2,
-  Circle,
-  Loader2,
-  ListChecks,
-} from 'lucide-react';
-import type { Task } from '@shared/types';
+import { AlertTriangle, Calendar, CheckCircle2, ListChecks } from 'lucide-react';
+import type { Task } from '@/types';
 import { cn } from '@/lib/utils';
 import { formatDate } from '@/utils/dateUtils';
+import { STATUS_CONFIG, PRIORITY_CONFIG } from '@/components/Tasks/taskCardConfig';
 
 type TaskEventBlock = {
   task: Task;
   events: Array<{ start_time: Date; end_time: Date }>;
   violations: Array<{ start_time: Date; end_time: Date }>;
-};
-
-const STATUS_CONFIG: Record<
-  string,
-  { icon: typeof Circle; className: string }
-> = {
-  pending: {
-    icon: Circle,
-    className: 'text-muted-foreground',
-  },
-  'not-started': {
-    icon: Circle,
-    className: 'text-muted-foreground',
-  },
-  'in-progress': {
-    icon: Loader2,
-    className: 'text-blue-500',
-  },
-  completed: {
-    icon: CheckCircle2,
-    className: 'text-emerald-500',
-  },
-};
-
-const PRIORITY_CONFIG: Record<Task['priority'], { dotClass: string; borderClass: string }> = {
-  high: {
-    dotClass: 'bg-red-500',
-    borderClass: 'border-l-red-500',
-  },
-  medium: {
-    dotClass: 'bg-amber-500',
-    borderClass: 'border-l-amber-500',
-  },
-  low: {
-    dotClass: 'bg-slate-400',
-    borderClass: 'border-l-slate-400',
-  },
 };
 
 function TaskRow({
@@ -65,8 +22,9 @@ function TaskRow({
   eventsCount: number;
   violationsCount?: number;
 }) {
-  const statusConfig = STATUS_CONFIG[task.status] ?? STATUS_CONFIG['pending'];
-  const priorityConfig = PRIORITY_CONFIG[task.priority] ?? PRIORITY_CONFIG['medium'];
+  const statusConfig = STATUS_CONFIG[task.status] ?? STATUS_CONFIG['not-started'];
+  const priorityConfig =
+    PRIORITY_CONFIG[task.priority] ?? PRIORITY_CONFIG['medium'];
   const StatusIcon = statusConfig.icon;
   const hasViolations = violationsCount && violationsCount > 0;
 
@@ -108,7 +66,7 @@ function TaskRow({
             {/* Priority */}
             <span className="inline-flex items-center gap-1">
               <span className={cn('h-1.5 w-1.5 rounded-full', priorityConfig.dotClass)} />
-              {task.priority}
+              {priorityConfig.label}
             </span>
 
             {/* Due Date */}

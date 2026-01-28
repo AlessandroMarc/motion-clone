@@ -2,8 +2,9 @@
 
 import { Button } from '@/components/ui/button';
 import { Trash2, CalendarPlus, GripVertical } from 'lucide-react';
-import type { Task } from '@shared/types';
+import type { Task } from '@/types';
 import { cn } from '@/lib/utils';
+import { isTaskCompleted, TASK_COMPLETED_CLASS } from '@/utils/taskUtils';
 import { STATUS_CONFIG } from './taskCardConfig';
 
 interface TaskCardHeaderProps {
@@ -25,9 +26,9 @@ export function TaskCardHeader({
   onSchedule,
   onDelete,
 }: TaskCardHeaderProps) {
-  const statusConfig = STATUS_CONFIG[task.status] ?? STATUS_CONFIG['pending'];
+  const statusConfig = STATUS_CONFIG[task.status] ?? STATUS_CONFIG['not-started'];
   const StatusIcon = statusConfig.icon;
-  const isCompleted = task.status === 'completed';
+  const isCompleted = isTaskCompleted(task);
 
   return (
     <div className="flex items-start justify-between gap-1">
@@ -48,7 +49,7 @@ export function TaskCardHeader({
         <h3
           className={cn(
             'font-medium text-[11px] leading-tight line-clamp-2',
-            isCompleted && 'line-through text-muted-foreground'
+            isCompleted && TASK_COMPLETED_CLASS
           )}
         >
           {task.title}

@@ -1,5 +1,6 @@
 import type { TaskFormData } from '@/hooks/useTaskForm';
-import type { Task } from '@shared/types';
+import type { Task } from '@/types';
+import { normalizeToMidnight } from './dateUtils';
 
 /**
  * Transforms form data to task creation data
@@ -16,7 +17,7 @@ export function transformFormDataToTask(
   const transformed = {
     title: data.title,
     description: data.description || '',
-    due_date: data.dueDate ? new Date(data.dueDate) : null,
+    due_date: data.dueDate ? normalizeToMidnight(new Date(data.dueDate)) : null,
     priority: data.priority,
     project_id: data.project_id || undefined,
     user_id: userId,

@@ -7,7 +7,7 @@ import {
   type CalendarEventUnion,
   type Schedule,
   type Task,
-} from '@shared/types';
+} from '@/types';
 import { CalendarHeader } from './CalendarHeader';
 import WeekScrollableGrid from './WeekScrollableGrid';
 import CalendarCreateDialog from './CalendarCreateDialog';
@@ -85,6 +85,7 @@ interface WeekCalendarViewProps {
   onCurrentWeek: () => void;
   onPreviousDay?: () => void;
   onNextDay?: () => void;
+  onZenMode?: () => void;
 
   dialogs: Dialogs;
 
@@ -95,14 +96,16 @@ interface WeekCalendarViewProps {
   setAutoScheduleOpen: (open: boolean) => void;
   tasks: Task[];
   handleAutoScheduleClick: () => Promise<void>;
-  handleAutoSchedule: (eventsToCreate: Array<{
-    title: string;
-    start_time: string;
-    end_time: string;
-    description?: string;
-    linked_task_id: string;
-    user_id: string;
-  }>) => Promise<void>;
+  handleAutoSchedule: (
+    eventsToCreate: Array<{
+      title: string;
+      start_time: string;
+      end_time: string;
+      description?: string;
+      linked_task_id: string;
+      user_id: string;
+    }>
+  ) => Promise<void>;
 }
 
 export function WeekCalendarView({
@@ -129,6 +132,7 @@ export function WeekCalendarView({
   onCurrentWeek,
   onPreviousDay,
   onNextDay,
+  onZenMode,
   dialogs,
   user,
   activeSchedule,
@@ -141,13 +145,14 @@ export function WeekCalendarView({
   return (
     <div className="space-y-4">
       <DeadlineViolationsBar events={events} tasksMap={tasksMap} />
-      
+
       <CalendarHeader
         weekDates={weekDates}
         onPreviousWeek={onPreviousWeek}
         onNextWeek={onNextWeek}
         onCurrentWeek={onCurrentWeek}
         onAutoSchedule={handleAutoScheduleClick}
+        onZenMode={onZenMode}
         currentDay={isMobile ? currentDay : undefined}
         onPreviousDay={isMobile ? onPreviousDay : undefined}
         onNextDay={isMobile ? onNextDay : undefined}
@@ -195,7 +200,9 @@ export function WeekCalendarView({
         setStartTime={dialogs.setEditStartTime}
         endTime={dialogs.editEndTime}
         setEndTime={dialogs.setEditEndTime}
-        isTaskEvent={dialogs.editEvent ? isCalendarEventTask(dialogs.editEvent) : false}
+        isTaskEvent={
+          dialogs.editEvent ? isCalendarEventTask(dialogs.editEvent) : false
+        }
         completed={dialogs.editCompleted}
         completedAt={
           dialogs.editEvent &&
@@ -214,7 +221,9 @@ export function WeekCalendarView({
           open={autoScheduleOpen}
           onOpenChange={setAutoScheduleOpen}
           tasks={tasks}
-          existingEvents={events.filter(isCalendarEventTask) as CalendarEventTask[]}
+          existingEvents={
+            events.filter(isCalendarEventTask) as CalendarEventTask[]
+          }
           allCalendarEvents={events}
           userId={user.id}
           activeSchedule={activeSchedule}
@@ -224,5 +233,3 @@ export function WeekCalendarView({
     </div>
   );
 }
-
-

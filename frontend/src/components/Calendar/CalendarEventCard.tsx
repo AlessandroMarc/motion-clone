@@ -4,7 +4,7 @@ import {
   CalendarEventUnion,
   isCalendarEventTask,
   type Task,
-} from '@shared/types';
+} from '@/types';
 import { formatEventTime } from '@/utils/calendarUtils';
 import { AlertTriangle, CheckCircle2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -33,11 +33,16 @@ export function CalendarEventCard({
   const isPast = eventEnd < now;
 
   // Check if event is after deadline
+  // Set deadline to end of day (23:59:59.999) to allow events on the deadline day
   const isAfterDeadline =
     isTaskEvent &&
     task &&
     task.due_date &&
-    new Date(event.start_time) > new Date(task.due_date);
+    (() => {
+      const deadline = new Date(task.due_date);
+      deadline.setHours(23, 59, 59, 999);
+      return new Date(event.start_time) > deadline;
+    })();
 
   return (
     <div
@@ -63,10 +68,7 @@ export function CalendarEventCard({
       <div className="p-1.5 h-full flex flex-col">
         <div className="flex items-start gap-1 flex-1 min-w-0">
           <span
-            className={cn(
-              'font-medium truncate flex-1',
-              isCompleted && 'line-through'
-            )}
+            className={cn('font-medium  flex-1', isCompleted && 'line-through')}
           >
             {event.title}
           </span>
@@ -75,7 +77,7 @@ export function CalendarEventCard({
           )}
         </div>
 
-        <div className="text-[9px] opacity-80 mt-0.5">
+        <div className="text-[9px] opacity-80 whitespace-nowrap truncate">
           {formatEventTime(event.start_time, event.end_time)}
         </div>
 

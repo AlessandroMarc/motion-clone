@@ -143,14 +143,14 @@ export function GoogleCalendarSettings() {
 
   if (loading) {
     return (
-      <Card className="p-4">
-        <CardHeader>
+      <Card className="p-4 gap-4">
+        <CardHeader className="px-0">
           <CardTitle>Google Calendar Integration</CardTitle>
           <CardDescription>
             Sync your Google Calendar events with this application
           </CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="px-0">
           <div className="text-center py-4">
             <Loader2 className="h-6 w-6 animate-spin mx-auto mb-2" />
             <p className="text-sm text-muted-foreground">Loading...</p>
@@ -166,54 +166,52 @@ export function GoogleCalendarSettings() {
     : null;
 
   return (
-    <Card className="p-4">
-      <CardHeader>
+    <Card className="p-4 gap-4">
+      <CardHeader className="px-0">
         <CardTitle>Google Calendar Integration</CardTitle>
         <CardDescription>
           Sync your Google Calendar events with this application. Events will be
           automatically synced every 15 minutes.
         </CardDescription>
       </CardHeader>
-      <CardContent>
+      <CardContent className="px-0">
         {isConnected ? (
           <div className="space-y-4">
-            <div className="flex items-center justify-between p-5 border rounded-lg bg-muted/30">
-              <div className="flex items-center gap-4">
-                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-green-500 text-white shrink-0">
-                  <Calendar className="h-6 w-6" />
+            <div className="flex items-center gap-3 p-4 border rounded-lg bg-muted/30 sm:gap-4 sm:p-5">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-green-500 text-white sm:h-12 sm:w-12">
+                <Calendar className="h-5 w-5 sm:h-6 sm:w-6" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <div className="flex flex-wrap items-center gap-2 mb-1">
+                  <h3 className="font-semibold text-base">
+                    Google Calendar Connected
+                  </h3>
+                  <Badge variant="default" className="bg-green-500">
+                    Connected
+                  </Badge>
                 </div>
-                <div>
-                  <div className="flex items-center gap-2 mb-1">
-                    <h3 className="font-semibold text-base">
-                      Google Calendar Connected
-                    </h3>
-                    <Badge variant="default" className="bg-green-500">
-                      Connected
-                    </Badge>
-                  </div>
-                  {lastSynced ? (
-                    <p className="text-sm text-muted-foreground">
-                      Last synced:{' '}
-                      {lastSynced.toLocaleString(undefined, {
-                        dateStyle: 'short',
-                        timeStyle: 'short',
-                      })}
-                    </p>
-                  ) : (
-                    <p className="text-sm text-muted-foreground">
-                      Not synced yet
-                    </p>
-                  )}
-                </div>
+                {lastSynced ? (
+                  <p className="text-sm text-muted-foreground">
+                    Last synced:{' '}
+                    {lastSynced.toLocaleString(undefined, {
+                      dateStyle: 'short',
+                      timeStyle: 'short',
+                    })}
+                  </p>
+                ) : (
+                  <p className="text-sm text-muted-foreground">
+                    Not synced yet
+                  </p>
+                )}
               </div>
             </div>
 
-            <div className="flex gap-2">
+            <div className="flex flex-col gap-2 sm:flex-row">
               <Button
                 onClick={handleSync}
                 disabled={syncing}
                 variant="outline"
-                className="flex-1"
+                className="w-full sm:flex-1"
               >
                 {syncing ? (
                   <>
@@ -231,7 +229,7 @@ export function GoogleCalendarSettings() {
                 onClick={handleDisconnectClick}
                 disabled={disconnecting}
                 variant="destructive"
-                className="flex-1"
+                className="w-full sm:flex-1"
               >
                 {disconnecting ? (
                   <>
@@ -247,12 +245,18 @@ export function GoogleCalendarSettings() {
               </Button>
             </div>
 
-            <AlertDialog open={disconnectDialogOpen} onOpenChange={setDisconnectDialogOpen}>
+            <AlertDialog
+              open={disconnectDialogOpen}
+              onOpenChange={setDisconnectDialogOpen}
+            >
               <AlertDialogContent>
                 <AlertDialogHeader>
-                  <AlertDialogTitle>Disconnect Google Calendar</AlertDialogTitle>
+                  <AlertDialogTitle>
+                    Disconnect Google Calendar
+                  </AlertDialogTitle>
                   <AlertDialogDescription>
-                    Are you sure you want to disconnect Google Calendar? Your synced events will remain, but automatic sync will stop.
+                    Are you sure you want to disconnect Google Calendar? Your
+                    synced events will remain, but automatic sync will stop.
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
@@ -268,18 +272,22 @@ export function GoogleCalendarSettings() {
             </AlertDialog>
           </div>
         ) : (
-          <div className="text-center py-6">
-            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-muted mx-auto mb-4">
-              <Calendar className="h-8 w-8 text-muted-foreground" />
+          <div className="text-center py-4 sm:py-6">
+            <div className="flex h-14 w-14 sm:h-16 sm:w-16 items-center justify-center rounded-full bg-muted mx-auto mb-4">
+              <Calendar className="h-7 w-7 sm:h-8 sm:w-8 text-muted-foreground" />
             </div>
             <h3 className="font-semibold text-lg mb-2">
               Connect Google Calendar
             </h3>
-            <p className="text-sm text-muted-foreground mb-6">
+            <p className="text-sm text-muted-foreground mb-6 max-w-md mx-auto">
               Connect your Google Calendar to automatically sync events.
               You&apos;ll be redirected to Google to authorize access.
             </p>
-            <Button onClick={handleConnect} size="lg">
+            <Button
+              onClick={handleConnect}
+              size="lg"
+              className="w-full sm:w-auto"
+            >
               <Calendar className="mr-2 h-4 w-4" />
               Connect Google Calendar
             </Button>

@@ -18,7 +18,7 @@ import { TaskDescriptionField } from '@/components/Tasks/forms/TaskDescriptionFi
 import { TaskDueDateField } from '@/components/Tasks/forms/TaskDueDateField';
 import { TaskPriorityField } from '@/components/Tasks/forms/TaskPriorityField';
 import { TaskFormActions } from '@/components/Tasks/forms/TaskFormActions';
-import type { Task } from '@shared/types';
+import type { Task } from '@/types';
 
 interface ProjectTaskCreateDialogProps {
   projectId: string;

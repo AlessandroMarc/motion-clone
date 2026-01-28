@@ -1,8 +1,12 @@
 'use client';
 
 import { useEffect, useMemo, useRef } from 'react';
-import { type CalendarEventUnion } from '@shared/types';
-import { getWeekDates } from '@/utils/calendarUtils';
+import {
+  type CalendarEventUnion,
+  type CalendarEventTask,
+  isCalendarEventTask,
+} from '@/types';
+import { getWeekDates, getDateRange } from '@/utils/calendarUtils';
 import { CalendarSkeleton } from './CalendarSkeleton';
 import { ErrorState } from '@/components/shared/ErrorState';
 import { useAuth } from '@/contexts/AuthContext';
@@ -16,16 +20,22 @@ import {
   useExternalTaskDrop,
 } from './hooks';
 import { useWeekCalendarNavigation } from './useWeekCalendarNavigation';
-import { logger } from '@/lib/logger';
 import { WeekCalendarView } from './WeekCalendarView';
+import { MobileDayScrollView } from './MobileDayScrollView';
+import { DeadlineViolationsBar } from './DeadlineViolationsBar';
+import CalendarCreateDialog from './CalendarCreateDialog';
+import CalendarEditDialog from './CalendarEditDialog';
+import { AutoScheduleDialog } from './AutoScheduleDialog';
 import { HOUR_PX } from './dayColumnLayout';
 
 interface WeekCalendarContainerProps {
   onTaskDropped?: () => void;
+  onZenMode?: () => void;
 }
 
 export function WeekCalendarContainer({
   onTaskDropped,
+  onZenMode,
 }: WeekCalendarContainerProps) {
   const { user, activeSchedule } = useAuth();
   const isMobile = useIsMobile();
@@ -38,9 +48,10 @@ export function WeekCalendarContainer({
   const navigation = useWeekCalendarNavigation();
 
   const weekDates = useMemo(() => {
-    const dateToUse = isMobile
-      ? navigation.currentDay
-      : new Date(navigation.currentDateKey + 'T00:00:00');
+    if (isMobile) {
+      return getDateRange(navigation.currentDay, 14);
+    }
+    const dateToUse = new Date(navigation.currentDateKey + 'T00:00:00');
     return getWeekDates(dateToUse);
   }, [navigation.currentDateKey, isMobile, navigation.currentDay]);
 
@@ -128,7 +139,7 @@ export function WeekCalendarContainer({
 
     const scrollContainer = gridRef.current;
     const sentinel = scrollSentinelRef.current;
-    
+
     if (!scrollContainer || !sentinel) {
       return;
     }
@@ -138,22 +149,21 @@ export function WeekCalendarContainer({
       if (currentScrollTop > 50) {
         return;
       }
-      
+
       try {
         const containerHeight = scrollContainer.clientHeight;
         // Calculate scroll position directly: sentinel is at sentinelHour * HOUR_PX from top of scrollable content
         // Center it in viewport: scrollTarget = sentinelPosition - (viewportHeight / 2)
         const sentinelPosition = sentinelHour * HOUR_PX;
-        const scrollTarget = sentinelPosition - (containerHeight / 2);
-        
+        const scrollTarget = sentinelPosition - containerHeight / 2;
+
         scrollContainer.scrollTo({
           top: Math.max(0, scrollTarget),
-          behavior: 'auto'
+          behavior: 'auto',
         });
-        
+
         hasAutoScrolledRef.current = true;
-      } catch (e) {
-      }
+      } catch (e) {}
     };
 
     let id2: number | null = null;
@@ -171,6 +181,77 @@ export function WeekCalendarContainer({
 
   if (loading) return <CalendarSkeleton />;
   if (error) return <ErrorState message={error} onRetry={refreshEvents} />;
+
+  // Mobile: zen-style vertical scroll of consecutive days (not only today)
+  if (isMobile) {
+    return (
+      <div className="space-y-4 flex flex-col min-h-0 flex-1">
+        <DeadlineViolationsBar events={events} tasksMap={tasksMap} />
+        <MobileDayScrollView
+          dates={weekDates}
+          eventsByDay={eventsByDay as Record<string, CalendarEventUnion[]>}
+          onEventClick={dialogs.openEditDialog}
+          tasksMap={tasksMap}
+          onToday={navigation.goCurrentWeek}
+          onAutoSchedule={handleAutoScheduleClick}
+          onZenMode={onZenMode}
+        />
+        <CalendarCreateDialog
+          open={dialogs.createOpen}
+          onOpenChange={dialogs.setCreateOpen}
+          title={dialogs.title}
+          setTitle={dialogs.setTitle}
+          description={dialogs.description}
+          setDescription={dialogs.setDescription}
+          startTime={dialogs.startTime}
+          setStartTime={dialogs.setStartTime}
+          endTime={dialogs.endTime}
+          setEndTime={dialogs.setEndTime}
+          onCreate={dialogs.handleCreate}
+        />
+        <CalendarEditDialog
+          open={dialogs.editOpen}
+          onOpenChange={dialogs.setEditOpen}
+          title={dialogs.editTitle}
+          setTitle={dialogs.setEditTitle}
+          description={dialogs.editDescription}
+          setDescription={dialogs.setEditDescription}
+          startTime={dialogs.editStartTime}
+          setStartTime={dialogs.setEditStartTime}
+          endTime={dialogs.editEndTime}
+          setEndTime={dialogs.setEditEndTime}
+          isTaskEvent={
+            dialogs.editEvent ? isCalendarEventTask(dialogs.editEvent) : false
+          }
+          completed={dialogs.editCompleted}
+          completedAt={
+            dialogs.editEvent &&
+            isCalendarEventTask(dialogs.editEvent) &&
+            dialogs.editEvent.completed_at
+              ? new Date(dialogs.editEvent.completed_at)
+              : null
+          }
+          onCompletedChange={dialogs.setEditCompleted}
+          onSave={() => dialogs.handleSaveEdit(setEvents)}
+          onDelete={() => dialogs.handleDeleteEdit(setEvents)}
+        />
+        {user && (
+          <AutoScheduleDialog
+            open={autoScheduleOpen}
+            onOpenChange={setAutoScheduleOpen}
+            tasks={tasks}
+            existingEvents={
+              events.filter(isCalendarEventTask) as CalendarEventTask[]
+            }
+            allCalendarEvents={events}
+            userId={user.id}
+            activeSchedule={activeSchedule}
+            onSchedule={handleAutoSchedule}
+          />
+        )}
+      </div>
+    );
+  }
 
   return (
     <WeekCalendarView
@@ -199,6 +280,7 @@ export function WeekCalendarContainer({
       onCurrentWeek={navigation.goCurrentWeek}
       onPreviousDay={navigation.goPreviousDay}
       onNextDay={navigation.goNextDay}
+      onZenMode={onZenMode}
       dialogs={dialogs}
       user={user ? { id: user.id } : null}
       activeSchedule={activeSchedule}
