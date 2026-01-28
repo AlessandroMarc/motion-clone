@@ -19,7 +19,6 @@ import type { Schedule } from '@/types';
 const DEBUG = process.env.NODE_ENV === 'development';
 function log(...args: unknown[]) {
   if (DEBUG) {
-    // eslint-disable-next-line no-console
     console.log('[AutoSchedulePreview]', ...args);
   }
 }

@@ -16,7 +16,7 @@
     "format:check": "prettier --check .",
     "test": "npm --prefix frontend run test",
     "test:ci": "npm --prefix frontend run test -- --watchAll=false",
-    "ci": "npm ci && npm run build:all && npm run test:ci && npm run lint && npm run format:check && echo 'CI passed'"
+    "ci": "npm ci && npm run build && npm run test:ci && npm run lint && npm run format:check && echo 'CI passed'"
   },
   "keywords": [],
   "author": "",

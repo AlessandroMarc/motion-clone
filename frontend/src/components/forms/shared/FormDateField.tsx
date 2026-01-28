@@ -21,18 +21,18 @@ export function FormDateField({
   errors,
   name,
   label,
-  type = 'date',
+  type: _type = 'date',
   id,
   className = '',
 }: FormDateFieldProps) {
   const hasError = hasFieldError(errors, name);
   const errorMessage = getFieldError(errors, name);
   const fieldId = id || name;
-  
+
   // Get form context for setValue and watch
   const { setValue, watch } = useFormContext();
   const formValue = watch(name);
-  
+
   // Parse the date string to Date object
   const [dateValue, setDateValue] = useState<Date | undefined>(() => {
     if (!formValue) return undefined;
@@ -85,10 +85,7 @@ export function FormDateField({
       />
       {hasError && <p className="text-sm text-red-500 mt-1">{errorMessage}</p>}
       {/* Hidden input for react-hook-form */}
-      <input
-        type="hidden"
-        {...register}
-      />
+      <input type="hidden" {...register} />
     </div>
   );
 }

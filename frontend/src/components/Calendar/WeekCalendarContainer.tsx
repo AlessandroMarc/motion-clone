@@ -27,6 +27,7 @@ import CalendarCreateDialog from './CalendarCreateDialog';
 import CalendarEditDialog from './CalendarEditDialog';
 import { AutoScheduleDialog } from './AutoScheduleDialog';
 import { HOUR_PX } from './dayColumnLayout';
+import { logger } from '@/lib/logger';
 
 interface WeekCalendarContainerProps {
   onTaskDropped?: () => void;
@@ -163,7 +164,9 @@ export function WeekCalendarContainer({
         });
 
         hasAutoScrolledRef.current = true;
-      } catch (e) {}
+      } catch (e) {
+        logger.warn('Scroll to sentinel failed', e);
+      }
     };
 
     let id2: number | null = null;

@@ -2,7 +2,7 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Calendar, AlertCircle, X, CheckCircle2, Clock } from 'lucide-react';
+import { Calendar, AlertCircle, X, Clock } from 'lucide-react';
 import { formatDate } from '@/utils/dateUtils';
 import { cn } from '@/lib/utils';
 import type { Task } from '@/types';
@@ -12,7 +12,10 @@ import {
   TASK_COMPLETED_CLASS,
   TASK_COMPLETED_OPACITY_CLASS,
 } from '@/utils/taskUtils';
-import { STATUS_CONFIG, PRIORITY_CONFIG } from '@/components/Tasks/taskCardConfig';
+import {
+  STATUS_CONFIG,
+  PRIORITY_CONFIG,
+} from '@/components/Tasks/taskCardConfig';
 import { ProjectTaskCreateDialog } from './ProjectTaskCreateDialog';
 
 interface ProjectTasksSectionProps {
@@ -71,7 +74,7 @@ export function ProjectTasksSection({
           </div>
         ) : (
           <div className="space-y-2">
-            {tasks.map((task) => {
+            {tasks.map(task => {
               const isCompleted = isTaskCompleted(task);
               const taskIsOverdue = isTaskOverdue(task);
               const statusConfig =
@@ -125,7 +128,12 @@ export function ProjectTasksSection({
                           priorityConfig.bgClass
                         )}
                       >
-                        <span className={cn('h-1.5 w-1.5 rounded-full', priorityConfig.dotClass)} />
+                        <span
+                          className={cn(
+                            'h-1.5 w-1.5 rounded-full',
+                            priorityConfig.dotClass
+                          )}
+                        />
                         {priorityConfig.label}
                       </span>
 
@@ -147,7 +155,9 @@ export function ProjectTasksSection({
                         <span
                           className={cn(
                             'inline-flex items-center gap-1 text-xs',
-                            taskIsOverdue ? 'text-red-500' : 'text-muted-foreground'
+                            taskIsOverdue
+                              ? 'text-red-500'
+                              : 'text-muted-foreground'
                           )}
                         >
                           <Calendar className="h-3 w-3" />
