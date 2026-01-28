@@ -32,21 +32,16 @@ const nextConfig = {
   },
 };
 
-module.exports = withSentryConfig(nextConfig, {
-  // For all available options, see:
-  // https://www.npmjs.com/package/@sentry/webpack-plugin#options
-  org: 'alessandro-en',
-  project: 'motion-clone',
+// Skip Sentry webpack/upload in development so local builds stay fast and avoid sending data
+const shouldUseSentry = process.env.NODE_ENV === 'production';
 
-  // Only print logs for uploading source maps in CI
-  silent: !process.env.CI,
-
-  // Upload a larger set of source maps for prettier stack traces (increases build time)
-  widenClientFileUpload: true,
-
-  // Route browser requests to Sentry through a Next.js rewrite to circumvent ad-blockers.
-  tunnelRoute: '/monitoring',
-
-  // Automatically tree-shake Sentry logger statements to reduce bundle size
-  disableLogger: true,
-});
+module.exports = shouldUseSentry
+  ? withSentryConfig(nextConfig, {
+      org: 'alessandro-en',
+      project: 'motion-clone',
+      silent: !process.env.CI,
+      widenClientFileUpload: true,
+      tunnelRoute: '/monitoring',
+      disableLogger: true,
+    })
+  : nextConfig;

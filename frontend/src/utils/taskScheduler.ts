@@ -49,14 +49,17 @@ export interface ScheduledEvent {
 }
 
 /**
- * Calculate how many events are needed to cover the remaining planned duration
+ * Calculate how many events are needed to cover the remaining planned duration.
+ * If planned_duration_minutes is 0 or unset, we schedule 1 block (eventDurationMinutes)
+ * so every task gets at least one calendar block when using auto-schedule.
  */
 export function calculateRequiredEvents(
   task: Task,
   existingEvents: CalendarEventTask[],
   config: TaskSchedulingConfig
 ): number {
-  // Calculate total duration already covered by existing events
+  const planned = task.planned_duration_minutes ?? 0;
+
   const existingDuration = existingEvents.reduce((total, event) => {
     const start = new Date(event.start_time);
     const end = new Date(event.end_time);
@@ -64,18 +67,14 @@ export function calculateRequiredEvents(
     return total + duration;
   }, 0);
 
-  // Calculate remaining duration needed
-  const remainingDuration = Math.max(
-    0,
-    task.planned_duration_minutes - existingDuration
-  );
+  const remainingDuration = Math.max(0, planned - existingDuration);
 
-  // Calculate number of events needed
   const eventsNeeded = Math.ceil(
     remainingDuration / config.eventDurationMinutes
   );
 
-  return eventsNeeded;
+  // Tasks with 0 planned (or already covered) get 1 block so they still appear in auto-schedule
+  return eventsNeeded === 0 && planned === 0 ? 1 : eventsNeeded;
 }
 
 /**
@@ -231,7 +230,8 @@ export function distributeEvents(
     workingHoursStart.setSeconds(0);
     workingHoursStart.setMilliseconds(0);
     // Use the later of: working hours start or current time (rounded)
-    currentTime = roundedNow > workingHoursStart ? roundedNow : workingHoursStart;
+    currentTime =
+      roundedNow > workingHoursStart ? roundedNow : workingHoursStart;
   }
 
   // Determine end date
@@ -263,6 +263,8 @@ export function distributeEvents(
   // Track scheduled events to avoid overlaps within the same batch
   const scheduledEvents: CalendarEventUnion[] = [...allExistingEvents];
 
+  const skipWeekends = config.skipWeekends ?? false;
+
   for (let i = 0; i < requiredEvents; i++) {
     // Get next available slot starting from current time
     let slot = getNextAvailableSlot(
@@ -272,18 +274,21 @@ export function distributeEvents(
       scheduledEvents
     );
 
-    // If no slot available today, move to next day
-    if (!slot) {
-      // Move to next day at 9:00
+    // If no slot available today, advance day-by-day until we find one or pass endDate
+    while (!slot) {
       currentTime.setDate(currentTime.getDate() + 1);
       currentTime.setHours(config.workingHoursStart, 0, 0, 0);
       currentTime.setMinutes(0);
       currentTime.setSeconds(0);
       currentTime.setMilliseconds(0);
 
-      // Check if we've exceeded the end date
+      if (skipWeekends) {
+        while (currentTime.getDay() === 0 || currentTime.getDay() === 6) {
+          currentTime.setDate(currentTime.getDate() + 1);
+        }
+      }
+
       if (currentTime > endDate) {
-        // Can't schedule all events before deadline
         break;
       }
 
@@ -293,10 +298,10 @@ export function distributeEvents(
         task.id,
         scheduledEvents
       );
-      if (!slot) {
-        // Still no slot available, skip this event
-        break;
-      }
+    }
+
+    if (!slot) {
+      break;
     }
 
     events.push(slot);
@@ -345,7 +350,8 @@ function defaultSortStrategy(tasks: Task[]): Task[] {
 
     // Then by priority (high -> medium -> low)
     return (
-      (TASK_PRIORITY_RANK[b.priority] ?? 0) - (TASK_PRIORITY_RANK[a.priority] ?? 0)
+      (TASK_PRIORITY_RANK[b.priority] ?? 0) -
+      (TASK_PRIORITY_RANK[a.priority] ?? 0)
     );
   });
 }

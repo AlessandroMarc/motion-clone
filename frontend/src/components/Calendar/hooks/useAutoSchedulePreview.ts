@@ -16,6 +16,14 @@ import {
 } from '@/utils/taskScheduler';
 import type { Schedule } from '@/types';
 
+const DEBUG = process.env.NODE_ENV === 'development';
+function log(...args: unknown[]) {
+  if (DEBUG) {
+    // eslint-disable-next-line no-console
+    console.log('[AutoSchedulePreview]', ...args);
+  }
+}
+
 type TaskEventBlock = {
   task: Task;
   events: Array<{ start_time: Date; end_time: Date }>;
@@ -50,13 +58,27 @@ export function useAutoSchedulePreview(params: {
   } = params;
 
   return useMemo(() => {
-    const incompleteTasks = tasks.filter(
-      task =>
-        task.status !== 'completed' &&
-        (task.actual_duration_minutes ?? 0) < task.planned_duration_minutes
-    );
+    log('--- run ---', {
+      tasksCount: tasks.length,
+      existingEventsCount: existingEvents.length,
+      allCalendarEventsCount: allCalendarEvents.length,
+      eventDuration,
+      activeSchedule: activeSchedule
+        ? {
+            working_hours_start: activeSchedule.working_hours_start,
+            working_hours_end: activeSchedule.working_hours_end,
+          }
+        : null,
+    });
+
+    // Include all non-completed tasks so the user sees their full list.
+    // Tasks with no remaining duration (actual >= planned) or planned === 0
+    // will get 0 new events but still appear in the list.
+    const incompleteTasks = tasks.filter(task => task.status !== 'completed');
+    log('incompleteTasks', incompleteTasks.length, '(status !== "completed")');
 
     const sortedTasks = sortTasksForScheduling(incompleteTasks);
+    log('sortedTasks', sortedTasks.length);
 
     const tasksWithDeadlineCount = sortedTasks.filter(
       t => t.due_date !== null
@@ -64,6 +86,7 @@ export function useAutoSchedulePreview(params: {
     const tasksWithoutDeadlineCount = sortedTasks.filter(
       t => t.due_date === null
     ).length;
+    log('by deadline', { tasksWithDeadlineCount, tasksWithoutDeadlineCount });
 
     const config: TaskSchedulingConfig = createConfigFromSchedule(
       activeSchedule,
@@ -94,8 +117,15 @@ export function useAutoSchedulePreview(params: {
     const roundedNow = roundToNext15Minutes(now);
     let currentStartTime =
       roundedNow > workingHoursStart ? roundedNow : workingHoursStart;
+    log('scheduling window', {
+      now: now.toISOString(),
+      roundedNow: roundedNow.toISOString(),
+      workingHoursStart: workingHoursStart.toISOString(),
+      currentStartTime: currentStartTime.toISOString(),
+    });
 
-    for (const task of sortedTasks) {
+    for (let i = 0; i < sortedTasks.length; i++) {
+      const task = sortedTasks[i];
       const taskExistingEvents = existingEvents.filter(
         event => event.linked_task_id === task.id && event.completed_at !== null
       );
@@ -108,9 +138,22 @@ export function useAutoSchedulePreview(params: {
         currentStartTime
       );
 
-      if (events.length === 0) continue;
-
+      // Always include the task so the user sees it. Tasks with 0 events
+      // (e.g. already fully scheduled or planned duration 0) still appear.
       taskEvents.push({ task, events, violations });
+
+      log(`task[${i + 1}/${sortedTasks.length}]`, {
+        id: task.id,
+        title: task.title.slice(0, 30),
+        status: task.status,
+        planned_duration_minutes: task.planned_duration_minutes,
+        actual_duration_minutes: task.actual_duration_minutes,
+        due_date: task.due_date ? new Date(task.due_date).toISOString() : null,
+        taskExistingEventsCount: taskExistingEvents.length,
+        eventsCount: events.length,
+        violationsCount: violations.length,
+        currentStartTimeBefore: currentStartTime.toISOString(),
+      });
 
       for (const event of events) {
         const tempEvent: CalendarEvent = {
@@ -126,9 +169,12 @@ export function useAutoSchedulePreview(params: {
         accumulatedScheduledEvents.push(tempEvent);
       }
 
-      const lastEvent = events[events.length - 1];
-      currentStartTime = new Date(lastEvent.end_time);
-      currentStartTime.setMinutes(currentStartTime.getMinutes() + 5);
+      if (events.length > 0) {
+        const lastEvent = events[events.length - 1];
+        currentStartTime = new Date(lastEvent.end_time);
+        currentStartTime.setMinutes(currentStartTime.getMinutes() + 5);
+        log(`  -> next currentStartTime`, currentStartTime.toISOString());
+      }
     }
 
     const totalEvents = taskEvents.reduce(
@@ -139,6 +185,14 @@ export function useAutoSchedulePreview(params: {
       (sum, te) => sum + te.violations.length,
       0
     );
+
+    log('--- result ---', {
+      taskEventsCount: taskEvents.length,
+      totalEvents,
+      totalViolations,
+      tasksWithDeadlineCount,
+      tasksWithoutDeadlineCount,
+    });
 
     return {
       taskEvents,

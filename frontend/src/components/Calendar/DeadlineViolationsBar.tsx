@@ -22,6 +22,8 @@ export function DeadlineViolationsBar({
   events,
   tasksMap,
 }: DeadlineViolationsBarProps) {
+  const [isExpanded, setIsExpanded] = useState(false);
+
   const violations = useMemo(() => {
     const violationsList: Violation[] = [];
 
@@ -62,8 +64,6 @@ export function DeadlineViolationsBar({
       uniqueTasks.set(violation.task.id, violation);
     }
   }
-
-  const [isExpanded, setIsExpanded] = useState(false);
 
   return (
     <div className="bg-yellow-50 dark:bg-yellow-950/30 border-b border-yellow-200 dark:border-yellow-800">
