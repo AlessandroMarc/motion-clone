@@ -4,9 +4,6 @@
     "rootDir": "../",
     "outDir": "./dist",
     "baseUrl": ".",
-    "paths": {
-      "@shared/*": ["../shared/*"]
-    },
 
     // Environment Settings
     "module": "ESNext",

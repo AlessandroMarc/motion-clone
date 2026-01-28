@@ -5,9 +5,6 @@
     "rootDir": "../",
     "outDir": "./dist",
     "baseUrl": ".",
-    "paths": {
-      "@shared/*": ["../shared/*"]
-    },
 
     // Environment Settings
     // See also https://aka.ms/tsconfig/module
