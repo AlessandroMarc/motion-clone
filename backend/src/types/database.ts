@@ -12,8 +12,8 @@ export type {
   UserSettings,
   OnboardingStatus,
   OnboardingStep,
-} from '@shared/types.js';
-export { isCalendarEventTask } from '@shared/types.js';
+} from '../../../shared/types.js';
+export { isCalendarEventTask } from '../../../shared/types.js';
 
 // Database-specific types that extend or modify shared types
 export interface CreateTaskInput {
