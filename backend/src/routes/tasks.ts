@@ -14,16 +14,18 @@ router.use(authMiddleware);
 router.get('/', async (req: AuthRequest, res: Response) => {
   try {
     const { project_id, status } = req.query;
+    const client = req.supabaseClient;
 
     let tasks;
     if (project_id && typeof project_id === 'string') {
-      tasks = await taskService.getTasksByProjectId(project_id);
+      tasks = await taskService.getTasksByProjectId(project_id, client);
     } else if (status && typeof status === 'string') {
       tasks = await taskService.getTasksByStatus(
-        status as 'pending' | 'in-progress' | 'completed'
+        status as 'pending' | 'in-progress' | 'completed',
+        client
       );
     } else {
-      tasks = await taskService.getAllTasks();
+      tasks = await taskService.getAllTasks(client);
     }
 
     ResponseHelper.list(
@@ -47,7 +49,7 @@ router.get('/:id', async (req: AuthRequest, res: Response) => {
     if (!id) {
       return ResponseHelper.badRequest(res, 'Task ID is required');
     }
-    const task = await taskService.getTaskById(id);
+    const task = await taskService.getTaskById(id, req.supabaseClient);
 
     if (!task) {
       return ResponseHelper.notFound(res, 'Task');
@@ -65,9 +67,14 @@ router.get('/:id', async (req: AuthRequest, res: Response) => {
 // POST /api/tasks - Create new task
 router.post('/', async (req: AuthRequest, res: Response) => {
   try {
-    const input: CreateTaskInput = req.body;
+    // Construct input with authenticated user_id FIRST to prevent client override
+    const input: CreateTaskInput = {
+      user_id: req.userId, // Set authenticated user ID before spreading body
+      ...req.body,
+      user_id: req.userId, // Override again after spread to ensure no client tampering
+    };
     console.log('Backend received task input:', input);
-    const task = await taskService.createTask(input);
+    const task = await taskService.createTask(input, req.supabaseClient);
     console.log('Backend created task:', task);
     ResponseHelper.created(res, task, 'Task created successfully');
   } catch (error) {
@@ -87,7 +94,7 @@ router.put('/:id', async (req: AuthRequest, res: Response) => {
       return ResponseHelper.badRequest(res, 'Task ID is required');
     }
     const input: UpdateTaskInput = req.body;
-    const task = await taskService.updateTask(id, input);
+    const task = await taskService.updateTask(id, input, req.supabaseClient);
     ResponseHelper.updated(res, task, 'Task updated successfully');
   } catch (error) {
     ResponseHelper.badRequest(
@@ -104,7 +111,7 @@ router.delete('/:id', async (req: AuthRequest, res: Response) => {
     if (!id) {
       return ResponseHelper.badRequest(res, 'Task ID is required');
     }
-    await taskService.deleteTask(id);
+    await taskService.deleteTask(id, req.supabaseClient);
     ResponseHelper.deleted(res, 'Task deleted successfully');
   } catch (error) {
     ResponseHelper.internalError(

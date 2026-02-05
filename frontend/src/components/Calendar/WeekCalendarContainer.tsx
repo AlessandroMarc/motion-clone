@@ -23,7 +23,6 @@ import { useWeekCalendarNavigation } from './useWeekCalendarNavigation';
 import { WeekCalendarView } from './WeekCalendarView';
 import { MobileDayScrollView } from './MobileDayScrollView';
 import { DeadlineViolationsBar } from './DeadlineViolationsBar';
-import CalendarCreateDialog from './CalendarCreateDialog';
 import CalendarEditDialog from './CalendarEditDialog';
 import { AutoScheduleDialog } from './AutoScheduleDialog';
 import { HOUR_PX } from './dayColumnLayout';
@@ -199,19 +198,7 @@ export function WeekCalendarContainer({
           onAutoSchedule={handleAutoScheduleClick}
           onZenMode={onZenMode}
         />
-        <CalendarCreateDialog
-          open={dialogs.createOpen}
-          onOpenChange={dialogs.setCreateOpen}
-          title={dialogs.title}
-          setTitle={dialogs.setTitle}
-          description={dialogs.description}
-          setDescription={dialogs.setDescription}
-          startTime={dialogs.startTime}
-          setStartTime={dialogs.setStartTime}
-          endTime={dialogs.endTime}
-          setEndTime={dialogs.setEndTime}
-          onCreate={dialogs.handleCreate}
-        />
+        {/* CalendarCreateDialog removed - event creation disabled */}
         <CalendarEditDialog
           open={dialogs.editOpen}
           onOpenChange={dialogs.setEditOpen}

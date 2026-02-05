@@ -126,6 +126,20 @@ export class ResponseHelper {
     res.status(400).json(response);
   }
 
+  // Unauthorized responses
+  static unauthorized(
+    res: ExpressResponse,
+    error = 'Unauthorized',
+    message?: string
+  ): void {
+    const response: ApiError = {
+      success: false,
+      error,
+      message: message || 'Authentication required or token invalid',
+    };
+    res.status(401).json(response);
+  }
+
   // Validation error responses
   static validationError(
     res: ExpressResponse,

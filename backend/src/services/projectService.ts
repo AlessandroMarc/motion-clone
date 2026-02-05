@@ -1,4 +1,4 @@
-import { supabase } from '../config/supabase.js';
+import type { SupabaseClient } from '@supabase/supabase-js';
 import type {
   CreateProjectInput,
   UpdateProjectInput,
@@ -18,8 +18,11 @@ function normalizeToMidnight(date: Date | string): string {
 
 export class ProjectService {
   // Create a new project
-  async createProject(input: CreateProjectInput): Promise<Project> {
-    const { data, error } = await supabase
+  async createProject(
+    input: CreateProjectInput,
+    client: SupabaseClient
+  ): Promise<Project> {
+    const { data, error } = await client
       .from('projects')
       .insert([
         {
@@ -40,8 +43,8 @@ export class ProjectService {
   }
 
   // Get all projects
-  async getAllProjects(): Promise<Project[]> {
-    const { data, error } = await supabase
+  async getAllProjects(client: SupabaseClient): Promise<Project[]> {
+    const { data, error } = await client
       .from('projects')
       .select('*')
       .order('created_at', { ascending: false });
@@ -54,8 +57,11 @@ export class ProjectService {
   }
 
   // Get project by ID
-  async getProjectById(id: string): Promise<Project | null> {
-    const { data, error } = await supabase
+  async getProjectById(
+    id: string,
+    client: SupabaseClient
+  ): Promise<Project | null> {
+    const { data, error } = await client
       .from('projects')
       .select('*')
       .eq('id', id)
@@ -72,7 +78,11 @@ export class ProjectService {
   }
 
   // Update project
-  async updateProject(id: string, input: UpdateProjectInput): Promise<Project> {
+  async updateProject(
+    id: string,
+    input: UpdateProjectInput,
+    client: SupabaseClient
+  ): Promise<Project> {
     const updateData: {
       updated_at: string;
       name?: string;
@@ -92,7 +102,7 @@ export class ProjectService {
         : null;
     if (input.status !== undefined) updateData.status = input.status;
 
-    const { data, error } = await supabase
+    const { data, error } = await client
       .from('projects')
       .update(updateData)
       .eq('id', id)
@@ -107,8 +117,8 @@ export class ProjectService {
   }
 
   // Delete project
-  async deleteProject(id: string): Promise<boolean> {
-    const { error } = await supabase.from('projects').delete().eq('id', id);
+  async deleteProject(id: string, client: SupabaseClient): Promise<boolean> {
+    const { error } = await client.from('projects').delete().eq('id', id);
 
     if (error) {
       throw new Error(`Failed to delete project: ${error.message}`);
@@ -119,9 +129,10 @@ export class ProjectService {
 
   // Get projects by status
   async getProjectsByStatus(
-    status: 'not-started' | 'in-progress' | 'completed'
+    status: 'not-started' | 'in-progress' | 'completed',
+    client: SupabaseClient
   ): Promise<Project[]> {
-    const { data, error } = await supabase
+    const { data, error } = await client
       .from('projects')
       .select('*')
       .eq('status', status)

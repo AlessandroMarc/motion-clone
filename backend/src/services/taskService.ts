@@ -1,4 +1,4 @@
-import { supabase } from '../config/supabase.js';
+import type { SupabaseClient } from '@supabase/supabase-js';
 import type { CreateTaskInput, UpdateTaskInput } from '../types/database.js';
 import type { Task } from '../types/database.js';
 
@@ -40,7 +40,10 @@ export class TaskService {
   }
 
   // Create a new task
-  async createTask(input: CreateTaskInput): Promise<Task> {
+  async createTask(
+    input: CreateTaskInput,
+    client: SupabaseClient
+  ): Promise<Task> {
     const rawPlanned = input.planned_duration_minutes;
     const normalizedPlanned = rawPlanned < 0 ? 0 : rawPlanned;
     const rawActual = input.actual_duration_minutes ?? 0;
@@ -58,7 +61,7 @@ export class TaskService {
       dueDateString = normalizeToMidnight(input.due_date);
     }
 
-    const { data, error } = await supabase
+    const { data, error } = await client
       .from('tasks')
       .insert([
         {
@@ -85,8 +88,8 @@ export class TaskService {
   }
 
   // Get all tasks
-  async getAllTasks(): Promise<Task[]> {
-    const { data, error } = await supabase
+  async getAllTasks(client: SupabaseClient): Promise<Task[]> {
+    const { data, error } = await client
       .from('tasks')
       .select('*')
       .order('created_at', { ascending: false });
@@ -99,8 +102,8 @@ export class TaskService {
   }
 
   // Get task by ID
-  async getTaskById(id: string): Promise<Task | null> {
-    const { data, error } = await supabase
+  async getTaskById(id: string, client: SupabaseClient): Promise<Task | null> {
+    const { data, error } = await client
       .from('tasks')
       .select('*')
       .eq('id', id)
@@ -117,8 +120,12 @@ export class TaskService {
   }
 
   // Update task
-  async updateTask(id: string, input: UpdateTaskInput): Promise<Task> {
-    const existingTask = await this.getTaskById(id);
+  async updateTask(
+    id: string,
+    input: UpdateTaskInput,
+    client: SupabaseClient
+  ): Promise<Task> {
+    const existingTask = await this.getTaskById(id, client);
 
     if (!existingTask) {
       throw new Error('Task not found');
@@ -181,7 +188,7 @@ export class TaskService {
       normalizedActual
     );
 
-    const { data, error } = await supabase
+    const { data, error } = await client
       .from('tasks')
       .update(updateData)
       .eq('id', id)
@@ -196,8 +203,8 @@ export class TaskService {
   }
 
   // Delete task
-  async deleteTask(id: string): Promise<boolean> {
-    const { error } = await supabase.from('tasks').delete().eq('id', id);
+  async deleteTask(id: string, client: SupabaseClient): Promise<boolean> {
+    const { error } = await client.from('tasks').delete().eq('id', id);
 
     if (error) {
       throw new Error(`Failed to delete task: ${error.message}`);
@@ -207,8 +214,11 @@ export class TaskService {
   }
 
   // Get tasks by project ID
-  async getTasksByProjectId(projectId: string): Promise<Task[]> {
-    const { data, error } = await supabase
+  async getTasksByProjectId(
+    projectId: string,
+    client: SupabaseClient
+  ): Promise<Task[]> {
+    const { data, error } = await client
       .from('tasks')
       .select('*')
       .eq('project_id', projectId)
@@ -223,9 +233,10 @@ export class TaskService {
 
   // Get tasks by status
   async getTasksByStatus(
-    status: 'pending' | 'in-progress' | 'completed'
+    status: 'pending' | 'in-progress' | 'completed',
+    client: SupabaseClient
   ): Promise<Task[]> {
-    const { data, error } = await supabase
+    const { data, error } = await client
       .from('tasks')
       .select('*')
       .eq('status', status)

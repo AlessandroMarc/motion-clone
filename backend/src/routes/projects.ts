@@ -1,26 +1,32 @@
-import express, { type Request, type Response } from 'express';
+import express, { type Response } from 'express';
 import { ProjectService } from '../services/projectService.js';
 import type {
   CreateProjectInput,
   UpdateProjectInput,
 } from '../types/database.js';
 import { ResponseHelper } from '../utils/responseHelpers.js';
+import { authMiddleware, type AuthRequest } from '../middleware/auth.js';
 
 const router = express.Router();
 const projectService = new ProjectService();
 
+// Apply auth middleware to all routes
+router.use(authMiddleware);
+
 // GET /api/projects - Get all projects
-router.get('/', async (req: Request, res: Response) => {
+router.get('/', async (req: AuthRequest, res: Response) => {
   try {
     const { status } = req.query;
+    const client = req.supabaseClient;
 
     let projects;
     if (status && typeof status === 'string') {
       projects = await projectService.getProjectsByStatus(
-        status as 'not-started' | 'in-progress' | 'completed'
+        status as 'not-started' | 'in-progress' | 'completed',
+        client
       );
     } else {
-      projects = await projectService.getAllProjects();
+      projects = await projectService.getAllProjects(client);
     }
 
     ResponseHelper.list(
@@ -38,13 +44,13 @@ router.get('/', async (req: Request, res: Response) => {
 });
 
 // GET /api/projects/:id - Get project by ID
-router.get('/:id', async (req: Request, res: Response) => {
+router.get('/:id', async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
     if (!id) {
       return ResponseHelper.badRequest(res, 'Project ID is required');
     }
-    const project = await projectService.getProjectById(id);
+    const project = await projectService.getProjectById(id, req.supabaseClient);
 
     if (!project) {
       return ResponseHelper.notFound(res, 'Project');
@@ -60,10 +66,10 @@ router.get('/:id', async (req: Request, res: Response) => {
 });
 
 // POST /api/projects - Create new project
-router.post('/', async (req: Request, res: Response) => {
+router.post('/', async (req: AuthRequest, res: Response) => {
   try {
     const input: CreateProjectInput = req.body;
-    const project = await projectService.createProject(input);
+    const project = await projectService.createProject(input, req.supabaseClient);
     ResponseHelper.created(res, project, 'Project created successfully');
   } catch (error) {
     ResponseHelper.badRequest(
@@ -74,14 +80,18 @@ router.post('/', async (req: Request, res: Response) => {
 });
 
 // PUT /api/projects/:id - Update project
-router.put('/:id', async (req: Request, res: Response) => {
+router.put('/:id', async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
     if (!id) {
       return ResponseHelper.badRequest(res, 'Project ID is required');
     }
     const input: UpdateProjectInput = req.body;
-    const project = await projectService.updateProject(id, input);
+    const project = await projectService.updateProject(
+      id,
+      input,
+      req.supabaseClient
+    );
     ResponseHelper.updated(res, project, 'Project updated successfully');
   } catch (error) {
     ResponseHelper.badRequest(
@@ -92,13 +102,13 @@ router.put('/:id', async (req: Request, res: Response) => {
 });
 
 // DELETE /api/projects/:id - Delete project
-router.delete('/:id', async (req: Request, res: Response) => {
+router.delete('/:id', async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
     if (!id) {
       return ResponseHelper.badRequest(res, 'Project ID is required');
     }
-    await projectService.deleteProject(id);
+    await projectService.deleteProject(id, req.supabaseClient);
     ResponseHelper.deleted(res, 'Project deleted successfully');
   } catch (error) {
     ResponseHelper.internalError(

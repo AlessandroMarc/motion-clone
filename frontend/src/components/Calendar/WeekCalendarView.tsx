@@ -10,7 +10,6 @@ import {
 } from '@/types';
 import { CalendarHeader } from './CalendarHeader';
 import WeekScrollableGrid from './WeekScrollableGrid';
-import CalendarCreateDialog from './CalendarCreateDialog';
 import CalendarEditDialog from './CalendarEditDialog';
 import { AutoScheduleDialog } from './AutoScheduleDialog';
 import { DeadlineViolationsBar } from './DeadlineViolationsBar';
@@ -161,7 +160,7 @@ export function WeekCalendarView({
       <WeekScrollableGrid
         weekDates={displayDates}
         eventsByDay={displayEventsByDay}
-        onGridCellClick={dialogs.openCreateDialog}
+        onGridCellClick={() => {}}
         onEventMouseDown={onEventMouseDown}
         draggingEventId={draggingEventId}
         dragPreview={draggingEventId ? dragPreview : externalDragPreview}
@@ -175,19 +174,7 @@ export function WeekCalendarView({
         isMobile={isMobile}
       />
 
-      <CalendarCreateDialog
-        open={dialogs.createOpen}
-        onOpenChange={dialogs.setCreateOpen}
-        title={dialogs.title}
-        setTitle={dialogs.setTitle}
-        description={dialogs.description}
-        setDescription={dialogs.setDescription}
-        startTime={dialogs.startTime}
-        setStartTime={dialogs.setStartTime}
-        endTime={dialogs.endTime}
-        setEndTime={dialogs.setEndTime}
-        onCreate={dialogs.handleCreate}
-      />
+      {/* CalendarCreateDialog removed to disable event creation */}
 
       <CalendarEditDialog
         open={dialogs.editOpen}
