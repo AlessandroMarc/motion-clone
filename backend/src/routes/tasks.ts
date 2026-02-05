@@ -2,12 +2,16 @@ import express, { type Request, type Response } from 'express';
 import { TaskService } from '../services/taskService.js';
 import type { CreateTaskInput, UpdateTaskInput } from '../types/database.js';
 import { ResponseHelper } from '../utils/responseHelpers.js';
+import { authMiddleware, type AuthRequest } from '../middleware/auth.js';
 
 const router = express.Router();
 const taskService = new TaskService();
 
+// Apply auth middleware to all routes
+router.use(authMiddleware);
+
 // GET /api/tasks - Get all tasks
-router.get('/', async (req: Request, res: Response) => {
+router.get('/', async (req: AuthRequest, res: Response) => {
   try {
     const { project_id, status } = req.query;
 
@@ -37,7 +41,7 @@ router.get('/', async (req: Request, res: Response) => {
 });
 
 // GET /api/tasks/:id - Get task by ID
-router.get('/:id', async (req: Request, res: Response) => {
+router.get('/:id', async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
     if (!id) {
@@ -59,7 +63,7 @@ router.get('/:id', async (req: Request, res: Response) => {
 });
 
 // POST /api/tasks - Create new task
-router.post('/', async (req: Request, res: Response) => {
+router.post('/', async (req: AuthRequest, res: Response) => {
   try {
     const input: CreateTaskInput = req.body;
     console.log('Backend received task input:', input);
@@ -76,7 +80,7 @@ router.post('/', async (req: Request, res: Response) => {
 });
 
 // PUT /api/tasks/:id - Update task
-router.put('/:id', async (req: Request, res: Response) => {
+router.put('/:id', async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
     if (!id) {
@@ -94,7 +98,7 @@ router.put('/:id', async (req: Request, res: Response) => {
 });
 
 // DELETE /api/tasks/:id - Delete task
-router.delete('/:id', async (req: Request, res: Response) => {
+router.delete('/:id', async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
     if (!id) {

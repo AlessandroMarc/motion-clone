@@ -98,7 +98,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         process.env.NEXT_PUBLIC_APP_URL
           ? process.env.NEXT_PUBLIC_APP_URL.replace(/\/$/, '')
           : window.location.origin;
-      const redirectTo = `${baseUrl}/`;
+      const redirectTo = `${baseUrl}/calendar`;
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
@@ -125,6 +125,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (error) {
         console.error('Error signing out:', error);
         throw error;
+      }
+
+      // Redirect to home page after successful logout
+      if (typeof window !== 'undefined') {
+        window.location.href = '/';
       }
     } catch (error) {
       console.error('Error signing out:', error);

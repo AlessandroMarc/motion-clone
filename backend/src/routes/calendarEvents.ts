@@ -5,12 +5,16 @@ import type {
   UpdateCalendarEventInput,
 } from '../types/database.js';
 import { ResponseHelper } from '../utils/responseHelpers.js';
+import { authMiddleware, type AuthRequest } from '../middleware/auth.js';
 
 const router = express.Router();
 const calendarEventService = new CalendarEventService();
 
+// Apply auth middleware to all routes
+router.use(authMiddleware);
+
 // GET /api/calendar-events - Get all calendar events
-router.get('/', async (req: Request, res: Response) => {
+router.get('/', async (req: AuthRequest, res: Response) => {
   try {
     console.log('[CalendarEventsRoute] GET /api/calendar-events called');
     console.log('[CalendarEventsRoute] Query params:', req.query);
@@ -59,7 +63,7 @@ router.get('/', async (req: Request, res: Response) => {
 });
 
 // GET /api/calendar-events/:id - Get calendar event by ID
-router.get('/:id', async (req: Request, res: Response) => {
+router.get('/:id', async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
     if (!id) {
@@ -81,7 +85,7 @@ router.get('/:id', async (req: Request, res: Response) => {
 });
 
 // POST /api/calendar-events - Create new calendar event
-router.post('/', async (req: Request, res: Response) => {
+router.post('/', async (req: AuthRequest, res: Response) => {
   try {
     console.log('[CalendarEventsRoute] POST /api/calendar-events called');
     console.log('[CalendarEventsRoute] Request body:', req.body);
@@ -126,7 +130,7 @@ router.post('/', async (req: Request, res: Response) => {
 });
 
 // PUT /api/calendar-events/:id - Update calendar event
-router.put('/:id', async (req: Request, res: Response) => {
+router.put('/:id', async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
     if (!id) {
@@ -147,7 +151,7 @@ router.put('/:id', async (req: Request, res: Response) => {
 });
 
 // DELETE /api/calendar-events/batch - Batch delete calendar events
-router.delete('/batch', async (req: Request, res: Response) => {
+router.delete('/batch', async (req: AuthRequest, res: Response) => {
   try {
     const { ids } = req.body;
 
@@ -184,7 +188,7 @@ router.delete('/batch', async (req: Request, res: Response) => {
 });
 
 // DELETE /api/calendar-events/:id - Delete calendar event
-router.delete('/:id', async (req: Request, res: Response) => {
+router.delete('/:id', async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
     if (!id) {
