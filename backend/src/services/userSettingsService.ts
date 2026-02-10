@@ -1,4 +1,4 @@
-import type { SupabaseClient } from '@supabase/supabase-js';
+import { supabase, getAuthenticatedSupabase } from '../config/supabase.js';
 import type {
   Schedule,
   UserSettings,
@@ -14,12 +14,9 @@ import type {
 
 export class UserSettingsService {
   // Get active schedule for a user (or default if none is active)
-  async getActiveSchedule(
-    userId: string,
-    client: SupabaseClient
-  ): Promise<Schedule | null> {
+  async getActiveSchedule(userId: string): Promise<Schedule | null> {
     // First, get user settings to see if there's an active schedule
-    const { data: settings } = await client
+    const { data: settings } = await supabase
       .from('user_settings')
       .select('active_schedule_id')
       .eq('user_id', userId)
@@ -29,7 +26,7 @@ export class UserSettingsService {
 
     // If there's an active schedule, get it
     if (settings?.active_schedule_id) {
-      const { data, error } = await client
+      const { data, error } = await supabase
         .from('schedules')
         .select('*')
         .eq('id', settings.active_schedule_id)
@@ -47,7 +44,7 @@ export class UserSettingsService {
 
     // If no active schedule or it doesn't exist, get the default schedule
     if (!schedule) {
-      const { data, error } = await client
+      const { data, error } = await supabase
         .from('schedules')
         .select('*')
         .eq('user_id', userId)
@@ -81,9 +78,8 @@ export class UserSettingsService {
   }
 
   // Get all schedules for a user
-  async getUserSchedules(userId: string, token: string): Promise<Schedule[]> {
-    const client = getAuthenticatedSupabase(token);
-    const { data, error } = await client
+  async getUserSchedules(userId: string): Promise<Schedule[]> {
+    const { data, error } = await supabase
       .from('schedules')
       .select('*')
       .eq('user_id', userId)
@@ -102,12 +98,8 @@ export class UserSettingsService {
   }
 
   // Create a new schedule
-  async createSchedule(
-    input: CreateScheduleInput,
-    client: SupabaseClient
-  ): Promise<Schedule> {
-    const client = getAuthenticatedSupabase(token);
-    const { data, error } = await client
+  async createSchedule(input: CreateScheduleInput): Promise<Schedule> {
+    const { data, error } = await supabase
       .from('schedules')
       .insert([
         {
@@ -136,11 +128,9 @@ export class UserSettingsService {
   async updateSchedule(
     scheduleId: string,
     userId: string,
-    input: UpdateScheduleInput,
-    client: SupabaseClient
+    input: UpdateScheduleInput
   ): Promise<Schedule> {
-    const client = getAuthenticatedSupabase(token);
-    const { data, error } = await client
+    const { data, error } = await supabase
       .from('schedules')
       .update({
         name: input.name,
@@ -167,9 +157,9 @@ export class UserSettingsService {
   // Get user settings
   async getUserSettings(
     userId: string,
-    client: SupabaseClient
+    token?: string
   ): Promise<UserSettings | null> {
-    const client = getAuthenticatedSupabase(token);
+    const client = token ? getAuthenticatedSupabase(token) : supabase;
     const { data, error } = await client
       .from('user_settings')
       .select('*')
@@ -195,9 +185,9 @@ export class UserSettingsService {
   // Create or update user settings (upsert)
   async upsertUserSettings(
     input: CreateUserSettingsInput,
-    client: SupabaseClient
+    token?: string
   ): Promise<UserSettings> {
-    const client = getAuthenticatedSupabase(token);
+    const client = token ? getAuthenticatedSupabase(token) : supabase;
     const { data, error } = await client
       .from('user_settings')
       .upsert(
@@ -227,9 +217,9 @@ export class UserSettingsService {
   async updateUserSettings(
     userId: string,
     input: UpdateUserSettingsInput,
-    client: SupabaseClient
+    token?: string
   ): Promise<UserSettings> {
-    const client = getAuthenticatedSupabase(token);
+    const client = token ? getAuthenticatedSupabase(token) : supabase;
     const { data, error } = await client
       .from('user_settings')
       .update({
@@ -253,9 +243,9 @@ export class UserSettingsService {
   // Get onboarding status for a user
   async getOnboardingStatus(
     userId: string,
-    client: SupabaseClient
+    token?: string
   ): Promise<OnboardingStatus> {
-    const client = getAuthenticatedSupabase(token);
+    const client = token ? getAuthenticatedSupabase(token) : supabase;
     const { data, error } = await client
       .from('user_settings')
       .select(
@@ -333,7 +323,7 @@ export class UserSettingsService {
   async updateOnboardingStep(
     userId: string,
     step: OnboardingStep,
-    client: SupabaseClient
+    token?: string
   ): Promise<UserSettings> {
     // First, ensure user_settings exists
     const existingSettings = await this.getUserSettings(userId, token);
@@ -350,7 +340,7 @@ export class UserSettingsService {
       updateData.onboarding_started_at = new Date().toISOString();
     }
 
-    const client = getAuthenticatedSupabase(token);
+    const client = token ? getAuthenticatedSupabase(token) : supabase;
     const { data, error } = await client
       .from('user_settings')
       .upsert(
@@ -385,9 +375,9 @@ export class UserSettingsService {
   // Complete onboarding
   async completeOnboarding(
     userId: string,
-    client: SupabaseClient
+    token?: string
   ): Promise<UserSettings> {
-    const client = getAuthenticatedSupabase(token);
+    const client = token ? getAuthenticatedSupabase(token) : supabase;
     const { data, error } = await client
       .from('user_settings')
       .update({

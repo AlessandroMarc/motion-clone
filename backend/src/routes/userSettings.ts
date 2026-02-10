@@ -17,15 +17,11 @@ const userSettingsService = new UserSettingsService();
 router.use(authMiddleware);
 
 // GET /api/user-settings/active-schedule - Get active schedule for user
-router.get('/active-schedule', async (req: AuthRequest, res: Response) => {
+router.get('/active-schedule', async (req: Request, res: Response) => {
+  const authReq = req as AuthRequest;
   try {
-    // Use authenticated userId only - never trust client-provided user_id
-    const userId = req.userId!;
-    const client = req.supabaseClient;
-
     const schedule = await userSettingsService.getActiveSchedule(
-      userId,
-      client
+      authReq.userId
     );
     ResponseHelper.success(
       res,
@@ -41,15 +37,11 @@ router.get('/active-schedule', async (req: AuthRequest, res: Response) => {
 });
 
 // GET /api/user-settings/schedules - Get all schedules for user
-router.get('/schedules', async (req: AuthRequest, res: Response) => {
+router.get('/schedules', async (req: Request, res: Response) => {
+  const authReq = req as AuthRequest;
   try {
-    // Use authenticated userId only - never trust client-provided user_id
-    const userId = req.userId!;
-    const client = req.supabaseClient;
-
     const schedules = await userSettingsService.getUserSchedules(
-      userId,
-      client
+      authReq.userId
     );
     ResponseHelper.list(
       res,
@@ -66,16 +58,15 @@ router.get('/schedules', async (req: AuthRequest, res: Response) => {
 });
 
 // POST /api/user-settings/schedules - Create a new schedule
-router.post('/schedules', async (req: AuthRequest, res: Response) => {
+router.post('/schedules', async (req: Request, res: Response) => {
+  const authReq = req as AuthRequest;
   try {
-    const client = req.supabaseClient;
-    // Override user_id with authenticated user - never trust client input
     const input: CreateScheduleInput = {
       ...req.body,
-      user_id: req.userId!,
+      user_id: authReq.userId,
     };
 
-    const schedule = await userSettingsService.createSchedule(input, client);
+    const schedule = await userSettingsService.createSchedule(input);
     ResponseHelper.created(res, schedule, 'Schedule created successfully');
   } catch (error) {
     ResponseHelper.badRequest(
@@ -86,13 +77,11 @@ router.post('/schedules', async (req: AuthRequest, res: Response) => {
 });
 
 // PUT /api/user-settings/schedules/:id - Update a schedule
-router.put('/schedules/:id', async (req: AuthRequest, res: Response) => {
+router.put('/schedules/:id', async (req: Request, res: Response) => {
+  const authReq = req as AuthRequest;
   try {
     const { id } = req.params;
-    // Use authenticated userId only - never trust client-provided user_id
-    const userId = req.userId!;
     const input: UpdateScheduleInput = req.body;
-    const client = req.supabaseClient;
 
     if (!id) {
       return ResponseHelper.badRequest(res, 'Schedule ID is required');
@@ -100,9 +89,8 @@ router.put('/schedules/:id', async (req: AuthRequest, res: Response) => {
 
     const schedule = await userSettingsService.updateSchedule(
       id,
-      userId,
-      input,
-      client
+      authReq.userId,
+      input
     );
     ResponseHelper.success(res, schedule, 'Schedule updated successfully');
   } catch (error) {
@@ -114,13 +102,10 @@ router.put('/schedules/:id', async (req: AuthRequest, res: Response) => {
 });
 
 // GET /api/user-settings - Get user settings
-router.get('/', async (req: AuthRequest, res: Response) => {
+router.get('/', async (req: Request, res: Response) => {
+  const authReq = req as AuthRequest;
   try {
-    // Use authenticated userId only - never trust client-provided user_id
-    const userId = req.userId!;
-    const client = req.supabaseClient;
-
-    const settings = await userSettingsService.getUserSettings(userId, client);
+    const settings = await userSettingsService.getUserSettings(authReq.userId);
     ResponseHelper.success(
       res,
       settings,
@@ -135,19 +120,15 @@ router.get('/', async (req: AuthRequest, res: Response) => {
 });
 
 // POST /api/user-settings - Create or update user settings
-router.post('/', async (req: AuthRequest, res: Response) => {
+router.post('/', async (req: Request, res: Response) => {
+  const authReq = req as AuthRequest;
   try {
-    const client = req.supabaseClient;
-    // Override user_id with authenticated user - never trust client input
     const input: CreateUserSettingsInput = {
       ...req.body,
-      user_id: req.userId!,
+      user_id: authReq.userId,
     };
 
-    const settings = await userSettingsService.upsertUserSettings(
-      input,
-      client
-    );
+    const settings = await userSettingsService.upsertUserSettings(input);
     ResponseHelper.created(res, settings, 'User settings created successfully');
   } catch (error) {
     ResponseHelper.badRequest(
@@ -158,17 +139,15 @@ router.post('/', async (req: AuthRequest, res: Response) => {
 });
 
 // PUT /api/user-settings - Update user settings
-router.put('/', async (req: AuthRequest, res: Response) => {
+router.put('/', async (req: Request, res: Response) => {
+  const authReq = req as AuthRequest;
   try {
-    // Use authenticated userId only - never trust client-provided user_id
-    const userId = req.userId!;
     const input: UpdateUserSettingsInput = req.body;
-    const client = req.supabaseClient;
 
     const settings = await userSettingsService.updateUserSettings(
-      userId,
+      authReq.userId,
       input,
-      client
+      authReq.authToken
     );
     ResponseHelper.success(res, settings, 'User settings updated successfully');
   } catch (error) {
@@ -180,15 +159,12 @@ router.put('/', async (req: AuthRequest, res: Response) => {
 });
 
 // GET /api/user-settings/onboarding/status - Get onboarding status
-router.get('/onboarding/status', async (req: AuthRequest, res: Response) => {
+router.get('/onboarding/status', async (req: Request, res: Response) => {
+  const authReq = req as AuthRequest;
   try {
-    // Use authenticated userId only - never trust client-provided user_id
-    const userId = req.userId!;
-    const client = req.supabaseClient;
-
     const status = await userSettingsService.getOnboardingStatus(
-      userId,
-      client
+      authReq.userId,
+      authReq.authToken
     );
     ResponseHelper.success(
       res,
@@ -204,12 +180,10 @@ router.get('/onboarding/status', async (req: AuthRequest, res: Response) => {
 });
 
 // PUT /api/user-settings/onboarding/step - Update onboarding step
-router.put('/onboarding/step', async (req: AuthRequest, res: Response) => {
+router.put('/onboarding/step', async (req: Request, res: Response) => {
+  const authReq = req as AuthRequest;
   try {
-    // Use authenticated userId only - never trust client-provided user_id
-    const userId = req.userId!;
     const step = req.body?.step as OnboardingStep;
-    const client = req.supabaseClient;
 
     if (
       step !== null &&
@@ -224,9 +198,9 @@ router.put('/onboarding/step', async (req: AuthRequest, res: Response) => {
     }
 
     const settings = await userSettingsService.updateOnboardingStep(
-      userId,
+      authReq.userId,
       step,
-      client
+      authReq.authToken
     );
     ResponseHelper.success(
       res,
@@ -242,15 +216,12 @@ router.put('/onboarding/step', async (req: AuthRequest, res: Response) => {
 });
 
 // PUT /api/user-settings/onboarding/complete - Complete onboarding
-router.put('/onboarding/complete', async (req: AuthRequest, res: Response) => {
+router.put('/onboarding/complete', async (req: Request, res: Response) => {
+  const authReq = req as AuthRequest;
   try {
-    // Use authenticated userId only - never trust client-provided user_id
-    const userId = req.userId!;
-    const client = req.supabaseClient;
-
     const settings = await userSettingsService.completeOnboarding(
-      userId,
-      client
+      authReq.userId,
+      authReq.authToken
     );
     ResponseHelper.success(res, settings, 'Onboarding completed successfully');
   } catch (error) {

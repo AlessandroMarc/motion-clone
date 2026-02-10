@@ -1,5 +1,5 @@
 import { google } from 'googleapis';
-import { supabase } from '../config/supabase.js';
+import { serviceRoleSupabase } from '../config/supabase.js';
 import { CalendarEventService } from './calendarEventService.js';
 import { getGoogleOAuthEnv } from '../config/env.js';
 import { loadEnv } from '../config/loadEnv.js';
@@ -80,19 +80,21 @@ export class GoogleCalendarService {
         : new Date(Date.now() + 3600 * 1000); // Default 1 hour
 
       // Save or update tokens in database
-      const { error } = await supabase.from('google_calendar_tokens').upsert(
-        {
-          user_id: userId,
-          access_token: tokens.access_token,
-          refresh_token: tokens.refresh_token,
-          expires_at: expiresAt.toISOString(),
-          calendar_id: 'primary',
-          updated_at: new Date().toISOString(),
-        },
-        {
-          onConflict: 'user_id',
-        }
-      );
+      const { error } = await serviceRoleSupabase
+        .from('google_calendar_tokens')
+        .upsert(
+          {
+            user_id: userId,
+            access_token: tokens.access_token,
+            refresh_token: tokens.refresh_token,
+            expires_at: expiresAt.toISOString(),
+            calendar_id: 'primary',
+            updated_at: new Date().toISOString(),
+          },
+          {
+            onConflict: 'user_id',
+          }
+        );
 
       if (error) {
         console.error('[GoogleCalendarService] Failed to save tokens:', error);
@@ -114,7 +116,7 @@ export class GoogleCalendarService {
    * Get user's Google Calendar tokens
    */
   private async getTokens(userId: string): Promise<GoogleCalendarToken | null> {
-    const { data, error } = await supabase
+    const { data, error } = await serviceRoleSupabase
       .from('google_calendar_tokens')
       .select('*')
       .eq('user_id', userId)
@@ -162,7 +164,7 @@ export class GoogleCalendarService {
       : new Date(Date.now() + 3600 * 1000);
 
     // Update tokens in database
-    const { error } = await supabase
+    const { error } = await serviceRoleSupabase
       .from('google_calendar_tokens')
       .update({
         access_token: credentials.access_token,
@@ -330,7 +332,7 @@ export class GoogleCalendarService {
       }
 
       // Update last_synced_at
-      await supabase
+      await serviceRoleSupabase
         .from('google_calendar_tokens')
         .update({
           last_synced_at: new Date().toISOString(),
@@ -352,7 +354,7 @@ export class GoogleCalendarService {
    * Disconnect Google Calendar
    */
   async disconnectGoogleCalendar(userId: string): Promise<void> {
-    const { error } = await supabase
+    const { error } = await serviceRoleSupabase
       .from('google_calendar_tokens')
       .delete()
       .eq('user_id', userId);

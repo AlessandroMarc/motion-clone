@@ -39,8 +39,8 @@ describe('authMiddleware', () => {
 
     // Setup mock response with chainable methods
     mockResponse = {
-      status: jest.fn().mockReturnThis(),
-      json: jest.fn().mockReturnThis(),
+      status: jest.fn().mockReturnThis() as any,
+      json: jest.fn().mockReturnThis() as any,
     };
 
     // Setup mock next function

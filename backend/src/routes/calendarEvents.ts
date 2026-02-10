@@ -14,8 +14,9 @@ const calendarEventService = new CalendarEventService();
 router.use(authMiddleware);
 
 // GET /api/calendar-events - Get all calendar events
-router.get('/', async (req: AuthRequest, res: Response) => {
+router.get('/', async (req: Request, res: Response) => {
   try {
+    const authReq = req as AuthRequest;
     console.log('[CalendarEventsRoute] GET /api/calendar-events called');
     console.log('[CalendarEventsRoute] Query params:', req.query);
     const { start_date, end_date, task_id } = req.query;
@@ -30,14 +31,20 @@ router.get('/', async (req: AuthRequest, res: Response) => {
       console.log('[CalendarEventsRoute] Fetching events by date range');
       events = await calendarEventService.getCalendarEventsByDateRange(
         start_date,
-        end_date
+        end_date,
+        authReq.authToken
       );
     } else if (task_id && typeof task_id === 'string') {
       console.log('[CalendarEventsRoute] Fetching events by task_id');
-      events = await calendarEventService.getCalendarEventsByTaskId(task_id);
+      events = await calendarEventService.getCalendarEventsByTaskId(
+        task_id,
+        authReq.authToken
+      );
     } else {
       console.log('[CalendarEventsRoute] Fetching all events');
-      events = await calendarEventService.getAllCalendarEvents();
+      events = await calendarEventService.getAllCalendarEvents(
+        authReq.authToken
+      );
     }
 
     console.log('[CalendarEventsRoute] Returning events:', {
@@ -63,13 +70,17 @@ router.get('/', async (req: AuthRequest, res: Response) => {
 });
 
 // GET /api/calendar-events/:id - Get calendar event by ID
-router.get('/:id', async (req: AuthRequest, res: Response) => {
+router.get('/:id', async (req: Request, res: Response) => {
   try {
+    const authReq = req as AuthRequest;
     const { id } = req.params;
     if (!id) {
       return ResponseHelper.badRequest(res, 'Calendar event ID is required');
     }
-    const event = await calendarEventService.getCalendarEventById(id);
+    const event = await calendarEventService.getCalendarEventById(
+      id,
+      authReq.authToken
+    );
 
     if (!event) {
       return ResponseHelper.notFound(res, 'Calendar event');
@@ -85,16 +96,19 @@ router.get('/:id', async (req: AuthRequest, res: Response) => {
 });
 
 // POST /api/calendar-events - Create new calendar event
-router.post('/', async (req: AuthRequest, res: Response) => {
+router.post('/', async (req: Request, res: Response) => {
   try {
+    const authReq = req as AuthRequest;
     console.log('[CalendarEventsRoute] POST /api/calendar-events called');
     console.log('[CalendarEventsRoute] Request body:', req.body);
 
     // Check if this is a batch request
     if (Array.isArray(req.body)) {
       const inputs: CreateCalendarEventInput[] = req.body;
-      const results =
-        await calendarEventService.createCalendarEventsBatch(inputs);
+      const results = await calendarEventService.createCalendarEventsBatch(
+        inputs,
+        authReq.authToken
+      );
 
       // Return results with success/failure for each event
       ResponseHelper.success(
@@ -110,7 +124,11 @@ router.post('/', async (req: AuthRequest, res: Response) => {
     } else {
       // Single event creation
       const input: CreateCalendarEventInput = req.body;
-      const event = await calendarEventService.createCalendarEvent(input);
+      const event = await calendarEventService.createCalendarEvent(
+        input,
+        undefined,
+        authReq.authToken
+      );
       console.log('[CalendarEventsRoute] Calendar event created:', event);
       ResponseHelper.created(res, event, 'Calendar event created successfully');
     }
@@ -130,14 +148,19 @@ router.post('/', async (req: AuthRequest, res: Response) => {
 });
 
 // PUT /api/calendar-events/:id - Update calendar event
-router.put('/:id', async (req: AuthRequest, res: Response) => {
+router.put('/:id', async (req: Request, res: Response) => {
   try {
+    const authReq = req as AuthRequest;
     const { id } = req.params;
     if (!id) {
       return ResponseHelper.badRequest(res, 'Calendar event ID is required');
     }
     const input: UpdateCalendarEventInput = req.body;
-    const event = await calendarEventService.updateCalendarEvent(id, input);
+    const event = await calendarEventService.updateCalendarEvent(
+      id,
+      input,
+      authReq.authToken
+    );
     ResponseHelper.updated(res, event, 'Calendar event updated successfully');
   } catch (error) {
     const message =
@@ -151,8 +174,9 @@ router.put('/:id', async (req: AuthRequest, res: Response) => {
 });
 
 // DELETE /api/calendar-events/batch - Batch delete calendar events
-router.delete('/batch', async (req: AuthRequest, res: Response) => {
+router.delete('/batch', async (req: Request, res: Response) => {
   try {
+    const authReq = req as AuthRequest;
     const { ids } = req.body;
 
     if (!Array.isArray(ids) || ids.length === 0) {
@@ -167,7 +191,10 @@ router.delete('/batch', async (req: AuthRequest, res: Response) => {
       return ResponseHelper.badRequest(res, 'All event IDs must be strings');
     }
 
-    const results = await calendarEventService.deleteCalendarEventsBatch(ids);
+    const results = await calendarEventService.deleteCalendarEventsBatch(
+      ids,
+      authReq.authToken
+    );
 
     ResponseHelper.success(
       res,
@@ -188,13 +215,14 @@ router.delete('/batch', async (req: AuthRequest, res: Response) => {
 });
 
 // DELETE /api/calendar-events/:id - Delete calendar event
-router.delete('/:id', async (req: AuthRequest, res: Response) => {
+router.delete('/:id', async (req: Request, res: Response) => {
   try {
+    const authReq = req as AuthRequest;
     const { id } = req.params;
     if (!id) {
       return ResponseHelper.badRequest(res, 'Calendar event ID is required');
     }
-    await calendarEventService.deleteCalendarEvent(id);
+    await calendarEventService.deleteCalendarEvent(id, authReq.authToken);
     ResponseHelper.deleted(res, 'Calendar event deleted successfully');
   } catch (error) {
     ResponseHelper.internalError(

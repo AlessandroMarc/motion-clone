@@ -47,6 +47,11 @@ const ENV_VAR_SCHEMA: EnvVarConfig[] = [
     group: 'google_calendar',
     validateUrl: true,
   },
+  {
+    name: 'SLACK_WEBHOOK_URL',
+    required: false,
+    validateUrl: true,
+  },
 ];
 
 // Optional variables (only generate warnings)

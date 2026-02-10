@@ -1,11 +1,7 @@
 'use client';
 
-import { useEffect, useMemo, useRef } from 'react';
-import {
-  type CalendarEventUnion,
-  type CalendarEventTask,
-  isCalendarEventTask,
-} from '@/types';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { type CalendarEventUnion, isCalendarEventTask } from '@/types';
 import { getWeekDates, getDateRange } from '@/utils/calendarUtils';
 import { CalendarSkeleton } from './CalendarSkeleton';
 import { ErrorState } from '@/components/shared/ErrorState';
@@ -23,10 +19,11 @@ import { useWeekCalendarNavigation } from './useWeekCalendarNavigation';
 import { WeekCalendarView } from './WeekCalendarView';
 import { MobileDayScrollView } from './MobileDayScrollView';
 import { DeadlineViolationsBar } from './DeadlineViolationsBar';
+import CalendarCreateDialog from './CalendarCreateDialog';
 import CalendarEditDialog from './CalendarEditDialog';
-import { AutoScheduleDialog } from './AutoScheduleDialog';
 import { HOUR_PX } from './dayColumnLayout';
 import { logger } from '@/lib/logger';
+import { googleCalendarService } from '@/services/googleCalendarService';
 
 interface WeekCalendarContainerProps {
   onTaskDropped?: () => void;
@@ -46,6 +43,41 @@ export function WeekCalendarContainer({
   const hasAutoScrolledRef = useRef(false);
 
   const navigation = useWeekCalendarNavigation();
+
+  const [initialSyncComplete, setInitialSyncComplete] = useState(false);
+
+  // Initial Google Calendar sync on land
+  useEffect(() => {
+    if (!user?.id) return;
+
+    const performInitialSync = async () => {
+      try {
+        logger.info(
+          '[WeekCalendarContainer] Checking Google Calendar connection...'
+        );
+        const status = await googleCalendarService.getStatus(user.id);
+
+        if (status.connected) {
+          logger.info('[WeekCalendarContainer] Syncing Google Calendar...');
+          await googleCalendarService.sync(user.id);
+          logger.info('[WeekCalendarContainer] Google Calendar sync complete');
+          // Refresh events to show newly synced ones
+          await refreshEvents();
+        }
+      } catch (err) {
+        // Silent fail - don't block the UI if Google sync fails
+        logger.warn(
+          '[WeekCalendarContainer] Initial Google Calendar sync failed:',
+          err
+        );
+      } finally {
+        setInitialSyncComplete(true);
+      }
+    };
+
+    performInitialSync();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id]); // Run once when user ID is available
 
   const weekDates = useMemo(() => {
     if (isMobile) {
@@ -97,14 +129,14 @@ export function WeekCalendarContainer({
       draggingEventId
     );
 
-  const {
-    autoScheduleOpen,
-    setAutoScheduleOpen,
-    tasks,
-    tasksMap,
-    handleAutoScheduleClick,
-    handleAutoSchedule,
-  } = useAutoSchedule(user, events, refreshEvents, onTaskDropped);
+  const { tasksMap, handleAutoScheduleClick } = useAutoSchedule(
+    user,
+    events,
+    refreshEvents,
+    onTaskDropped,
+    activeSchedule,
+    initialSyncComplete
+  );
 
   const displayDates = isMobile ? [navigation.currentDay] : weekDates;
 
@@ -198,7 +230,19 @@ export function WeekCalendarContainer({
           onAutoSchedule={handleAutoScheduleClick}
           onZenMode={onZenMode}
         />
-        {/* CalendarCreateDialog removed - event creation disabled */}
+        <CalendarCreateDialog
+          open={dialogs.createOpen}
+          onOpenChange={dialogs.setCreateOpen}
+          title={dialogs.title}
+          setTitle={dialogs.setTitle}
+          description={dialogs.description}
+          setDescription={dialogs.setDescription}
+          startTime={dialogs.startTime}
+          setStartTime={dialogs.setStartTime}
+          endTime={dialogs.endTime}
+          setEndTime={dialogs.setEndTime}
+          onCreate={dialogs.handleCreate}
+        />
         <CalendarEditDialog
           open={dialogs.editOpen}
           onOpenChange={dialogs.setEditOpen}
@@ -225,20 +269,6 @@ export function WeekCalendarContainer({
           onSave={() => dialogs.handleSaveEdit(setEvents)}
           onDelete={() => dialogs.handleDeleteEdit(setEvents)}
         />
-        {user && (
-          <AutoScheduleDialog
-            open={autoScheduleOpen}
-            onOpenChange={setAutoScheduleOpen}
-            tasks={tasks}
-            existingEvents={
-              events.filter(isCalendarEventTask) as CalendarEventTask[]
-            }
-            allCalendarEvents={events}
-            userId={user.id}
-            activeSchedule={activeSchedule}
-            onSchedule={handleAutoSchedule}
-          />
-        )}
       </div>
     );
   }
@@ -272,13 +302,7 @@ export function WeekCalendarContainer({
       onNextDay={navigation.goNextDay}
       onZenMode={onZenMode}
       dialogs={dialogs}
-      user={user ? { id: user.id } : null}
-      activeSchedule={activeSchedule}
-      autoScheduleOpen={autoScheduleOpen}
-      setAutoScheduleOpen={setAutoScheduleOpen}
-      tasks={tasks}
       handleAutoScheduleClick={handleAutoScheduleClick}
-      handleAutoSchedule={handleAutoSchedule}
     />
   );
 }

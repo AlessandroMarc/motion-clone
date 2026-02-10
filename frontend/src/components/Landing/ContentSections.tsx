@@ -30,12 +30,6 @@ interface SectionProps {
   content: typeof LandingContent;
 }
 
-interface AuthSectionProps extends SectionProps {
-  user: { id: string } | null;
-  loading: boolean;
-  onGetStarted: () => void;
-}
-
 // --- Selling Points Section ---
 
 export function SellingPointsSection({ content }: SectionProps) {
@@ -204,9 +198,10 @@ export function HowItWorksSection({ content }: SectionProps) {
 export function FinalCtaSection({
   content,
   user,
-  loading,
-  onGetStarted,
-}: AuthSectionProps) {
+}: {
+  content: typeof LandingContent;
+  user: { id: string } | null;
+}) {
   return (
     <section className="py-24 px-4 sm:px-6 lg:px-8">
       <div className="max-w-3xl mx-auto text-center">
@@ -220,28 +215,16 @@ export function FinalCtaSection({
           {content.finalCta.subheadline}
         </p>
         <div className="flex flex-col items-center gap-4">
-          {user ? (
-            <Button
-              asChild
-              size="lg"
-              className="h-14 px-10 text-lg font-semibold shadow-lg shadow-primary/25"
-            >
-              <Link href="/calendar">
-                {content.nav.dashboard}
-                <ArrowRight className="w-5 h-5 ml-2" />
-              </Link>
-            </Button>
-          ) : (
-            <Button
-              size="lg"
-              onClick={onGetStarted}
-              disabled={loading}
-              className="h-14 px-10 text-lg font-semibold shadow-lg shadow-primary/25"
-            >
-              {content.finalCta.primaryCta}
+          <Button
+            asChild
+            size="lg"
+            className="h-14 px-10 text-lg font-semibold shadow-lg shadow-primary/25"
+          >
+            <Link href="/calendar">
+              {user ? content.nav.dashboard : 'Go to App'}
               <ArrowRight className="w-5 h-5 ml-2" />
-            </Button>
-          )}
+            </Link>
+          </Button>
           <p className="text-sm text-muted-foreground">
             {content.finalCta.note}
           </p>
