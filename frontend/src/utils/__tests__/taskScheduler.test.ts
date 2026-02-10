@@ -1,6 +1,6 @@
 import { Task, CalendarEventTask } from '@/types';
 import {
-  calculateRequiredEvents,
+  calculateRemainingDurationMinutes,
   distributeEvents,
   sortTasksForScheduling,
   checkDeadlineViolations,
@@ -45,14 +45,18 @@ describe('taskScheduler', () => {
     completed_at: null,
   });
 
-  describe('calculateRequiredEvents', () => {
-    it('should calculate correct number of events needed', () => {
+  describe('calculateRemainingDurationMinutes', () => {
+    it('should calculate correct remaining minutes', () => {
       const task = createMockTask({ planned_duration_minutes: 180 });
       const existingEvents: CalendarEventTask[] = [];
       const config = { ...DEFAULT_CONFIG, eventDurationMinutes: 60 };
 
-      const required = calculateRequiredEvents(task, existingEvents, config);
-      expect(required).toBe(3); // 180 minutes / 60 minutes = 3 events
+      const remaining = calculateRemainingDurationMinutes(
+        task,
+        existingEvents,
+        config
+      );
+      expect(remaining).toBe(180);
     });
 
     it('should account for existing events', () => {
@@ -62,8 +66,12 @@ describe('taskScheduler', () => {
       const existingEvents = [createMockEvent(start, end, task.id)];
       const config = { ...DEFAULT_CONFIG, eventDurationMinutes: 60 };
 
-      const required = calculateRequiredEvents(task, existingEvents, config);
-      expect(required).toBe(2); // 180 - 60 = 120 minutes remaining, need 2 more events
+      const remaining = calculateRemainingDurationMinutes(
+        task,
+        existingEvents,
+        config
+      );
+      expect(remaining).toBe(120);
     });
 
     it('should return 0 if task is already fully scheduled', () => {
@@ -73,8 +81,12 @@ describe('taskScheduler', () => {
       const existingEvents = [createMockEvent(start, end, task.id)];
       const config = { ...DEFAULT_CONFIG, eventDurationMinutes: 60 };
 
-      const required = calculateRequiredEvents(task, existingEvents, config);
-      expect(required).toBe(0);
+      const remaining = calculateRemainingDurationMinutes(
+        task,
+        existingEvents,
+        config
+      );
+      expect(remaining).toBe(0);
     });
 
     it('should handle partial coverage correctly', () => {
@@ -84,8 +96,25 @@ describe('taskScheduler', () => {
       const existingEvents = [createMockEvent(start, end, task.id)];
       const config = { ...DEFAULT_CONFIG, eventDurationMinutes: 60 };
 
-      const required = calculateRequiredEvents(task, existingEvents, config);
-      expect(required).toBe(1); // 90 - 30 = 60 minutes remaining, need 1 more event
+      const remaining = calculateRemainingDurationMinutes(
+        task,
+        existingEvents,
+        config
+      );
+      expect(remaining).toBe(60);
+    });
+
+    it('should return a single block when planned duration is 0', () => {
+      const task = createMockTask({ planned_duration_minutes: 0 });
+      const existingEvents: CalendarEventTask[] = [];
+      const config = { ...DEFAULT_CONFIG, eventDurationMinutes: 45 };
+
+      const remaining = calculateRemainingDurationMinutes(
+        task,
+        existingEvents,
+        config
+      );
+      expect(remaining).toBe(45);
     });
   });
 
@@ -97,7 +126,7 @@ describe('taskScheduler', () => {
       const task = createMockTask({ due_date: dueDate });
       const config = { ...DEFAULT_CONFIG, eventDurationMinutes: 60 };
 
-      const events = distributeEvents(task, 4, config, []);
+      const events = distributeEvents(task, 240, config, []);
 
       expect(events.length).toBe(4);
       // All events should be within working hours
@@ -115,7 +144,7 @@ describe('taskScheduler', () => {
       const task = createMockTask({ due_date: dueDate });
       const config = { ...DEFAULT_CONFIG, eventDurationMinutes: 60 };
 
-      const events = distributeEvents(task, 2, config, []);
+      const events = distributeEvents(task, 120, config, []);
 
       events.forEach(event => {
         const hour = event.start_time.getHours();
@@ -132,7 +161,7 @@ describe('taskScheduler', () => {
       const task = createMockTask({ due_date: dueDate });
       const config = { ...DEFAULT_CONFIG, eventDurationMinutes: 60 };
 
-      const events = distributeEvents(task, 5, config, []);
+      const events = distributeEvents(task, 300, config, []);
 
       events.forEach(event => {
         const deadline = new Date(dueDate);
@@ -151,7 +180,7 @@ describe('taskScheduler', () => {
         defaultDaysWithoutDeadline: 7,
       };
 
-      const events = distributeEvents(task, 3, config, []);
+      const events = distributeEvents(task, 180, config, []);
 
       expect(events.length).toBe(3);
       // Events should be within default range
@@ -164,7 +193,7 @@ describe('taskScheduler', () => {
       });
     });
 
-    it('should return empty array for 0 required events', () => {
+    it('should return empty array for 0 remaining minutes', () => {
       const task = createMockTask();
       const config = DEFAULT_CONFIG;
 
@@ -200,7 +229,7 @@ describe('taskScheduler', () => {
         completed_at: null,
       };
 
-      const events = distributeEvents(task, 5, config, [existingEvent]);
+      const events = distributeEvents(task, 300, config, [existingEvent]);
 
       // Verify no events overlap with the existing event
       events.forEach(event => {

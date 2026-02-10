@@ -1,3 +1,4 @@
+import { serviceRoleSupabase } from '../config/supabase.js';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type {
   CreateProjectInput,
@@ -20,7 +21,7 @@ export class ProjectService {
   // Create a new project
   async createProject(
     input: CreateProjectInput,
-    client: SupabaseClient
+    client: SupabaseClient = serviceRoleSupabase
   ): Promise<Project> {
     const { data, error } = await client
       .from('projects')
@@ -43,7 +44,9 @@ export class ProjectService {
   }
 
   // Get all projects
-  async getAllProjects(client: SupabaseClient): Promise<Project[]> {
+  async getAllProjects(
+    client: SupabaseClient = serviceRoleSupabase
+  ): Promise<Project[]> {
     const { data, error } = await client
       .from('projects')
       .select('*')
@@ -59,7 +62,7 @@ export class ProjectService {
   // Get project by ID
   async getProjectById(
     id: string,
-    client: SupabaseClient
+    client: SupabaseClient = serviceRoleSupabase
   ): Promise<Project | null> {
     const { data, error } = await client
       .from('projects')
@@ -81,7 +84,7 @@ export class ProjectService {
   async updateProject(
     id: string,
     input: UpdateProjectInput,
-    client: SupabaseClient
+    client: SupabaseClient = serviceRoleSupabase
   ): Promise<Project> {
     const updateData: {
       updated_at: string;
@@ -117,7 +120,10 @@ export class ProjectService {
   }
 
   // Delete project
-  async deleteProject(id: string, client: SupabaseClient): Promise<boolean> {
+  async deleteProject(
+    id: string,
+    client: SupabaseClient = serviceRoleSupabase
+  ): Promise<boolean> {
     const { error } = await client.from('projects').delete().eq('id', id);
 
     if (error) {
@@ -130,7 +136,7 @@ export class ProjectService {
   // Get projects by status
   async getProjectsByStatus(
     status: 'not-started' | 'in-progress' | 'completed',
-    client: SupabaseClient
+    client: SupabaseClient = serviceRoleSupabase
   ): Promise<Project[]> {
     const { data, error } = await client
       .from('projects')

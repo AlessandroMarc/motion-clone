@@ -13,10 +13,11 @@ export interface AuthRequest extends Request {
 }
 
 export async function authMiddleware(
-  req: AuthRequest,
+  req: Request,
   res: Response,
   next: NextFunction
 ) {
+  const authReq = req as AuthRequest;
   const authHeader = req.headers.authorization;
 
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
@@ -28,7 +29,7 @@ export async function authMiddleware(
   }
 
   const token = authHeader.substring(7); // Remove 'Bearer ' prefix
-  req.authToken = token;
+  authReq.authToken = token;
 
   try {
     // Verify token locally (fast, < 1ms vs 100+ ms for remote call)
@@ -53,11 +54,11 @@ export async function authMiddleware(
     }
 
     // Attach user ID to request
-    req.userId = userId;
+    authReq.userId = userId;
 
     // Create and attach authenticated Supabase client to request
     // This eliminates the need for services to create their own clients
-    req.supabaseClient = getAuthenticatedSupabase(token);
+    authReq.supabaseClient = getAuthenticatedSupabase(token);
 
     next();
   } catch (error) {

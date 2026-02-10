@@ -3,15 +3,12 @@
 import type { RefObject } from 'react';
 import {
   isCalendarEventTask,
-  type CalendarEventTask,
   type CalendarEventUnion,
-  type Schedule,
   type Task,
 } from '@/types';
 import { CalendarHeader } from './CalendarHeader';
 import WeekScrollableGrid from './WeekScrollableGrid';
 import CalendarEditDialog from './CalendarEditDialog';
-import { AutoScheduleDialog } from './AutoScheduleDialog';
 import { DeadlineViolationsBar } from './DeadlineViolationsBar';
 
 type Dialogs = {
@@ -88,23 +85,7 @@ interface WeekCalendarViewProps {
 
   dialogs: Dialogs;
 
-  user: { id: string } | null;
-  activeSchedule: Schedule | null;
-
-  autoScheduleOpen: boolean;
-  setAutoScheduleOpen: (open: boolean) => void;
-  tasks: Task[];
   handleAutoScheduleClick: () => Promise<void>;
-  handleAutoSchedule: (
-    eventsToCreate: Array<{
-      title: string;
-      start_time: string;
-      end_time: string;
-      description?: string;
-      linked_task_id: string;
-      user_id: string;
-    }>
-  ) => Promise<void>;
 }
 
 export function WeekCalendarView({
@@ -133,13 +114,7 @@ export function WeekCalendarView({
   onNextDay,
   onZenMode,
   dialogs,
-  user,
-  activeSchedule,
-  autoScheduleOpen,
-  setAutoScheduleOpen,
-  tasks,
   handleAutoScheduleClick,
-  handleAutoSchedule,
 }: WeekCalendarViewProps) {
   return (
     <div className="space-y-4">
@@ -202,21 +177,6 @@ export function WeekCalendarView({
         onSave={() => dialogs.handleSaveEdit(setEvents)}
         onDelete={() => dialogs.handleDeleteEdit(setEvents)}
       />
-
-      {user && (
-        <AutoScheduleDialog
-          open={autoScheduleOpen}
-          onOpenChange={setAutoScheduleOpen}
-          tasks={tasks}
-          existingEvents={
-            events.filter(isCalendarEventTask) as CalendarEventTask[]
-          }
-          allCalendarEvents={events}
-          userId={user.id}
-          activeSchedule={activeSchedule}
-          onSchedule={handleAutoSchedule}
-        />
-      )}
     </div>
   );
 }

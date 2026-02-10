@@ -1,6 +1,5 @@
 import type {
   Task,
-  CalendarEvent,
   CalendarEventTask,
   CalendarEventUnion,
   Schedule,
@@ -13,7 +12,9 @@ export interface TaskSchedulingConfig {
   workingHoursEnd: number; // 22
   skipWeekends?: boolean;
   sortStrategy?: (tasks: Task[]) => Task[];
-  defaultDaysWithoutDeadline?: number; // Default days to schedule tasks without deadline
+  defaultDaysWithoutDeadline?: number;
+  minBlockMinutes?: number; // Minimum duration for a partial block
+  gapBetweenEventsMinutes?: number; // Gap between events
 }
 
 export const DEFAULT_CONFIG: TaskSchedulingConfig = {
@@ -22,6 +23,8 @@ export const DEFAULT_CONFIG: TaskSchedulingConfig = {
   workingHoursEnd: 22,
   skipWeekends: false,
   defaultDaysWithoutDeadline: 14,
+  minBlockMinutes: 15,
+  gapBetweenEventsMinutes: 5,
 };
 
 /**
@@ -32,13 +35,12 @@ export function createConfigFromSchedule(
   eventDurationMinutes = 60
 ): TaskSchedulingConfig {
   return {
+    ...DEFAULT_CONFIG,
     eventDurationMinutes,
     workingHoursStart:
       schedule?.working_hours_start ?? DEFAULT_CONFIG.workingHoursStart,
     workingHoursEnd:
       schedule?.working_hours_end ?? DEFAULT_CONFIG.workingHoursEnd,
-    skipWeekends: DEFAULT_CONFIG.skipWeekends,
-    defaultDaysWithoutDeadline: DEFAULT_CONFIG.defaultDaysWithoutDeadline,
   };
 }
 
@@ -49,11 +51,11 @@ export interface ScheduledEvent {
 }
 
 /**
- * Calculate how many events are needed to cover the remaining planned duration.
- * If planned_duration_minutes is 0 or unset, we schedule 1 block (eventDurationMinutes)
- * so every task gets at least one calendar block when using auto-schedule.
+ * Calculate remaining planned minutes after accounting for existing task events.
+ * If planned_duration_minutes is 0 or unset, we return one block's worth so the
+ * task still gets scheduled during auto-schedule.
  */
-export function calculateRequiredEvents(
+export function calculateRemainingDurationMinutes(
   task: Task,
   existingEvents: CalendarEventTask[],
   config: TaskSchedulingConfig
@@ -69,53 +71,15 @@ export function calculateRequiredEvents(
 
   const remainingDuration = Math.max(0, planned - existingDuration);
 
-  const eventsNeeded = Math.ceil(
-    remainingDuration / config.eventDurationMinutes
-  );
-
-  // Tasks with 0 planned (or already covered) get 1 block so they still appear in auto-schedule
-  return eventsNeeded === 0 && planned === 0 ? 1 : eventsNeeded;
-}
-
-/**
- * Check if two time ranges overlap
- */
-function doEventsOverlap(
-  start1: Date,
-  end1: Date,
-  start2: Date,
-  end2: Date
-): boolean {
-  return start1 < end2 && end1 > start2;
+  // Tasks with 0 planned (or already covered) get a single block so they still appear
+  return remainingDuration === 0 && planned === 0
+    ? config.eventDurationMinutes
+    : remainingDuration;
 }
 
 /**
  * Check if a time slot overlaps with any existing calendar events
  */
-function findOverlappingEvent(
-  slot: ScheduledEvent,
-  existingEvents: CalendarEventUnion[]
-): CalendarEventUnion | null {
-  for (const event of existingEvents) {
-    const eventStart = new Date(event.start_time);
-    const eventEnd = new Date(event.end_time);
-    if (doEventsOverlap(slot.start_time, slot.end_time, eventStart, eventEnd)) {
-      return event;
-    }
-  }
-  return null;
-}
-
-function isSlotOccupied(
-  slot: ScheduledEvent,
-  existingEvents: CalendarEventUnion[]
-): boolean {
-  const overlappingEvent = findOverlappingEvent(slot, existingEvents);
-  if (overlappingEvent) {
-    return true;
-  }
-  return false;
-}
 
 /**
  * Round time to next 15-minute interval
@@ -142,62 +106,95 @@ function roundToNext15Minutes(date: Date): Date {
  * Get the next available time slot starting from a given time
  * Returns null if no slot is available before end of day
  */
+interface TimeRange {
+  start: number;
+  end: number;
+}
+
 function getNextAvailableSlot(
-  startFrom: Date,
+  startFrom: number,
   config: TaskSchedulingConfig,
   taskId: string,
-  allExistingEvents: CalendarEventUnion[]
+  sortedExistingEvents: TimeRange[],
+  remainingMinutes: number
 ): ScheduledEvent | null {
-  let currentTime = new Date(startFrom);
-  const endOfDay = new Date(currentTime);
-  endOfDay.setHours(config.workingHoursEnd, 0, 0, 0);
+  let currentTime = startFrom;
+  const dateObj = new Date(startFrom);
+  dateObj.setHours(config.workingHoursEnd, 0, 0, 0);
+  const endOfDay = dateObj.getTime();
 
   // Ensure we're within working hours
-  if (currentTime.getHours() < config.workingHoursStart) {
-    currentTime.setHours(config.workingHoursStart, 0, 0, 0);
+  const workingStartObj = new Date(startFrom);
+  workingStartObj.setHours(config.workingHoursStart, 0, 0, 0);
+  const workingStart = workingStartObj.getTime();
+
+  if (currentTime < workingStart) {
+    currentTime = workingStart;
   }
 
-  // If we're past end of day, return null (will need to move to next day)
   if (currentTime >= endOfDay) {
     return null;
   }
 
-  // Try to find an available slot
-  while (currentTime < endOfDay) {
-    const slotEnd = new Date(currentTime);
-    slotEnd.setMinutes(slotEnd.getMinutes() + config.eventDurationMinutes);
+  const gapMs = (config.gapBetweenEventsMinutes ?? 5) * 60 * 1000;
+  const minBlockMs = (config.minBlockMinutes ?? 15) * 60 * 1000;
+  let iterations = 0;
+  const MAX_ITERATIONS = 100; // Guard against infinite loops
 
-    // Check if slot would go past end of day
-    if (slotEnd > endOfDay) {
-      return null;
-    }
+  while (currentTime < endOfDay && iterations < MAX_ITERATIONS) {
+    iterations++;
 
-    const slot: ScheduledEvent = {
-      task_id: taskId,
-      start_time: new Date(currentTime),
-      end_time: new Date(slotEnd),
-    };
+    // Find first event that might overlap or be after currentTime
+    const overlappingIndex = sortedExistingEvents.findIndex(
+      e => e.end > currentTime
+    );
 
-    // Check if slot is available (no overlaps)
-    if (!isSlotOccupied(slot, allExistingEvents)) {
-      return slot;
-    }
+    if (overlappingIndex === -1) {
+      // No more events today, the rest of the day is free
+      const availableMs = endOfDay - currentTime;
+      if (availableMs < minBlockMs) return null;
 
-    // Slot is occupied - find the end time of the overlapping event
-    // and move to just after it (with a small gap)
-    const overlappingEvent = findOverlappingEvent(slot, allExistingEvents);
-
-    if (overlappingEvent) {
-      // Move to end of overlapping event + 5 minute gap
-      const eventEnd = new Date(overlappingEvent.end_time);
-      currentTime = new Date(eventEnd);
-      currentTime.setMinutes(currentTime.getMinutes() + 5);
-    } else {
-      // Fallback: increment by event duration
-      currentTime.setMinutes(
-        currentTime.getMinutes() + config.eventDurationMinutes
+      const durationMs = Math.min(
+        config.eventDurationMinutes * 60 * 1000,
+        remainingMinutes * 60 * 1000,
+        availableMs
       );
+
+      return {
+        task_id: taskId,
+        start_time: new Date(currentTime),
+        end_time: new Date(currentTime + durationMs),
+      };
     }
+
+    const event = sortedExistingEvents[overlappingIndex];
+
+    // If currentTime is inside an event, skip to the end of it
+    if (currentTime < event.end && currentTime + minBlockMs > event.start) {
+      currentTime = event.end + gapMs;
+      continue;
+    }
+
+    // There is a gap before the next event
+    const nextBoundary = Math.min(endOfDay, event.start);
+    const availableMs = nextBoundary - currentTime;
+
+    if (availableMs >= minBlockMs) {
+      const durationMs = Math.min(
+        config.eventDurationMinutes * 60 * 1000,
+        remainingMinutes * 60 * 1000,
+        availableMs
+      );
+
+      return {
+        task_id: taskId,
+        start_time: new Date(currentTime),
+        end_time: new Date(currentTime + durationMs),
+      };
+    }
+
+    // Gap too small, skip past this event
+    currentTime = event.end + gapMs;
   }
 
   return null;
@@ -209,12 +206,12 @@ function getNextAvailableSlot(
  */
 export function distributeEvents(
   task: Task,
-  requiredEvents: number,
+  remainingMinutes: number,
   config: TaskSchedulingConfig,
   allExistingEvents: CalendarEventUnion[] = [],
   startFrom?: Date
 ): ScheduledEvent[] {
-  if (requiredEvents <= 0) {
+  if (remainingMinutes <= 0) {
     return [];
   }
 
@@ -258,24 +255,34 @@ export function distributeEvents(
   }
 
   const events: ScheduledEvent[] = [];
-  const gapMinutes = 5; // 5 minutes gap between events
+  const gapMs = (config.gapBetweenEventsMinutes ?? 5) * 60 * 1000;
 
-  // Track scheduled events to avoid overlaps within the same batch
-  const scheduledEvents: CalendarEventUnion[] = [...allExistingEvents];
+  // Pre-process and sort existing events for efficiency
+  const sortedExistingEvents: TimeRange[] = allExistingEvents
+    .map(e => ({
+      start: new Date(e.start_time).getTime(),
+      end: new Date(e.end_time).getTime(),
+    }))
+    .sort((a, b) => a.start - b.start);
 
   const skipWeekends = config.skipWeekends ?? false;
 
-  for (let i = 0; i < requiredEvents; i++) {
+  while (remainingMinutes > 0) {
     // Get next available slot starting from current time
     let slot = getNextAvailableSlot(
-      currentTime,
+      currentTime.getTime(),
       config,
       task.id,
-      scheduledEvents
+      sortedExistingEvents,
+      remainingMinutes
     );
 
     // If no slot available today, advance day-by-day until we find one or pass endDate
-    while (!slot) {
+    let daysSearched = 0;
+    const MAX_DAYS = 365; // Don't search infinitely
+
+    while (!slot && daysSearched < MAX_DAYS) {
+      daysSearched++;
       currentTime.setDate(currentTime.getDate() + 1);
       currentTime.setHours(config.workingHoursStart, 0, 0, 0);
       currentTime.setMinutes(0);
@@ -293,10 +300,11 @@ export function distributeEvents(
       }
 
       slot = getNextAvailableSlot(
-        currentTime,
+        currentTime.getTime(),
         config,
         task.id,
-        scheduledEvents
+        sortedExistingEvents,
+        remainingMinutes
       );
     }
 
@@ -306,22 +314,21 @@ export function distributeEvents(
 
     events.push(slot);
 
-    // Add this event to scheduled events to avoid overlaps
-    const tempEvent: CalendarEvent = {
-      id: `temp-${task.id}-${slot.start_time.getTime()}`,
-      title: task.title,
-      start_time: slot.start_time,
-      end_time: slot.end_time,
-      description: task.description,
-      user_id: task.user_id,
-      created_at: new Date(),
-      updated_at: new Date(),
+    const slotDurationMinutes = Math.round(
+      (slot.end_time.getTime() - slot.start_time.getTime()) / (1000 * 60)
+    );
+    remainingMinutes = Math.max(0, remainingMinutes - slotDurationMinutes);
+
+    // Add this event to sorted list for subsequent slots
+    const newEventRange = {
+      start: slot.start_time.getTime(),
+      end: slot.end_time.getTime(),
     };
-    scheduledEvents.push(tempEvent);
+    sortedExistingEvents.push(newEventRange);
+    sortedExistingEvents.sort((a, b) => a.start - b.start);
 
     // Move current time to end of this event + gap for next event
-    currentTime = new Date(slot.end_time);
-    currentTime.setMinutes(currentTime.getMinutes() + gapMinutes);
+    currentTime = new Date(slot.end_time.getTime() + gapMs);
   }
 
   return events;
@@ -391,14 +398,14 @@ export function prepareTaskEvents(
   events: ScheduledEvent[];
   violations: ScheduledEvent[];
 } {
-  const requiredEvents = calculateRequiredEvents(
+  const remainingMinutes = calculateRemainingDurationMinutes(
     task,
     existingTaskEvents,
     config
   );
   const events = distributeEvents(
     task,
-    requiredEvents,
+    remainingMinutes,
     config,
     allExistingEvents,
     startFrom

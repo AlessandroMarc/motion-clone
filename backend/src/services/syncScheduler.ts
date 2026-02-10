@@ -1,5 +1,5 @@
 import * as cron from 'node-cron';
-import { supabase } from '../config/supabase.js';
+import { serviceRoleSupabase } from '../config/supabase.js';
 import { GoogleCalendarService } from './googleCalendarService.js';
 
 const SYNC_INTERVAL = '*/15 * * * *'; // Every 15 minutes
@@ -46,7 +46,7 @@ export class SyncScheduler {
       console.log('[SyncScheduler] Starting scheduled sync for all users');
 
       // Get all users with Google Calendar tokens
-      const { data: tokens, error } = await supabase
+      const { data: tokens, error } = await serviceRoleSupabase
         .from('google_calendar_tokens')
         .select('user_id');
 

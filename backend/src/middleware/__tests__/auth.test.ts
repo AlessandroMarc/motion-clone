@@ -11,9 +11,8 @@ jest.unstable_mockModule('../../config/supabase.js', () => ({
 
 // Now import the modules that depend on the mocked module
 const { authMiddleware } = await import('../auth.js');
-const { mockAuthUser, mockAuthError } = await import(
-  '../../__tests__/helpers/supabaseMock.js'
-);
+const { mockAuthUser, mockAuthError } =
+  await import('../../__tests__/helpers/supabaseMock.js');
 
 // Define AuthRequest type inline
 interface AuthRequest extends Request {
@@ -40,8 +39,8 @@ describe('authMiddleware', () => {
 
     // Setup mock response with chainable methods
     mockResponse = {
-      status: jest.fn().mockReturnThis(),
-      json: jest.fn().mockReturnThis(),
+      status: jest.fn().mockReturnThis() as any,
+      json: jest.fn().mockReturnThis() as any,
     };
 
     // Setup mock next function

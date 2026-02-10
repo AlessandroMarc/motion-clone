@@ -10,7 +10,6 @@ export interface LandingHero {
   subheadline: string;
   primaryCta: string;
   secondaryCta: string;
-  badge: string;
 }
 
 export interface LandingSellingPoint {
@@ -129,8 +128,7 @@ export const landingContent: LandingContent = {
     subheadline:
       'AI slots tasks into Google Calendar by deadline, priority, and meetings. Add tasks in seconds. Get a schedule that actually holds. No manual planning — just ship.',
     primaryCta: 'Try Free for 14 Days',
-    secondaryCta: 'Watch Demo',
-    badge: 'No Credit Card',
+    secondaryCta: 'Subscribe',
   },
 
   sellingPoints: {
@@ -247,13 +245,11 @@ export const landingContent: LandingContent = {
       },
     ],
   },
-
   finalCta: {
     headline: 'Focus Mode Unlocked',
-    subheadline:
-      'Stop planning. Start doing. Try it free for 14 days — or watch the demo first.',
+    subheadline: 'Stop planning. Start doing. Try it free for 14 days.',
     primaryCta: 'Start Free Trial',
-    note: 'Watch demo • No credit card • Cancel anytime',
+    note: 'No credit card • Cancel anytime',
   },
 
   footer: {

@@ -1,4 +1,5 @@
 export { LandingPage } from './LandingPage';
+export { Header } from './Header';
 export { AnimatedCalendarDemo } from './AnimatedCalendarDemo';
 export { ScreenshotShowcase } from './ScreenshotShowcase';
 export { HeroSection } from './HeroSection';

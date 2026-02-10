@@ -28,8 +28,7 @@ FRONTEND_URL=http://localhost:3000
 1. Go to your Supabase project dashboard
 2. Navigate to the SQL Editor
 3. Run the SQL script from `supabase-schema.sql` to create all required tables
-4. Run `migrations/fix_user_settings_rls.sql` to enable Row Level Security on user_settings table
-5. If you're adding Google Calendar integration to an existing database, also run `migrations/add_google_calendar_integration.sql`
+4. If you're adding Google Calendar integration to an existing database, also run `migrations/add_google_calendar_integration.sql`
 
 ### 3. Install Dependencies
 
@@ -49,53 +48,6 @@ npm start
 ```
 
 The server will run on `http://localhost:3003`
-
-## Architecture
-
-### Authentication & Authorization
-
-The backend uses **local JWT verification** for optimal performance:
-
-- **Auth Middleware**: Verifies JWT tokens locally using `jsonwebtoken` library (~1ms vs 100+ ms for remote verification)
-- **Supabase Client Injection**: Authenticated Supabase client is attached to `req.supabaseClient` and passed to services
-- **Row Level Security (RLS)**: All database queries enforce RLS policies via the authenticated client
-- **Strict Mode**: Optional remote verification via `STRICT_AUTH_MODE=true` environment variable
-
-**Performance Benefits:**
-- Auth middleware: 100-150ms → <5ms (95% faster)
-- Eliminated 25-30 redundant client creations per request
-- Overall request latency reduced by 20-30%
-
-### Service Layer
-
-Services receive pre-configured `SupabaseClient` instances instead of creating their own:
-
-```typescript
-// Services accept authenticated client
-async getAllProjects(client: SupabaseClient): Promise<Project[]> {
-  const { data, error } = await client.from('projects').select('*');
-  // ...
-}
-```
-
-This eliminates code duplication and ensures consistent auth context across all operations.
-
-### Testing
-
-Backend includes comprehensive test coverage using Jest:
-
-```bash
-# Run tests
-npm test
-
-# Run with coverage
-npm test:coverage
-
-# Watch mode
-npm test:watch
-```
-
-Test files use ESM mocking with `jest.unstable_mockModule()` for proper module isolation.
 
 ### Build output (aligned with Vercel)
 
@@ -255,19 +207,7 @@ All endpoints return appropriate HTTP status codes:
 - `201` - Created
 - `204` - No Content (for successful deletions)
 - `400` - Bad Request
-- `401` - Unauthorized (invalid or expired auth token)
 - `404` - Not Found
 - `500` - Internal Server Error
 
 Error responses include a JSON object with an `error` field containing the error message.
-
-### Authentication
-
-All API endpoints (except health checks) require a valid JWT token in the `Authorization` header:
-
-```bash
-curl http://localhost:3003/api/projects \
-  -H "Authorization: Bearer YOUR_JWT_TOKEN_HERE"
-```
-
-Tokens are obtained from Supabase Auth and verified locally for optimal performance.
