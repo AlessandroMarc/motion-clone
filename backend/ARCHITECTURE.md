@@ -11,11 +11,13 @@ This document outlines the major architectural improvements made to the backend 
 The authentication middleware uses **local JWT verification** instead of remote API calls:
 
 **Before:**
+
 - Every request made a remote call to `supabase.auth.getUser()`
 - Network latency: 100-150ms per request
 - No token caching
 
 **After:**
+
 - Local verification using `jsonwebtoken` library
 - Latency: < 1ms per request
 - 95% performance improvement
@@ -25,7 +27,11 @@ The authentication middleware uses **local JWT verification** instead of remote 
 **File:** `src/middleware/auth.ts`
 
 ```typescript
-export async function authMiddleware(req: AuthRequest, res: Response, next: NextFunction) {
+export async function authMiddleware(
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+) {
   const token = extractTokenFromHeader(req);
 
   // Fast local verification
@@ -56,6 +62,7 @@ When enabled, performs both local AND remote verification.
 Services receive pre-configured `SupabaseClient` instances instead of managing their own:
 
 **Before (26 instances):**
+
 ```typescript
 async getAllProjects(token: string): Promise<Project[]> {
   const client = getAuthenticatedSupabase(token); // Redundant creation
@@ -65,6 +72,7 @@ async getAllProjects(token: string): Promise<Project[]> {
 ```
 
 **After (0 redundant creations):**
+
 ```typescript
 async getAllProjects(client: SupabaseClient): Promise<Project[]> {
   const { data, error } = await client.from('projects').select('*');
@@ -91,11 +99,12 @@ async getAllProjects(client: SupabaseClient): Promise<Project[]> {
    - Prevents users from accessing other users' data
 
 2. **Task Creation**: Double-override pattern ensures client cannot inject user_id
+
    ```typescript
    const input = {
-     user_id: req.userId,  // Set first
+     user_id: req.userId, // Set first
      ...req.body,
-     user_id: req.userId,  // Override again after spread
+     user_id: req.userId, // Override again after spread
    };
    ```
 
@@ -121,6 +130,7 @@ CREATE POLICY "Users can view own settings" ON user_settings
 ```
 
 **Defense in Depth:**
+
 - Application layer: JWT verification + client injection (validated user_id from token)
 - Database layer: RLS policies using auth.uid()
 - Even if application security is bypassed, database blocks unauthorized access
@@ -130,11 +140,11 @@ CREATE POLICY "Users can view own settings" ON user_settings
 
 ### Measured Improvements
 
-| Metric | Before | After | Improvement |
-|--------|--------|-------|-------------|
-| Auth Middleware | 100-150ms | < 5ms | 95% faster |
-| Client Creations | 25-30 per request | 1 per request | 96% reduction |
-| Overall Request Latency | Baseline | -20-30% | Significant |
+| Metric                  | Before            | After         | Improvement   |
+| ----------------------- | ----------------- | ------------- | ------------- |
+| Auth Middleware         | 100-150ms         | < 5ms         | 95% faster    |
+| Client Creations        | 25-30 per request | 1 per request | 96% reduction |
+| Overall Request Latency | Baseline          | -20-30%       | Significant   |
 
 ### Eliminated Overhead
 
@@ -171,26 +181,31 @@ npm test:coverage       # With coverage report
 ## Files Modified
 
 ### Core Authentication
+
 - `src/middleware/auth.ts` - Local JWT verification
 - `src/config/supabase.ts` - JWT verification utilities
 - `src/utils/responseHelpers.ts` - Added `unauthorized()` method
 
 ### Service Layer (23 methods total)
+
 - `src/services/projectService.ts` - 6 methods refactored
 - `src/services/taskService.ts` - 7 methods refactored
 - `src/services/userSettingsService.ts` - 10 methods refactored
 
 ### Route Handlers (21 handlers total)
+
 - `src/routes/projects.ts` - 5 handlers updated
 - `src/routes/tasks.ts` - 5 handlers updated
 - `src/routes/userSettings.ts` - 11 handlers updated
 
 ### Configuration
+
 - `package.json` - Added Jest and jsonwebtoken dependencies
 - `jest.config.js` - Test configuration (new file)
 - `README.md` - Updated with architecture documentation
 
 ### Database Migrations
+
 - `migrations/fix_user_settings_rls.sql` - RLS policies for user_settings table (must be run manually)
 
 ## Environment Variables
@@ -229,6 +244,7 @@ GOOGLE_CLIENT_SECRET=your_client_secret
 If you have custom services or routes:
 
 **Old Pattern:**
+
 ```typescript
 // Service method
 async myMethod(token: string) {
@@ -244,6 +260,7 @@ router.get('/', async (req: Request, res: Response) => {
 ```
 
 **New Pattern:**
+
 ```typescript
 // Service method
 async myMethod(client: SupabaseClient) {
@@ -281,6 +298,7 @@ router.get('/', async (req: AuthRequest, res: Response) => {
 ## Support
 
 For questions or issues:
+
 - Review this documentation
 - Check `README.md` for API usage
 - Run tests to verify behavior

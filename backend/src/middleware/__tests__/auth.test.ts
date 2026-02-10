@@ -11,9 +11,8 @@ jest.unstable_mockModule('../../config/supabase.js', () => ({
 
 // Now import the modules that depend on the mocked module
 const { authMiddleware } = await import('../auth.js');
-const { mockAuthUser, mockAuthError } = await import(
-  '../../__tests__/helpers/supabaseMock.js'
-);
+const { mockAuthUser, mockAuthError } =
+  await import('../../__tests__/helpers/supabaseMock.js');
 
 // Define AuthRequest type inline
 interface AuthRequest extends Request {

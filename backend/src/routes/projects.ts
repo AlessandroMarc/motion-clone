@@ -69,7 +69,10 @@ router.get('/:id', async (req: AuthRequest, res: Response) => {
 router.post('/', async (req: AuthRequest, res: Response) => {
   try {
     const input: CreateProjectInput = req.body;
-    const project = await projectService.createProject(input, req.supabaseClient);
+    const project = await projectService.createProject(
+      input,
+      req.supabaseClient
+    );
     ResponseHelper.created(res, project, 'Project created successfully');
   } catch (error) {
     ResponseHelper.badRequest(

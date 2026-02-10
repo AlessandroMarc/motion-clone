@@ -23,7 +23,10 @@ router.get('/active-schedule', async (req: AuthRequest, res: Response) => {
     const userId = req.userId!;
     const client = req.supabaseClient;
 
-    const schedule = await userSettingsService.getActiveSchedule(userId, client);
+    const schedule = await userSettingsService.getActiveSchedule(
+      userId,
+      client
+    );
     ResponseHelper.success(
       res,
       schedule,
@@ -44,7 +47,10 @@ router.get('/schedules', async (req: AuthRequest, res: Response) => {
     const userId = req.userId!;
     const client = req.supabaseClient;
 
-    const schedules = await userSettingsService.getUserSchedules(userId, client);
+    const schedules = await userSettingsService.getUserSchedules(
+      userId,
+      client
+    );
     ResponseHelper.list(
       res,
       schedules,
@@ -138,7 +144,10 @@ router.post('/', async (req: AuthRequest, res: Response) => {
       user_id: req.userId!,
     };
 
-    const settings = await userSettingsService.upsertUserSettings(input, client);
+    const settings = await userSettingsService.upsertUserSettings(
+      input,
+      client
+    );
     ResponseHelper.created(res, settings, 'User settings created successfully');
   } catch (error) {
     ResponseHelper.badRequest(

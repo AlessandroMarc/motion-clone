@@ -62,6 +62,7 @@ The backend uses **local JWT verification** for optimal performance:
 - **Strict Mode**: Optional remote verification via `STRICT_AUTH_MODE=true` environment variable
 
 **Performance Benefits:**
+
 - Auth middleware: 100-150ms → <5ms (95% faster)
 - Eliminated 25-30 redundant client creations per request
 - Overall request latency reduced by 20-30%
