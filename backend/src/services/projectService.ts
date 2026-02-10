@@ -31,6 +31,7 @@ export class ProjectService {
           description: input.description,
           deadline: input.deadline ? normalizeToMidnight(input.deadline) : null,
           status: input.status || 'not-started',
+          user_id: input.user_id,
         },
       ])
       .select()

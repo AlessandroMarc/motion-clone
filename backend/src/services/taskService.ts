@@ -78,6 +78,7 @@ export class TaskService {
           project_id: input.project_id,
           planned_duration_minutes: normalizedPlanned,
           actual_duration_minutes: normalizedActual,
+          user_id: input.user_id,
         },
       ])
       .select()
