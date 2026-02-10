@@ -51,8 +51,11 @@ router.get('/:id', async (req: Request, res: Response) => {
   try {
     const authReq = req as AuthRequest;
     const { id } = req.params;
-    if (!id) {
-      return ResponseHelper.badRequest(res, 'Task ID is required');
+    if (!id || typeof id !== 'string') {
+      return ResponseHelper.badRequest(
+        res,
+        'Task ID is required and must be a string'
+      );
     }
     const task = await taskService.getTaskById(id, authReq.authToken);
 
@@ -98,8 +101,11 @@ router.put('/:id', async (req: Request, res: Response) => {
   try {
     const authReq = req as AuthRequest;
     const { id } = req.params;
-    if (!id) {
-      return ResponseHelper.badRequest(res, 'Task ID is required');
+    if (!id || typeof id !== 'string') {
+      return ResponseHelper.badRequest(
+        res,
+        'Task ID is required and must be a string'
+      );
     }
     const input: UpdateTaskInput = req.body;
     const task = await taskService.updateTask(id, input, authReq.authToken);
@@ -117,8 +123,11 @@ router.delete('/:id', async (req: Request, res: Response) => {
   try {
     const authReq = req as AuthRequest;
     const { id } = req.params;
-    if (!id) {
-      return ResponseHelper.badRequest(res, 'Task ID is required');
+    if (!id || typeof id !== 'string') {
+      return ResponseHelper.badRequest(
+        res,
+        'Task ID is required and must be a string'
+      );
     }
     await taskService.deleteTask(id, authReq.authToken);
     ResponseHelper.deleted(res, 'Task deleted successfully');

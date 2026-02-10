@@ -43,8 +43,11 @@ router.get('/', async (req: Request, res: Response) => {
 router.get('/:id', async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    if (!id) {
-      return ResponseHelper.badRequest(res, 'Milestone ID is required');
+    if (!id || typeof id !== 'string') {
+      return ResponseHelper.badRequest(
+        res,
+        'Milestone ID is required and must be a string'
+      );
     }
     const milestone = await milestoneService.getMilestoneById(id);
 
@@ -79,8 +82,11 @@ router.post('/', async (req: Request, res: Response) => {
 router.put('/:id', async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    if (!id) {
-      return ResponseHelper.badRequest(res, 'Milestone ID is required');
+    if (!id || typeof id !== 'string') {
+      return ResponseHelper.badRequest(
+        res,
+        'Milestone ID is required and must be a string'
+      );
     }
     const input: UpdateMilestoneInput = req.body;
     const milestone = await milestoneService.updateMilestone(id, input);
@@ -97,8 +103,11 @@ router.put('/:id', async (req: Request, res: Response) => {
 router.delete('/:id', async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    if (!id) {
-      return ResponseHelper.badRequest(res, 'Milestone ID is required');
+    if (!id || typeof id !== 'string') {
+      return ResponseHelper.badRequest(
+        res,
+        'Milestone ID is required and must be a string'
+      );
     }
     await milestoneService.deleteMilestone(id);
     ResponseHelper.deleted(res, 'Milestone deleted successfully');

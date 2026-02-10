@@ -6,7 +6,6 @@ import { isSameDay } from '@/utils/calendarUtils';
 import { computeOverlapLayout } from './dayColumnLayout';
 import { DayColumnEvents } from './DayColumnEvents';
 import { DayColumnGrid } from './DayColumnGrid';
-import { DayColumnEmptyState } from './DayColumnEmptyState';
 import { HOUR_PX } from './dayColumnLayout';
 
 interface DayColumnProps {
@@ -77,8 +76,6 @@ function DayColumn({
     previewBelongsHere && dragPreview ? [...dayEvents, dragPreview] : dayEvents;
   const layoutMap = computeOverlapLayout(eventsForLayout);
 
-  const hasEvents = dayEvents.length > 0 || (previewBelongsHere && dragPreview);
-
   // Calculate current time position
   const getCurrentTimePosition = () => {
     if (!isToday) return null;
@@ -132,10 +129,6 @@ function DayColumn({
             <div className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-1/2 w-2 h-2 rounded-full bg-red-500 dark:bg-red-400 border-2 border-background dark:border-background" />
           </div>
         </div>
-      )}
-
-      {!hasEvents && (
-        <DayColumnEmptyState date={date} onAddEvent={onGridCellClick} />
       )}
     </div>
   );
