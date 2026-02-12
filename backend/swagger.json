@@ -27,12 +27,29 @@
           "id": { "type": "string", "format": "uuid" },
           "title": { "type": "string" },
           "description": { "type": "string", "nullable": true },
-          "due_date": { "type": "string", "format": "date-time", "nullable": true },
+          "due_date": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
           "priority": { "type": "string", "enum": ["low", "medium", "high"] },
-          "status": { "type": "string", "enum": ["not-started", "in-progress", "completed"] },
-          "dependencies": { "type": "array", "items": { "type": "string", "format": "uuid" } },
-          "blocked_by": { "type": "array", "items": { "type": "string", "format": "uuid" } },
-          "project_id": { "type": "string", "format": "uuid", "nullable": true },
+          "status": {
+            "type": "string",
+            "enum": ["not-started", "in-progress", "completed"]
+          },
+          "dependencies": {
+            "type": "array",
+            "items": { "type": "string", "format": "uuid" }
+          },
+          "blocked_by": {
+            "type": "array",
+            "items": { "type": "string", "format": "uuid" }
+          },
+          "project_id": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
           "user_id": { "type": "string", "format": "uuid" },
           "planned_duration_minutes": { "type": "number" },
           "actual_duration_minutes": { "type": "number" },
@@ -42,14 +59,29 @@
       },
       "CreateTaskInput": {
         "type": "object",
-        "required": ["title", "priority", "user_id", "planned_duration_minutes"],
+        "required": [
+          "title",
+          "priority",
+          "user_id",
+          "planned_duration_minutes"
+        ],
         "properties": {
           "title": { "type": "string" },
           "description": { "type": "string" },
-          "due_date": { "type": "string", "format": "date-time", "nullable": true },
+          "due_date": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
           "priority": { "type": "string", "enum": ["low", "medium", "high"] },
-          "dependencies": { "type": "array", "items": { "type": "string", "format": "uuid" } },
-          "blockedBy": { "type": "array", "items": { "type": "string", "format": "uuid" } },
+          "dependencies": {
+            "type": "array",
+            "items": { "type": "string", "format": "uuid" }
+          },
+          "blockedBy": {
+            "type": "array",
+            "items": { "type": "string", "format": "uuid" }
+          },
           "project_id": { "type": "string", "format": "uuid" },
           "user_id": { "type": "string", "format": "uuid" },
           "planned_duration_minutes": { "type": "number" },
@@ -61,10 +93,20 @@
         "properties": {
           "title": { "type": "string" },
           "description": { "type": "string" },
-          "due_date": { "type": "string", "format": "date-time", "nullable": true },
+          "due_date": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
           "priority": { "type": "string", "enum": ["low", "medium", "high"] },
-          "dependencies": { "type": "array", "items": { "type": "string", "format": "uuid" } },
-          "blockedBy": { "type": "array", "items": { "type": "string", "format": "uuid" } },
+          "dependencies": {
+            "type": "array",
+            "items": { "type": "string", "format": "uuid" }
+          },
+          "blockedBy": {
+            "type": "array",
+            "items": { "type": "string", "format": "uuid" }
+          },
           "project_id": { "type": "string", "format": "uuid" },
           "planned_duration_minutes": { "type": "number" },
           "actual_duration_minutes": { "type": "number" }
@@ -76,8 +118,15 @@
           "id": { "type": "string", "format": "uuid" },
           "name": { "type": "string" },
           "description": { "type": "string", "nullable": true },
-          "deadline": { "type": "string", "format": "date-time", "nullable": true },
-          "status": { "type": "string", "enum": ["not-started", "in-progress", "completed"] },
+          "deadline": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "status": {
+            "type": "string",
+            "enum": ["not-started", "in-progress", "completed"]
+          },
           "user_id": { "type": "string", "format": "uuid" },
           "created_at": { "type": "string", "format": "date-time" },
           "updated_at": { "type": "string", "format": "date-time" }
@@ -89,8 +138,15 @@
         "properties": {
           "name": { "type": "string" },
           "description": { "type": "string" },
-          "deadline": { "type": "string", "format": "date-time", "nullable": true },
-          "status": { "type": "string", "enum": ["not-started", "in-progress", "completed"] },
+          "deadline": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "status": {
+            "type": "string",
+            "enum": ["not-started", "in-progress", "completed"]
+          },
           "user_id": { "type": "string", "format": "uuid" }
         }
       },
@@ -99,8 +155,15 @@
         "properties": {
           "name": { "type": "string" },
           "description": { "type": "string" },
-          "deadline": { "type": "string", "format": "date-time", "nullable": true },
-          "status": { "type": "string", "enum": ["not-started", "in-progress", "completed"] }
+          "deadline": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "status": {
+            "type": "string",
+            "enum": ["not-started", "in-progress", "completed"]
+          }
         }
       },
       "Milestone": {
@@ -109,8 +172,15 @@
           "id": { "type": "string", "format": "uuid" },
           "title": { "type": "string" },
           "description": { "type": "string", "nullable": true },
-          "due_date": { "type": "string", "format": "date-time", "nullable": true },
-          "status": { "type": "string", "enum": ["not-started", "in-progress", "completed"] },
+          "due_date": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "status": {
+            "type": "string",
+            "enum": ["not-started", "in-progress", "completed"]
+          },
           "project_id": { "type": "string", "format": "uuid" },
           "user_id": { "type": "string", "format": "uuid" },
           "created_at": { "type": "string", "format": "date-time" },
@@ -123,8 +193,15 @@
         "properties": {
           "title": { "type": "string" },
           "description": { "type": "string" },
-          "due_date": { "type": "string", "format": "date-time", "nullable": true },
-          "status": { "type": "string", "enum": ["not-started", "in-progress", "completed"] },
+          "due_date": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "status": {
+            "type": "string",
+            "enum": ["not-started", "in-progress", "completed"]
+          },
           "project_id": { "type": "string", "format": "uuid" },
           "user_id": { "type": "string", "format": "uuid" }
         }
@@ -134,8 +211,15 @@
         "properties": {
           "title": { "type": "string" },
           "description": { "type": "string" },
-          "due_date": { "type": "string", "format": "date-time", "nullable": true },
-          "status": { "type": "string", "enum": ["not-started", "in-progress", "completed"] },
+          "due_date": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "status": {
+            "type": "string",
+            "enum": ["not-started", "in-progress", "completed"]
+          },
           "project_id": { "type": "string", "format": "uuid" }
         }
       },
@@ -147,8 +231,16 @@
           "start_time": { "type": "string", "format": "date-time" },
           "end_time": { "type": "string", "format": "date-time" },
           "description": { "type": "string", "nullable": true },
-          "linked_task_id": { "type": "string", "format": "uuid", "nullable": true },
-          "completed_at": { "type": "string", "format": "date-time", "nullable": true },
+          "linked_task_id": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "completed_at": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
           "user_id": { "type": "string", "format": "uuid" },
           "google_event_id": { "type": "string", "nullable": true },
           "synced_from_google": { "type": "boolean" },
@@ -166,7 +258,11 @@
           "linked_task_id": { "type": "string", "format": "uuid" },
           "description": { "type": "string" },
           "user_id": { "type": "string", "format": "uuid" },
-          "completed_at": { "type": "string", "format": "date-time", "nullable": true },
+          "completed_at": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
           "google_event_id": { "type": "string" },
           "synced_from_google": { "type": "boolean" }
         }
@@ -179,7 +275,11 @@
           "end_time": { "type": "string", "format": "date-time" },
           "linked_task_id": { "type": "string", "format": "uuid" },
           "description": { "type": "string" },
-          "completed_at": { "type": "string", "format": "date-time", "nullable": true },
+          "completed_at": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
           "google_event_id": { "type": "string" },
           "synced_from_google": { "type": "boolean" }
         }
@@ -190,8 +290,16 @@
           "id": { "type": "string", "format": "uuid" },
           "user_id": { "type": "string", "format": "uuid" },
           "name": { "type": "string" },
-          "working_hours_start": { "type": "integer", "minimum": 0, "maximum": 23 },
-          "working_hours_end": { "type": "integer", "minimum": 0, "maximum": 23 },
+          "working_hours_start": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 23
+          },
+          "working_hours_end": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 23
+          },
           "is_default": { "type": "boolean" },
           "created_at": { "type": "string", "format": "date-time" },
           "updated_at": { "type": "string", "format": "date-time" }
@@ -203,8 +311,16 @@
         "properties": {
           "user_id": { "type": "string", "format": "uuid" },
           "name": { "type": "string" },
-          "working_hours_start": { "type": "integer", "minimum": 0, "maximum": 23 },
-          "working_hours_end": { "type": "integer", "minimum": 0, "maximum": 23 },
+          "working_hours_start": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 23
+          },
+          "working_hours_end": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 23
+          },
           "is_default": { "type": "boolean" }
         }
       },
@@ -212,8 +328,16 @@
         "type": "object",
         "properties": {
           "name": { "type": "string" },
-          "working_hours_start": { "type": "integer", "minimum": 0, "maximum": 23 },
-          "working_hours_end": { "type": "integer", "minimum": 0, "maximum": 23 },
+          "working_hours_start": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 23
+          },
+          "working_hours_end": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 23
+          },
           "is_default": { "type": "boolean" }
         }
       },
@@ -222,11 +346,27 @@
         "properties": {
           "id": { "type": "string", "format": "uuid" },
           "user_id": { "type": "string", "format": "uuid" },
-          "active_schedule_id": { "type": "string", "format": "uuid", "nullable": true },
+          "active_schedule_id": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
           "onboarding_completed": { "type": "boolean" },
-          "onboarding_step": { "type": "string", "enum": ["task_created", "project_created", "scheduled"], "nullable": true },
-          "onboarding_started_at": { "type": "string", "format": "date-time", "nullable": true },
-          "onboarding_completed_at": { "type": "string", "format": "date-time", "nullable": true },
+          "onboarding_step": {
+            "type": "string",
+            "enum": ["task_created", "project_created", "scheduled"],
+            "nullable": true
+          },
+          "onboarding_started_at": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "onboarding_completed_at": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
           "created_at": { "type": "string", "format": "date-time" },
           "updated_at": { "type": "string", "format": "date-time" }
         }
@@ -235,9 +375,21 @@
         "type": "object",
         "properties": {
           "completed": { "type": "boolean" },
-          "step": { "type": "string", "enum": ["task_created", "project_created", "scheduled"], "nullable": true },
-          "started_at": { "type": "string", "format": "date-time", "nullable": true },
-          "completed_at": { "type": "string", "format": "date-time", "nullable": true }
+          "step": {
+            "type": "string",
+            "enum": ["task_created", "project_created", "scheduled"],
+            "nullable": true
+          },
+          "started_at": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "completed_at": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          }
         }
       },
       "SuccessResponse": {
@@ -318,7 +470,10 @@
           {
             "name": "status",
             "in": "query",
-            "schema": { "type": "string", "enum": ["not-started", "in-progress", "completed"] },
+            "schema": {
+              "type": "string",
+              "enum": ["not-started", "in-progress", "completed"]
+            },
             "description": "Filter by status"
           }
         ],
@@ -333,7 +488,10 @@
                     {
                       "type": "object",
                       "properties": {
-                        "data": { "type": "array", "items": { "$ref": "#/components/schemas/Task" } }
+                        "data": {
+                          "type": "array",
+                          "items": { "$ref": "#/components/schemas/Task" }
+                        }
                       }
                     }
                   ]
@@ -341,8 +499,22 @@
               }
             }
           },
-          "401": { "description": "Unauthorized", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } } },
-          "500": { "description": "Internal server error", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } } }
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
         }
       },
       "post": {
@@ -366,14 +538,33 @@
                 "schema": {
                   "allOf": [
                     { "$ref": "#/components/schemas/SuccessResponse" },
-                    { "type": "object", "properties": { "data": { "$ref": "#/components/schemas/Task" } } }
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": { "$ref": "#/components/schemas/Task" }
+                      }
+                    }
                   ]
                 }
               }
             }
           },
-          "400": { "description": "Bad request", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } } },
-          "401": { "description": "Unauthorized", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } } }
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
         }
       }
     },
@@ -384,7 +575,12 @@
         "operationId": "getTaskById",
         "security": [{ "BearerAuth": [] }],
         "parameters": [
-          { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "format": "uuid" }
+          }
         ],
         "responses": {
           "200": {
@@ -394,15 +590,41 @@
                 "schema": {
                   "allOf": [
                     { "$ref": "#/components/schemas/SuccessResponse" },
-                    { "type": "object", "properties": { "data": { "$ref": "#/components/schemas/Task" } } }
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": { "$ref": "#/components/schemas/Task" }
+                      }
+                    }
                   ]
                 }
               }
             }
           },
-          "400": { "description": "Bad request", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } } },
-          "401": { "description": "Unauthorized", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } } },
-          "404": { "description": "Task not found", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } } }
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          },
+          "404": {
+            "description": "Task not found",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
         }
       },
       "put": {
@@ -411,7 +633,12 @@
         "operationId": "updateTask",
         "security": [{ "BearerAuth": [] }],
         "parameters": [
-          { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "format": "uuid" }
+          }
         ],
         "requestBody": {
           "required": true,
@@ -429,14 +656,33 @@
                 "schema": {
                   "allOf": [
                     { "$ref": "#/components/schemas/SuccessResponse" },
-                    { "type": "object", "properties": { "data": { "$ref": "#/components/schemas/Task" } } }
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": { "$ref": "#/components/schemas/Task" }
+                      }
+                    }
                   ]
                 }
               }
             }
           },
-          "400": { "description": "Bad request", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } } },
-          "401": { "description": "Unauthorized", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } } }
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
         }
       },
       "delete": {
@@ -445,12 +691,38 @@
         "operationId": "deleteTask",
         "security": [{ "BearerAuth": [] }],
         "parameters": [
-          { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "format": "uuid" }
+          }
         ],
         "responses": {
-          "200": { "description": "Task deleted successfully", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/SuccessResponse" } } } },
-          "400": { "description": "Bad request", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } } },
-          "401": { "description": "Unauthorized", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } } }
+          "200": {
+            "description": "Task deleted successfully",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/SuccessResponse" }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
         }
       }
     },
@@ -464,7 +736,10 @@
           {
             "name": "status",
             "in": "query",
-            "schema": { "type": "string", "enum": ["not-started", "in-progress", "completed"] },
+            "schema": {
+              "type": "string",
+              "enum": ["not-started", "in-progress", "completed"]
+            },
             "description": "Filter by status"
           }
         ],
@@ -476,14 +751,36 @@
                 "schema": {
                   "allOf": [
                     { "$ref": "#/components/schemas/SuccessResponse" },
-                    { "type": "object", "properties": { "data": { "type": "array", "items": { "$ref": "#/components/schemas/Project" } } } }
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "type": "array",
+                          "items": { "$ref": "#/components/schemas/Project" }
+                        }
+                      }
+                    }
                   ]
                 }
               }
             }
           },
-          "401": { "description": "Unauthorized", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } } },
-          "500": { "description": "Internal server error", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } } }
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
         }
       },
       "post": {
@@ -507,14 +804,33 @@
                 "schema": {
                   "allOf": [
                     { "$ref": "#/components/schemas/SuccessResponse" },
-                    { "type": "object", "properties": { "data": { "$ref": "#/components/schemas/Project" } } }
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": { "$ref": "#/components/schemas/Project" }
+                      }
+                    }
                   ]
                 }
               }
             }
           },
-          "400": { "description": "Bad request", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } } },
-          "401": { "description": "Unauthorized", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } } }
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
         }
       }
     },
@@ -525,7 +841,12 @@
         "operationId": "getProjectById",
         "security": [{ "BearerAuth": [] }],
         "parameters": [
-          { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "format": "uuid" }
+          }
         ],
         "responses": {
           "200": {
@@ -535,15 +856,41 @@
                 "schema": {
                   "allOf": [
                     { "$ref": "#/components/schemas/SuccessResponse" },
-                    { "type": "object", "properties": { "data": { "$ref": "#/components/schemas/Project" } } }
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": { "$ref": "#/components/schemas/Project" }
+                      }
+                    }
                   ]
                 }
               }
             }
           },
-          "400": { "description": "Bad request", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } } },
-          "401": { "description": "Unauthorized", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } } },
-          "404": { "description": "Project not found", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } } }
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          },
+          "404": {
+            "description": "Project not found",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
         }
       },
       "put": {
@@ -552,7 +899,12 @@
         "operationId": "updateProject",
         "security": [{ "BearerAuth": [] }],
         "parameters": [
-          { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "format": "uuid" }
+          }
         ],
         "requestBody": {
           "required": true,
@@ -570,14 +922,33 @@
                 "schema": {
                   "allOf": [
                     { "$ref": "#/components/schemas/SuccessResponse" },
-                    { "type": "object", "properties": { "data": { "$ref": "#/components/schemas/Project" } } }
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": { "$ref": "#/components/schemas/Project" }
+                      }
+                    }
                   ]
                 }
               }
             }
           },
-          "400": { "description": "Bad request", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } } },
-          "401": { "description": "Unauthorized", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } } }
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
         }
       },
       "delete": {
@@ -586,12 +957,38 @@
         "operationId": "deleteProject",
         "security": [{ "BearerAuth": [] }],
         "parameters": [
-          { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "format": "uuid" }
+          }
         ],
         "responses": {
-          "200": { "description": "Project deleted successfully", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/SuccessResponse" } } } },
-          "400": { "description": "Bad request", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } } },
-          "401": { "description": "Unauthorized", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } } }
+          "200": {
+            "description": "Project deleted successfully",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/SuccessResponse" }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
         }
       }
     },
@@ -610,7 +1007,10 @@
           {
             "name": "status",
             "in": "query",
-            "schema": { "type": "string", "enum": ["not-started", "in-progress", "completed"] },
+            "schema": {
+              "type": "string",
+              "enum": ["not-started", "in-progress", "completed"]
+            },
             "description": "Filter by status"
           }
         ],
@@ -622,13 +1022,28 @@
                 "schema": {
                   "allOf": [
                     { "$ref": "#/components/schemas/SuccessResponse" },
-                    { "type": "object", "properties": { "data": { "type": "array", "items": { "$ref": "#/components/schemas/Milestone" } } } }
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "type": "array",
+                          "items": { "$ref": "#/components/schemas/Milestone" }
+                        }
+                      }
+                    }
                   ]
                 }
               }
             }
           },
-          "500": { "description": "Internal server error", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } } }
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
         }
       },
       "post": {
@@ -651,13 +1066,25 @@
                 "schema": {
                   "allOf": [
                     { "$ref": "#/components/schemas/SuccessResponse" },
-                    { "type": "object", "properties": { "data": { "$ref": "#/components/schemas/Milestone" } } }
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": { "$ref": "#/components/schemas/Milestone" }
+                      }
+                    }
                   ]
                 }
               }
             }
           },
-          "400": { "description": "Bad request", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } } }
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
         }
       }
     },
@@ -667,7 +1094,12 @@
         "summary": "Get milestone by ID",
         "operationId": "getMilestoneById",
         "parameters": [
-          { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "format": "uuid" }
+          }
         ],
         "responses": {
           "200": {
@@ -677,14 +1109,33 @@
                 "schema": {
                   "allOf": [
                     { "$ref": "#/components/schemas/SuccessResponse" },
-                    { "type": "object", "properties": { "data": { "$ref": "#/components/schemas/Milestone" } } }
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": { "$ref": "#/components/schemas/Milestone" }
+                      }
+                    }
                   ]
                 }
               }
             }
           },
-          "400": { "description": "Bad request", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } } },
-          "404": { "description": "Milestone not found", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } } }
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          },
+          "404": {
+            "description": "Milestone not found",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
         }
       },
       "put": {
@@ -692,7 +1143,12 @@
         "summary": "Update a milestone",
         "operationId": "updateMilestone",
         "parameters": [
-          { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "format": "uuid" }
+          }
         ],
         "requestBody": {
           "required": true,
@@ -710,13 +1166,25 @@
                 "schema": {
                   "allOf": [
                     { "$ref": "#/components/schemas/SuccessResponse" },
-                    { "type": "object", "properties": { "data": { "$ref": "#/components/schemas/Milestone" } } }
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": { "$ref": "#/components/schemas/Milestone" }
+                      }
+                    }
                   ]
                 }
               }
             }
           },
-          "400": { "description": "Bad request", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } } }
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
         }
       },
       "delete": {
@@ -724,11 +1192,30 @@
         "summary": "Delete a milestone",
         "operationId": "deleteMilestone",
         "parameters": [
-          { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "format": "uuid" }
+          }
         ],
         "responses": {
-          "200": { "description": "Milestone deleted successfully", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/SuccessResponse" } } } },
-          "400": { "description": "Bad request", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } } }
+          "200": {
+            "description": "Milestone deleted successfully",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/SuccessResponse" }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
         }
       }
     },
@@ -766,14 +1253,38 @@
                 "schema": {
                   "allOf": [
                     { "$ref": "#/components/schemas/SuccessResponse" },
-                    { "type": "object", "properties": { "data": { "type": "array", "items": { "$ref": "#/components/schemas/CalendarEvent" } } } }
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/components/schemas/CalendarEvent"
+                          }
+                        }
+                      }
+                    }
                   ]
                 }
               }
             }
           },
-          "401": { "description": "Unauthorized", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } } },
-          "500": { "description": "Internal server error", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } } }
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
         }
       },
       "post": {
@@ -791,7 +1302,9 @@
                   { "$ref": "#/components/schemas/CreateCalendarEventInput" },
                   {
                     "type": "array",
-                    "items": { "$ref": "#/components/schemas/CreateCalendarEventInput" }
+                    "items": {
+                      "$ref": "#/components/schemas/CreateCalendarEventInput"
+                    }
                   }
                 ]
               }
@@ -799,9 +1312,30 @@
           }
         },
         "responses": {
-          "201": { "description": "Calendar event(s) created successfully", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/SuccessResponse" } } } },
-          "400": { "description": "Bad request or overlap detected", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } } },
-          "401": { "description": "Unauthorized", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } } }
+          "201": {
+            "description": "Calendar event(s) created successfully",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/SuccessResponse" }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request or overlap detected",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
         }
       }
     },
@@ -812,7 +1346,12 @@
         "operationId": "getCalendarEventById",
         "security": [{ "BearerAuth": [] }],
         "parameters": [
-          { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "format": "uuid" }
+          }
         ],
         "responses": {
           "200": {
@@ -822,15 +1361,41 @@
                 "schema": {
                   "allOf": [
                     { "$ref": "#/components/schemas/SuccessResponse" },
-                    { "type": "object", "properties": { "data": { "$ref": "#/components/schemas/CalendarEvent" } } }
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": { "$ref": "#/components/schemas/CalendarEvent" }
+                      }
+                    }
                   ]
                 }
               }
             }
           },
-          "400": { "description": "Bad request", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } } },
-          "401": { "description": "Unauthorized", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } } },
-          "404": { "description": "Event not found", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } } }
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          },
+          "404": {
+            "description": "Event not found",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
         }
       },
       "put": {
@@ -839,13 +1404,20 @@
         "operationId": "updateCalendarEvent",
         "security": [{ "BearerAuth": [] }],
         "parameters": [
-          { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "format": "uuid" }
+          }
         ],
         "requestBody": {
           "required": true,
           "content": {
             "application/json": {
-              "schema": { "$ref": "#/components/schemas/UpdateCalendarEventInput" }
+              "schema": {
+                "$ref": "#/components/schemas/UpdateCalendarEventInput"
+              }
             }
           }
         },
@@ -857,14 +1429,33 @@
                 "schema": {
                   "allOf": [
                     { "$ref": "#/components/schemas/SuccessResponse" },
-                    { "type": "object", "properties": { "data": { "$ref": "#/components/schemas/CalendarEvent" } } }
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": { "$ref": "#/components/schemas/CalendarEvent" }
+                      }
+                    }
                   ]
                 }
               }
             }
           },
-          "400": { "description": "Bad request or overlap detected", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } } },
-          "401": { "description": "Unauthorized", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } } }
+          "400": {
+            "description": "Bad request or overlap detected",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
         }
       },
       "delete": {
@@ -873,12 +1464,38 @@
         "operationId": "deleteCalendarEvent",
         "security": [{ "BearerAuth": [] }],
         "parameters": [
-          { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "format": "uuid" }
+          }
         ],
         "responses": {
-          "200": { "description": "Calendar event deleted successfully", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/SuccessResponse" } } } },
-          "400": { "description": "Bad request", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } } },
-          "401": { "description": "Unauthorized", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } } }
+          "200": {
+            "description": "Calendar event deleted successfully",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/SuccessResponse" }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
         }
       }
     },
@@ -896,16 +1513,40 @@
                 "type": "object",
                 "required": ["ids"],
                 "properties": {
-                  "ids": { "type": "array", "items": { "type": "string", "format": "uuid" } }
+                  "ids": {
+                    "type": "array",
+                    "items": { "type": "string", "format": "uuid" }
+                  }
                 }
               }
             }
           }
         },
         "responses": {
-          "200": { "description": "Batch deletion completed", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/SuccessResponse" } } } },
-          "400": { "description": "Bad request", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } } },
-          "401": { "description": "Unauthorized", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } } }
+          "200": {
+            "description": "Batch deletion completed",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/SuccessResponse" }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
         }
       }
     },
@@ -923,14 +1564,33 @@
                 "schema": {
                   "allOf": [
                     { "$ref": "#/components/schemas/SuccessResponse" },
-                    { "type": "object", "properties": { "data": { "$ref": "#/components/schemas/UserSettings" } } }
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": { "$ref": "#/components/schemas/UserSettings" }
+                      }
+                    }
                   ]
                 }
               }
             }
           },
-          "401": { "description": "Unauthorized", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } } },
-          "500": { "description": "Internal server error", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } } }
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
         }
       },
       "post": {
@@ -946,7 +1606,11 @@
                 "type": "object",
                 "properties": {
                   "user_id": { "type": "string", "format": "uuid" },
-                  "active_schedule_id": { "type": "string", "format": "uuid", "nullable": true }
+                  "active_schedule_id": {
+                    "type": "string",
+                    "format": "uuid",
+                    "nullable": true
+                  }
                 }
               }
             }
@@ -960,14 +1624,33 @@
                 "schema": {
                   "allOf": [
                     { "$ref": "#/components/schemas/SuccessResponse" },
-                    { "type": "object", "properties": { "data": { "$ref": "#/components/schemas/UserSettings" } } }
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": { "$ref": "#/components/schemas/UserSettings" }
+                      }
+                    }
                   ]
                 }
               }
             }
           },
-          "400": { "description": "Bad request", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } } },
-          "401": { "description": "Unauthorized", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } } }
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
         }
       },
       "put": {
@@ -982,7 +1665,11 @@
               "schema": {
                 "type": "object",
                 "properties": {
-                  "active_schedule_id": { "type": "string", "format": "uuid", "nullable": true }
+                  "active_schedule_id": {
+                    "type": "string",
+                    "format": "uuid",
+                    "nullable": true
+                  }
                 }
               }
             }
@@ -996,14 +1683,33 @@
                 "schema": {
                   "allOf": [
                     { "$ref": "#/components/schemas/SuccessResponse" },
-                    { "type": "object", "properties": { "data": { "$ref": "#/components/schemas/UserSettings" } } }
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": { "$ref": "#/components/schemas/UserSettings" }
+                      }
+                    }
                   ]
                 }
               }
             }
           },
-          "400": { "description": "Bad request", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } } },
-          "401": { "description": "Unauthorized", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } } }
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
         }
       }
     },
@@ -1021,14 +1727,33 @@
                 "schema": {
                   "allOf": [
                     { "$ref": "#/components/schemas/SuccessResponse" },
-                    { "type": "object", "properties": { "data": { "$ref": "#/components/schemas/Schedule" } } }
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": { "$ref": "#/components/schemas/Schedule" }
+                      }
+                    }
                   ]
                 }
               }
             }
           },
-          "401": { "description": "Unauthorized", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } } },
-          "500": { "description": "Internal server error", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } } }
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
         }
       }
     },
@@ -1046,14 +1771,36 @@
                 "schema": {
                   "allOf": [
                     { "$ref": "#/components/schemas/SuccessResponse" },
-                    { "type": "object", "properties": { "data": { "type": "array", "items": { "$ref": "#/components/schemas/Schedule" } } } }
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "type": "array",
+                          "items": { "$ref": "#/components/schemas/Schedule" }
+                        }
+                      }
+                    }
                   ]
                 }
               }
             }
           },
-          "401": { "description": "Unauthorized", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } } },
-          "500": { "description": "Internal server error", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } } }
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
         }
       },
       "post": {
@@ -1077,14 +1824,33 @@
                 "schema": {
                   "allOf": [
                     { "$ref": "#/components/schemas/SuccessResponse" },
-                    { "type": "object", "properties": { "data": { "$ref": "#/components/schemas/Schedule" } } }
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": { "$ref": "#/components/schemas/Schedule" }
+                      }
+                    }
                   ]
                 }
               }
             }
           },
-          "400": { "description": "Bad request", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } } },
-          "401": { "description": "Unauthorized", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } } }
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
         }
       }
     },
@@ -1095,7 +1861,12 @@
         "operationId": "updateSchedule",
         "security": [{ "BearerAuth": [] }],
         "parameters": [
-          { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "format": "uuid" }
+          }
         ],
         "requestBody": {
           "required": true,
@@ -1113,14 +1884,33 @@
                 "schema": {
                   "allOf": [
                     { "$ref": "#/components/schemas/SuccessResponse" },
-                    { "type": "object", "properties": { "data": { "$ref": "#/components/schemas/Schedule" } } }
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": { "$ref": "#/components/schemas/Schedule" }
+                      }
+                    }
                   ]
                 }
               }
             }
           },
-          "400": { "description": "Bad request", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } } },
-          "401": { "description": "Unauthorized", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } } }
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
         }
       }
     },
@@ -1138,14 +1928,35 @@
                 "schema": {
                   "allOf": [
                     { "$ref": "#/components/schemas/SuccessResponse" },
-                    { "type": "object", "properties": { "data": { "$ref": "#/components/schemas/OnboardingStatus" } } }
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/OnboardingStatus"
+                        }
+                      }
+                    }
                   ]
                 }
               }
             }
           },
-          "401": { "description": "Unauthorized", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } } },
-          "500": { "description": "Internal server error", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } } }
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
         }
       }
     },
@@ -1163,7 +1974,11 @@
                 "type": "object",
                 "required": ["step"],
                 "properties": {
-                  "step": { "type": "string", "enum": ["task_created", "project_created", "scheduled"], "nullable": true }
+                  "step": {
+                    "type": "string",
+                    "enum": ["task_created", "project_created", "scheduled"],
+                    "nullable": true
+                  }
                 }
               }
             }
@@ -1177,14 +1992,33 @@
                 "schema": {
                   "allOf": [
                     { "$ref": "#/components/schemas/SuccessResponse" },
-                    { "type": "object", "properties": { "data": { "$ref": "#/components/schemas/UserSettings" } } }
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": { "$ref": "#/components/schemas/UserSettings" }
+                      }
+                    }
                   ]
                 }
               }
             }
           },
-          "400": { "description": "Bad request", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } } },
-          "401": { "description": "Unauthorized", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } } }
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
         }
       }
     },
@@ -1202,14 +2036,33 @@
                 "schema": {
                   "allOf": [
                     { "$ref": "#/components/schemas/SuccessResponse" },
-                    { "type": "object", "properties": { "data": { "$ref": "#/components/schemas/UserSettings" } } }
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": { "$ref": "#/components/schemas/UserSettings" }
+                      }
+                    }
                   ]
                 }
               }
             }
           },
-          "400": { "description": "Bad request", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } } },
-          "401": { "description": "Unauthorized", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } } }
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
         }
       }
     },
@@ -1219,11 +2072,24 @@
         "summary": "Start Google OAuth flow",
         "operationId": "googleCalendarAuth",
         "parameters": [
-          { "name": "user_id", "in": "query", "required": true, "schema": { "type": "string", "format": "uuid" }, "description": "User ID" }
+          {
+            "name": "user_id",
+            "in": "query",
+            "required": true,
+            "schema": { "type": "string", "format": "uuid" },
+            "description": "User ID"
+          }
         ],
         "responses": {
           "302": { "description": "Redirects to Google OAuth consent screen" },
-          "400": { "description": "Bad request", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } } }
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
         }
       }
     },
@@ -1233,9 +2099,24 @@
         "summary": "Google OAuth callback",
         "operationId": "googleCalendarCallback",
         "parameters": [
-          { "name": "code", "in": "query", "schema": { "type": "string" }, "description": "OAuth authorization code" },
-          { "name": "state", "in": "query", "schema": { "type": "string" }, "description": "User ID (passed as state)" },
-          { "name": "error", "in": "query", "schema": { "type": "string" }, "description": "OAuth error" }
+          {
+            "name": "code",
+            "in": "query",
+            "schema": { "type": "string" },
+            "description": "OAuth authorization code"
+          },
+          {
+            "name": "state",
+            "in": "query",
+            "schema": { "type": "string" },
+            "description": "User ID (passed as state)"
+          },
+          {
+            "name": "error",
+            "in": "query",
+            "schema": { "type": "string" },
+            "description": "OAuth error"
+          }
         ],
         "responses": {
           "302": { "description": "Redirects to frontend profile page" }
@@ -1248,7 +2129,13 @@
         "summary": "Get Google Calendar connection status",
         "operationId": "googleCalendarStatus",
         "parameters": [
-          { "name": "user_id", "in": "query", "required": true, "schema": { "type": "string", "format": "uuid" }, "description": "User ID" }
+          {
+            "name": "user_id",
+            "in": "query",
+            "required": true,
+            "schema": { "type": "string", "format": "uuid" },
+            "description": "User ID"
+          }
         ],
         "responses": {
           "200": {
@@ -1265,7 +2152,11 @@
                           "type": "object",
                           "properties": {
                             "connected": { "type": "boolean" },
-                            "last_synced_at": { "type": "string", "format": "date-time", "nullable": true }
+                            "last_synced_at": {
+                              "type": "string",
+                              "format": "date-time",
+                              "nullable": true
+                            }
                           }
                         }
                       }
@@ -1275,7 +2166,14 @@
               }
             }
           },
-          "400": { "description": "Bad request", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } } }
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
         }
       }
     },
@@ -1313,7 +2211,10 @@
                           "type": "object",
                           "properties": {
                             "synced": { "type": "integer" },
-                            "errors": { "type": "array", "items": { "type": "string" } }
+                            "errors": {
+                              "type": "array",
+                              "items": { "type": "string" }
+                            }
                           }
                         }
                       }
@@ -1323,7 +2224,14 @@
               }
             }
           },
-          "400": { "description": "Bad request", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } } }
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
         }
       }
     },
@@ -1347,8 +2255,22 @@
           }
         },
         "responses": {
-          "200": { "description": "Disconnected successfully", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/SuccessResponse" } } } },
-          "400": { "description": "Bad request", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } } }
+          "200": {
+            "description": "Disconnected successfully",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/SuccessResponse" }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
         }
       }
     },
@@ -1396,9 +2318,30 @@
               }
             }
           },
-          "400": { "description": "Bad request", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } } },
-          "422": { "description": "Validation error", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } } },
-          "429": { "description": "Too many requests", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } } }
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation error",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many requests",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
         }
       }
     }
@@ -1409,8 +2352,14 @@
     { "name": "Projects", "description": "Project management" },
     { "name": "Milestones", "description": "Milestone management" },
     { "name": "Calendar Events", "description": "Calendar event management" },
-    { "name": "User Settings", "description": "User settings, schedules, and onboarding" },
-    { "name": "Google Calendar", "description": "Google Calendar OAuth and sync" },
+    {
+      "name": "User Settings",
+      "description": "User settings, schedules, and onboarding"
+    },
+    {
+      "name": "Google Calendar",
+      "description": "Google Calendar OAuth and sync"
+    },
     { "name": "Subscriptions", "description": "Email subscriptions" }
   ]
 }

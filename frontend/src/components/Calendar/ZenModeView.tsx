@@ -9,10 +9,7 @@ import { calendarService } from '@/services/calendarService';
 import { cn } from '@/lib/utils';
 import { isSameDay } from '@/utils/calendarUtils';
 import { formatTimeRange, formatDateLong } from '@/utils/dateUtils';
-import {
-  isTaskCompleted,
-  TASK_COMPLETED_CLASS,
-} from '@/utils/taskUtils';
+import { isTaskCompleted, TASK_COMPLETED_CLASS } from '@/utils/taskUtils';
 import { STATUS_CONFIG } from '@/components/Tasks/taskCardConfig';
 import { Calendar } from 'lucide-react';
 
@@ -78,8 +75,18 @@ export function ZenModeView({ onExit }: ZenModeViewProps) {
   }, [events, today]);
 
   // Build a unified timeline: tasks (with their scheduled time) + regular events, sorted by start_time
-  type TimelineTask = { kind: 'task'; task: Task; startTime: Date; endTime: Date };
-  type TimelineEvent = { kind: 'event'; event: CalendarEvent; startTime: Date; endTime: Date };
+  type TimelineTask = {
+    kind: 'task';
+    task: Task;
+    startTime: Date;
+    endTime: Date;
+  };
+  type TimelineEvent = {
+    kind: 'event';
+    event: CalendarEvent;
+    startTime: Date;
+    endTime: Date;
+  };
   type TimelineItem = TimelineTask | TimelineEvent;
 
   const timeline = useMemo((): TimelineItem[] => {

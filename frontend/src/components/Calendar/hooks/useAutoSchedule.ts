@@ -217,9 +217,7 @@ export function useAutoSchedule(
           `[useAutoSchedule] Failed to create ${failed} events:`,
           failures.map(r => ({ index: r.index, error: r.error }))
         );
-        toast.error(
-          `Failed to create ${failed} event${failed > 1 ? 's' : ''}`
-        );
+        toast.error(`Failed to create ${failed} event${failed > 1 ? 's' : ''}`);
         return;
       }
 
@@ -279,10 +277,7 @@ export function useAutoSchedule(
   // computeProposedSchedule — pure calculation, no side-effects
   // -----------------------------------------------------------------------
   const computeProposedSchedule = useCallback(
-    (
-      tasksToUse: Task[],
-      eventsToUse: CalendarEventUnion[]
-    ) => {
+    (tasksToUse: Task[], eventsToUse: CalendarEventUnion[]) => {
       if (!user) return null;
 
       const existingTaskEvents = eventsToUse.filter(
@@ -364,7 +359,13 @@ export function useAutoSchedule(
         stopScheduling();
       }
     },
-    [user, computeProposedSchedule, applySchedule, startScheduling, stopScheduling]
+    [
+      user,
+      computeProposedSchedule,
+      applySchedule,
+      startScheduling,
+      stopScheduling,
+    ]
   );
 
   // -----------------------------------------------------------------------

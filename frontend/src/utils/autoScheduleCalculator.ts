@@ -155,7 +155,10 @@ export function calculateAutoSchedule(params: {
           taskStartTime = blockerEndPlusGap;
         }
       }
-      log(`  task "${task.title}" blocked by [${blockers.join(', ')}], startTime pushed to`, taskStartTime.toISOString());
+      log(
+        `  task "${task.title}" blocked by [${blockers.join(', ')}], startTime pushed to`,
+        taskStartTime.toISOString()
+      );
     }
 
     const { events, violations } = prepareTaskEvents(
@@ -202,7 +205,10 @@ export function calculateAutoSchedule(params: {
     if (events.length > 0) {
       const lastEvent = events[events.length - 1];
       taskLatestEndTime.set(task.id, lastEvent.end_time);
-      log(`  -> task "${task.title}" latest end`, lastEvent.end_time.toISOString());
+      log(
+        `  -> task "${task.title}" latest end`,
+        lastEvent.end_time.toISOString()
+      );
     }
   }
 

@@ -52,20 +52,29 @@ export interface ScheduledEvent {
 
 /**
  * Calculate remaining planned minutes after accounting for work already done.
- * Uses `task.actual_duration_minutes` as the authoritative source of completed
- * work rather than summing calendar event durations.
+ * Subtracts both `task.actual_duration_minutes` and the total duration of
+ * existing calendar events linked to this task from the planned duration.
  * If planned_duration_minutes is 0 or unset, we return one block's worth so the
  * task still gets scheduled during auto-schedule.
  */
 export function calculateRemainingDurationMinutes(
   task: Task,
-  _existingEvents: CalendarEventTask[],
+  existingEvents: CalendarEventTask[],
   config: TaskSchedulingConfig
 ): number {
   const planned = task.planned_duration_minutes ?? 0;
   const actual = task.actual_duration_minutes ?? 0;
 
-  const remainingDuration = Math.max(0, planned - actual);
+  const existingEventsDuration = existingEvents.reduce((total, event) => {
+    const start = new Date(event.start_time).getTime();
+    const end = new Date(event.end_time).getTime();
+    return total + Math.max(0, (end - start) / (1000 * 60));
+  }, 0);
+
+  const remainingDuration = Math.max(
+    0,
+    planned - actual - existingEventsDuration
+  );
 
   // Tasks with 0 planned (or already covered) get a single block so they still appear
   return remainingDuration === 0 && planned === 0

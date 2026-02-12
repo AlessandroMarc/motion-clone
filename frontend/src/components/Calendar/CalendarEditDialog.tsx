@@ -191,11 +191,7 @@ function TaskEventEdit({
         </div>
       </div>
       <DialogFooter>
-        <Button
-          variant="destructive"
-          onClick={onDeleteClick}
-          className="gap-2"
-        >
+        <Button variant="destructive" onClick={onDeleteClick} className="gap-2">
           <Trash2 className="h-4 w-4" />
           Delete
         </Button>
@@ -203,10 +199,7 @@ function TaskEventEdit({
           <Button variant="outline" onClick={onClose}>
             Cancel
           </Button>
-          <Button
-            onClick={onSave}
-            disabled={!title || !startTime || !endTime}
-          >
+          <Button onClick={onSave} disabled={!title || !startTime || !endTime}>
             Save
           </Button>
         </div>
@@ -278,10 +271,7 @@ function CalendarEditDialog({
       </Dialog>
 
       {isTaskEvent && (
-        <AlertDialog
-          open={deleteDialogOpen}
-          onOpenChange={setDeleteDialogOpen}
-        >
+        <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
           <AlertDialogContent>
             <AlertDialogHeader>
               <AlertDialogTitle>Delete Event</AlertDialogTitle>

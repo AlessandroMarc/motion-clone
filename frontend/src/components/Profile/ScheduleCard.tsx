@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { Clock, Check, Edit2, Trash2 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -33,7 +33,7 @@ export function ScheduleCard({
   onSetActive,
   onEdit,
   onDelete,
-}: ScheduleCardProps): JSX.Element {
+}: ScheduleCardProps): React.JSX.Element {
   const [isDeleting, setIsDeleting] = useState(false);
 
   const handleDelete = async () => {

@@ -181,7 +181,9 @@ export class UserSettingsService {
       .single();
 
     if (settings?.active_schedule_id === scheduleId) {
-      throw new Error('Cannot delete the currently active schedule. Please set another schedule as active first.');
+      throw new Error(
+        'Cannot delete the currently active schedule. Please set another schedule as active first.'
+      );
     }
 
     // Prevent deleting the last remaining schedule
@@ -191,7 +193,9 @@ export class UserSettingsService {
       .eq('user_id', userId);
 
     if (count !== null && count <= 1) {
-      throw new Error('Cannot delete your only schedule. You must have at least one schedule.');
+      throw new Error(
+        'Cannot delete your only schedule. You must have at least one schedule.'
+      );
     }
 
     const { error } = await client

@@ -1,6 +1,12 @@
 'use client';
 
-import { ChevronLeft, ChevronRight, Sparkles, Circle, Loader2 } from 'lucide-react';
+import {
+  ChevronLeft,
+  ChevronRight,
+  Sparkles,
+  Circle,
+  Loader2,
+} from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   getWeekRangeString,
