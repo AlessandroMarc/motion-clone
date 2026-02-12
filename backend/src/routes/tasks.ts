@@ -81,6 +81,7 @@ router.post('/', async (req: Request, res: Response) => {
     }
     const input: CreateTaskInput = {
       ...req.body,
+      blockedBy: req.body.blocked_by,
       user_id: authReq.userId, // Override with authenticated user ID
     };
     console.log('Backend received task input:', input);
@@ -107,7 +108,10 @@ router.put('/:id', async (req: Request, res: Response) => {
         'Task ID is required and must be a string'
       );
     }
-    const input: UpdateTaskInput = req.body;
+    const input: UpdateTaskInput = {
+      ...req.body,
+      blockedBy: req.body.blocked_by,
+    };
     const task = await taskService.updateTask(id, input, authReq.authToken);
     ResponseHelper.updated(res, task, 'Task updated successfully');
   } catch (error) {

@@ -110,6 +110,33 @@ router.put('/schedules/:id', async (req: Request, res: Response) => {
   }
 });
 
+// DELETE /api/user-settings/schedules/:id - Delete a schedule
+router.delete('/schedules/:id', async (req: Request, res: Response) => {
+  const authReq = req as AuthRequest;
+  try {
+    const { id } = req.params;
+
+    if (!id || typeof id !== 'string') {
+      return ResponseHelper.badRequest(
+        res,
+        'Schedule ID is required and must be a string'
+      );
+    }
+
+    await userSettingsService.deleteSchedule(
+      id,
+      authReq.userId,
+      authReq.authToken
+    );
+    ResponseHelper.success(res, null, 'Schedule deleted successfully');
+  } catch (error) {
+    ResponseHelper.badRequest(
+      res,
+      error instanceof Error ? error.message : 'Bad request'
+    );
+  }
+});
+
 // GET /api/user-settings - Get user settings
 router.get('/', async (req: Request, res: Response) => {
   const authReq = req as AuthRequest;

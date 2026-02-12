@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import type { Task, CalendarEventUnion } from '@/types';
+import type { Task, CalendarEvent, CalendarEventUnion } from '@/types';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { isCalendarEventTask } from '@/types';
 import { taskService } from '@/services/taskService';
@@ -11,10 +11,10 @@ import { isSameDay } from '@/utils/calendarUtils';
 import { formatTimeRange, formatDateLong } from '@/utils/dateUtils';
 import {
   isTaskCompleted,
-  sortTasksByPriority,
   TASK_COMPLETED_CLASS,
 } from '@/utils/taskUtils';
 import { STATUS_CONFIG } from '@/components/Tasks/taskCardConfig';
+import { Calendar } from 'lucide-react';
 
 interface ZenModeViewProps {
   onExit: () => void;
@@ -77,13 +77,43 @@ export function ZenModeView({ onExit }: ZenModeViewProps) {
     return taskEvents;
   }, [events, today]);
 
-  // Get today's tasks (only tasks that have calendar events scheduled for today), sorted by priority
-  const todayTasks = useMemo(() => {
+  // Build a unified timeline: tasks (with their scheduled time) + regular events, sorted by start_time
+  type TimelineTask = { kind: 'task'; task: Task; startTime: Date; endTime: Date };
+  type TimelineEvent = { kind: 'event'; event: CalendarEvent; startTime: Date; endTime: Date };
+  type TimelineItem = TimelineTask | TimelineEvent;
+
+  const timeline = useMemo((): TimelineItem[] => {
+    const items: TimelineItem[] = [];
+
+    // Tasks that have a calendar event scheduled for today
     const todayEventTaskIds = new Set(todayTaskEvents.keys());
-    return sortTasksByPriority(
-      tasks.filter(task => todayEventTaskIds.has(task.id))
-    );
-  }, [tasks, todayTaskEvents]);
+    for (const task of tasks) {
+      const range = todayTaskEvents.get(task.id);
+      if (!todayEventTaskIds.has(task.id) || !range) continue;
+      items.push({
+        kind: 'task',
+        task,
+        startTime: range.start_time,
+        endTime: range.end_time,
+      });
+    }
+
+    // Regular (non-task) calendar events for today
+    for (const event of events) {
+      if (isCalendarEventTask(event)) continue;
+      if (!isSameDay(new Date(event.start_time), today)) continue;
+      items.push({
+        kind: 'event',
+        event: event as CalendarEvent,
+        startTime: new Date(event.start_time),
+        endTime: new Date(event.end_time),
+      });
+    }
+
+    // Sort everything by start time
+    items.sort((a, b) => a.startTime.getTime() - b.startTime.getTime());
+    return items;
+  }, [tasks, events, todayTaskEvents, today]);
 
   const handleToggleComplete = useCallback(async (task: Task) => {
     try {
@@ -130,54 +160,52 @@ export function ZenModeView({ onExit }: ZenModeViewProps) {
         {formattedDate}
       </h1>
 
-      {/* Today's tasks as bullet points */}
+      {/* Today's schedule: tasks + calendar events sorted by start time */}
       <div className="w-full max-w-2xl">
-        {todayTasks.length === 0 ? (
+        {timeline.length === 0 ? (
           <p className="text-center text-muted-foreground font-body text-lg">
-            No tasks for today
+            Nothing scheduled for today
           </p>
         ) : (
           <ul className="space-y-4 list-none">
-            {todayTasks.map(task => {
-              const isCompleted = isTaskCompleted(task);
-              const statusConfig =
-                STATUS_CONFIG[task.status] ?? STATUS_CONFIG['not-started'];
-              const StatusIcon = statusConfig.icon;
-              const eventRange = todayTaskEvents.get(task.id);
-              const timeLabel = eventRange
-                ? formatTimeRange(eventRange.start_time, eventRange.end_time)
-                : null;
-              return (
-                <li key={task.id} className="flex items-start gap-3">
-                  <button
-                    type="button"
-                    onClick={() => handleToggleComplete(task)}
-                    className={cn(
-                      'shrink-0 rounded-full p-0.5 transition-colors touch-manipulation focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
-                      statusConfig.className,
-                      isCompleted && 'hover:opacity-90'
-                    )}
-                    aria-label={
-                      isCompleted ? 'Mark incomplete' : 'Mark complete'
-                    }
-                  >
-                    <StatusIcon
+            {timeline.map(item => {
+              if (item.kind === 'task') {
+                const { task, startTime, endTime } = item;
+                const isCompleted = isTaskCompleted(task);
+                const statusConfig =
+                  STATUS_CONFIG[task.status] ?? STATUS_CONFIG['not-started'];
+                const StatusIcon = statusConfig.icon;
+                const timeLabel = formatTimeRange(startTime, endTime);
+                return (
+                  <li key={task.id} className="flex items-start gap-3">
+                    <button
+                      type="button"
+                      onClick={() => handleToggleComplete(task)}
                       className={cn(
-                        'h-6 w-6 md:h-7 md:w-7',
-                        task.status === 'in-progress' && 'animate-spin'
+                        'shrink-0 rounded-full p-0.5 transition-colors touch-manipulation focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
+                        statusConfig.className,
+                        isCompleted && 'hover:opacity-90'
                       )}
-                    />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleToggleComplete(task)}
-                    className={cn(
-                      'flex-1 text-left font-body text-lg md:text-xl transition-colors touch-manipulation focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded',
-                      isCompleted ? TASK_COMPLETED_CLASS : 'text-foreground'
-                    )}
-                  >
-                    <span className="block">{task.title}</span>
-                    {timeLabel && (
+                      aria-label={
+                        isCompleted ? 'Mark incomplete' : 'Mark complete'
+                      }
+                    >
+                      <StatusIcon
+                        className={cn(
+                          'h-6 w-6 md:h-7 md:w-7',
+                          task.status === 'in-progress' && 'animate-spin'
+                        )}
+                      />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleToggleComplete(task)}
+                      className={cn(
+                        'flex-1 text-left font-body text-lg md:text-xl transition-colors touch-manipulation focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded',
+                        isCompleted ? TASK_COMPLETED_CLASS : 'text-foreground'
+                      )}
+                    >
+                      <span className="block">{task.title}</span>
                       <span
                         className={cn(
                           'block text-sm font-normal mt-0.5',
@@ -188,8 +216,32 @@ export function ZenModeView({ onExit }: ZenModeViewProps) {
                       >
                         {timeLabel}
                       </span>
-                    )}
-                  </button>
+                    </button>
+                  </li>
+                );
+              }
+
+              // Regular calendar event
+              const { event, startTime, endTime } = item;
+              const isPast = endTime < new Date();
+              const timeLabel = formatTimeRange(startTime, endTime);
+              return (
+                <li
+                  key={event.id}
+                  className={cn(
+                    'flex items-start gap-3',
+                    isPast && 'opacity-50'
+                  )}
+                >
+                  <span className="shrink-0 rounded-full p-0.5 text-muted-foreground">
+                    <Calendar className="h-6 w-6 md:h-7 md:w-7" />
+                  </span>
+                  <div className="flex-1 font-body text-lg md:text-xl text-foreground">
+                    <span className="block">{event.title}</span>
+                    <span className="block text-sm font-normal mt-0.5 text-muted-foreground">
+                      {timeLabel}
+                    </span>
+                  </div>
                 </li>
               );
             })}

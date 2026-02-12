@@ -165,6 +165,46 @@ export class UserSettingsService {
     };
   }
 
+  // Delete a schedule
+  async deleteSchedule(
+    scheduleId: string,
+    userId: string,
+    token?: string
+  ): Promise<void> {
+    const client = token ? getAuthenticatedSupabase(token) : supabase;
+
+    // Prevent deleting the active schedule
+    const { data: settings } = await client
+      .from('user_settings')
+      .select('active_schedule_id')
+      .eq('user_id', userId)
+      .single();
+
+    if (settings?.active_schedule_id === scheduleId) {
+      throw new Error('Cannot delete the currently active schedule. Please set another schedule as active first.');
+    }
+
+    // Prevent deleting the last remaining schedule
+    const { count } = await client
+      .from('schedules')
+      .select('*', { count: 'exact', head: true })
+      .eq('user_id', userId);
+
+    if (count !== null && count <= 1) {
+      throw new Error('Cannot delete your only schedule. You must have at least one schedule.');
+    }
+
+    const { error } = await client
+      .from('schedules')
+      .delete()
+      .eq('id', scheduleId)
+      .eq('user_id', userId);
+
+    if (error) {
+      throw new Error(`Failed to delete schedule: ${error.message}`);
+    }
+  }
+
   // Get user settings
   async getUserSettings(
     userId: string,

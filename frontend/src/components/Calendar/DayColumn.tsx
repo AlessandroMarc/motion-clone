@@ -36,6 +36,8 @@ interface DayColumnProps {
     taskData?: { id: string; title: string; description?: string }
   ) => void;
   tasksMap?: Map<string, Task>;
+  workingHoursStart?: number;
+  workingHoursEnd?: number;
 }
 
 function DayColumn({
@@ -52,6 +54,8 @@ function DayColumn({
   onExternalTaskDrop,
   onExternalTaskDragOver,
   tasksMap,
+  workingHoursStart,
+  workingHoursEnd,
 }: DayColumnProps) {
   const hours = Array.from({ length: 24 }, (_, i) => i);
   const [currentTime, setCurrentTime] = useState(new Date());
@@ -105,6 +109,32 @@ function DayColumn({
         scrollSentinelRef={scrollSentinelRef}
         sentinelHour={sentinelHour}
       />
+
+      {/* Non-working-hours overlay */}
+      {workingHoursStart != null && workingHoursEnd != null && (
+        <>
+          {/* Before working hours */}
+          {workingHoursStart > 0 && (
+            <div
+              className="absolute left-0 right-0 bg-muted/40 pointer-events-none z-1"
+              style={{
+                top: 0,
+                height: `${workingHoursStart * HOUR_PX}px`,
+              }}
+            />
+          )}
+          {/* After working hours */}
+          {workingHoursEnd < 24 && (
+            <div
+              className="absolute left-0 right-0 bg-muted/40 pointer-events-none z-1"
+              style={{
+                top: `${workingHoursEnd * HOUR_PX}px`,
+                height: `${(24 - workingHoursEnd) * HOUR_PX}px`,
+              }}
+            />
+          )}
+        </>
+      )}
 
       <DayColumnEvents
         dayIndex={dayIndex}

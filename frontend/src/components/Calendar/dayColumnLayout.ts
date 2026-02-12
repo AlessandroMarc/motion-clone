@@ -20,10 +20,14 @@ function toIntervals(events: CalendarEventUnion[]): EventInterval[] {
   return events.map(ev => {
     const startDate = new Date(ev.start_time);
     const endDate = new Date(ev.end_time);
+    const startMin = minutesFromMidnight(startDate);
+    // Use the visual duration (which enforces a 30-min minimum) so that the
+    // overlap detection matches what is actually rendered on screen.
+    const visualDur = durationMinutes(startDate, endDate);
     return {
       id: ev.id,
-      startMin: minutesFromMidnight(startDate),
-      endMin: minutesFromMidnight(endDate),
+      startMin,
+      endMin: startMin + visualDur,
     };
   });
 }

@@ -212,6 +212,20 @@ export class TaskService {
       throw new Error(`Failed to update task: ${error.message}`);
     }
 
+    // Propagate title change to linked calendar events
+    if (updateData.title && updateData.title !== existingTask.title) {
+      const { error: calendarError } = await client
+        .from('calendar_events')
+        .update({ title: updateData.title, updated_at: updateData.updated_at })
+        .eq('linked_task_id', id);
+
+      if (calendarError) {
+        console.error(
+          `Failed to propagate title change to calendar events: ${calendarError.message}`
+        );
+      }
+    }
+
     return data;
   }
 
