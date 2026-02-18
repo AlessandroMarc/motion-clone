@@ -6,7 +6,6 @@ import { isSameDay } from '@/utils/calendarUtils';
 import { computeOverlapLayout } from './dayColumnLayout';
 import { DayColumnEvents } from './DayColumnEvents';
 import { DayColumnGrid } from './DayColumnGrid';
-import { DayColumnEmptyState } from './DayColumnEmptyState';
 import { HOUR_PX } from './dayColumnLayout';
 
 interface DayColumnProps {
@@ -37,6 +36,8 @@ interface DayColumnProps {
     taskData?: { id: string; title: string; description?: string }
   ) => void;
   tasksMap?: Map<string, Task>;
+  workingHoursStart?: number;
+  workingHoursEnd?: number;
 }
 
 function DayColumn({
@@ -53,6 +54,8 @@ function DayColumn({
   onExternalTaskDrop,
   onExternalTaskDragOver,
   tasksMap,
+  workingHoursStart,
+  workingHoursEnd,
 }: DayColumnProps) {
   const hours = Array.from({ length: 24 }, (_, i) => i);
   const [currentTime, setCurrentTime] = useState(new Date());
@@ -76,8 +79,6 @@ function DayColumn({
   const eventsForLayout: CalendarEventUnion[] =
     previewBelongsHere && dragPreview ? [...dayEvents, dragPreview] : dayEvents;
   const layoutMap = computeOverlapLayout(eventsForLayout);
-
-  const hasEvents = dayEvents.length > 0 || (previewBelongsHere && dragPreview);
 
   // Calculate current time position
   const getCurrentTimePosition = () => {
@@ -109,6 +110,32 @@ function DayColumn({
         sentinelHour={sentinelHour}
       />
 
+      {/* Non-working-hours overlay */}
+      {workingHoursStart != null && workingHoursEnd != null && (
+        <>
+          {/* Before working hours */}
+          {workingHoursStart > 0 && (
+            <div
+              className="absolute left-0 right-0 bg-muted/40 pointer-events-none z-1"
+              style={{
+                top: 0,
+                height: `${workingHoursStart * HOUR_PX}px`,
+              }}
+            />
+          )}
+          {/* After working hours */}
+          {workingHoursEnd < 24 && (
+            <div
+              className="absolute left-0 right-0 bg-muted/40 pointer-events-none z-1"
+              style={{
+                top: `${workingHoursEnd * HOUR_PX}px`,
+                height: `${(24 - workingHoursEnd) * HOUR_PX}px`,
+              }}
+            />
+          )}
+        </>
+      )}
+
       <DayColumnEvents
         dayIndex={dayIndex}
         dayEvents={dayEvents.filter(ev => ev.id !== draggingEventId)}
@@ -132,10 +159,6 @@ function DayColumn({
             <div className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-1/2 w-2 h-2 rounded-full bg-red-500 dark:bg-red-400 border-2 border-background dark:border-background" />
           </div>
         </div>
-      )}
-
-      {!hasEvents && (
-        <DayColumnEmptyState date={date} onAddEvent={onGridCellClick} />
       )}
     </div>
   );

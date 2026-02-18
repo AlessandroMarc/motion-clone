@@ -63,7 +63,6 @@ export interface LandingFinalCta {
   headline: string;
   subheadline: string;
   primaryCta: string;
-  note: string;
 }
 
 export interface LandingFooter {
@@ -249,7 +248,6 @@ export const landingContent: LandingContent = {
     headline: 'Focus Mode Unlocked',
     subheadline: 'Stop planning. Start doing. Try it free for 14 days.',
     primaryCta: 'Start Free Trial',
-    note: 'No credit card • Cancel anytime',
   },
 
   footer: {

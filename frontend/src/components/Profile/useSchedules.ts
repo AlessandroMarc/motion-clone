@@ -80,6 +80,16 @@ export function useSchedules() {
     [user?.id, loadSchedules]
   );
 
+  const deleteSchedule = useCallback(
+    async (scheduleId: string) => {
+      if (!user?.id) return;
+
+      await userSettingsService.deleteSchedule(scheduleId, user.id);
+      await loadSchedules();
+    },
+    [user?.id, loadSchedules]
+  );
+
   const setActiveSchedule = useCallback(
     async (scheduleId: string) => {
       if (!user?.id) return;
@@ -98,6 +108,7 @@ export function useSchedules() {
     loadSchedules,
     createSchedule,
     updateSchedule,
+    deleteSchedule,
     setActiveSchedule,
   };
 }

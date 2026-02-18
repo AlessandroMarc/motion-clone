@@ -21,7 +21,8 @@ router.get('/active-schedule', async (req: Request, res: Response) => {
   const authReq = req as AuthRequest;
   try {
     const schedule = await userSettingsService.getActiveSchedule(
-      authReq.userId
+      authReq.userId,
+      authReq.authToken
     );
     ResponseHelper.success(
       res,
@@ -41,7 +42,8 @@ router.get('/schedules', async (req: Request, res: Response) => {
   const authReq = req as AuthRequest;
   try {
     const schedules = await userSettingsService.getUserSchedules(
-      authReq.userId
+      authReq.userId,
+      authReq.authToken
     );
     ResponseHelper.list(
       res,
@@ -66,7 +68,10 @@ router.post('/schedules', async (req: Request, res: Response) => {
       user_id: authReq.userId,
     };
 
-    const schedule = await userSettingsService.createSchedule(input);
+    const schedule = await userSettingsService.createSchedule(
+      input,
+      authReq.authToken
+    );
     ResponseHelper.created(res, schedule, 'Schedule created successfully');
   } catch (error) {
     ResponseHelper.badRequest(
@@ -83,16 +88,47 @@ router.put('/schedules/:id', async (req: Request, res: Response) => {
     const { id } = req.params;
     const input: UpdateScheduleInput = req.body;
 
-    if (!id) {
-      return ResponseHelper.badRequest(res, 'Schedule ID is required');
+    if (!id || typeof id !== 'string') {
+      return ResponseHelper.badRequest(
+        res,
+        'Schedule ID is required and must be a string'
+      );
     }
 
     const schedule = await userSettingsService.updateSchedule(
       id,
       authReq.userId,
-      input
+      input,
+      authReq.authToken
     );
     ResponseHelper.success(res, schedule, 'Schedule updated successfully');
+  } catch (error) {
+    ResponseHelper.badRequest(
+      res,
+      error instanceof Error ? error.message : 'Bad request'
+    );
+  }
+});
+
+// DELETE /api/user-settings/schedules/:id - Delete a schedule
+router.delete('/schedules/:id', async (req: Request, res: Response) => {
+  const authReq = req as AuthRequest;
+  try {
+    const { id } = req.params;
+
+    if (!id || typeof id !== 'string') {
+      return ResponseHelper.badRequest(
+        res,
+        'Schedule ID is required and must be a string'
+      );
+    }
+
+    await userSettingsService.deleteSchedule(
+      id,
+      authReq.userId,
+      authReq.authToken
+    );
+    ResponseHelper.success(res, null, 'Schedule deleted successfully');
   } catch (error) {
     ResponseHelper.badRequest(
       res,
@@ -105,7 +141,10 @@ router.put('/schedules/:id', async (req: Request, res: Response) => {
 router.get('/', async (req: Request, res: Response) => {
   const authReq = req as AuthRequest;
   try {
-    const settings = await userSettingsService.getUserSettings(authReq.userId);
+    const settings = await userSettingsService.getUserSettings(
+      authReq.userId,
+      authReq.authToken
+    );
     ResponseHelper.success(
       res,
       settings,
@@ -128,7 +167,10 @@ router.post('/', async (req: Request, res: Response) => {
       user_id: authReq.userId,
     };
 
-    const settings = await userSettingsService.upsertUserSettings(input);
+    const settings = await userSettingsService.upsertUserSettings(
+      input,
+      authReq.authToken
+    );
     ResponseHelper.created(res, settings, 'User settings created successfully');
   } catch (error) {
     ResponseHelper.badRequest(

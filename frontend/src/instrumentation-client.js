@@ -20,13 +20,21 @@ if (isProduction) {
 }
 
 // Initialize PostHog for analytics
-posthog.init(process.env.NEXT_PUBLIC_POSTHOG_KEY, {
-  api_host: '/ingest',
-  ui_host: 'https://eu.posthog.com',
-  defaults: '2025-05-24',
-  capture_exceptions: true,
-  debug: process.env.NODE_ENV === 'development',
-});
+if (process.env.NEXT_PUBLIC_POSTHOG_KEY) {
+  posthog.init(process.env.NEXT_PUBLIC_POSTHOG_KEY, {
+    api_host: '/ingest',
+    ui_host: 'https://eu.posthog.com',
+    defaults: '2025-05-24',
+    capture_exceptions: true,
+    debug: process.env.NODE_ENV === 'development',
+  });
+} else if (process.env.NODE_ENV === 'production') {
+  console.error(
+    'PostHog key is missing in production! Analytics will not be captured.'
+  );
+} else {
+  console.warn('PostHog key is missing. Analytics is disabled in development.');
+}
 
 // IMPORTANT: Never combine this approach with other client-side PostHog initialization approaches,
 // especially components like a PostHogProvider. instrumentation-client.js is the correct solution

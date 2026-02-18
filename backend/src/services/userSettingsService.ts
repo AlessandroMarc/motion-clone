@@ -14,9 +14,13 @@ import type {
 
 export class UserSettingsService {
   // Get active schedule for a user (or default if none is active)
-  async getActiveSchedule(userId: string): Promise<Schedule | null> {
+  async getActiveSchedule(
+    userId: string,
+    token?: string
+  ): Promise<Schedule | null> {
+    const client = token ? getAuthenticatedSupabase(token) : supabase;
     // First, get user settings to see if there's an active schedule
-    const { data: settings } = await supabase
+    const { data: settings } = await client
       .from('user_settings')
       .select('active_schedule_id')
       .eq('user_id', userId)
@@ -26,7 +30,7 @@ export class UserSettingsService {
 
     // If there's an active schedule, get it
     if (settings?.active_schedule_id) {
-      const { data, error } = await supabase
+      const { data, error } = await client
         .from('schedules')
         .select('*')
         .eq('id', settings.active_schedule_id)
@@ -44,7 +48,7 @@ export class UserSettingsService {
 
     // If no active schedule or it doesn't exist, get the default schedule
     if (!schedule) {
-      const { data, error } = await supabase
+      const { data, error } = await client
         .from('schedules')
         .select('*')
         .eq('user_id', userId)
@@ -78,8 +82,9 @@ export class UserSettingsService {
   }
 
   // Get all schedules for a user
-  async getUserSchedules(userId: string): Promise<Schedule[]> {
-    const { data, error } = await supabase
+  async getUserSchedules(userId: string, token?: string): Promise<Schedule[]> {
+    const client = token ? getAuthenticatedSupabase(token) : supabase;
+    const { data, error } = await client
       .from('schedules')
       .select('*')
       .eq('user_id', userId)
@@ -98,8 +103,12 @@ export class UserSettingsService {
   }
 
   // Create a new schedule
-  async createSchedule(input: CreateScheduleInput): Promise<Schedule> {
-    const { data, error } = await supabase
+  async createSchedule(
+    input: CreateScheduleInput,
+    token?: string
+  ): Promise<Schedule> {
+    const client = token ? getAuthenticatedSupabase(token) : supabase;
+    const { data, error } = await client
       .from('schedules')
       .insert([
         {
@@ -128,9 +137,11 @@ export class UserSettingsService {
   async updateSchedule(
     scheduleId: string,
     userId: string,
-    input: UpdateScheduleInput
+    input: UpdateScheduleInput,
+    token?: string
   ): Promise<Schedule> {
-    const { data, error } = await supabase
+    const client = token ? getAuthenticatedSupabase(token) : supabase;
+    const { data, error } = await client
       .from('schedules')
       .update({
         name: input.name,
@@ -152,6 +163,50 @@ export class UserSettingsService {
       created_at: new Date(data.created_at),
       updated_at: new Date(data.updated_at),
     };
+  }
+
+  // Delete a schedule
+  async deleteSchedule(
+    scheduleId: string,
+    userId: string,
+    token?: string
+  ): Promise<void> {
+    const client = token ? getAuthenticatedSupabase(token) : supabase;
+
+    // Prevent deleting the active schedule
+    const { data: settings } = await client
+      .from('user_settings')
+      .select('active_schedule_id')
+      .eq('user_id', userId)
+      .single();
+
+    if (settings?.active_schedule_id === scheduleId) {
+      throw new Error(
+        'Cannot delete the currently active schedule. Please set another schedule as active first.'
+      );
+    }
+
+    // Prevent deleting the last remaining schedule
+    const { count } = await client
+      .from('schedules')
+      .select('*', { count: 'exact', head: true })
+      .eq('user_id', userId);
+
+    if (count !== null && count <= 1) {
+      throw new Error(
+        'Cannot delete your only schedule. You must have at least one schedule.'
+      );
+    }
+
+    const { error } = await client
+      .from('schedules')
+      .delete()
+      .eq('id', scheduleId)
+      .eq('user_id', userId);
+
+    if (error) {
+      throw new Error(`Failed to delete schedule: ${error.message}`);
+    }
   }
 
   // Get user settings

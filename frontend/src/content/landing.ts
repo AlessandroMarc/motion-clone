@@ -130,9 +130,8 @@ export const landingContent = {
 
   finalCta: {
     headline: 'Your Calendar, Actually Manageable',
-    subheadline: 'Stop planning. Start doing. Try it free for 14 days.',
+    subheadline: 'Stop planning. Start doing.',
     primaryCta: 'Start Free Trial',
-    note: 'No credit card • Cancel anytime',
   },
 
   footer: {
