@@ -10,6 +10,15 @@ import {
 } from '../dateUtils';
 
 describe('dateUtils', () => {
+  beforeEach(() => {
+    jest.useFakeTimers();
+    jest.setSystemTime(new Date('2025-01-27T12:00:00Z'));
+  });
+
+  afterEach(() => {
+    jest.useRealTimers();
+  });
+
   describe('formatDate', () => {
     it('should return "No due date" if date is null', () => {
       expect(formatDate(null)).toBe('No due date');
