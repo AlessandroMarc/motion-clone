@@ -47,6 +47,19 @@ const tourSteps = [
       </div>
     ),
   },
+  {
+    selector: '[data-onboarding-step="sync-calendar"]',
+    content: (
+      <div className="p-6 space-y-4">
+        <h3 className="font-semibold text-xl mb-3">
+          {onboardingContent.steps.syncCalendar.title}
+        </h3>
+        <p className="text-base text-muted-foreground leading-relaxed">
+          {onboardingContent.steps.syncCalendar.description}
+        </p>
+      </div>
+    ),
+  },
 ];
 
 function OnboardingTourController() {
@@ -67,6 +80,8 @@ function OnboardingTourController() {
         currentStep === 'project_created'
       ) {
         stepIndex = 2;
+      } else if (pathname === '/profile' && currentStep === 'scheduled') {
+        stepIndex = 3;
       } else {
         return;
       }
@@ -119,7 +134,11 @@ function OnboardingTourCloseHandler() {
         currentStep === 'project_created' &&
         pathname === '/calendar'
       ) {
-        // Step 3 chiuso → completa l'onboarding
+        // Step 3 chiuso → avanza a step 4 (sync calendar)
+        // Il tour si aprirà automaticamente quando l'utente va su /profile
+        updateStep('scheduled');
+      } else if (currentStep === 'scheduled' && pathname === '/profile') {
+        // Step 4 chiuso → completa l'onboarding
         completeOnboarding();
       }
     }

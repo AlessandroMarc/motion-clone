@@ -40,6 +40,9 @@ export function useOnboarding() {
       case 'project_created':
         // Terzo step: schedulare (pagina calendar)
         return pathname === '/calendar';
+      case 'scheduled':
+        // Quarto step: sync Google Calendar (pagina profile)
+        return pathname === '/profile';
       default:
         return false;
     }
@@ -47,7 +50,7 @@ export function useOnboarding() {
 
   // Avanza allo step successivo quando un'azione viene completata
   const advanceToNextStep = async (
-    currentAction: 'task' | 'project' | 'schedule'
+    currentAction: 'task' | 'project' | 'schedule' | 'calendar_sync'
   ) => {
     if (!user || !status || status.completed) return;
 
@@ -73,6 +76,15 @@ export function useOnboarding() {
           break;
         case 'schedule':
           if (status.step === 'project_created') {
+            await updateStep('scheduled');
+            // Naviga alla pagina profile dopo un breve delay
+            setTimeout(() => {
+              window.location.href = '/profile';
+            }, 1000);
+          }
+          break;
+        case 'calendar_sync':
+          if (status.step === 'scheduled') {
             await completeOnboarding();
           }
           break;

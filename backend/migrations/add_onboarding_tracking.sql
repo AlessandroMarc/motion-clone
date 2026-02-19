@@ -17,4 +17,4 @@ ON user_settings(onboarding_completed)
 WHERE onboarding_completed = false;
 
 -- Add comment to document the onboarding_step values
-COMMENT ON COLUMN user_settings.onboarding_step IS 'Current onboarding step: task_created, project_created, scheduled, or null if not started';
+COMMENT ON COLUMN user_settings.onboarding_step IS 'Current onboarding step: task_created, project_created, scheduled, calendar_synced, or null if not started';
