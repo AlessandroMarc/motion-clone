@@ -52,6 +52,15 @@ const ENV_VAR_SCHEMA: EnvVarConfig[] = [
     required: false,
     validateUrl: true,
   },
+  // Resend email provider - optional, required only for onboarding email flow
+  {
+    name: 'RESEND_API_KEY',
+    required: false,
+  },
+  {
+    name: 'RESEND_FROM_EMAIL',
+    required: false,
+  },
 ];
 
 // Optional variables (only generate warnings)
