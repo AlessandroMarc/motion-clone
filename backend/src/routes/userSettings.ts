@@ -206,6 +206,7 @@ router.get('/onboarding/status', async (req: Request, res: Response) => {
   try {
     const status = await userSettingsService.getOnboardingStatus(
       authReq.userId,
+      authReq.userEmail,
       authReq.authToken
     );
     ResponseHelper.success(

@@ -9,6 +9,7 @@ import {
 export interface AuthRequest extends Request {
   authToken: string;
   userId: string;
+  userEmail: string | undefined;
   supabaseClient: SupabaseClient;
 }
 
@@ -35,30 +36,28 @@ export async function authMiddleware(
     // Verify token locally (fast, < 1ms vs 100+ ms for remote call)
     const { userId } = verifyAuthToken(token);
 
-    // Optional: Strict mode performs additional remote verification
-    // Enable via STRICT_AUTH_MODE=true environment variable
-    if (process.env.STRICT_AUTH_MODE === 'true') {
-      const supabase = getAuthenticatedSupabase(token);
-      const {
-        data: { user },
-        error,
-      } = await supabase.auth.getUser();
+    // Fetch user email from Supabase for first-login detection
+    const supabase = getAuthenticatedSupabase(token);
+    const {
+      data: { user },
+      error,
+    } = await supabase.auth.getUser();
 
-      if (error || !user || user.id !== userId) {
-        return ResponseHelper.unauthorized(
-          res,
-          'Token validation failed',
-          'Please login again'
-        );
-      }
+    if (error || !user || user.id !== userId) {
+      return ResponseHelper.unauthorized(
+        res,
+        'Token validation failed',
+        'Please login again'
+      );
     }
 
-    // Attach user ID to request
+    // Attach user ID and email to request
     authReq.userId = userId;
+    authReq.userEmail = user.email;
 
     // Create and attach authenticated Supabase client to request
     // This eliminates the need for services to create their own clients
-    authReq.supabaseClient = getAuthenticatedSupabase(token);
+    authReq.supabaseClient = supabase;
 
     next();
   } catch (error) {

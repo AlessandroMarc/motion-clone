@@ -67,3 +67,8 @@ export function getFrontendUrl(): string {
   cachedFrontendUrl = requireHttpUrlEnv('FRONTEND_URL');
   return cachedFrontendUrl;
 }
+
+/**
+ * Optional: Export requireEnv for use in other modules
+ */
+export { requireEnv };

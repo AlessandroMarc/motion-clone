@@ -1,4 +1,5 @@
 import { supabase, getAuthenticatedSupabase } from '../config/supabase.js';
+import { GoogleGroupService } from './googleGroupService.js';
 import type {
   Schedule,
   UserSettings,
@@ -298,6 +299,7 @@ export class UserSettingsService {
   // Get onboarding status for a user
   async getOnboardingStatus(
     userId: string,
+    userEmail?: string,
     token?: string
   ): Promise<OnboardingStatus> {
     const client = token ? getAuthenticatedSupabase(token) : supabase;
@@ -338,6 +340,13 @@ export class UserSettingsService {
             };
           }
 
+          // If user email is provided, add to Google test group on first login
+          if (userEmail) {
+            this.addUserToGoogleTestGroupAsync(userEmail).catch(error => {
+              console.error('Failed to add user to Google group:', error.message);
+            });
+          }
+
           return {
             completed: newData?.onboarding_completed ?? false,
             step: (newData?.onboarding_step as OnboardingStep) ?? null,
@@ -372,6 +381,29 @@ export class UserSettingsService {
         ? new Date(data.onboarding_completed_at)
         : null,
     };
+  }
+
+  /**
+   * Add user to Google test group on first login (runs async, doesn't block)
+   */
+  private async addUserToGoogleTestGroupAsync(userEmail: string): Promise<void> {
+    try {
+      // Only add if credentials are configured
+      const googleGroupEmail = process.env.GOOGLE_TEST_GROUP_EMAIL;
+      if (!googleGroupEmail) {
+        console.warn(
+          'GOOGLE_TEST_GROUP_EMAIL not configured, skipping group addition'
+        );
+        return;
+      }
+
+      const googleGroupService = new GoogleGroupService();
+      await googleGroupService.addUserToGroup(userEmail, googleGroupEmail);
+      console.log(`✓ User ${userEmail} added to test group ${googleGroupEmail}`);
+    } catch (error) {
+      console.error(`✗ Failed to add user to Google group:`, error);
+      // Don't throw - this should not block the login process
+    }
   }
 
   // Update onboarding step
