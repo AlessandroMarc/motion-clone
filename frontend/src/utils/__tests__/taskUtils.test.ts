@@ -179,5 +179,18 @@ describe('taskUtils', () => {
       expect(result.unassigned).toHaveLength(0);
       expect(result.byProject).toHaveLength(0);
     });
+
+    it('should handle tasks with project_id not in projects list', () => {
+      const tasks = [
+        mockTask({ id: 't1', project_id: 'non-existent-project' }),
+      ];
+
+      const result = groupTasksByProject(tasks, projects);
+
+      // It should NOT be in unassigned (because it has a project_id)
+      expect(result.unassigned).toHaveLength(0);
+      // It should NOT be in byProject (because the project isn't in the list)
+      expect(result.byProject).toHaveLength(0);
+    });
   });
 });
