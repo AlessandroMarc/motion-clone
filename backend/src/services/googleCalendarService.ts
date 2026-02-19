@@ -26,6 +26,10 @@ interface GoogleCalendarToken {
 
 export class GoogleCalendarService {
   private calendarEventService: CalendarEventService;
+  private static inFlightSyncs = new Map<
+    string,
+    Promise<{ success: boolean; synced: number; errors: string[] }>
+  >();
 
   constructor() {
     this.calendarEventService = new CalendarEventService();
@@ -211,6 +215,38 @@ export class GoogleCalendarService {
     synced: number;
     errors: string[];
   }> {
+    const existingSync = GoogleCalendarService.inFlightSyncs.get(userId);
+    if (existingSync) {
+      console.log(
+        `[GoogleCalendarService] Sync already in progress for user ${userId}, reusing in-flight sync`
+      );
+      return existingSync;
+    }
+
+    const syncPromise = this.performSyncEventsFromGoogle(userId)
+      .catch(error => {
+        console.error('[GoogleCalendarService] Sync error:', error);
+        return {
+          success: false,
+          synced: 0,
+          errors: [
+            error instanceof Error ? error.message : 'Unknown sync error',
+          ],
+        };
+      })
+      .finally(() => {
+        GoogleCalendarService.inFlightSyncs.delete(userId);
+      });
+
+    GoogleCalendarService.inFlightSyncs.set(userId, syncPromise);
+    return syncPromise;
+  }
+
+  private async performSyncEventsFromGoogle(userId: string): Promise<{
+    success: boolean;
+    synced: number;
+    errors: string[];
+  }> {
     try {
       const { clientId, clientSecret, redirectUri } = getOAuthConfigOrThrow();
       const accessToken = await this.getValidAccessToken(userId);
@@ -294,12 +330,67 @@ export class GoogleCalendarService {
           }
 
           if (existingEvent) {
-            // Update existing event
+            const normalizeDate = (
+              value: string | Date | null | undefined
+            ): string | null => {
+              if (!value) return null;
+              const date = new Date(value);
+              if (Number.isNaN(date.getTime())) return null;
+              return date.toISOString();
+            };
+
+            const existingStart = normalizeDate(
+              (
+                existingEvent as unknown as {
+                  start_time?: string | Date | null;
+                }
+              ).start_time
+            );
+            const existingEnd = normalizeDate(
+              (
+                existingEvent as unknown as {
+                  end_time?: string | Date | null;
+                }
+              ).end_time
+            );
+            const existingTitle =
+              (
+                existingEvent as unknown as {
+                  title?: string | null;
+                }
+              ).title ?? '';
+            const existingDescription =
+              (
+                existingEvent as unknown as {
+                  description?: string | null;
+                }
+              ).description ?? undefined;
+            const existingSyncedFromGoogle =
+              (
+                existingEvent as unknown as {
+                  synced_from_google?: boolean | null;
+                }
+              ).synced_from_google ?? false;
+
+            const isUnchanged =
+              existingTitle === eventData.title &&
+              existingStart === normalizeDate(eventData.start_time) &&
+              existingEnd === normalizeDate(eventData.end_time) &&
+              existingDescription === eventData.description &&
+              existingSyncedFromGoogle === true;
+
+            if (isUnchanged) {
+              synced++;
+              continue;
+            }
+
+            // Update existing event only when fields actually changed
             const updateData: {
               title: string;
               start_time: string;
               end_time: string;
               description?: string;
+              synced_from_google?: boolean;
             } = {
               title: eventData.title,
               start_time: eventData.start_time,
@@ -307,6 +398,9 @@ export class GoogleCalendarService {
             };
             if (eventData.description !== undefined) {
               updateData.description = eventData.description;
+            }
+            if (!existingSyncedFromGoogle) {
+              updateData.synced_from_google = true;
             }
             await this.calendarEventService.updateCalendarEvent(
               existingEvent.id,
@@ -341,7 +435,6 @@ export class GoogleCalendarService {
 
       return { success: true, synced, errors };
     } catch (error) {
-      console.error('[GoogleCalendarService] Sync error:', error);
       return {
         success: false,
         synced: 0,
