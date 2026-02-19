@@ -137,6 +137,7 @@ describe('transforms', () => {
 
       expect(event.start_time).toBeInstanceOf(Date);
       expect('linked_task_id' in event).toBe(false);
+      expect(isCalendarEventTask(event)).toBe(false);
     });
   });
 

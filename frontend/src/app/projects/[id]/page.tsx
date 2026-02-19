@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { use, useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
@@ -14,16 +14,14 @@ import { ProjectTasksSection } from '@/components/Projects/ProjectTasksSection';
 import { Project, Task } from '../../../../../shared/types';
 
 interface ProjectDetailPageProps {
-  params: {
-    id: string;
-  };
+  params: Promise<{ id: string }>;
 }
 
 export default function ProjectDetailPage({ params }: ProjectDetailPageProps) {
   const router = useRouter();
   const urlParams = useParams();
-  // Use params from props if available, otherwise fall back to useParams hook
-  const projectId = params?.id || (urlParams?.id as string);
+  const resolvedParams = use(params);
+  const projectId = resolvedParams?.id || (urlParams?.id as string);
 
   const [project, setProject] = useState<Project | null>(null);
   const [tasks, setTasks] = useState<Task[]>([]);

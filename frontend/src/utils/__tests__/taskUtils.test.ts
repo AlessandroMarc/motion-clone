@@ -16,6 +16,7 @@ describe('taskUtils', () => {
     status: 'not-started',
     priority: 'medium',
     due_date: null,
+    project_id: null,
     user_id: 'user-1',
     created_at: new Date(),
     updated_at: new Date(),

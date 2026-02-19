@@ -38,12 +38,7 @@ export function useProjectForm(
   const { user } = useAuth();
   const { advanceToNextStep } = useOnboarding();
 
-  const {
-    register,
-    handleSubmit,
-    formState: { errors },
-    reset,
-  } = useForm<ProjectFormData>({
+  const methods = useForm<ProjectFormData>({
     resolver: zodResolver(projectSchema),
     defaultValues: {
       name: '',
@@ -51,6 +46,13 @@ export function useProjectForm(
       deadline: '',
     },
   });
+
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+    reset,
+  } = methods;
 
   const onSubmit = async (data: ProjectFormData) => {
     try {
@@ -103,6 +105,7 @@ export function useProjectForm(
   };
 
   return {
+    methods,
     register,
     handleSubmit,
     errors,

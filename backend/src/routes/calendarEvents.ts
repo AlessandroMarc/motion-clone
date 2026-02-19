@@ -70,8 +70,11 @@ router.get('/', async (req: AuthRequest, res: Response) => {
 router.get('/:id', async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
-    if (!id) {
-      return ResponseHelper.badRequest(res, 'Calendar event ID is required');
+    if (!id || typeof id !== 'string') {
+      return ResponseHelper.badRequest(
+        res,
+        'Calendar event ID is required and must be a string'
+      );
     }
     const event = await calendarEventService.getCalendarEventById(
       id,
@@ -100,6 +103,12 @@ router.post('/', async (req: AuthRequest, res: Response) => {
     // Check if this is a batch request
     if (Array.isArray(req.body)) {
       const inputs: CreateCalendarEventInput[] = req.body;
+
+      // Ensure all events belong to the authenticated user to satisfy RLS
+      inputs.forEach(input => {
+        input.user_id = authReq.userId;
+      });
+
       const results = await calendarEventService.createCalendarEventsBatch(
         inputs,
         req.authToken
@@ -146,8 +155,11 @@ router.post('/', async (req: AuthRequest, res: Response) => {
 router.put('/:id', async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
-    if (!id) {
-      return ResponseHelper.badRequest(res, 'Calendar event ID is required');
+    if (!id || typeof id !== 'string') {
+      return ResponseHelper.badRequest(
+        res,
+        'Calendar event ID is required and must be a string'
+      );
     }
     const input: UpdateCalendarEventInput = req.body;
     const event = await calendarEventService.updateCalendarEvent(
@@ -211,8 +223,11 @@ router.delete('/batch', async (req: AuthRequest, res: Response) => {
 router.delete('/:id', async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
-    if (!id) {
-      return ResponseHelper.badRequest(res, 'Calendar event ID is required');
+    if (!id || typeof id !== 'string') {
+      return ResponseHelper.badRequest(
+        res,
+        'Calendar event ID is required and must be a string'
+      );
     }
     await calendarEventService.deleteCalendarEvent(id, req.authToken);
     ResponseHelper.deleted(res, 'Calendar event deleted successfully');

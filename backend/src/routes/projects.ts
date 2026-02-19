@@ -47,8 +47,11 @@ router.get('/', async (req: AuthRequest, res: Response) => {
 router.get('/:id', async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
-    if (!id) {
-      return ResponseHelper.badRequest(res, 'Project ID is required');
+    if (!id || typeof id !== 'string') {
+      return ResponseHelper.badRequest(
+        res,
+        'Project ID is required and must be a string'
+      );
     }
     const project = await projectService.getProjectById(id, req.supabaseClient);
 
@@ -89,8 +92,11 @@ router.post('/', async (req: AuthRequest, res: Response) => {
 router.put('/:id', async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
-    if (!id) {
-      return ResponseHelper.badRequest(res, 'Project ID is required');
+    if (!id || typeof id !== 'string') {
+      return ResponseHelper.badRequest(
+        res,
+        'Project ID is required and must be a string'
+      );
     }
     const input: UpdateProjectInput = req.body;
     const project = await projectService.updateProject(
@@ -111,8 +117,8 @@ router.put('/:id', async (req: AuthRequest, res: Response) => {
 router.delete('/:id', async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
-    if (!id) {
-      return ResponseHelper.badRequest(res, 'Project ID is required');
+    if (!id || typeof id !== 'string') {
+      return ResponseHelper.badRequest(res, 'Project ID is required and must be a string');
     }
     await projectService.deleteProject(id, req.supabaseClient);
     ResponseHelper.deleted(res, 'Project deleted successfully');

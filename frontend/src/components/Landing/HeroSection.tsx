@@ -118,20 +118,32 @@ export function HeroSection({ content, user }: HeroSectionProps) {
             <div className="flex flex-col items-center gap-4 animate-in fade-in zoom-in duration-500">
               <div className="flex items-center gap-2 text-primary font-semibold text-xl">
                 <CheckCircle2 className="w-6 h-6" />
-                You're on the list!
+                You&apos;re on the list!
               </div>
-              <p className="text-muted-foreground">
-                We'll notify you when we launch new features.
+              <p className="text-muted-foreground max-w-sm">
+                Join our Slack community to share feedback, report bugs, and
+                shape the product with us.
               </p>
               <Button
-                variant="outline"
                 asChild
-                className="mt-4 rounded-full border-primary/20 hover:bg-primary/5"
+                size="lg"
+                className="mt-4 h-16 px-12 text-lg font-semibold rounded-full shadow-lg shadow-primary/25 hover:shadow-xl hover:shadow-primary/30 transition-all gap-3"
               >
-                <Link href="/calendar">
-                  Go to App
-                  <ArrowRight className="w-4 h-4 ml-2" />
-                </Link>
+                <a
+                  href="https://join.slack.com/share/enQtMTA0OTMyMTIyMTgwMzctNmUxZjhlYzA0N2ZiZmRiZDVjMDNjMWE4ZjQ3MTkzNzBmZjg5YTkzYzY2ZDA3MmVjMTZhYWVmYzM5MzBhN2YzNw"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <svg
+                    role="img"
+                    viewBox="0 0 24 24"
+                    fill="currentColor"
+                    className="w-5 h-5"
+                  >
+                    <path d="M5.042 15.165a2.528 2.528 0 0 1-2.52 2.523A2.528 2.528 0 0 1 0 15.165a2.527 2.527 0 0 1 2.522-2.52h2.52v2.52zm1.271 0a2.527 2.527 0 0 1 2.521-2.52 2.527 2.527 0 0 1 2.521 2.52v6.313A2.528 2.528 0 0 1 8.834 24a2.528 2.528 0 0 1-2.521-2.522v-6.313zM8.834 5.042a2.528 2.528 0 0 1-2.521-2.52A2.528 2.528 0 0 1 8.834 0a2.528 2.528 0 0 1 2.521 2.522v2.52H8.834zm0 1.271a2.528 2.528 0 0 1 2.521 2.521 2.528 2.528 0 0 1-2.521 2.521H2.522A2.528 2.528 0 0 1 0 8.834a2.528 2.528 0 0 1 2.522-2.521h6.312zm10.124 2.521a2.528 2.528 0 0 1 2.522-2.521A2.528 2.528 0 0 1 24 8.834a2.528 2.528 0 0 1-2.52 2.521h-2.522V8.834zm-1.268 0a2.528 2.528 0 0 1-2.523 2.521 2.527 2.527 0 0 1-2.52-2.521V2.522A2.527 2.527 0 0 1 15.165 0a2.528 2.528 0 0 1 2.523 2.522v6.312zm-2.523 10.124a2.528 2.528 0 0 1 2.523 2.522A2.528 2.528 0 0 1 15.165 24a2.527 2.527 0 0 1-2.52-2.523v-2.52h2.52zm0-1.268a2.527 2.527 0 0 1-2.52-2.523 2.526 2.526 0 0 1 2.52-2.52h6.313A2.527 2.527 0 0 1 24 15.165a2.528 2.528 0 0 1-2.522 2.523h-6.313z" />
+                  </svg>
+                  Join Beta Testers on Slack
+                </a>
               </Button>
               <Button
                 variant="link"
@@ -179,16 +191,6 @@ export function HeroSection({ content, user }: HeroSectionProps) {
                 <span className="hidden sm:block text-muted-foreground/30">
                   |
                 </span>
-                <Button
-                  variant="link"
-                  asChild
-                  className="text-primary font-medium h-auto p-0"
-                >
-                  <Link href="/calendar">
-                    Go to App
-                    <ArrowRight className="w-4 h-4 ml-1" />
-                  </Link>
-                </Button>
               </div>
             </div>
           )}
