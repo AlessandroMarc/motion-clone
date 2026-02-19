@@ -115,7 +115,7 @@ interface Schedule {
   updated_at: Date;
 }
 
-type OnboardingStep = 'task_created' | 'project_created' | 'scheduled' | null;
+type OnboardingStep = 'task_created' | 'project_created' | 'scheduled' | 'calendar_synced' | null;
 
 interface OnboardingStatus {
   completed: boolean;

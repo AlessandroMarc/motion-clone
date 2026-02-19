@@ -7,6 +7,7 @@ import type {
   GoogleCalendarStatus,
   SyncResult,
 } from '@/services/googleCalendarService';
+import { useOnboarding } from '@/hooks/useOnboarding';
 import {
   Card,
   CardContent,
@@ -31,6 +32,7 @@ import { toast } from 'sonner';
 
 export function GoogleCalendarSettings() {
   const { user } = useAuth();
+  const { advanceToNextStep, status: onboardingStatus } = useOnboarding();
   const [status, setStatus] = useState<GoogleCalendarStatus | null>(null);
   const [loading, setLoading] = useState(true);
   const [syncing, setSyncing] = useState(false);
@@ -70,6 +72,10 @@ export function GoogleCalendarSettings() {
 
     if (connected === 'true') {
       toast.success('Google Calendar connected successfully!');
+      // Advance onboarding if on the calendar sync step
+      if (onboardingStatus && !onboardingStatus.completed && onboardingStatus.step === 'scheduled') {
+        advanceToNextStep('calendar_sync');
+      }
       // Clean URL
       window.history.replaceState({}, '', window.location.pathname);
     } else if (error) {
@@ -166,7 +172,7 @@ export function GoogleCalendarSettings() {
     : null;
 
   return (
-    <Card className="p-4 gap-4">
+    <Card className="p-4 gap-4" data-onboarding-step="sync-calendar">
       <CardHeader className="px-0">
         <CardTitle>Google Calendar Integration</CardTitle>
         <CardDescription>
