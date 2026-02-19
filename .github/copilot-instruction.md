@@ -1,0 +1,1 @@
+When working on a Pull Request, always check for feedback from CodeRabbit or other AI reviewers in the thread and ensure your suggestions align with or resolve their flags.
