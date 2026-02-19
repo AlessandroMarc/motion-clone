@@ -85,7 +85,7 @@ router.post('/schedules', async (req: Request, res: Response, _next: NextFunctio
 router.put('/schedules/:id', async (req: Request, res: Response, _next: NextFunction) => {
   const authReq = req as unknown as AuthRequest;
   try {
-    const { id } = authReq.params;
+    const id = Array.isArray(authReq.params.id) ? authReq.params.id[0] : authReq.params.id;
     const input: UpdateScheduleInput = authReq.body;
 
     if (!id) {
