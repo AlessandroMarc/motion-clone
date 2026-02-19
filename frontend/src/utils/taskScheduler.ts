@@ -51,7 +51,9 @@ export interface ScheduledEvent {
 }
 
 /**
- * Calculate remaining planned minutes after accounting for existing task events.
+ * Calculate remaining planned minutes after accounting for work already done.
+ * Subtracts both `task.actual_duration_minutes` and the total duration of
+ * existing calendar events linked to this task from the planned duration.
  * If planned_duration_minutes is 0 or unset, we return one block's worth so the
  * task still gets scheduled during auto-schedule.
  */
@@ -61,15 +63,18 @@ export function calculateRemainingDurationMinutes(
   config: TaskSchedulingConfig
 ): number {
   const planned = task.planned_duration_minutes ?? 0;
+  const actual = task.actual_duration_minutes ?? 0;
 
-  const existingDuration = existingEvents.reduce((total, event) => {
-    const start = new Date(event.start_time);
-    const end = new Date(event.end_time);
-    const duration = (end.getTime() - start.getTime()) / (1000 * 60); // minutes
-    return total + duration;
+  const existingEventsDuration = existingEvents.reduce((total, event) => {
+    const start = new Date(event.start_time).getTime();
+    const end = new Date(event.end_time).getTime();
+    return total + Math.max(0, (end - start) / (1000 * 60));
   }, 0);
 
-  const remainingDuration = Math.max(0, planned - existingDuration);
+  const remainingDuration = Math.max(
+    0,
+    planned - actual - existingEventsDuration
+  );
 
   // Tasks with 0 planned (or already covered) get a single block so they still appear
   return remainingDuration === 0 && planned === 0
@@ -335,32 +340,108 @@ export function distributeEvents(
 }
 
 /**
- * Sort tasks for scheduling: by due_date (nulls last), then by priority
+ * Compare two tasks by due_date (nulls last), then by priority (high first).
+ */
+function compareByDateAndPriority(a: Task, b: Task): number {
+  if (a.due_date && !b.due_date) return -1;
+  if (!a.due_date && b.due_date) return 1;
+  if (a.due_date && b.due_date) {
+    const dateDiff = a.due_date.getTime() - b.due_date.getTime();
+    if (dateDiff !== 0) return dateDiff;
+  }
+
+  return (
+    (TASK_PRIORITY_RANK[b.priority] ?? 0) -
+    (TASK_PRIORITY_RANK[a.priority] ?? 0)
+  );
+}
+
+/**
+ * Topological sort that respects blockedBy dependencies.
+ *
+ * Uses Kahn's algorithm: tasks whose blockers have all been placed are
+ * emitted first. Within each "wave" of unblocked tasks, the existing
+ * date/priority comparator decides the order.
+ *
+ * Handles cycles / missing refs gracefully — any tasks that can't be
+ * resolved are appended at the end sorted by date/priority.
+ */
+function topologicalSort(tasks: Task[]): Task[] {
+  const taskMap = new Map<string, Task>();
+  for (const task of tasks) {
+    taskMap.set(task.id, task);
+  }
+
+  // Build in-degree map (only count blockers that are in the current set)
+  const inDegree = new Map<string, number>();
+  // Map from blocker id → tasks it unblocks
+  const dependents = new Map<string, string[]>();
+
+  for (const task of tasks) {
+    const blockers = (task.blockedBy ?? []).filter(id => taskMap.has(id));
+    inDegree.set(task.id, blockers.length);
+    for (const blockerId of blockers) {
+      const list = dependents.get(blockerId) ?? [];
+      list.push(task.id);
+      dependents.set(blockerId, list);
+    }
+  }
+
+  // Seed the queue with tasks that have no blockers in the set
+  const queue: Task[] = tasks
+    .filter(t => (inDegree.get(t.id) ?? 0) === 0)
+    .sort(compareByDateAndPriority);
+
+  const result: Task[] = [];
+  const placed = new Set<string>();
+
+  while (queue.length > 0) {
+    const task = queue.shift()!;
+    if (placed.has(task.id)) continue;
+
+    result.push(task);
+    placed.add(task.id);
+
+    // Collect all newly unblocked tasks, then sort the batch
+    const newlyReady: Task[] = [];
+    for (const depId of dependents.get(task.id) ?? []) {
+      const newDeg = (inDegree.get(depId) ?? 1) - 1;
+      inDegree.set(depId, newDeg);
+      if (newDeg === 0 && !placed.has(depId)) {
+        const depTask = taskMap.get(depId);
+        if (depTask) newlyReady.push(depTask);
+      }
+    }
+
+    if (newlyReady.length > 0) {
+      newlyReady.sort(compareByDateAndPriority);
+      // Merge into queue maintaining sort order
+      queue.push(...newlyReady);
+      queue.sort(compareByDateAndPriority);
+    }
+  }
+
+  // Append any remaining tasks (cycles or orphaned refs) sorted normally
+  if (placed.size < tasks.length) {
+    const remaining = tasks
+      .filter(t => !placed.has(t.id))
+      .sort(compareByDateAndPriority);
+    result.push(...remaining);
+  }
+
+  return result;
+}
+
+/**
+ * Sort tasks for scheduling: respects blockedBy dependencies first,
+ * then by due_date (nulls last), then by priority.
  */
 export function sortTasksForScheduling(
   tasks: Task[],
   config: TaskSchedulingConfig = DEFAULT_CONFIG
 ): Task[] {
-  const sortStrategy = config.sortStrategy || defaultSortStrategy;
+  const sortStrategy = config.sortStrategy || topologicalSort;
   return sortStrategy([...tasks]);
-}
-
-function defaultSortStrategy(tasks: Task[]): Task[] {
-  return tasks.sort((a, b) => {
-    // First, sort by due_date (nulls last)
-    if (a.due_date && !b.due_date) return -1;
-    if (!a.due_date && b.due_date) return 1;
-    if (a.due_date && b.due_date) {
-      const dateDiff = a.due_date.getTime() - b.due_date.getTime();
-      if (dateDiff !== 0) return dateDiff;
-    }
-
-    // Then by priority (high -> medium -> low)
-    return (
-      (TASK_PRIORITY_RANK[b.priority] ?? 0) -
-      (TASK_PRIORITY_RANK[a.priority] ?? 0)
-    );
-  });
 }
 
 /**

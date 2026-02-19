@@ -48,8 +48,11 @@ router.get('/:id', async (req: Request, res: Response, _next: NextFunction) => {
   const authReq = req as unknown as AuthRequest;
   try {
     const { id } = authReq.params;
-    if (!id) {
-      return ResponseHelper.badRequest(res, 'Task ID is required');
+    if (!id || typeof id !== 'string') {
+      return ResponseHelper.badRequest(
+        res,
+        'Task ID is required and must be a string'
+      );
     }
     const task = await taskService.getTaskById(id, authReq.supabaseClient);
 
@@ -76,6 +79,7 @@ router.post('/', async (req: Request, res: Response, _next: NextFunction) => {
     }
     const input: CreateTaskInput = {
       ...authReq.body,
+      blockedBy: authReq.body.blocked_by,
       user_id: userId, // Override with authenticated user ID
     };
     const task = await taskService.createTask(input, supabaseClient);
@@ -93,10 +97,16 @@ router.put('/:id', async (req: Request, res: Response, _next: NextFunction) => {
   const authReq = req as unknown as AuthRequest;
   try {
     const { id } = authReq.params;
-    if (!id) {
-      return ResponseHelper.badRequest(res, 'Task ID is required');
+    if (!id || typeof id !== 'string') {
+      return ResponseHelper.badRequest(
+        res,
+        'Task ID is required and must be a string'
+      );
     }
-    const input: UpdateTaskInput = authReq.body;
+    const input: UpdateTaskInput = {
+      ...authReq.body,
+      blockedBy: authReq.body.blocked_by,
+    };
     const task = await taskService.updateTask(
       id,
       input,
@@ -116,8 +126,11 @@ router.delete('/:id', async (req: Request, res: Response, _next: NextFunction) =
   const authReq = req as unknown as AuthRequest;
   try {
     const { id } = authReq.params;
-    if (!id) {
-      return ResponseHelper.badRequest(res, 'Task ID is required');
+    if (!id || typeof id !== 'string') {
+      return ResponseHelper.badRequest(
+        res,
+        'Task ID is required and must be a string'
+      );
     }
     await taskService.deleteTask(id, authReq.supabaseClient);
     ResponseHelper.deleted(res, 'Task deleted successfully');

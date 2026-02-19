@@ -1,6 +1,12 @@
 'use client';
 
-import { ChevronLeft, ChevronRight, Sparkles, Circle } from 'lucide-react';
+import {
+  ChevronLeft,
+  ChevronRight,
+  Sparkles,
+  Circle,
+  Loader2,
+} from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   getWeekRangeString,
@@ -15,6 +21,7 @@ interface CalendarHeaderProps {
   onNextWeek: () => void;
   onCurrentWeek: () => void;
   onAutoSchedule?: () => void;
+  isAutoScheduleRefreshing?: boolean;
   onZenMode?: () => void;
   // Mobile-specific props
   currentDay?: Date;
@@ -28,6 +35,7 @@ export function CalendarHeader({
   onNextWeek,
   onCurrentWeek,
   onAutoSchedule,
+  isAutoScheduleRefreshing,
   onZenMode,
   currentDay,
   onPreviousDay,
@@ -62,10 +70,15 @@ export function CalendarHeader({
                 variant="default"
                 size="sm"
                 onClick={onAutoSchedule}
+                disabled={isAutoScheduleRefreshing}
                 className="text-xs h-8 px-3 gap-1.5"
                 data-onboarding-step="schedule"
               >
-                <Sparkles className="h-3 w-3" />
+                {isAutoScheduleRefreshing ? (
+                  <Loader2 className="h-3 w-3 animate-spin" />
+                ) : (
+                  <Sparkles className="h-3 w-3" />
+                )}
                 Auto
               </Button>
             )}
@@ -129,10 +142,15 @@ export function CalendarHeader({
           <Button
             size="sm"
             onClick={onAutoSchedule}
+            disabled={isAutoScheduleRefreshing}
             className="text-xs h-7 px-2.5 gap-1.5"
             data-onboarding-step="schedule"
           >
-            <Sparkles className="h-3 w-3" />
+            {isAutoScheduleRefreshing ? (
+              <Loader2 className="h-3 w-3 animate-spin" />
+            ) : (
+              <Sparkles className="h-3 w-3" />
+            )}
             Auto-Schedule
           </Button>
         )}

@@ -129,7 +129,7 @@ export function WeekCalendarContainer({
       draggingEventId
     );
 
-  const { tasksMap, handleAutoScheduleClick } = useAutoSchedule(
+  const { tasksMap, handleAutoScheduleClick, isRefreshing } = useAutoSchedule(
     user,
     events,
     refreshEvents,
@@ -228,6 +228,7 @@ export function WeekCalendarContainer({
           tasksMap={tasksMap}
           onToday={navigation.goCurrentWeek}
           onAutoSchedule={handleAutoScheduleClick}
+          isAutoScheduleRefreshing={isRefreshing}
           onZenMode={onZenMode}
         />
         <CalendarCreateDialog
@@ -303,6 +304,9 @@ export function WeekCalendarContainer({
       onZenMode={onZenMode}
       dialogs={dialogs}
       handleAutoScheduleClick={handleAutoScheduleClick}
+      isAutoScheduleRefreshing={isRefreshing}
+      workingHoursStart={activeSchedule?.working_hours_start}
+      workingHoursEnd={activeSchedule?.working_hours_end}
     />
   );
 }

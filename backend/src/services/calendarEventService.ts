@@ -958,6 +958,13 @@ export class CalendarEventService {
 
     console.log('[CalendarEventService] Fetched calendar events:', {
       count: data?.length || 0,
+      events: data?.map((e: CalendarEventUnion) => ({
+        id: e.id,
+        title: e.title,
+        linked_task_id: e.linked_task_id,
+        start_time: e.start_time,
+        user_id: e.user_id,
+      })),
     });
 
     return data || [];

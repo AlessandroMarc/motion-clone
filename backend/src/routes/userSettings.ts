@@ -85,7 +85,7 @@ router.post('/schedules', async (req: Request, res: Response, _next: NextFunctio
 router.put('/schedules/:id', async (req: Request, res: Response, _next: NextFunction) => {
   const authReq = req as unknown as AuthRequest;
   try {
-    const id = Array.isArray(authReq.params.id) ? authReq.params.id[0] : authReq.params.id;
+    const { id } = authReq.params;
     const input: UpdateScheduleInput = authReq.body;
 
     if (!id) {
@@ -99,6 +99,30 @@ router.put('/schedules/:id', async (req: Request, res: Response, _next: NextFunc
       authReq.supabaseClient
     );
     ResponseHelper.success(res, schedule, 'Schedule updated successfully');
+  } catch (error) {
+    ResponseHelper.badRequest(
+      res,
+      error instanceof Error ? error.message : 'Bad request'
+    );
+  }
+});
+
+// DELETE /api/user-settings/schedules/:id - Delete a schedule
+router.delete('/schedules/:id', async (req: Request, res: Response, _next: NextFunction) => {
+  const authReq = req as unknown as AuthRequest;
+  try {
+    const { id } = authReq.params;
+
+    if (!id) {
+      return ResponseHelper.badRequest(res, 'Schedule ID is required');
+    }
+
+    await userSettingsService.deleteSchedule(
+      id,
+      authReq.userId,
+      authReq.supabaseClient
+    );
+    ResponseHelper.deleted(res, 'Schedule deleted successfully');
   } catch (error) {
     ResponseHelper.badRequest(
       res,
@@ -201,12 +225,11 @@ router.put('/onboarding/step', async (req: Request, res: Response, _next: NextFu
       step !== null &&
       step !== 'task_created' &&
       step !== 'project_created' &&
-      step !== 'scheduled' &&
-      step !== 'calendar_synced'
+      step !== 'scheduled'
     ) {
       return ResponseHelper.badRequest(
         res,
-        'Invalid onboarding step. Must be: task_created, project_created, scheduled, calendar_synced, or null'
+        'Invalid onboarding step. Must be: task_created, project_created, scheduled, or null'
       );
     }
 

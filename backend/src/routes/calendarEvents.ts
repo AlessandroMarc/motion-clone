@@ -72,8 +72,11 @@ router.get('/:id', async (req: Request, res: Response, _next: NextFunction) => {
   const authReq = req as unknown as AuthRequest;
   try {
     const { id } = req.params;
-    if (!id) {
-      return ResponseHelper.badRequest(res, 'Calendar event ID is required');
+    if (!id || typeof id !== 'string') {
+      return ResponseHelper.badRequest(
+        res,
+        'Calendar event ID is required and must be a string'
+      );
     }
     const event = await calendarEventService.getCalendarEventById(
       id,
@@ -103,6 +106,12 @@ router.post('/', async (req: Request, res: Response, _next: NextFunction) => {
     // Check if this is a batch request
     if (Array.isArray(req.body)) {
       const inputs: CreateCalendarEventInput[] = req.body;
+
+      // Ensure all events belong to the authenticated user to satisfy RLS
+      inputs.forEach(input => {
+        input.user_id = authReq.userId;
+      });
+
       const results = await calendarEventService.createCalendarEventsBatch(
         inputs,
         authReq.supabaseClient
@@ -150,8 +159,11 @@ router.put('/:id', async (req: Request, res: Response, _next: NextFunction) => {
   const authReq = req as unknown as AuthRequest;
   try {
     const { id } = req.params;
-    if (!id) {
-      return ResponseHelper.badRequest(res, 'Calendar event ID is required');
+    if (!id || typeof id !== 'string') {
+      return ResponseHelper.badRequest(
+        res,
+        'Calendar event ID is required and must be a string'
+      );
     }
     const input: UpdateCalendarEventInput = req.body;
     const event = await calendarEventService.updateCalendarEvent(
@@ -217,8 +229,11 @@ router.delete('/:id', async (req: Request, res: Response, _next: NextFunction) =
   const authReq = req as unknown as AuthRequest;
   try {
     const { id } = req.params;
-    if (!id) {
-      return ResponseHelper.badRequest(res, 'Calendar event ID is required');
+    if (!id || typeof id !== 'string') {
+      return ResponseHelper.badRequest(
+        res,
+        'Calendar event ID is required and must be a string'
+      );
     }
     await calendarEventService.deleteCalendarEvent(id, authReq.supabaseClient);
     ResponseHelper.deleted(res, 'Calendar event deleted successfully');

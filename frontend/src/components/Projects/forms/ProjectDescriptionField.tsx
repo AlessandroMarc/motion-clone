@@ -1,10 +1,9 @@
+import { useFormContext } from 'react-hook-form';
 import { FormTextarea } from '@/components/forms/shared';
-import type { UseFormRegister, FieldErrors } from 'react-hook-form';
+import type { FieldErrors } from 'react-hook-form';
 import type { ProjectFormData } from '@/hooks/useProjectForm';
 
 interface ProjectDescriptionFieldProps {
-  register: UseFormRegister<ProjectFormData>;
-  errors: FieldErrors<ProjectFormData>;
   id?: string;
   className?: string;
   placeholder?: string;
@@ -12,16 +11,17 @@ interface ProjectDescriptionFieldProps {
 }
 
 export function ProjectDescriptionField({
-  register,
-  errors,
   id = 'description',
   className = '',
   placeholder = 'Enter project description (optional)...',
   rows = 3,
 }: ProjectDescriptionFieldProps) {
+  const { register, formState: { errors } = { errors: {} } } =
+    useFormContext<ProjectFormData>() || {};
+
   return (
     <FormTextarea
-      register={register('description')}
+      register={register ? register('description') : ({} as any)}
       errors={errors as unknown as FieldErrors<Record<string, unknown>>}
       name="description"
       label="Description"

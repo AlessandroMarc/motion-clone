@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { FormProvider } from 'react-hook-form';
 import {
   Card,
   CardContent,
@@ -23,14 +24,8 @@ export function ProjectCreateCardForm({
 }: ProjectCreateFormProps) {
   const [isExpanded, setIsExpanded] = useState(false);
 
-  const {
-    register,
-    handleSubmit,
-    errors,
-    isSubmitting,
-    onSubmit,
-    handleCancel,
-  } = useProjectForm(onProjectCreate);
+  const { methods, handleSubmit, isSubmitting, onSubmit, handleCancel } =
+    useProjectForm(onProjectCreate);
 
   const handleFormSubmit = async (data: ProjectFormData) => {
     await onSubmit(data);
@@ -68,32 +63,23 @@ export function ProjectCreateCardForm({
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-4">
-          <div className="space-y-4">
-            <ProjectNameField
-              register={register}
-              errors={errors}
-              id="quick-name"
-              placeholder="Enter project name..."
-            />
-            <ProjectDescriptionField
-              register={register}
-              errors={errors}
-              id="quick-description"
-              rows={2}
-            />
-            <ProjectDeadlineField
-              register={register}
-              errors={errors}
-              id="quick-deadline"
-            />
-          </div>
+        <FormProvider {...methods}>
+          <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-4">
+            <div className="space-y-4">
+              <ProjectNameField
+                id="quick-name"
+                placeholder="Enter project name..."
+              />
+              <ProjectDescriptionField id="quick-description" rows={2} />
+              <ProjectDeadlineField id="quick-deadline" />
+            </div>
 
-          <ProjectFormActions
-            isSubmitting={isSubmitting}
-            onCancel={handleFormCancel}
-          />
-        </form>
+            <ProjectFormActions
+              isSubmitting={isSubmitting}
+              onCancel={handleFormCancel}
+            />
+          </form>
+        </FormProvider>
       </CardContent>
     </Card>
   );

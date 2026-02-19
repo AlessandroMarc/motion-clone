@@ -21,6 +21,7 @@ export class MilestoneService {
           due_date: input.due_date?.toISOString(),
           status: input.status || 'not-started',
           project_id: input.project_id,
+          user_id: input.user_id,
         },
       ])
       .select()

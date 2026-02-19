@@ -58,8 +58,11 @@ router.get('/:id', async (req: Request, res: Response, _next: NextFunction) => {
   const authReq = req as unknown as AuthRequest;
   try {
     const { id } = authReq.params;
-    if (!id) {
-      return ResponseHelper.badRequest(res, 'Milestone ID is required');
+    if (!id || typeof id !== 'string') {
+      return ResponseHelper.badRequest(
+        res,
+        'Milestone ID is required and must be a string'
+      );
     }
     const milestone = await milestoneService.getMilestoneById(
       id,
@@ -105,8 +108,11 @@ router.put('/:id', async (req: Request, res: Response, _next: NextFunction) => {
   const authReq = req as unknown as AuthRequest;
   try {
     const { id } = authReq.params;
-    if (!id) {
-      return ResponseHelper.badRequest(res, 'Milestone ID is required');
+    if (!id || typeof id !== 'string') {
+      return ResponseHelper.badRequest(
+        res,
+        'Milestone ID is required and must be a string'
+      );
     }
     const input: UpdateMilestoneInput = authReq.body;
     const milestone = await milestoneService.updateMilestone(
@@ -128,8 +134,11 @@ router.delete('/:id', async (req: Request, res: Response, _next: NextFunction) =
   const authReq = req as unknown as AuthRequest;
   try {
     const { id } = authReq.params;
-    if (!id) {
-      return ResponseHelper.badRequest(res, 'Milestone ID is required');
+    if (!id || typeof id !== 'string') {
+      return ResponseHelper.badRequest(
+        res,
+        'Milestone ID is required and must be a string'
+      );
     }
     await milestoneService.deleteMilestone(id, authReq.supabaseClient);
     ResponseHelper.deleted(res, 'Milestone deleted successfully');
