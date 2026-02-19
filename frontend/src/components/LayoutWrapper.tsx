@@ -10,8 +10,8 @@ interface LayoutWrapperProps {
 export function LayoutWrapper({ children }: LayoutWrapperProps) {
   const pathname = usePathname();
 
-  // Hide sidebar on landing page
-  const isLandingPage = pathname === '/';
+  // Hide sidebar on landing and changelog pages
+  const isLandingPage = pathname === '/' || pathname === '/changelog';
 
   if (isLandingPage) {
     return <main className="flex-1 overflow-auto">{children}</main>;
