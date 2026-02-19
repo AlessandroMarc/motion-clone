@@ -1,4 +1,4 @@
-import express, { type Response } from 'express';
+import express, { type Request, type Response } from 'express';
 import { TaskService } from '../services/taskService.js';
 import type { CreateTaskInput, UpdateTaskInput } from '../types/database.js';
 import { ResponseHelper } from '../utils/responseHelpers.js';
@@ -11,10 +11,11 @@ const taskService = new TaskService();
 router.use(authMiddleware);
 
 // GET /api/tasks - Get all tasks
-router.get('/', async (req: AuthRequest, res: Response) => {
+router.get('/', async (req: Request, res: Response) => {
+  const authReq = req as AuthRequest;
   try {
     const { project_id, status } = req.query;
-    const client = req.supabaseClient;
+    const client = authReq.supabaseClient;
 
     let tasks;
     if (project_id && typeof project_id === 'string') {
@@ -43,13 +44,14 @@ router.get('/', async (req: AuthRequest, res: Response) => {
 });
 
 // GET /api/tasks/:id - Get task by ID
-router.get('/:id', async (req: AuthRequest, res: Response) => {
+router.get('/:id', async (req: Request, res: Response) => {
+  const authReq = req as AuthRequest;
   try {
     const { id } = req.params;
-    if (!id) {
+    if (!id || typeof id !== 'string') {
       return ResponseHelper.badRequest(res, 'Task ID is required');
     }
-    const task = await taskService.getTaskById(id, req.supabaseClient);
+    const task = await taskService.getTaskById(id, authReq.supabaseClient);
 
     if (!task) {
       return ResponseHelper.notFound(res, 'Task');
@@ -65,9 +67,10 @@ router.get('/:id', async (req: AuthRequest, res: Response) => {
 });
 
 // POST /api/tasks - Create new task
-router.post('/', async (req: AuthRequest, res: Response) => {
+router.post('/', async (req: Request, res: Response) => {
+  const authReq = req as AuthRequest;
   try {
-    const { userId, supabaseClient } = req;
+    const { userId, supabaseClient } = authReq;
     if (!userId) {
       return ResponseHelper.badRequest(res, 'User ID not found in token');
     }
@@ -86,14 +89,15 @@ router.post('/', async (req: AuthRequest, res: Response) => {
 });
 
 // PUT /api/tasks/:id - Update task
-router.put('/:id', async (req: AuthRequest, res: Response) => {
+router.put('/:id', async (req: Request, res: Response) => {
+  const authReq = req as AuthRequest;
   try {
     const { id } = req.params;
-    if (!id) {
+    if (!id || typeof id !== 'string') {
       return ResponseHelper.badRequest(res, 'Task ID is required');
     }
     const input: UpdateTaskInput = req.body;
-    const task = await taskService.updateTask(id, input, req.supabaseClient);
+    const task = await taskService.updateTask(id, input, authReq.supabaseClient);
     ResponseHelper.updated(res, task, 'Task updated successfully');
   } catch (error) {
     ResponseHelper.badRequest(
@@ -104,13 +108,14 @@ router.put('/:id', async (req: AuthRequest, res: Response) => {
 });
 
 // DELETE /api/tasks/:id - Delete task
-router.delete('/:id', async (req: AuthRequest, res: Response) => {
+router.delete('/:id', async (req: Request, res: Response) => {
+  const authReq = req as AuthRequest;
   try {
     const { id } = req.params;
-    if (!id) {
+    if (!id || typeof id !== 'string') {
       return ResponseHelper.badRequest(res, 'Task ID is required');
     }
-    await taskService.deleteTask(id, req.supabaseClient);
+    await taskService.deleteTask(id, authReq.supabaseClient);
     ResponseHelper.deleted(res, 'Task deleted successfully');
   } catch (error) {
     ResponseHelper.internalError(

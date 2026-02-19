@@ -129,7 +129,7 @@ export function useAutoSchedule(
       const allTasks = await taskService.getAllTasks();
       setTasks(allTasks);
       const map = new Map<string, Task>();
-      allTasks.forEach(task => map.set(task.id, task));
+      allTasks.forEach(task => { map.set(task.id, task); });
       setTasksMap(map);
       return allTasks;
     } catch (err) {
@@ -329,7 +329,7 @@ export function useAutoSchedule(
         const allTasks = await taskService.getAllTasks();
         setTasks(allTasks);
         const map = new Map<string, Task>();
-        allTasks.forEach(task => map.set(task.id, task));
+        allTasks.forEach(task => { map.set(task.id, task); });
         setTasksMap(map);
 
         // 2. Use override events or fetch fresh

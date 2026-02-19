@@ -1,4 +1,4 @@
-import express, { type Response } from 'express';
+import express, { type Request, type Response } from 'express';
 import { CalendarEventService } from '../services/calendarEventService.js';
 import type {
   CreateCalendarEventInput,
@@ -14,10 +14,9 @@ const calendarEventService = new CalendarEventService();
 router.use(authMiddleware);
 
 // GET /api/calendar-events - Get all calendar events
-router.get('/', async (req: AuthRequest, res: Response) => {
+router.get('/', async (req: Request, res: Response) => {
+  const authReq = req as AuthRequest;
   try {
-    console.log('[CalendarEventsRoute] GET /api/calendar-events called');
-    console.log('[CalendarEventsRoute] Query params:', req.query);
     const { start_date, end_date, task_id } = req.query;
 
     let events;
@@ -27,26 +26,19 @@ router.get('/', async (req: AuthRequest, res: Response) => {
       typeof start_date === 'string' &&
       typeof end_date === 'string'
     ) {
-      console.log('[CalendarEventsRoute] Fetching events by date range');
       events = await calendarEventService.getCalendarEventsByDateRange(
         start_date,
         end_date,
-        req.authToken
+        authReq.authToken
       );
     } else if (task_id && typeof task_id === 'string') {
-      console.log('[CalendarEventsRoute] Fetching events by task_id');
       events = await calendarEventService.getCalendarEventsByTaskId(
         task_id,
-        req.authToken
+        authReq.authToken
       );
     } else {
-      console.log('[CalendarEventsRoute] Fetching all events');
-      events = await calendarEventService.getAllCalendarEvents(req.authToken);
+      events = await calendarEventService.getAllCalendarEvents(authReq.authToken);
     }
-
-    console.log('[CalendarEventsRoute] Returning events:', {
-      count: events.length,
-    });
 
     ResponseHelper.list(
       res,
@@ -67,7 +59,8 @@ router.get('/', async (req: AuthRequest, res: Response) => {
 });
 
 // GET /api/calendar-events/:id - Get calendar event by ID
-router.get('/:id', async (req: AuthRequest, res: Response) => {
+router.get('/:id', async (req: Request, res: Response) => {
+  const authReq = req as AuthRequest;
   try {
     const { id } = req.params;
     if (!id || typeof id !== 'string') {
@@ -78,7 +71,7 @@ router.get('/:id', async (req: AuthRequest, res: Response) => {
     }
     const event = await calendarEventService.getCalendarEventById(
       id,
-      req.authToken
+      authReq.authToken
     );
 
     if (!event) {
@@ -95,11 +88,9 @@ router.get('/:id', async (req: AuthRequest, res: Response) => {
 });
 
 // POST /api/calendar-events - Create new calendar event
-router.post('/', async (req: AuthRequest, res: Response) => {
+router.post('/', async (req: Request, res: Response) => {
+  const authReq = req as AuthRequest;
   try {
-    console.log('[CalendarEventsRoute] POST /api/calendar-events called');
-    console.log('[CalendarEventsRoute] Request body:', req.body);
-
     // Check if this is a batch request
     if (Array.isArray(req.body)) {
       const inputs: CreateCalendarEventInput[] = req.body;
@@ -111,7 +102,7 @@ router.post('/', async (req: AuthRequest, res: Response) => {
 
       const results = await calendarEventService.createCalendarEventsBatch(
         inputs,
-        req.authToken
+        authReq.authToken
       );
 
       // Return results with success/failure for each event
@@ -130,10 +121,8 @@ router.post('/', async (req: AuthRequest, res: Response) => {
       const input: CreateCalendarEventInput = req.body;
       const event = await calendarEventService.createCalendarEvent(
         input,
-        undefined,
-        req.authToken
+        authReq.authToken
       );
-      console.log('[CalendarEventsRoute] Calendar event created:', event);
       ResponseHelper.created(res, event, 'Calendar event created successfully');
     }
   } catch (error) {
@@ -152,7 +141,8 @@ router.post('/', async (req: AuthRequest, res: Response) => {
 });
 
 // PUT /api/calendar-events/:id - Update calendar event
-router.put('/:id', async (req: AuthRequest, res: Response) => {
+router.put('/:id', async (req: Request, res: Response) => {
+  const authReq = req as AuthRequest;
   try {
     const { id } = req.params;
     if (!id || typeof id !== 'string') {
@@ -165,7 +155,7 @@ router.put('/:id', async (req: AuthRequest, res: Response) => {
     const event = await calendarEventService.updateCalendarEvent(
       id,
       input,
-      req.authToken
+      authReq.authToken
     );
     ResponseHelper.updated(res, event, 'Calendar event updated successfully');
   } catch (error) {
@@ -180,7 +170,8 @@ router.put('/:id', async (req: AuthRequest, res: Response) => {
 });
 
 // DELETE /api/calendar-events/batch - Batch delete calendar events
-router.delete('/batch', async (req: AuthRequest, res: Response) => {
+router.delete('/batch', async (req: Request, res: Response) => {
+  const authReq = req as AuthRequest;
   try {
     const { ids } = req.body;
 
@@ -198,7 +189,7 @@ router.delete('/batch', async (req: AuthRequest, res: Response) => {
 
     const results = await calendarEventService.deleteCalendarEventsBatch(
       ids,
-      req.authToken
+      authReq.authToken
     );
 
     ResponseHelper.success(
@@ -220,7 +211,8 @@ router.delete('/batch', async (req: AuthRequest, res: Response) => {
 });
 
 // DELETE /api/calendar-events/:id - Delete calendar event
-router.delete('/:id', async (req: AuthRequest, res: Response) => {
+router.delete('/:id', async (req: Request, res: Response) => {
+  const authReq = req as AuthRequest;
   try {
     const { id } = req.params;
     if (!id || typeof id !== 'string') {
@@ -229,7 +221,7 @@ router.delete('/:id', async (req: AuthRequest, res: Response) => {
         'Calendar event ID is required and must be a string'
       );
     }
-    await calendarEventService.deleteCalendarEvent(id, req.authToken);
+    await calendarEventService.deleteCalendarEvent(id, authReq.authToken);
     ResponseHelper.deleted(res, 'Calendar event deleted successfully');
   } catch (error) {
     ResponseHelper.internalError(
