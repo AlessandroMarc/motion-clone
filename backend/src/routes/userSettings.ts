@@ -225,11 +225,12 @@ router.put('/onboarding/step', async (req: Request, res: Response, _next: NextFu
       step !== null &&
       step !== 'task_created' &&
       step !== 'project_created' &&
-      step !== 'scheduled'
+      step !== 'scheduled' &&
+      step !== 'calendar_synced'
     ) {
       return ResponseHelper.badRequest(
         res,
-        'Invalid onboarding step. Must be: task_created, project_created, scheduled, or null'
+        'Invalid onboarding step. Must be: task_created, project_created, scheduled, calendar_synced, or null'
       );
     }
 
