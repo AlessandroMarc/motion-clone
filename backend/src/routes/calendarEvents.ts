@@ -17,8 +17,6 @@ router.use(authMiddleware);
 router.get('/', async (req: Request, res: Response) => {
   const authReq = req as AuthRequest;
   try {
-    console.log('[CalendarEventsRoute] GET /api/calendar-events called');
-    console.log('[CalendarEventsRoute] Query params:', req.query);
     const { start_date, end_date, task_id } = req.query;
 
     let events;
@@ -28,26 +26,19 @@ router.get('/', async (req: Request, res: Response) => {
       typeof start_date === 'string' &&
       typeof end_date === 'string'
     ) {
-      console.log('[CalendarEventsRoute] Fetching events by date range');
       events = await calendarEventService.getCalendarEventsByDateRange(
         start_date,
         end_date,
         authReq.authToken
       );
     } else if (task_id && typeof task_id === 'string') {
-      console.log('[CalendarEventsRoute] Fetching events by task_id');
       events = await calendarEventService.getCalendarEventsByTaskId(
         task_id,
         authReq.authToken
       );
     } else {
-      console.log('[CalendarEventsRoute] Fetching all events');
       events = await calendarEventService.getAllCalendarEvents(authReq.authToken);
     }
-
-    console.log('[CalendarEventsRoute] Returning events:', {
-      count: events.length,
-    });
 
     ResponseHelper.list(
       res,
@@ -100,9 +91,6 @@ router.get('/:id', async (req: Request, res: Response) => {
 router.post('/', async (req: Request, res: Response) => {
   const authReq = req as AuthRequest;
   try {
-    console.log('[CalendarEventsRoute] POST /api/calendar-events called');
-    console.log('[CalendarEventsRoute] Request body:', req.body);
-
     // Check if this is a batch request
     if (Array.isArray(req.body)) {
       const inputs: CreateCalendarEventInput[] = req.body;
@@ -133,10 +121,8 @@ router.post('/', async (req: Request, res: Response) => {
       const input: CreateCalendarEventInput = req.body;
       const event = await calendarEventService.createCalendarEvent(
         input,
-        undefined,
         authReq.authToken
       );
-      console.log('[CalendarEventsRoute] Calendar event created:', event);
       ResponseHelper.created(res, event, 'Calendar event created successfully');
     }
   } catch (error) {

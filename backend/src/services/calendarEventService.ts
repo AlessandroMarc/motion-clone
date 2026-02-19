@@ -407,13 +407,12 @@ export class CalendarEventService {
   // Create a new calendar event (single event)
   async createCalendarEvent(
     input: CreateCalendarEventInput,
-    excludeEventIds?: string[],
-    authToken?: string
+    authToken?: string,
+    excludeEventIds?: string[]
   ): Promise<CalendarEventUnion> {
-    console.log(
-      '[CalendarEventService] createCalendarEvent called with input:',
-      input
-    );
+    const client = authToken
+      ? getAuthenticatedSupabase(authToken)
+      : serviceRoleSupabase;
 
     // #region agent log
     try {
@@ -446,9 +445,6 @@ export class CalendarEventService {
 
     // Skip overlap check for events synced from Google (they may overlap)
     if (!input.synced_from_google) {
-      const client = authToken
-        ? getAuthenticatedSupabase(authToken)
-        : serviceRoleSupabase;
       await this.ensureNoOverlaps(
         input.user_id,
         input.start_time,
@@ -488,11 +484,6 @@ export class CalendarEventService {
       insertData.synced_from_google = input.synced_from_google;
     }
 
-    console.log('[CalendarEventService] Inserting calendar event:', insertData);
-
-    const client = authToken
-      ? getAuthenticatedSupabase(authToken)
-      : serviceRoleSupabase;
     const { data, error } = await client
       .from('calendar_events')
       .insert([insertData])
@@ -500,13 +491,6 @@ export class CalendarEventService {
       .single();
 
     if (error) {
-      console.error('[CalendarEventService] Failed to create calendar event:', {
-        error,
-        message: error.message,
-        details: error.details,
-        hint: error.hint,
-        code: error.code,
-      });
       throw new Error(`Failed to create calendar event: ${error.message}`);
     }
 
@@ -582,12 +566,9 @@ export class CalendarEventService {
     input: UpdateCalendarEventInput,
     authToken?: string
   ): Promise<CalendarEventUnion> {
-    console.log('[CalendarEventService] updateCalendarEvent called:', {
-      id,
-      input,
-      completed_at: input.completed_at,
-      completed_at_type: typeof input.completed_at,
-    });
+    const client = authToken
+      ? getAuthenticatedSupabase(authToken)
+      : serviceRoleSupabase;
     const existing = await this.getCalendarEventById(id, authToken);
     if (!existing) {
       throw new Error('Calendar event not found');
@@ -604,9 +585,6 @@ export class CalendarEventService {
     const willBeSyncedFromGoogle = input.synced_from_google ?? false;
 
     if (!isSyncedFromGoogle && !willBeSyncedFromGoogle) {
-      const client = authToken
-        ? getAuthenticatedSupabase(authToken)
-        : serviceRoleSupabase;
       await this.ensureNoOverlaps(
         existing.user_id,
         newStart,
@@ -662,33 +640,18 @@ export class CalendarEventService {
     } else if (input.completed_at !== undefined) {
       // Explicitly provided: normalize it (could be null, string, or Date)
       completedAt = normalizeNullableDate(input.completed_at);
-      console.log('[CalendarEventService] Setting completed_at:', {
-        input_completed_at: input.completed_at,
-        normalized: completedAt,
-      });
     } else {
       // Not provided: keep existing value
       completedAt = existingCompletedAt;
-      console.log(
-        '[CalendarEventService] Keeping existing completed_at:',
-        completedAt
-      );
     }
 
     updateData.completed_at = completedAt;
-    console.log(
-      '[CalendarEventService] Final updateData.completed_at:',
-      updateData.completed_at
-    );
 
     const wasCompleted = !!existingCompletedAt;
     const willBeCompleted = !!completedAt;
     const isCompleting = !wasCompleted && willBeCompleted;
     const isUncompleting = wasCompleted && !willBeCompleted;
 
-    const client = authToken
-      ? getAuthenticatedSupabase(authToken)
-      : serviceRoleSupabase;
     const { data, error } = await client
       .from('calendar_events')
       .update(updateData)

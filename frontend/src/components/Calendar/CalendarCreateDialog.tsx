@@ -59,7 +59,7 @@ function CalendarCreateDialog({
           </Button>
           <Button
             onClick={onCreate}
-            disabled={!title || !startTime || !endTime}
+            disabled={!title || !startTime || !endTime || new Date(endTime) <= new Date(startTime)}
           >
             Create
           </Button>
