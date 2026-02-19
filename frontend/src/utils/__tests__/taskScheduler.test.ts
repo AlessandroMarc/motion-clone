@@ -10,6 +10,15 @@ import {
 } from '../taskScheduler';
 
 describe('taskScheduler', () => {
+  beforeEach(() => {
+    jest.useFakeTimers();
+    jest.setSystemTime(new Date('2024-01-01T12:00:00Z'));
+  });
+
+  afterEach(() => {
+    jest.useRealTimers();
+  });
+
   const createMockTask = (overrides = {}): Task => ({
     id: 'task-1',
     title: 'Test Task',
