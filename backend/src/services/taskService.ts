@@ -1,3 +1,4 @@
+import type { SupabaseClient } from '@supabase/supabase-js';
 import { serviceRoleSupabase } from '../config/supabase.js';
 import type { CreateTaskInput, UpdateTaskInput } from '../types/database.js';
 import type { Task } from '../types/database.js';
