@@ -98,6 +98,7 @@ export interface OnboardingSteps {
   createTask: OnboardingStep;
   createProject: OnboardingStep;
   schedule: OnboardingStep;
+  syncCalendar: OnboardingStep;
 }
 
 export interface OnboardingChecklistStep {
@@ -281,6 +282,11 @@ export const onboardingContent: OnboardingContent = {
       description:
         'Use auto-scheduling to automatically distribute your tasks in the calendar. The system will create events based on planned duration and deadlines.',
     },
+    syncCalendar: {
+      title: 'Sync Google Calendar',
+      description:
+        'Connect your Google Calendar to keep your events in sync. Go to your profile settings and connect your account to import meetings and avoid scheduling conflicts.',
+    },
   },
   checklist: {
     title: 'Onboarding',
@@ -288,6 +294,7 @@ export const onboardingContent: OnboardingContent = {
       { id: 'task_created', label: 'Create your first task' },
       { id: 'project_created', label: 'Create your first project' },
       { id: 'scheduled', label: 'Schedule your tasks' },
+      { id: 'calendar_synced', label: 'Sync Google Calendar' },
     ],
   },
 };

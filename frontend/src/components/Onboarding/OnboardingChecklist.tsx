@@ -19,30 +19,15 @@ export function OnboardingChecklist() {
       return stepId === 'task_created' ? 'current' : 'pending';
     }
 
-    switch (stepId) {
-      case 'task_created':
-        return status.step === 'task_created' ||
-          status.step === 'project_created' ||
-          status.step === 'scheduled'
-          ? 'completed'
-          : status.step === null
-            ? 'current'
-            : 'pending';
-      case 'project_created':
-        return status.step === 'project_created' || status.step === 'scheduled'
-          ? 'completed'
-          : status.step === 'task_created'
-            ? 'current'
-            : 'pending';
-      case 'scheduled':
-        return status.step === 'scheduled'
-          ? 'completed'
-          : status.step === 'project_created'
-            ? 'current'
-            : 'pending';
-      default:
-        return 'pending';
-    }
+    const stepOrder = ['task_created', 'project_created', 'scheduled', 'calendar_synced'];
+    const currentIndex = stepOrder.indexOf(status.step);
+    const stepIndex = stepOrder.indexOf(stepId);
+
+    if (stepIndex === -1) return 'pending';
+    if (stepIndex < currentIndex) return 'completed';
+    if (stepIndex === currentIndex) return 'completed';
+    if (stepIndex === currentIndex + 1) return 'current';
+    return 'pending';
   };
 
   return (
