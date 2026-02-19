@@ -1,22 +1,20 @@
-import { useFormContext } from 'react-hook-form';
 import { FormDateField } from '@/components/forms/shared';
-import type { FieldErrors } from 'react-hook-form';
+import type { UseFormRegister, FieldErrors } from 'react-hook-form';
 import type { ProjectFormData } from '@/hooks/useProjectForm';
 
 interface ProjectDeadlineFieldProps {
+  register: UseFormRegister<ProjectFormData>;
+  errors: FieldErrors<ProjectFormData>;
   id?: string;
   className?: string;
 }
 
 export function ProjectDeadlineField({
+  register,
+  errors,
   id = 'deadline',
   className = '',
 }: ProjectDeadlineFieldProps) {
-  const {
-    register,
-    formState: { errors },
-  } = useFormContext<ProjectFormData>();
-
   return (
     <FormDateField
       register={register('deadline')}

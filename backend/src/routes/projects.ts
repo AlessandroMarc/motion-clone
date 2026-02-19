@@ -1,4 +1,4 @@
-import express, { type Request, type Response } from 'express';
+import express, { type Request, type Response, type NextFunction } from 'express';
 import { ProjectService } from '../services/projectService.js';
 import type {
   CreateProjectInput,
@@ -14,10 +14,10 @@ const projectService = new ProjectService();
 router.use(authMiddleware);
 
 // GET /api/projects - Get all projects
-router.get('/', async (req: Request, res: Response) => {
-  const authReq = req as AuthRequest;
+router.get('/', async (req: Request, res: Response, _next: NextFunction) => {
+  const authReq = req as unknown as AuthRequest;
   try {
-    const { status } = req.query;
+    const { status } = authReq.query;
     const client = authReq.supabaseClient;
 
     let projects;
@@ -45,17 +45,17 @@ router.get('/', async (req: Request, res: Response) => {
 });
 
 // GET /api/projects/:id - Get project by ID
-router.get('/:id', async (req: Request, res: Response) => {
-  const authReq = req as AuthRequest;
+router.get('/:id', async (req: Request, res: Response, _next: NextFunction) => {
+  const authReq = req as unknown as AuthRequest;
   try {
-    const { id } = req.params;
-    if (!id || typeof id !== 'string') {
-      return ResponseHelper.badRequest(
-        res,
-        'Project ID is required and must be a string'
-      );
+    const { id } = authReq.params;
+    if (!id) {
+      return ResponseHelper.badRequest(res, 'Project ID is required');
     }
-    const project = await projectService.getProjectById(id, authReq.supabaseClient);
+    const project = await projectService.getProjectById(
+      id,
+      authReq.supabaseClient
+    );
 
     if (!project) {
       return ResponseHelper.notFound(res, 'Project');
@@ -71,11 +71,11 @@ router.get('/:id', async (req: Request, res: Response) => {
 });
 
 // POST /api/projects - Create new project
-router.post('/', async (req: Request, res: Response) => {
-  const authReq = req as AuthRequest;
+router.post('/', async (req: Request, res: Response, _next: NextFunction) => {
+  const authReq = req as unknown as AuthRequest;
   try {
     const input: CreateProjectInput = {
-      ...req.body,
+      ...authReq.body,
       user_id: authReq.userId, // Override with authenticated user ID
     };
     const project = await projectService.createProject(
@@ -92,17 +92,14 @@ router.post('/', async (req: Request, res: Response) => {
 });
 
 // PUT /api/projects/:id - Update project
-router.put('/:id', async (req: Request, res: Response) => {
-  const authReq = req as AuthRequest;
+router.put('/:id', async (req: Request, res: Response, _next: NextFunction) => {
+  const authReq = req as unknown as AuthRequest;
   try {
-    const { id } = req.params;
-    if (!id || typeof id !== 'string') {
-      return ResponseHelper.badRequest(
-        res,
-        'Project ID is required and must be a string'
-      );
+    const { id } = authReq.params;
+    if (!id) {
+      return ResponseHelper.badRequest(res, 'Project ID is required');
     }
-    const input: UpdateProjectInput = req.body;
+    const input: UpdateProjectInput = authReq.body;
     const project = await projectService.updateProject(
       id,
       input,
@@ -118,12 +115,12 @@ router.put('/:id', async (req: Request, res: Response) => {
 });
 
 // DELETE /api/projects/:id - Delete project
-router.delete('/:id', async (req: Request, res: Response) => {
-  const authReq = req as AuthRequest;
+router.delete('/:id', async (req: Request, res: Response, _next: NextFunction) => {
+  const authReq = req as unknown as AuthRequest;
   try {
-    const { id } = req.params;
-    if (!id || typeof id !== 'string') {
-      return ResponseHelper.badRequest(res, 'Project ID is required and must be a string');
+    const { id } = authReq.params;
+    if (!id) {
+      return ResponseHelper.badRequest(res, 'Project ID is required');
     }
     await projectService.deleteProject(id, authReq.supabaseClient);
     ResponseHelper.deleted(res, 'Project deleted successfully');

@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { FormProvider } from 'react-hook-form';
 import {
   Dialog,
   DialogContent,
@@ -25,8 +24,14 @@ export function ProjectCreateDialogForm({
 }: ProjectCreateFormProps) {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
 
-  const { methods, handleSubmit, isSubmitting, onSubmit, handleCancel } =
-    useProjectForm(onProjectCreate);
+  const {
+    register,
+    handleSubmit,
+    errors,
+    isSubmitting,
+    onSubmit,
+    handleCancel,
+  } = useProjectForm(onProjectCreate);
 
   const handleFormSubmit = async (data: ProjectFormData) => {
     await onSubmit(data);
@@ -58,20 +63,18 @@ export function ProjectCreateDialogForm({
           </DialogDescription>
         </DialogHeader>
 
-        <FormProvider {...methods}>
-          <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-6">
-            <div className="space-y-4">
-              <ProjectNameField />
-              <ProjectDescriptionField />
-              <ProjectDeadlineField />
-            </div>
+        <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-6">
+          <div className="space-y-4">
+            <ProjectNameField register={register} errors={errors} />
+            <ProjectDescriptionField register={register} errors={errors} />
+            <ProjectDeadlineField register={register} errors={errors} />
+          </div>
 
-            <ProjectFormActions
-              isSubmitting={isSubmitting}
-              onCancel={handleFormCancel}
-            />
-          </form>
-        </FormProvider>
+          <ProjectFormActions
+            isSubmitting={isSubmitting}
+            onCancel={handleFormCancel}
+          />
+        </form>
       </DialogContent>
     </Dialog>
   );

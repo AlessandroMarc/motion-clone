@@ -1,4 +1,4 @@
-import express, { type Request, type Response } from 'express';
+import express, { type Request, type Response, type NextFunction } from 'express';
 import { CalendarEventService } from '../services/calendarEventService.js';
 import type {
   CreateCalendarEventInput,
@@ -14,9 +14,11 @@ const calendarEventService = new CalendarEventService();
 router.use(authMiddleware);
 
 // GET /api/calendar-events - Get all calendar events
-router.get('/', async (req: Request, res: Response) => {
-  const authReq = req as AuthRequest;
+router.get('/', async (req: Request, res: Response, _next: NextFunction) => {
+  const authReq = req as unknown as AuthRequest;
   try {
+    console.log('[CalendarEventsRoute] GET /api/calendar-events called');
+    console.log('[CalendarEventsRoute] Query params:', req.query);
     const { start_date, end_date, task_id } = req.query;
 
     let events;
@@ -26,19 +28,26 @@ router.get('/', async (req: Request, res: Response) => {
       typeof start_date === 'string' &&
       typeof end_date === 'string'
     ) {
+      console.log('[CalendarEventsRoute] Fetching events by date range');
       events = await calendarEventService.getCalendarEventsByDateRange(
         start_date,
         end_date,
-        authReq.authToken
+        authReq.supabaseClient
       );
     } else if (task_id && typeof task_id === 'string') {
+      console.log('[CalendarEventsRoute] Fetching events by task_id');
       events = await calendarEventService.getCalendarEventsByTaskId(
         task_id,
-        authReq.authToken
+        authReq.supabaseClient
       );
     } else {
-      events = await calendarEventService.getAllCalendarEvents(authReq.authToken);
+      console.log('[CalendarEventsRoute] Fetching all events');
+      events = await calendarEventService.getAllCalendarEvents(authReq.supabaseClient);
     }
+
+    console.log('[CalendarEventsRoute] Returning events:', {
+      count: events.length,
+    });
 
     ResponseHelper.list(
       res,
@@ -59,19 +68,16 @@ router.get('/', async (req: Request, res: Response) => {
 });
 
 // GET /api/calendar-events/:id - Get calendar event by ID
-router.get('/:id', async (req: Request, res: Response) => {
-  const authReq = req as AuthRequest;
+router.get('/:id', async (req: Request, res: Response, _next: NextFunction) => {
+  const authReq = req as unknown as AuthRequest;
   try {
     const { id } = req.params;
-    if (!id || typeof id !== 'string') {
-      return ResponseHelper.badRequest(
-        res,
-        'Calendar event ID is required and must be a string'
-      );
+    if (!id) {
+      return ResponseHelper.badRequest(res, 'Calendar event ID is required');
     }
     const event = await calendarEventService.getCalendarEventById(
       id,
-      authReq.authToken
+      authReq.supabaseClient
     );
 
     if (!event) {
@@ -88,21 +94,18 @@ router.get('/:id', async (req: Request, res: Response) => {
 });
 
 // POST /api/calendar-events - Create new calendar event
-router.post('/', async (req: Request, res: Response) => {
-  const authReq = req as AuthRequest;
+router.post('/', async (req: Request, res: Response, _next: NextFunction) => {
+  const authReq = req as unknown as AuthRequest;
   try {
+    console.log('[CalendarEventsRoute] POST /api/calendar-events called');
+    console.log('[CalendarEventsRoute] Request body:', req.body);
+
     // Check if this is a batch request
     if (Array.isArray(req.body)) {
       const inputs: CreateCalendarEventInput[] = req.body;
-
-      // Ensure all events belong to the authenticated user to satisfy RLS
-      inputs.forEach(input => {
-        input.user_id = authReq.userId;
-      });
-
       const results = await calendarEventService.createCalendarEventsBatch(
         inputs,
-        authReq.authToken
+        authReq.supabaseClient
       );
 
       // Return results with success/failure for each event
@@ -121,8 +124,10 @@ router.post('/', async (req: Request, res: Response) => {
       const input: CreateCalendarEventInput = req.body;
       const event = await calendarEventService.createCalendarEvent(
         input,
-        authReq.authToken
+        undefined,
+        authReq.supabaseClient
       );
+      console.log('[CalendarEventsRoute] Calendar event created:', event);
       ResponseHelper.created(res, event, 'Calendar event created successfully');
     }
   } catch (error) {
@@ -141,21 +146,18 @@ router.post('/', async (req: Request, res: Response) => {
 });
 
 // PUT /api/calendar-events/:id - Update calendar event
-router.put('/:id', async (req: Request, res: Response) => {
-  const authReq = req as AuthRequest;
+router.put('/:id', async (req: Request, res: Response, _next: NextFunction) => {
+  const authReq = req as unknown as AuthRequest;
   try {
     const { id } = req.params;
-    if (!id || typeof id !== 'string') {
-      return ResponseHelper.badRequest(
-        res,
-        'Calendar event ID is required and must be a string'
-      );
+    if (!id) {
+      return ResponseHelper.badRequest(res, 'Calendar event ID is required');
     }
     const input: UpdateCalendarEventInput = req.body;
     const event = await calendarEventService.updateCalendarEvent(
       id,
       input,
-      authReq.authToken
+      authReq.supabaseClient
     );
     ResponseHelper.updated(res, event, 'Calendar event updated successfully');
   } catch (error) {
@@ -170,8 +172,8 @@ router.put('/:id', async (req: Request, res: Response) => {
 });
 
 // DELETE /api/calendar-events/batch - Batch delete calendar events
-router.delete('/batch', async (req: Request, res: Response) => {
-  const authReq = req as AuthRequest;
+router.delete('/batch', async (req: Request, res: Response, _next: NextFunction) => {
+  const authReq = req as unknown as AuthRequest;
   try {
     const { ids } = req.body;
 
@@ -189,7 +191,7 @@ router.delete('/batch', async (req: Request, res: Response) => {
 
     const results = await calendarEventService.deleteCalendarEventsBatch(
       ids,
-      authReq.authToken
+      authReq.supabaseClient
     );
 
     ResponseHelper.success(
@@ -211,17 +213,14 @@ router.delete('/batch', async (req: Request, res: Response) => {
 });
 
 // DELETE /api/calendar-events/:id - Delete calendar event
-router.delete('/:id', async (req: Request, res: Response) => {
-  const authReq = req as AuthRequest;
+router.delete('/:id', async (req: Request, res: Response, _next: NextFunction) => {
+  const authReq = req as unknown as AuthRequest;
   try {
     const { id } = req.params;
-    if (!id || typeof id !== 'string') {
-      return ResponseHelper.badRequest(
-        res,
-        'Calendar event ID is required and must be a string'
-      );
+    if (!id) {
+      return ResponseHelper.badRequest(res, 'Calendar event ID is required');
     }
-    await calendarEventService.deleteCalendarEvent(id, authReq.authToken);
+    await calendarEventService.deleteCalendarEvent(id, authReq.supabaseClient);
     ResponseHelper.deleted(res, 'Calendar event deleted successfully');
   } catch (error) {
     ResponseHelper.internalError(

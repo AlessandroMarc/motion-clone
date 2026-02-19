@@ -16,7 +16,6 @@ import {
 const DEBUG = process.env.NODE_ENV === 'development';
 function log(...args: unknown[]) {
   if (DEBUG) {
-    // eslint-disable-next-line no-console
     console.log('[AutoScheduleCalculator]', ...args);
   }
 }
@@ -119,19 +118,14 @@ export function calculateAutoSchedule(params: {
 
   // Use the later of: working hours start or current time (rounded to next 15 min)
   const roundedNow = roundToNext15Minutes(now);
-  const baseStartTime =
+  let currentStartTime =
     roundedNow > workingHoursStart ? roundedNow : workingHoursStart;
   log('scheduling window', {
     now: now.toISOString(),
     roundedNow: roundedNow.toISOString(),
     workingHoursStart: workingHoursStart.toISOString(),
-    baseStartTime: baseStartTime.toISOString(),
+    currentStartTime: currentStartTime.toISOString(),
   });
-
-  // Track the latest event end time per task so blocked tasks can enforce
-  // that they start only after ALL their blockers have finished.
-  const taskLatestEndTime = new Map<string, Date>();
-  const gapMs = (config.gapBetweenEventsMinutes ?? 5) * 60 * 1000;
 
   for (let i = 0; i < sortedTasks.length; i++) {
     const task = sortedTasks[i];
@@ -139,34 +133,12 @@ export function calculateAutoSchedule(params: {
       event => event.linked_task_id === task.id && event.completed_at !== null
     );
 
-    // Determine the earliest this task can start:
-    // - at least baseStartTime
-    // - if blocked by other tasks, after all blocker events have finished
-    let taskStartTime = new Date(baseStartTime);
-    const blockers = (task.blockedBy ?? []).filter(id =>
-      taskLatestEndTime.has(id)
-    );
-
-    if (blockers.length > 0) {
-      for (const blockerId of blockers) {
-        const blockerEnd = taskLatestEndTime.get(blockerId)!;
-        const blockerEndPlusGap = new Date(blockerEnd.getTime() + gapMs);
-        if (blockerEndPlusGap > taskStartTime) {
-          taskStartTime = blockerEndPlusGap;
-        }
-      }
-      log(
-        `  task "${task.title}" blocked by [${blockers.join(', ')}], startTime pushed to`,
-        taskStartTime.toISOString()
-      );
-    }
-
     const { events, violations } = prepareTaskEvents(
       task,
       taskExistingEvents,
       config,
       accumulatedScheduledEvents,
-      taskStartTime
+      currentStartTime
     );
 
     // Always include the task so the user sees it. Tasks with 0 events
@@ -180,11 +152,10 @@ export function calculateAutoSchedule(params: {
       planned_duration_minutes: task.planned_duration_minutes,
       actual_duration_minutes: task.actual_duration_minutes,
       due_date: task.due_date ? new Date(task.due_date).toISOString() : null,
-      blockedBy: task.blockedBy ?? [],
       taskExistingEventsCount: taskExistingEvents.length,
       eventsCount: events.length,
       violationsCount: violations.length,
-      taskStartTime: taskStartTime.toISOString(),
+      currentStartTimeBefore: currentStartTime.toISOString(),
     });
 
     for (const event of events) {
@@ -201,14 +172,11 @@ export function calculateAutoSchedule(params: {
       accumulatedScheduledEvents.push(tempEvent);
     }
 
-    // Record the latest end time for this task (used by dependents)
     if (events.length > 0) {
       const lastEvent = events[events.length - 1];
-      taskLatestEndTime.set(task.id, lastEvent.end_time);
-      log(
-        `  -> task "${task.title}" latest end`,
-        lastEvent.end_time.toISOString()
-      );
+      currentStartTime = new Date(lastEvent.end_time);
+      currentStartTime.setMinutes(currentStartTime.getMinutes() + 5);
+      log(`  -> next currentStartTime`, currentStartTime.toISOString());
     }
   }
 

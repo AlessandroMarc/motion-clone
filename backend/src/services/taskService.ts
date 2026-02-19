@@ -1,5 +1,5 @@
-import type { SupabaseClient } from '@supabase/supabase-js';
 import { serviceRoleSupabase } from '../config/supabase.js';
+import type { SupabaseClient } from '@supabase/supabase-js';
 import type { CreateTaskInput, UpdateTaskInput } from '../types/database.js';
 import type { Task } from '../types/database.js';
 
@@ -76,7 +76,6 @@ export class TaskService {
           project_id: input.project_id,
           planned_duration_minutes: normalizedPlanned,
           actual_duration_minutes: normalizedActual,
-          user_id: input.user_id,
         },
       ])
       .select()
@@ -204,20 +203,6 @@ export class TaskService {
 
     if (error) {
       throw new Error(`Failed to update task: ${error.message}`);
-    }
-
-    // Propagate title change to linked calendar events
-    if (updateData.title && updateData.title !== existingTask.title) {
-      const { error: calendarError } = await client
-        .from('calendar_events')
-        .update({ title: updateData.title, updated_at: updateData.updated_at })
-        .eq('linked_task_id', id);
-
-      if (calendarError) {
-        console.error(
-          `Failed to propagate title change to calendar events: ${calendarError.message}`
-        );
-      }
     }
 
     return data;

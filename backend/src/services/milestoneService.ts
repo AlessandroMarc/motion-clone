@@ -1,4 +1,5 @@
-import { supabase } from '../config/supabase.js';
+import { supabase, serviceRoleSupabase } from '../config/supabase.js';
+import type { SupabaseClient } from '@supabase/supabase-js';
 import type {
   CreateMilestoneInput,
   UpdateMilestoneInput,
@@ -7,8 +8,11 @@ import type { Milestone } from '../types/database.js';
 
 export class MilestoneService {
   // Create a new milestone
-  async createMilestone(input: CreateMilestoneInput): Promise<Milestone> {
-    const { data, error } = await supabase
+  async createMilestone(
+    input: CreateMilestoneInput,
+    client: SupabaseClient = serviceRoleSupabase
+  ): Promise<Milestone> {
+    const { data, error } = await client
       .from('milestones')
       .insert([
         {
@@ -17,7 +21,6 @@ export class MilestoneService {
           due_date: input.due_date?.toISOString(),
           status: input.status || 'not-started',
           project_id: input.project_id,
-          user_id: input.user_id,
         },
       ])
       .select()
@@ -31,8 +34,10 @@ export class MilestoneService {
   }
 
   // Get all milestones
-  async getAllMilestones(): Promise<Milestone[]> {
-    const { data, error } = await supabase
+  async getAllMilestones(
+    client: SupabaseClient = serviceRoleSupabase
+  ): Promise<Milestone[]> {
+    const { data, error } = await client
       .from('milestones')
       .select('*')
       .order('created_at', { ascending: false });
@@ -45,8 +50,11 @@ export class MilestoneService {
   }
 
   // Get milestone by ID
-  async getMilestoneById(id: string): Promise<Milestone | null> {
-    const { data, error } = await supabase
+  async getMilestoneById(
+    id: string,
+    client: SupabaseClient = serviceRoleSupabase
+  ): Promise<Milestone | null> {
+    const { data, error } = await client
       .from('milestones')
       .select('*')
       .eq('id', id)
@@ -65,7 +73,8 @@ export class MilestoneService {
   // Update milestone
   async updateMilestone(
     id: string,
-    input: UpdateMilestoneInput
+    input: UpdateMilestoneInput,
+    client: SupabaseClient = serviceRoleSupabase
   ): Promise<Milestone> {
     const updateData: {
       updated_at: string;
@@ -87,7 +96,7 @@ export class MilestoneService {
     if (input.project_id !== undefined)
       updateData.project_id = input.project_id;
 
-    const { data, error } = await supabase
+    const { data, error } = await client
       .from('milestones')
       .update(updateData)
       .eq('id', id)
@@ -102,8 +111,11 @@ export class MilestoneService {
   }
 
   // Delete milestone
-  async deleteMilestone(id: string): Promise<boolean> {
-    const { error } = await supabase.from('milestones').delete().eq('id', id);
+  async deleteMilestone(
+    id: string,
+    client: SupabaseClient = serviceRoleSupabase
+  ): Promise<boolean> {
+    const { error } = await client.from('milestones').delete().eq('id', id);
 
     if (error) {
       throw new Error(`Failed to delete milestone: ${error.message}`);
@@ -113,8 +125,11 @@ export class MilestoneService {
   }
 
   // Get milestones by project ID
-  async getMilestonesByProjectId(projectId: string): Promise<Milestone[]> {
-    const { data, error } = await supabase
+  async getMilestonesByProjectId(
+    projectId: string,
+    client: SupabaseClient = serviceRoleSupabase
+  ): Promise<Milestone[]> {
+    const { data, error } = await client
       .from('milestones')
       .select('*')
       .eq('project_id', projectId)
@@ -131,9 +146,10 @@ export class MilestoneService {
 
   // Get milestones by status
   async getMilestonesByStatus(
-    status: 'not-started' | 'in-progress' | 'completed'
+    status: 'not-started' | 'in-progress' | 'completed',
+    client: SupabaseClient = serviceRoleSupabase
   ): Promise<Milestone[]> {
-    const { data, error } = await supabase
+    const { data, error } = await client
       .from('milestones')
       .select('*')
       .eq('status', status)

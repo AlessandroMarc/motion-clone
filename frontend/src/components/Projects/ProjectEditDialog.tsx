@@ -10,7 +10,7 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Edit3 } from 'lucide-react';
-import { useForm, FormProvider } from 'react-hook-form';
+import { useForm } from 'react-hook-form';
 import { ProjectNameField } from '@/components/Projects/forms/ProjectNameField';
 import { ProjectDescriptionField } from '@/components/Projects/forms/ProjectDescriptionField';
 import { ProjectDeadlineField } from '@/components/Projects/forms/ProjectDeadlineField';
@@ -57,7 +57,12 @@ export function ProjectEditDialog({
     },
   });
 
-  const { handleSubmit, reset } = form;
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+    reset,
+  } = form;
 
   useEffect(() => {
     if (isDialogOpen) {
@@ -116,40 +121,38 @@ export function ProjectEditDialog({
             </DialogDescription>
           </DialogHeader>
 
-          <FormProvider {...form}>
-            <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-              <div className="space-y-4">
-                <ProjectNameField />
-                <ProjectDescriptionField />
-                <ProjectDeadlineField />
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+            <div className="space-y-4">
+              <ProjectNameField register={register} errors={errors} />
+              <ProjectDescriptionField register={register} errors={errors} />
+              <ProjectDeadlineField register={register} errors={errors} />
 
-                {/* Status Field */}
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Status</label>
-                  <Select
-                    value={status}
-                    onValueChange={(value: WorkItemStatus) => setStatus(value)}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="not-started">Not Started</SelectItem>
-                      <SelectItem value="in-progress">In Progress</SelectItem>
-                      <SelectItem value="completed">Completed</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
+              {/* Status Field */}
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Status</label>
+                <Select
+                  value={status}
+                  onValueChange={(value: WorkItemStatus) => setStatus(value)}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="not-started">Not Started</SelectItem>
+                    <SelectItem value="in-progress">In Progress</SelectItem>
+                    <SelectItem value="completed">Completed</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
+            </div>
 
-              <ProjectFormActions
-                isSubmitting={isSubmitting}
-                onCancel={handleCancel}
-                submitText="Save Changes"
-                submittingText="Saving..."
-              />
-            </form>
-          </FormProvider>
+            <ProjectFormActions
+              isSubmitting={isSubmitting}
+              onCancel={handleCancel}
+              submitText="Save Changes"
+              submittingText="Saving..."
+            />
+          </form>
         </DialogContent>
       </Dialog>
     </>

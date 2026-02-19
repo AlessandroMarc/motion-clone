@@ -30,8 +30,6 @@ interface WeekScrollableGridProps {
   onExternalTaskDragOver?: (date: Date, hour: number, minute: number) => void;
   tasksMap?: Map<string, Task>;
   isMobile?: boolean;
-  workingHoursStart?: number;
-  workingHoursEnd?: number;
 }
 
 function WeekScrollableGrid({
@@ -49,8 +47,6 @@ function WeekScrollableGrid({
   onExternalTaskDragOver,
   tasksMap,
   isMobile = false,
-  workingHoursStart,
-  workingHoursEnd,
 }: WeekScrollableGridProps) {
   const timeSlots = Array.from({ length: 24 }, (_, i) => i);
   const today = new Date();
@@ -138,8 +134,6 @@ function WeekScrollableGrid({
                 }
                 onExternalTaskDragOver={onExternalTaskDragOver}
                 tasksMap={tasksMap}
-                workingHoursStart={workingHoursStart}
-                workingHoursEnd={workingHoursEnd}
               />
             );
           })}

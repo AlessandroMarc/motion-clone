@@ -129,20 +129,6 @@ class UserSettingsService {
     };
   }
 
-  // Delete a schedule
-  async deleteSchedule(scheduleId: string, userId: string): Promise<void> {
-    const response = await request<null>(
-      `/user-settings/schedules/${scheduleId}?user_id=${userId}`,
-      {
-        method: 'DELETE',
-      }
-    );
-
-    if (!response.success) {
-      throw new Error(response.error || 'Failed to delete schedule');
-    }
-  }
-
   // Update user settings to set active schedule
   async setActiveSchedule(
     userId: string,

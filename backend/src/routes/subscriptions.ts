@@ -47,11 +47,7 @@ router.post('/', async (req: Request, res: Response) => {
       .insert({ email: emailInput });
 
     if (error) {
-      console.error('[Subscriptions] Insert failed:', error.message);
-      if (error.code === '23505') {
-        return ResponseHelper.badRequest(res, 'This email is already subscribed.');
-      }
-      return ResponseHelper.badRequest(res, 'Failed to create subscription. Please try again.');
+      return ResponseHelper.badRequest(res, error.message);
     }
 
     // Ping Slack (Lead Magnet Notification)

@@ -5,7 +5,7 @@ import type { CalendarEventUnion, Task } from '@/types';
 import { isCalendarEventTask } from '@/types';
 import { formatEventTime } from '@/utils/calendarUtils';
 import { formatDateLong } from '@/utils/dateUtils';
-import { CheckCircle2, Sparkles, Circle, Loader2 } from 'lucide-react';
+import { CheckCircle2, Sparkles, Circle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 
@@ -16,7 +16,6 @@ interface MobileDayScrollViewProps {
   tasksMap: Map<string, Task>;
   onToday: () => void;
   onAutoSchedule?: () => void;
-  isAutoScheduleRefreshing?: boolean;
   onZenMode?: () => void;
 }
 
@@ -31,7 +30,6 @@ export function MobileDayScrollView({
   tasksMap,
   onToday,
   onAutoSchedule,
-  isAutoScheduleRefreshing,
   onZenMode,
 }: MobileDayScrollViewProps): React.ReactElement {
   const scrollRef = useRef<HTMLDivElement | null>(null);
@@ -62,15 +60,10 @@ export function MobileDayScrollView({
               variant="default"
               size="sm"
               onClick={onAutoSchedule}
-              disabled={isAutoScheduleRefreshing}
               className="text-xs h-8 px-3 gap-1.5"
               data-onboarding-step="schedule"
             >
-              {isAutoScheduleRefreshing ? (
-                <Loader2 className="h-3 w-3 animate-spin" />
-              ) : (
-                <Sparkles className="h-3 w-3" />
-              )}
+              <Sparkles className="h-3 w-3" />
               Auto
             </Button>
           )}

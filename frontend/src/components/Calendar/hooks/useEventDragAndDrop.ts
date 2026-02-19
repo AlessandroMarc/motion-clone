@@ -1,9 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import {
-  CalendarEventUnion,
-  isCalendarEventTask,
-  type UpdateCalendarEventInput,
-} from '@/types';
+import { CalendarEventUnion, type UpdateCalendarEventInput } from '@/types';
 import { calendarService } from '@/services/calendarService';
 
 const dragThresholdPx = 5;
@@ -41,13 +37,6 @@ export function useEventDragAndDrop(
   ) => {
     e.preventDefault();
     e.stopPropagation();
-
-    // Google Calendar events are read-only — open details immediately on click.
-    // Only task events support drag-to-reschedule.
-    if (!isCalendarEventTask(event)) {
-      onEventClick(event);
-      return;
-    }
 
     // Defer decision: click vs drag based on movement threshold
     pendingClickOrDragRef.current = {

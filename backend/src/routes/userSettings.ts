@@ -1,4 +1,4 @@
-import express, { type Request, type Response } from 'express';
+import express, { type Request, type Response, type NextFunction } from 'express';
 import { authMiddleware, type AuthRequest } from '../middleware/auth.js';
 import { UserSettingsService } from '../services/userSettingsService.js';
 import type {
@@ -17,8 +17,8 @@ const userSettingsService = new UserSettingsService();
 router.use(authMiddleware);
 
 // GET /api/user-settings/active-schedule - Get active schedule for user
-router.get('/active-schedule', async (req: Request, res: Response) => {
-  const authReq = req as AuthRequest;
+router.get('/active-schedule', async (req: Request, res: Response, _next: NextFunction) => {
+  const authReq = req as unknown as AuthRequest;
   try {
     const schedule = await userSettingsService.getActiveSchedule(
       authReq.userId,
@@ -38,8 +38,8 @@ router.get('/active-schedule', async (req: Request, res: Response) => {
 });
 
 // GET /api/user-settings/schedules - Get all schedules for user
-router.get('/schedules', async (req: Request, res: Response) => {
-  const authReq = req as AuthRequest;
+router.get('/schedules', async (req: Request, res: Response, _next: NextFunction) => {
+  const authReq = req as unknown as AuthRequest;
   try {
     const schedules = await userSettingsService.getUserSchedules(
       authReq.userId,
@@ -60,11 +60,11 @@ router.get('/schedules', async (req: Request, res: Response) => {
 });
 
 // POST /api/user-settings/schedules - Create a new schedule
-router.post('/schedules', async (req: Request, res: Response) => {
-  const authReq = req as AuthRequest;
+router.post('/schedules', async (req: Request, res: Response, _next: NextFunction) => {
+  const authReq = req as unknown as AuthRequest;
   try {
     const input: CreateScheduleInput = {
-      ...req.body,
+      ...authReq.body,
       user_id: authReq.userId,
     };
 
@@ -82,13 +82,13 @@ router.post('/schedules', async (req: Request, res: Response) => {
 });
 
 // PUT /api/user-settings/schedules/:id - Update a schedule
-router.put('/schedules/:id', async (req: Request, res: Response) => {
-  const authReq = req as AuthRequest;
+router.put('/schedules/:id', async (req: Request, res: Response, _next: NextFunction) => {
+  const authReq = req as unknown as AuthRequest;
   try {
-    const { id } = req.params;
-    const input: UpdateScheduleInput = req.body;
+    const { id } = authReq.params;
+    const input: UpdateScheduleInput = authReq.body;
 
-    if (!id || typeof id !== 'string') {
+    if (!id) {
       return ResponseHelper.badRequest(res, 'Schedule ID is required');
     }
 
@@ -108,8 +108,8 @@ router.put('/schedules/:id', async (req: Request, res: Response) => {
 });
 
 // GET /api/user-settings - Get user settings
-router.get('/', async (req: Request, res: Response) => {
-  const authReq = req as AuthRequest;
+router.get('/', async (req: Request, res: Response, _next: NextFunction) => {
+  const authReq = req as unknown as AuthRequest;
   try {
     const settings = await userSettingsService.getUserSettings(
       authReq.userId,
@@ -129,11 +129,11 @@ router.get('/', async (req: Request, res: Response) => {
 });
 
 // POST /api/user-settings - Create or update user settings
-router.post('/', async (req: Request, res: Response) => {
-  const authReq = req as AuthRequest;
+router.post('/', async (req: Request, res: Response, _next: NextFunction) => {
+  const authReq = req as unknown as AuthRequest;
   try {
     const input: CreateUserSettingsInput = {
-      ...req.body,
+      ...authReq.body,
       user_id: authReq.userId,
     };
 
@@ -151,10 +151,10 @@ router.post('/', async (req: Request, res: Response) => {
 });
 
 // PUT /api/user-settings - Update user settings
-router.put('/', async (req: Request, res: Response) => {
-  const authReq = req as AuthRequest;
+router.put('/', async (req: Request, res: Response, _next: NextFunction) => {
+  const authReq = req as unknown as AuthRequest;
   try {
-    const input: UpdateUserSettingsInput = req.body;
+    const input: UpdateUserSettingsInput = authReq.body;
 
     const settings = await userSettingsService.updateUserSettings(
       authReq.userId,
@@ -171,8 +171,8 @@ router.put('/', async (req: Request, res: Response) => {
 });
 
 // GET /api/user-settings/onboarding/status - Get onboarding status
-router.get('/onboarding/status', async (req: Request, res: Response) => {
-  const authReq = req as AuthRequest;
+router.get('/onboarding/status', async (req: Request, res: Response, _next: NextFunction) => {
+  const authReq = req as unknown as AuthRequest;
   try {
     const status = await userSettingsService.getOnboardingStatus(
       authReq.userId,
@@ -192,10 +192,10 @@ router.get('/onboarding/status', async (req: Request, res: Response) => {
 });
 
 // PUT /api/user-settings/onboarding/step - Update onboarding step
-router.put('/onboarding/step', async (req: Request, res: Response) => {
-  const authReq = req as AuthRequest;
+router.put('/onboarding/step', async (req: Request, res: Response, _next: NextFunction) => {
+  const authReq = req as unknown as AuthRequest;
   try {
-    const step = req.body?.step as OnboardingStep;
+    const step = authReq.body?.step as OnboardingStep;
 
     if (
       step !== null &&
@@ -228,8 +228,8 @@ router.put('/onboarding/step', async (req: Request, res: Response) => {
 });
 
 // PUT /api/user-settings/onboarding/complete - Complete onboarding
-router.put('/onboarding/complete', async (req: Request, res: Response) => {
-  const authReq = req as AuthRequest;
+router.put('/onboarding/complete', async (req: Request, res: Response, _next: NextFunction) => {
+  const authReq = req as unknown as AuthRequest;
   try {
     const settings = await userSettingsService.completeOnboarding(
       authReq.userId,

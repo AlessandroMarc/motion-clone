@@ -1,7 +1,5 @@
-import {
-  getAuthenticatedSupabase,
-  serviceRoleSupabase,
-} from '../config/supabase.js';
+import { serviceRoleSupabase } from '../config/supabase.js';
+import type { SupabaseClient } from '@supabase/supabase-js';
 import type {
   CreateCalendarEventInput,
   UpdateCalendarEventInput,
@@ -50,10 +48,11 @@ export class CalendarEventService {
   private async updateTaskDurationFromEvent(
     taskId: string,
     eventDurationMinutes: number,
-    isCompleting: boolean
+    isCompleting: boolean,
+    client: SupabaseClient = serviceRoleSupabase
   ): Promise<void> {
     try {
-      const task = await this.taskService.getTaskById(taskId);
+      const task = await this.taskService.getTaskById(taskId, client);
       if (!task) {
         console.warn(
           `[CalendarEventService] Task ${taskId} not found, skipping duration update`
@@ -71,9 +70,13 @@ export class CalendarEventService {
         newActual = Math.max(0, currentActual - eventDurationMinutes);
       }
 
-      await this.taskService.updateTask(taskId, {
-        actual_duration_minutes: newActual,
-      });
+      await this.taskService.updateTask(
+        taskId,
+        {
+          actual_duration_minutes: newActual,
+        },
+        client
+      );
 
       console.log(
         `[CalendarEventService] Updated task ${taskId} actual duration: ${currentActual} -> ${newActual} (${isCompleting ? '+' : '-'}${eventDurationMinutes}min)`
@@ -92,7 +95,7 @@ export class CalendarEventService {
     endTimeIso: string,
     excludeEventId?: string,
     excludeEventIds?: string[],
-    client: any = serviceRoleSupabase
+    client: SupabaseClient = serviceRoleSupabase
   ): Promise<void> {
     if (new Date(startTimeIso) >= new Date(endTimeIso)) {
       throw new Error('Calendar event end time must be after start time');
@@ -155,7 +158,7 @@ export class CalendarEventService {
    */
   async createCalendarEventsBatch(
     inputs: CreateCalendarEventInput[],
-    authToken?: string
+    client: SupabaseClient = serviceRoleSupabase
   ): Promise<
     Array<{
       success: boolean;
@@ -252,9 +255,6 @@ export class CalendarEventService {
           `[CalendarEventService] Batch inserting ${insertDataArray.length} calendar events`
         );
 
-        const client = authToken
-          ? getAuthenticatedSupabase(authToken)
-          : serviceRoleSupabase;
         const { data: insertedEvents, error } = await client
           .from('calendar_events')
           .insert(insertDataArray)
@@ -299,7 +299,8 @@ export class CalendarEventService {
                 this.updateTaskDurationFromEvent(
                   input.linked_task_id,
                   eventDurationMinutes,
-                  true
+                  true,
+                  client
                 ).catch(err => {
                   console.error(
                     `[CalendarEventService] Failed to update task duration for event ${insertedEvent.id}:`,
@@ -407,12 +408,13 @@ export class CalendarEventService {
   // Create a new calendar event (single event)
   async createCalendarEvent(
     input: CreateCalendarEventInput,
-    authToken?: string,
-    excludeEventIds?: string[]
+    excludeEventIds?: string[],
+    client: SupabaseClient = serviceRoleSupabase
   ): Promise<CalendarEventUnion> {
-    const client = authToken
-      ? getAuthenticatedSupabase(authToken)
-      : serviceRoleSupabase;
+    console.log(
+      '[CalendarEventService] createCalendarEvent called with input:',
+      input
+    );
 
     // #region agent log
     try {
@@ -484,6 +486,8 @@ export class CalendarEventService {
       insertData.synced_from_google = input.synced_from_google;
     }
 
+    console.log('[CalendarEventService] Inserting calendar event:', insertData);
+
     const { data, error } = await client
       .from('calendar_events')
       .insert([insertData])
@@ -491,6 +495,13 @@ export class CalendarEventService {
       .single();
 
     if (error) {
+      console.error('[CalendarEventService] Failed to create calendar event:', {
+        error,
+        message: error.message,
+        details: error.details,
+        hint: error.hint,
+        code: error.code,
+      });
       throw new Error(`Failed to create calendar event: ${error.message}`);
     }
 
@@ -509,7 +520,8 @@ export class CalendarEventService {
         await this.updateTaskDurationFromEvent(
           input.linked_task_id,
           eventDurationMinutes,
-          true
+          true,
+          client
         );
       }
     }
@@ -519,11 +531,8 @@ export class CalendarEventService {
 
   // Get all calendar events
   async getAllCalendarEvents(
-    authToken?: string
+    client: SupabaseClient = serviceRoleSupabase
   ): Promise<CalendarEventUnion[]> {
-    const client = authToken
-      ? getAuthenticatedSupabase(authToken)
-      : serviceRoleSupabase;
     const { data, error } = await client
       .from('calendar_events')
       .select('*')
@@ -539,11 +548,8 @@ export class CalendarEventService {
   // Get calendar event by ID
   async getCalendarEventById(
     id: string,
-    authToken?: string
+    client: SupabaseClient = serviceRoleSupabase
   ): Promise<CalendarEventUnion | null> {
-    const client = authToken
-      ? getAuthenticatedSupabase(authToken)
-      : serviceRoleSupabase;
     const { data, error } = await client
       .from('calendar_events')
       .select('*')
@@ -564,12 +570,15 @@ export class CalendarEventService {
   async updateCalendarEvent(
     id: string,
     input: UpdateCalendarEventInput,
-    authToken?: string
+    client: SupabaseClient = serviceRoleSupabase
   ): Promise<CalendarEventUnion> {
-    const client = authToken
-      ? getAuthenticatedSupabase(authToken)
-      : serviceRoleSupabase;
-    const existing = await this.getCalendarEventById(id, authToken);
+    console.log('[CalendarEventService] updateCalendarEvent called:', {
+      id,
+      input,
+      completed_at: input.completed_at,
+      completed_at_type: typeof input.completed_at,
+    });
+    const existing = await this.getCalendarEventById(id, client);
     if (!existing) {
       throw new Error('Calendar event not found');
     }
@@ -640,12 +649,24 @@ export class CalendarEventService {
     } else if (input.completed_at !== undefined) {
       // Explicitly provided: normalize it (could be null, string, or Date)
       completedAt = normalizeNullableDate(input.completed_at);
+      console.log('[CalendarEventService] Setting completed_at:', {
+        input_completed_at: input.completed_at,
+        normalized: completedAt,
+      });
     } else {
       // Not provided: keep existing value
       completedAt = existingCompletedAt;
+      console.log(
+        '[CalendarEventService] Keeping existing completed_at:',
+        completedAt
+      );
     }
 
     updateData.completed_at = completedAt;
+    console.log(
+      '[CalendarEventService] Final updateData.completed_at:',
+      updateData.completed_at
+    );
 
     const wasCompleted = !!existingCompletedAt;
     const willBeCompleted = !!completedAt;
@@ -677,7 +698,8 @@ export class CalendarEventService {
         await this.updateTaskDurationFromEvent(
           nextLinkedTaskId,
           eventDurationMinutes,
-          isCompleting
+          isCompleting,
+          client
         );
       }
     }
@@ -686,8 +708,8 @@ export class CalendarEventService {
   }
 
   // Delete calendar event
-  async deleteCalendarEvent(id: string, authToken?: string): Promise<boolean> {
-    const existing = await this.getCalendarEventById(id, authToken);
+  async deleteCalendarEvent(id: string, client: SupabaseClient = serviceRoleSupabase): Promise<boolean> {
+    const existing = await this.getCalendarEventById(id, client);
 
     if (existing?.linked_task_id && existing.completed_at) {
       const eventDurationMinutes = this.calculateEventDurationMinutes(
@@ -699,14 +721,12 @@ export class CalendarEventService {
         await this.updateTaskDurationFromEvent(
           existing.linked_task_id,
           eventDurationMinutes,
-          false
+          false,
+          client
         );
       }
     }
 
-    const client = authToken
-      ? getAuthenticatedSupabase(authToken)
-      : serviceRoleSupabase;
     const { error } = await client
       .from('calendar_events')
       .delete()
@@ -726,7 +746,7 @@ export class CalendarEventService {
    */
   async deleteCalendarEventsBatch(
     ids: string[],
-    authToken?: string
+    client: SupabaseClient = serviceRoleSupabase
   ): Promise<
     Array<{
       success: boolean;
@@ -764,9 +784,6 @@ export class CalendarEventService {
     const eventsToDelete: CalendarEventUnion[] = [];
     const eventsMap = new Map<string, CalendarEventUnion>();
 
-    const client = authToken
-      ? getAuthenticatedSupabase(authToken)
-      : serviceRoleSupabase;
     try {
       const { data: events, error } = await client
         .from('calendar_events')
@@ -788,7 +805,7 @@ export class CalendarEventService {
       }
 
       if (events) {
-        events.forEach(event => {
+        events.forEach((event: CalendarEventUnion) => {
           eventsToDelete.push(event);
           eventsMap.set(event.id, event);
         });
@@ -825,7 +842,8 @@ export class CalendarEventService {
             this.updateTaskDurationFromEvent(
               event.linked_task_id,
               eventDurationMinutes,
-              false
+              false,
+              client
             ).catch(err => {
               console.error(
                 `[CalendarEventService] Failed to update task duration for event ${event.id}:`,
@@ -913,16 +931,13 @@ export class CalendarEventService {
   async getCalendarEventsByDateRange(
     startDate: string,
     endDate: string,
-    authToken?: string
+    client: SupabaseClient = serviceRoleSupabase
   ): Promise<CalendarEventUnion[]> {
     console.log('[CalendarEventService] getCalendarEventsByDateRange called:', {
       startDate,
       endDate,
     });
 
-    const client = authToken
-      ? getAuthenticatedSupabase(authToken)
-      : serviceRoleSupabase;
     const { data, error } = await client
       .from('calendar_events')
       .select('*')
@@ -943,7 +958,7 @@ export class CalendarEventService {
 
     console.log('[CalendarEventService] Fetched calendar events:', {
       count: data?.length || 0,
-      events: data?.map(e => ({
+      events: data?.map((e: CalendarEventUnion) => ({
         id: e.id,
         title: e.title,
         linked_task_id: e.linked_task_id,
@@ -958,11 +973,8 @@ export class CalendarEventService {
   // Get calendar events linked to a task
   async getCalendarEventsByTaskId(
     taskId: string,
-    authToken?: string
+    client: SupabaseClient = serviceRoleSupabase
   ): Promise<CalendarEventTask[]> {
-    const client = authToken
-      ? getAuthenticatedSupabase(authToken)
-      : serviceRoleSupabase;
     const { data, error } = await client
       .from('calendar_events')
       .select('*')
@@ -982,11 +994,8 @@ export class CalendarEventService {
   async getCalendarEventByGoogleEventId(
     userId: string,
     googleEventId: string,
-    authToken?: string
+    client: SupabaseClient = serviceRoleSupabase
   ): Promise<CalendarEventUnion | null> {
-    const client = authToken
-      ? getAuthenticatedSupabase(authToken)
-      : serviceRoleSupabase;
     const { data, error } = await client
       .from('calendar_events')
       .select('*')

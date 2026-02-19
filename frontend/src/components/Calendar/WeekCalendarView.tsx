@@ -86,10 +86,6 @@ interface WeekCalendarViewProps {
   dialogs: Dialogs;
 
   handleAutoScheduleClick: () => Promise<void>;
-  isAutoScheduleRefreshing?: boolean;
-
-  workingHoursStart?: number;
-  workingHoursEnd?: number;
 }
 
 export function WeekCalendarView({
@@ -119,9 +115,6 @@ export function WeekCalendarView({
   onZenMode,
   dialogs,
   handleAutoScheduleClick,
-  isAutoScheduleRefreshing,
-  workingHoursStart,
-  workingHoursEnd,
 }: WeekCalendarViewProps) {
   return (
     <div className="space-y-4">
@@ -133,7 +126,6 @@ export function WeekCalendarView({
         onNextWeek={onNextWeek}
         onCurrentWeek={onCurrentWeek}
         onAutoSchedule={handleAutoScheduleClick}
-        isAutoScheduleRefreshing={isAutoScheduleRefreshing}
         onZenMode={onZenMode}
         currentDay={isMobile ? currentDay : undefined}
         onPreviousDay={isMobile ? onPreviousDay : undefined}
@@ -155,8 +147,6 @@ export function WeekCalendarView({
         onExternalTaskDragOver={onExternalTaskDragOver}
         tasksMap={tasksMap}
         isMobile={isMobile}
-        workingHoursStart={workingHoursStart}
-        workingHoursEnd={workingHoursEnd}
       />
 
       {/* CalendarCreateDialog removed to disable event creation */}

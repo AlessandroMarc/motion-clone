@@ -27,7 +27,6 @@ export function ProfileSettings() {
     loading,
     createSchedule,
     updateSchedule,
-    deleteSchedule,
     setActiveSchedule,
   } = useSchedules();
 
@@ -81,18 +80,6 @@ export function ProfileSettings() {
     } catch (error) {
       logger.error('Failed to set active schedule:', error);
       toast.error('Failed to set active schedule');
-    }
-  };
-
-  const handleDeleteSchedule = async (scheduleId: string) => {
-    try {
-      await deleteSchedule(scheduleId);
-      toast.success('Schedule deleted successfully');
-    } catch (error) {
-      logger.error('Failed to delete schedule:', error);
-      toast.error(
-        error instanceof Error ? error.message : 'Failed to delete schedule'
-      );
     }
   };
 
@@ -168,10 +155,8 @@ export function ProfileSettings() {
                     key={schedule.id}
                     schedule={schedule}
                     isActive={isActive}
-                    canDelete={schedules.length > 1}
                     onSetActive={handleSetActive}
                     onEdit={openEditDialog}
-                    onDelete={handleDeleteSchedule}
                   />
                 );
               })}

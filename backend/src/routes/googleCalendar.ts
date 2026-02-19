@@ -1,7 +1,12 @@
-import express, { type Request, type Response } from 'express';
+import express, {
+  type Request,
+  type Response,
+  type NextFunction,
+} from 'express';
 import { GoogleCalendarService } from '../services/googleCalendarService.js';
 import { getFrontendUrl } from '../config/env.js';
 import { ResponseHelper } from '../utils/responseHelpers.js';
+import { authMiddleware, type AuthRequest } from '../middleware/auth.js';
 
 const router = express.Router();
 const googleCalendarService = new GoogleCalendarService();
@@ -19,10 +24,12 @@ function getFrontendBaseUrlOrFail(res: Response): string | null {
   }
 }
 
+// Apply auth middleware to most routes, but not callback (Google redirects here)
 // GET /api/google-calendar/auth - Initiate OAuth flow
-router.get('/auth', async (req: Request, res: Response) => {
+router.get('/auth', authMiddleware, async (req: Request, res: Response) => {
+  const authReq = req as unknown as AuthRequest;
   try {
-    const userId = req.query?.user_id as string;
+    const userId = authReq.userId;
 
     if (!userId) {
       return ResponseHelper.badRequest(res, 'User ID is required');
@@ -98,9 +105,10 @@ router.get('/callback', async (req: Request, res: Response) => {
 });
 
 // GET /api/google-calendar/status - Get connection status
-router.get('/status', async (req: Request, res: Response) => {
+router.get('/status', authMiddleware, async (req: Request, res: Response) => {
+  const authReq = req as unknown as AuthRequest;
   try {
-    const userId = req.query?.user_id as string;
+    const userId = authReq.userId;
 
     if (!userId) {
       return ResponseHelper.badRequest(res, 'User ID is required');
@@ -122,9 +130,10 @@ router.get('/status', async (req: Request, res: Response) => {
 });
 
 // POST /api/google-calendar/sync - Manual sync
-router.post('/sync', async (req: Request, res: Response) => {
+router.post('/sync', authMiddleware, async (req: Request, res: Response) => {
+  const authReq = req as unknown as AuthRequest;
   try {
-    const userId = req.body?.user_id as string;
+    const userId = authReq.userId;
 
     if (!userId) {
       return ResponseHelper.badRequest(res, 'User ID is required');
@@ -157,15 +166,19 @@ router.post('/sync', async (req: Request, res: Response) => {
 });
 
 // DELETE /api/google-calendar/disconnect - Disconnect Google Calendar
-router.delete('/disconnect', async (req: Request, res: Response) => {
-  try {
-    const userId = req.body?.user_id as string;
+router.delete(
+  '/disconnect',
+  authMiddleware,
+  async (req: Request, res: Response) => {
+    const authReq = req as unknown as AuthRequest;
+    try {
+      const userId = authReq.userId;
 
-    if (!userId) {
-      return ResponseHelper.badRequest(res, 'User ID is required');
-    }
+      if (!userId) {
+        return ResponseHelper.badRequest(res, 'User ID is required');
+      }
 
-    await googleCalendarService.disconnectGoogleCalendar(userId);
+      await googleCalendarService.disconnectGoogleCalendar(userId);
     ResponseHelper.success(
       res,
       null,

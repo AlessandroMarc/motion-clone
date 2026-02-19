@@ -44,7 +44,7 @@ describe('dateUtils', () => {
     it('should include time when includeTime is true', () => {
       const date = new Date('2025-01-27T10:30:00');
       const formatted = formatDate(date, true);
-      expect(formatted).toMatch(/\d{1,2}:\d{2}(\s*(AM|PM))?/);
+      expect(formatted).toContain('10:30');
     });
   });
 
@@ -101,8 +101,8 @@ describe('dateUtils', () => {
       const start = new Date('2025-01-27T09:00:00');
       const end = new Date('2025-01-27T10:00:00');
       const formatted = formatTimeRange(start, end);
-      expect(formatted).toMatch(/9:00\s*AM/);
-      expect(formatted).toMatch(/10:00\s*AM/);
+      expect(formatted).toContain('9:00 AM');
+      expect(formatted).toContain('10:00 AM');
     });
   });
 
