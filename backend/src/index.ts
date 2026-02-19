@@ -7,8 +7,10 @@ import calendarEventRoutes from './routes/calendarEvents.js';
 import userSettingsRoutes from './routes/userSettings.js';
 import googleCalendarRoutes from './routes/googleCalendar.js';
 import subscriptionRoutes from './routes/subscriptions.js';
+import onboardingRoutes from './routes/onboarding.js';
 import { ResponseHelper } from './utils/responseHelpers.js';
 import { SyncScheduler } from './services/syncScheduler.js';
+import { OnboardingEmailScheduler } from './services/onboardingEmailScheduler.js';
 import { loadEnv } from './config/loadEnv.js';
 import { validateEnvOrThrow, validateEnv } from './config/validateEnv.js';
 
@@ -82,6 +84,7 @@ app.use('/api/calendar-events', calendarEventRoutes);
 app.use('/api/user-settings', userSettingsRoutes);
 app.use('/api/google-calendar', googleCalendarRoutes);
 app.use('/api/subscriptions', subscriptionRoutes);
+app.use('/api/onboarding', onboardingRoutes);
 
 // Start sync scheduler
 // NOTE: Vercel deploys this backend as a serverless function. In-process schedulers
@@ -89,6 +92,11 @@ app.use('/api/subscriptions', subscriptionRoutes);
 if (!process.env.VERCEL) {
   const syncScheduler = new SyncScheduler();
   syncScheduler.start();
+
+  if (process.env.RESEND_API_KEY) {
+    const onboardingScheduler = new OnboardingEmailScheduler();
+    onboardingScheduler.start();
+  }
 }
 
 // Start server
