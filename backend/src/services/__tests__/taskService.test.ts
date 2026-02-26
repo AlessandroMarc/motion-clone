@@ -1,8 +1,20 @@
 import { jest, describe, test, expect, beforeEach } from '@jest/globals';
 import type { Task } from '../../types/database.js';
 
-// Shared mock client – all chaining methods return it by default
-const mockClient: Record<string, jest.Mock> = {
+// Mock Supabase client – methods chain and return the client or results
+interface MockClient {
+  from: jest.Mock<any>;
+  select: jest.Mock<any>;
+  insert: jest.Mock<any>;
+  update: jest.Mock<any>;
+  delete: jest.Mock<any>;
+  eq: jest.Mock<any>;
+  single: jest.Mock<any>;
+  order: jest.Mock<any>;
+  [key: string]: jest.Mock<any>;
+}
+
+const mockClient: MockClient = {
   from: jest.fn(),
   select: jest.fn(),
   insert: jest.fn(),
@@ -21,23 +33,31 @@ jest.unstable_mockModule('../../config/supabase.js', () => ({
 
 const { TaskService } = await import('../taskService.js');
 
-const makeTask = (overrides: Partial<Task> = {}): Task => ({
-  id: 'task-1',
-  title: 'Test task',
-  description: 'desc',
-  due_date: null,
-  priority: 'medium',
-  status: 'pending',
-  dependencies: [],
-  blocked_by: [],
-  project_id: null,
-  user_id: 'user-1',
-  created_at: new Date(),
-  updated_at: new Date(),
-  planned_duration_minutes: 60,
-  actual_duration_minutes: 0,
-  ...overrides,
-});
+const makeTask = (overrides: Partial<Task> = {}): Task => {
+  const base: Omit<Task, 'project_id'> = {
+    id: 'task-1',
+    title: 'Test task',
+    description: 'desc',
+    due_date: null,
+    priority: 'medium',
+    status: 'not-started',
+    dependencies: [],
+    blockedBy: [],
+    user_id: 'user-1',
+    created_at: new Date(),
+    updated_at: new Date(),
+    planned_duration_minutes: 60,
+    actual_duration_minutes: 0,
+  };
+  
+  const { project_id, ...rest } = overrides;
+  
+  return {
+    ...base,
+    ...(project_id !== undefined ? { project_id } : {}),
+    ...rest,
+  } as Task;
+};
 
 describe('TaskService', () => {
   let service: InstanceType<typeof TaskService>;
@@ -46,7 +66,8 @@ describe('TaskService', () => {
     jest.clearAllMocks();
     // Default: all methods chain back to mockClient
     for (const key of ['from', 'select', 'insert', 'update', 'eq', 'order']) {
-      mockClient[key].mockReturnValue(mockClient);
+      const mock = mockClient[key as keyof MockClient];
+      if (mock) mock.mockReturnValue(mockClient);
     }
     service = new TaskService();
   });
@@ -118,8 +139,8 @@ describe('TaskService', () => {
 
   // ─── createTask ──────────────────────────────────────────────────────────────
   describe('createTask', () => {
-    test('should create a task with correct status (pending when actualDuration=0)', async () => {
-      const task = makeTask({ status: 'pending' });
+    test('should create a task with correct status (not-started when actualDuration=0)', async () => {
+      const task = makeTask({ status: 'not-started' });
       mockClient.single.mockResolvedValue({ data: task, error: null });
 
       const result = await service.createTask(
@@ -151,8 +172,8 @@ describe('TaskService', () => {
         'token'
       );
 
-      const insertCall = mockClient.insert.mock.calls[0][0] as any[];
-      expect(insertCall[0].status).toBe('in-progress');
+      const insertCall = mockClient.insert.mock?.calls?.[0]?.[0] as any[] | undefined;
+      expect(insertCall?.[0]?.status).toBe('in-progress');
     });
 
     test('should set status to completed when actual >= planned', async () => {
@@ -170,8 +191,8 @@ describe('TaskService', () => {
         'token'
       );
 
-      const insertCall = mockClient.insert.mock.calls[0][0] as any[];
-      expect(insertCall[0].status).toBe('completed');
+      const insertCall = mockClient.insert.mock?.calls?.[0]?.[0] as any[] | undefined;
+      expect(insertCall?.[0]?.status).toBe('completed');
     });
 
     test('should normalize negative planned duration to 0', async () => {
@@ -188,8 +209,8 @@ describe('TaskService', () => {
         'token'
       );
 
-      const insertCall = mockClient.insert.mock.calls[0][0] as any[];
-      expect(insertCall[0].planned_duration_minutes).toBe(0);
+      const insertCall = mockClient.insert.mock?.calls?.[0]?.[0] as any[] | undefined;
+      expect(insertCall?.[0]?.planned_duration_minutes).toBe(0);
     });
 
     test('should throw on database error', async () => {
@@ -250,7 +271,8 @@ describe('TaskService', () => {
         .mockResolvedValueOnce({ data: updatedTask, error: null });
 
       // calendar_events update chain (from -> update -> eq)
-      const calendarEqMock = jest.fn().mockResolvedValue({ error: null });
+      const calendarEqMock = jest.fn() as any;
+      calendarEqMock.mockResolvedValue({ error: null });
       const calendarUpdateMock = jest.fn().mockReturnValue({ eq: calendarEqMock });
 
       // We need to intercept the second `from()` call for calendar_events
@@ -272,7 +294,8 @@ describe('TaskService', () => {
   describe('deleteTask', () => {
     test('should delete a task and return true', async () => {
       // delete().eq() is the terminal chain for deleteTask
-      const eqMock = jest.fn().mockResolvedValue({ error: null });
+      const eqMock = jest.fn() as any;
+      eqMock.mockResolvedValue({ error: null });
       mockClient.delete.mockReturnValue({ eq: eqMock });
 
       const result = await service.deleteTask('task-1', 'token');
@@ -284,7 +307,8 @@ describe('TaskService', () => {
     });
 
     test('should throw on database error', async () => {
-      const eqMock = jest.fn().mockResolvedValue({ error: { message: 'Delete failed' } });
+      const eqMock = jest.fn() as any;
+      eqMock.mockResolvedValue({ error: { message: 'Delete failed' } });
       mockClient.delete.mockReturnValue({ eq: eqMock });
 
       await expect(service.deleteTask('task-1')).rejects.toThrow(
@@ -328,12 +352,12 @@ describe('TaskService', () => {
   // ─── getTasksByStatus ────────────────────────────────────────────────────────
   describe('getTasksByStatus', () => {
     test('should return tasks with given status', async () => {
-      const tasks = [makeTask({ status: 'pending' })];
+      const tasks = [makeTask({ status: 'not-started' })];
       mockClient.order.mockResolvedValue({ data: tasks, error: null });
 
-      const result = await service.getTasksByStatus('pending', 'token');
+      const result = await service.getTasksByStatus('not-started', 'token');
 
-      expect(mockClient.eq).toHaveBeenCalledWith('status', 'pending');
+      expect(mockClient.eq).toHaveBeenCalledWith('status', 'not-started');
       expect(result).toEqual(tasks);
     });
 

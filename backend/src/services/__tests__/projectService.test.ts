@@ -1,8 +1,20 @@
 import { jest, describe, test, expect, beforeEach } from '@jest/globals';
 import type { Project } from '../../types/database.js';
 
-// Shared mock client – all chaining methods return it by default
-const mockClient: Record<string, jest.Mock> = {
+// Mock Supabase client – methods chain and return the client or results
+interface MockClient {
+  from: jest.Mock<any>;
+  select: jest.Mock<any>;
+  insert: jest.Mock<any>;
+  update: jest.Mock<any>;
+  delete: jest.Mock<any>;
+  eq: jest.Mock<any>;
+  single: jest.Mock<any>;
+  order: jest.Mock<any>;
+  [key: string]: jest.Mock<any>;
+}
+
+const mockClient: MockClient = {
   from: jest.fn(),
   select: jest.fn(),
   insert: jest.fn(),
@@ -28,8 +40,9 @@ const makeProject = (overrides: Partial<Project> = {}): Project => ({
   deadline: null,
   status: 'not-started',
   user_id: 'user-1',
-  created_at: new Date(),
-  updated_at: new Date(),
+  createdAt: new Date(),
+  updatedAt: new Date(),
+  milestones: [],
   ...overrides,
 });
 
@@ -39,7 +52,8 @@ describe('ProjectService', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     for (const key of ['from', 'select', 'insert', 'update', 'eq', 'order']) {
-      mockClient[key].mockReturnValue(mockClient);
+      const mock = mockClient[key as keyof MockClient];
+      if (mock) mock.mockReturnValue(mockClient);
     }
     service = new ProjectService();
   });
@@ -123,8 +137,8 @@ describe('ProjectService', () => {
       );
 
       expect(mockClient.insert).toHaveBeenCalled();
-      const insertArg = (mockClient.insert.mock.calls[0] as any[][])[0][0];
-      expect(insertArg.status).toBe('not-started');
+      const insertArg = (mockClient.insert.mock?.calls?.[0] as any[][] | undefined)?.[0]?.[0];
+      expect(insertArg?.status).toBe('not-started');
       expect(result).toEqual(project);
     });
 
@@ -137,8 +151,8 @@ describe('ProjectService', () => {
         mockClient as any
       );
 
-      const insertArg = (mockClient.insert.mock.calls[0] as any[][])[0][0];
-      expect(insertArg.status).toBe('in-progress');
+      const insertArg = (mockClient.insert.mock?.calls?.[0] as any[][] | undefined)?.[0]?.[0];
+      expect(insertArg?.status).toBe('in-progress');
     });
 
     test('should normalize deadline to midnight', async () => {
@@ -154,9 +168,9 @@ describe('ProjectService', () => {
         mockClient as any
       );
 
-      const insertArg = (mockClient.insert.mock.calls[0] as any[][])[0][0];
+      const insertArg = (mockClient.insert.mock?.calls?.[0] as any[][] | undefined)?.[0]?.[0];
       // Deadline must be at midnight (hours=0)
-      const normalizedDeadline = new Date(insertArg.deadline);
+      const normalizedDeadline = new Date(insertArg?.deadline);
       expect(normalizedDeadline.getHours()).toBe(0);
       expect(normalizedDeadline.getMinutes()).toBe(0);
     });
@@ -203,7 +217,7 @@ describe('ProjectService', () => {
         mockClient as any
       );
 
-      const updateArg = (mockClient.update.mock.calls[0] as any[])[0];
+      const updateArg = (mockClient.update.mock?.calls?.[0] as any[] | undefined)?.[0];
       expect(updateArg.description).toBe('New desc');
       expect(updateArg.name).toBeUndefined();
     });
@@ -223,7 +237,8 @@ describe('ProjectService', () => {
   // ─── deleteProject ────────────────────────────────────────────────────────────
   describe('deleteProject', () => {
     test('should delete a project and return true', async () => {
-      const eqMock = jest.fn().mockResolvedValue({ error: null });
+      const eqMock = jest.fn() as any;
+      eqMock.mockResolvedValue({ error: null });
       mockClient.delete.mockReturnValue({ eq: eqMock });
 
       const result = await service.deleteProject('proj-1', mockClient as any);
@@ -234,7 +249,8 @@ describe('ProjectService', () => {
     });
 
     test('should throw on database error', async () => {
-      const eqMock = jest.fn().mockResolvedValue({ error: { message: 'Delete failed' } });
+      const eqMock = jest.fn() as any;
+      eqMock.mockResolvedValue({ error: { message: 'Delete failed' } });
       mockClient.delete.mockReturnValue({ eq: eqMock });
 
       await expect(service.deleteProject('proj-1', mockClient as any)).rejects.toThrow(

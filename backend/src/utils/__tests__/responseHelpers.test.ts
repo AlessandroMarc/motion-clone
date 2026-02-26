@@ -3,10 +3,11 @@ import type { Response } from 'express';
 import { ResponseHelper } from '../responseHelpers.js';
 
 function createMockResponse(): jest.Mocked<Partial<Response>> {
-  return {
-    status: jest.fn().mockReturnThis() as any,
-    json: jest.fn().mockReturnThis() as any,
-  };
+  const res = {
+    status: jest.fn().mockReturnThis(),
+    json: jest.fn().mockReturnThis(),
+  } as jest.Mocked<Partial<Response>>;
+  return res;
 }
 
 describe('ResponseHelper', () => {
@@ -27,9 +28,9 @@ describe('ResponseHelper', () => {
 
     test('should omit message when not provided', () => {
       ResponseHelper.success(res as Response, { x: 1 });
-      const call = (res.json as jest.Mock).mock.calls[0][0] as any;
-      expect(call.success).toBe(true);
-      expect(call.message).toBeUndefined();
+      const call = (res.json as jest.Mock).mock.calls[0]?.[0] as any;
+      expect(call?.success).toBe(true);
+      expect(call?.message).toBeUndefined();
     });
   });
 
@@ -45,8 +46,8 @@ describe('ResponseHelper', () => {
 
     test('should use default message when not provided', () => {
       ResponseHelper.created(res as Response, {});
-      const call = (res.json as jest.Mock).mock.calls[0][0] as any;
-      expect(call.message).toBe('Resource created successfully');
+      const call = (res.json as jest.Mock).mock.calls[0]?.[0] as any;
+      expect(call?.message).toBe('Resource created successfully');
     });
   });
 
@@ -72,8 +73,8 @@ describe('ResponseHelper', () => {
 
     test('should use default message when not provided', () => {
       ResponseHelper.deleted(res as Response);
-      const call = (res.json as jest.Mock).mock.calls[0][0] as any;
-      expect(call.message).toBe('Resource deleted successfully');
+      const call = (res.json as jest.Mock).mock.calls[0]?.[0] as any;
+      expect(call?.message).toBe('Resource deleted successfully');
     });
   });
 
@@ -88,8 +89,8 @@ describe('ResponseHelper', () => {
 
     test('should omit count when not provided', () => {
       ResponseHelper.list(res as Response, []);
-      const call = (res.json as jest.Mock).mock.calls[0][0] as any;
-      expect(call.count).toBeUndefined();
+      const call = (res.json as jest.Mock).mock.calls[0]?.[0] as any;
+      expect(call?.count).toBeUndefined();
     });
   });
 
@@ -114,8 +115,8 @@ describe('ResponseHelper', () => {
 
     test('should use default resource name', () => {
       ResponseHelper.notFound(res as Response);
-      const call = (res.json as jest.Mock).mock.calls[0][0] as any;
-      expect(call.error).toBe('Resource not found');
+      const call = (res.json as jest.Mock).mock.calls[0]?.[0] as any;
+      expect(call?.error).toBe('Resource not found');
     });
   });
 
@@ -130,8 +131,8 @@ describe('ResponseHelper', () => {
 
     test('should include optional message', () => {
       ResponseHelper.badRequest(res as Response, 'err', 'detail');
-      const call = (res.json as jest.Mock).mock.calls[0][0] as any;
-      expect(call.message).toBe('detail');
+      const call = (res.json as jest.Mock).mock.calls[0]?.[0] as any;
+      expect(call?.message).toBe('detail');
     });
   });
 
@@ -146,8 +147,8 @@ describe('ResponseHelper', () => {
 
     test('should include custom error message', () => {
       ResponseHelper.unauthorized(res as Response, 'Token expired');
-      const call = (res.json as jest.Mock).mock.calls[0][0] as any;
-      expect(call.error).toBe('Token expired');
+      const call = (res.json as jest.Mock).mock.calls[0]?.[0] as any;
+      expect(call?.error).toBe('Token expired');
     });
   });
 
@@ -162,8 +163,8 @@ describe('ResponseHelper', () => {
 
     test('should use default error message', () => {
       ResponseHelper.internalError(res as Response);
-      const call = (res.json as jest.Mock).mock.calls[0][0] as any;
-      expect(call.error).toBe('Internal server error');
+      const call = (res.json as jest.Mock).mock.calls[0]?.[0] as any;
+      expect(call?.error).toBe('Internal server error');
     });
   });
 

@@ -25,7 +25,7 @@ router.get('/', async (req: Request, res: Response) => {
       tasks = await taskService.getTasksByProjectId(project_id, token);
     } else if (status && typeof status === 'string') {
       tasks = await taskService.getTasksByStatus(
-        status as 'pending' | 'in-progress' | 'completed',
+        status as 'not-started' | 'in-progress' | 'completed',
         token
       );
     } else {
