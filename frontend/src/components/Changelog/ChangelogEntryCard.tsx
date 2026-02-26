@@ -1,4 +1,3 @@
-import { Separator } from '@/components/ui/separator';
 import type { ChangelogEntry } from '@/content/changelog';
 import { ChangeItemRow } from './ChangeItemRow';
 
