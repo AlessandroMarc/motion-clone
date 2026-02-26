@@ -137,7 +137,9 @@ describe('ProjectService', () => {
       );
 
       expect(mockClient.insert).toHaveBeenCalled();
-      const insertArg = (mockClient.insert.mock?.calls?.[0] as any[][] | undefined)?.[0]?.[0];
+      const insertArg = (
+        mockClient.insert.mock?.calls?.[0] as any[][] | undefined
+      )?.[0]?.[0];
       expect(insertArg?.status).toBe('not-started');
       expect(result).toEqual(project);
     });
@@ -151,12 +153,16 @@ describe('ProjectService', () => {
         mockClient as any
       );
 
-      const insertArg = (mockClient.insert.mock?.calls?.[0] as any[][] | undefined)?.[0]?.[0];
+      const insertArg = (
+        mockClient.insert.mock?.calls?.[0] as any[][] | undefined
+      )?.[0]?.[0];
       expect(insertArg?.status).toBe('in-progress');
     });
 
     test('should normalize deadline to midnight', async () => {
-      const project = makeProject({ deadline: '2025-06-01T00:00:00.000Z' as any });
+      const project = makeProject({
+        deadline: '2025-06-01T00:00:00.000Z' as any,
+      });
       mockClient.single.mockResolvedValue({ data: project, error: null });
 
       await service.createProject(
@@ -168,7 +174,9 @@ describe('ProjectService', () => {
         mockClient as any
       );
 
-      const insertArg = (mockClient.insert.mock?.calls?.[0] as any[][] | undefined)?.[0]?.[0];
+      const insertArg = (
+        mockClient.insert.mock?.calls?.[0] as any[][] | undefined
+      )?.[0]?.[0];
       // Deadline must be at midnight (hours=0)
       const normalizedDeadline = new Date(insertArg?.deadline);
       expect(normalizedDeadline.getHours()).toBe(0);
@@ -217,7 +225,9 @@ describe('ProjectService', () => {
         mockClient as any
       );
 
-      const updateArg = (mockClient.update.mock?.calls?.[0] as any[] | undefined)?.[0];
+      const updateArg = (
+        mockClient.update.mock?.calls?.[0] as any[] | undefined
+      )?.[0];
       expect(updateArg.description).toBe('New desc');
       expect(updateArg.name).toBeUndefined();
     });
@@ -253,9 +263,9 @@ describe('ProjectService', () => {
       eqMock.mockResolvedValue({ error: { message: 'Delete failed' } });
       mockClient.delete.mockReturnValue({ eq: eqMock });
 
-      await expect(service.deleteProject('proj-1', mockClient as any)).rejects.toThrow(
-        'Failed to delete project: Delete failed'
-      );
+      await expect(
+        service.deleteProject('proj-1', mockClient as any)
+      ).rejects.toThrow('Failed to delete project: Delete failed');
     });
   });
 
@@ -265,7 +275,10 @@ describe('ProjectService', () => {
       const projects = [makeProject({ status: 'in-progress' })];
       mockClient.order.mockResolvedValue({ data: projects, error: null });
 
-      const result = await service.getProjectsByStatus('in-progress', mockClient as any);
+      const result = await service.getProjectsByStatus(
+        'in-progress',
+        mockClient as any
+      );
 
       expect(mockClient.eq).toHaveBeenCalledWith('status', 'in-progress');
       expect(result).toEqual(projects);
@@ -274,7 +287,10 @@ describe('ProjectService', () => {
     test('should return empty array when none match', async () => {
       mockClient.order.mockResolvedValue({ data: null, error: null });
 
-      const result = await service.getProjectsByStatus('completed', mockClient as any);
+      const result = await service.getProjectsByStatus(
+        'completed',
+        mockClient as any
+      );
 
       expect(result).toEqual([]);
     });

@@ -67,7 +67,11 @@ describe('ResponseHelper', () => {
       ResponseHelper.deleted(res as Response, 'Deleted!');
       expect(res.status).toHaveBeenCalledWith(200);
       expect(res.json).toHaveBeenCalledWith(
-        expect.objectContaining({ success: true, data: null, message: 'Deleted!' })
+        expect.objectContaining({
+          success: true,
+          data: null,
+          message: 'Deleted!',
+        })
       );
     });
 
@@ -83,7 +87,12 @@ describe('ResponseHelper', () => {
       const data = [{ id: '1' }, { id: '2' }];
       ResponseHelper.list(res as Response, data, 'Listed', 2);
       expect(res.json).toHaveBeenCalledWith(
-        expect.objectContaining({ success: true, data, message: 'Listed', count: 2 })
+        expect.objectContaining({
+          success: true,
+          data,
+          message: 'Listed',
+          count: 2,
+        })
       );
     });
 
@@ -183,7 +192,10 @@ describe('ResponseHelper', () => {
       ResponseHelper.error(res as Response, 'Something went wrong', 503);
       expect(res.status).toHaveBeenCalledWith(503);
       expect(res.json).toHaveBeenCalledWith(
-        expect.objectContaining({ success: false, error: 'Something went wrong' })
+        expect.objectContaining({
+          success: false,
+          error: 'Something went wrong',
+        })
       );
     });
 

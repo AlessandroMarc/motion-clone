@@ -69,6 +69,7 @@ Set up Jest unit/integration tests across backend services + routes and frontend
 ### 9. Documentation
 
 Add to `backend/ARCHITECTURE.md` and root README:
+
 - How to run tests locally: `npm test`, `npm run test:backend`, `npm run test:e2e`
 - How to debug failing tests: env vars for logging, Playwright UI mode
 - Test folder structure and naming conventions
@@ -77,7 +78,7 @@ Add to `backend/ARCHITECTURE.md` and root README:
 ## Verification
 
 - Run `npm run test:backend` → all backend tests pass, 80%+ coverage
-- Run `npm run test` → all frontend tests pass, 80%+ coverage  
+- Run `npm run test` → all frontend tests pass, 80%+ coverage
 - Run `npm run test:e2e` → critical paths (auth, calendar, tasks) pass
 - Run `npm run ci` → all linting, formatting, tests, and builds pass
 - Check coverage reports in CI logs or locally in `coverage/` folders

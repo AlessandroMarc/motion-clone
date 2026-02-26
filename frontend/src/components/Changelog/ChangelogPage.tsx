@@ -19,7 +19,9 @@ export function ChangelogPage() {
           </Link>
           <div className="flex items-center gap-2">
             <div className="w-6 h-6 bg-primary rounded-md flex items-center justify-center">
-              <span className="text-primary-foreground font-bold text-sm">N</span>
+              <span className="text-primary-foreground font-bold text-sm">
+                N
+              </span>
             </div>
             <span className="text-sm font-semibold text-foreground">Nexto</span>
           </div>

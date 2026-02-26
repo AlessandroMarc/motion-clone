@@ -43,7 +43,9 @@ describe('taskUtils', () => {
   // ─── TASK_PRIORITY_RANK ───────────────────────────────────────────────────────
   describe('TASK_PRIORITY_RANK', () => {
     it('should have high ranked above medium', () => {
-      expect(TASK_PRIORITY_RANK.high).toBeGreaterThan(TASK_PRIORITY_RANK.medium);
+      expect(TASK_PRIORITY_RANK.high).toBeGreaterThan(
+        TASK_PRIORITY_RANK.medium
+      );
     });
 
     it('should have medium ranked above low', () => {
@@ -76,17 +78,26 @@ describe('taskUtils', () => {
   // ─── isTaskOverdue ────────────────────────────────────────────────────────────
   describe('isTaskOverdue', () => {
     it('should return true when due date is in the past and task is not completed', () => {
-      const task = makeTask({ due_date: new Date('2000-01-01'), status: 'pending' });
+      const task = makeTask({
+        due_date: new Date('2000-01-01'),
+        status: 'pending',
+      });
       expect(isTaskOverdue(task)).toBe(true);
     });
 
     it('should return false when task is completed even if date is past', () => {
-      const task = makeTask({ due_date: new Date('2000-01-01'), status: 'completed' });
+      const task = makeTask({
+        due_date: new Date('2000-01-01'),
+        status: 'completed',
+      });
       expect(isTaskOverdue(task)).toBe(false);
     });
 
     it('should return false when due date is in the future', () => {
-      const task = makeTask({ due_date: new Date('2099-12-31'), status: 'pending' });
+      const task = makeTask({
+        due_date: new Date('2099-12-31'),
+        status: 'pending',
+      });
       expect(isTaskOverdue(task)).toBe(false);
     });
 

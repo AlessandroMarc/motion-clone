@@ -10,10 +10,7 @@ import {
 } from '../calendarUtils';
 import type { CalendarEventUnion } from '@/types';
 
-function makeEvent(
-  startTime: Date,
-  endTime: Date
-): CalendarEventUnion {
+function makeEvent(startTime: Date, endTime: Date): CalendarEventUnion {
   return {
     id: 'evt-1',
     title: 'Event',
@@ -49,7 +46,8 @@ describe('calendarUtils', () => {
       const result = getDateRange(start, 4);
       for (let i = 1; i < result.length; i++) {
         const diff =
-          (result[i].getTime() - result[i - 1].getTime()) / (1000 * 60 * 60 * 24);
+          (result[i].getTime() - result[i - 1].getTime()) /
+          (1000 * 60 * 60 * 24);
         expect(diff).toBe(1);
       }
     });

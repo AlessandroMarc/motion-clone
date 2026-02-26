@@ -73,7 +73,11 @@ export function GoogleCalendarSettings() {
     if (connected === 'true') {
       toast.success('Google Calendar connected successfully!');
       // Advance onboarding if on the calendar sync step
-      if (onboardingStatus && !onboardingStatus.completed && onboardingStatus.step === 'scheduled') {
+      if (
+        onboardingStatus &&
+        !onboardingStatus.completed &&
+        onboardingStatus.step === 'scheduled'
+      ) {
         advanceToNextStep('calendar_sync');
       }
       // Clean URL

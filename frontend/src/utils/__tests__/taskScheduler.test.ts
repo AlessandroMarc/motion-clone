@@ -131,13 +131,18 @@ describe('taskScheduler', () => {
       // Should create events to fit 240 minutes with gaps between them
       expect(events.length).toBeGreaterThan(0);
       expect(events.length).toBeLessThanOrEqual(5);
-      
+
       // Verify total duration matches (accounting for gaps)
       const totalMinutes = events.reduce((sum, event) => {
-        return sum + (event.end_time.getTime() - event.start_time.getTime()) / (1000 * 60);
+        return (
+          sum +
+          (event.end_time.getTime() - event.start_time.getTime()) / (1000 * 60)
+        );
       }, 0);
-      expect(totalMinutes).toBeLessThanOrEqual(240 + config.gapBetweenEventsMinutes * events.length);
-      
+      expect(totalMinutes).toBeLessThanOrEqual(
+        240 + config.gapBetweenEventsMinutes * events.length
+      );
+
       // All events should be within working hours
       events.forEach(event => {
         const hour = event.start_time.getHours();

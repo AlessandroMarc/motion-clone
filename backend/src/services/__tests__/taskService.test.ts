@@ -49,9 +49,9 @@ const makeTask = (overrides: Partial<Task> = {}): Task => {
     planned_duration_minutes: 60,
     actual_duration_minutes: 0,
   };
-  
+
   const { project_id, ...rest } = overrides;
-  
+
   return {
     ...base,
     ...(project_id !== undefined ? { project_id } : {}),
@@ -98,7 +98,9 @@ describe('TaskService', () => {
         error: { message: 'DB error' },
       });
 
-      await expect(service.getAllTasks()).rejects.toThrow('Failed to fetch tasks: DB error');
+      await expect(service.getAllTasks()).rejects.toThrow(
+        'Failed to fetch tasks: DB error'
+      );
     });
   });
 
@@ -158,7 +160,10 @@ describe('TaskService', () => {
     });
 
     test('should set status to in-progress when 0 < actual < planned', async () => {
-      const task = makeTask({ status: 'in-progress', actual_duration_minutes: 30 });
+      const task = makeTask({
+        status: 'in-progress',
+        actual_duration_minutes: 30,
+      });
       mockClient.single.mockResolvedValue({ data: task, error: null });
 
       await service.createTask(
@@ -172,12 +177,17 @@ describe('TaskService', () => {
         'token'
       );
 
-      const insertCall = mockClient.insert.mock?.calls?.[0]?.[0] as any[] | undefined;
+      const insertCall = mockClient.insert.mock?.calls?.[0]?.[0] as
+        | any[]
+        | undefined;
       expect(insertCall?.[0]?.status).toBe('in-progress');
     });
 
     test('should set status to completed when actual >= planned', async () => {
-      const task = makeTask({ status: 'completed', actual_duration_minutes: 60 });
+      const task = makeTask({
+        status: 'completed',
+        actual_duration_minutes: 60,
+      });
       mockClient.single.mockResolvedValue({ data: task, error: null });
 
       await service.createTask(
@@ -191,7 +201,9 @@ describe('TaskService', () => {
         'token'
       );
 
-      const insertCall = mockClient.insert.mock?.calls?.[0]?.[0] as any[] | undefined;
+      const insertCall = mockClient.insert.mock?.calls?.[0]?.[0] as
+        | any[]
+        | undefined;
       expect(insertCall?.[0]?.status).toBe('completed');
     });
 
@@ -209,7 +221,9 @@ describe('TaskService', () => {
         'token'
       );
 
-      const insertCall = mockClient.insert.mock?.calls?.[0]?.[0] as any[] | undefined;
+      const insertCall = mockClient.insert.mock?.calls?.[0]?.[0] as
+        | any[]
+        | undefined;
       expect(insertCall?.[0]?.planned_duration_minutes).toBe(0);
     });
 
@@ -244,7 +258,11 @@ describe('TaskService', () => {
         // Second call: update result (single)
         .mockResolvedValueOnce({ data: updatedTask, error: null });
 
-      const result = await service.updateTask('task-1', { title: 'Updated' }, 'token');
+      const result = await service.updateTask(
+        'task-1',
+        { title: 'Updated' },
+        'token'
+      );
 
       expect(result).toEqual(updatedTask);
     });
@@ -255,9 +273,9 @@ describe('TaskService', () => {
         error: { code: 'PGRST116', message: 'Not found' },
       });
 
-      await expect(service.updateTask('missing', { title: 'x' })).rejects.toThrow(
-        'Task not found'
-      );
+      await expect(
+        service.updateTask('missing', { title: 'x' })
+      ).rejects.toThrow('Task not found');
     });
 
     test('should propagate title changes to linked calendar events', async () => {
@@ -273,7 +291,9 @@ describe('TaskService', () => {
       // calendar_events update chain (from -> update -> eq)
       const calendarEqMock = jest.fn() as any;
       calendarEqMock.mockResolvedValue({ error: null });
-      const calendarUpdateMock = jest.fn().mockReturnValue({ eq: calendarEqMock });
+      const calendarUpdateMock = jest
+        .fn()
+        .mockReturnValue({ eq: calendarEqMock });
 
       // We need to intercept the second `from()` call for calendar_events
       mockClient.from
