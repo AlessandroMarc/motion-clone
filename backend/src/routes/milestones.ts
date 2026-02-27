@@ -5,9 +5,13 @@ import type {
   UpdateMilestoneInput,
 } from '../types/database.js';
 import { ResponseHelper } from '../utils/responseHelpers.js';
+import { authMiddleware } from '../middleware/auth.js';
 
 const router = express.Router();
 const milestoneService = new MilestoneService();
+
+// Apply auth middleware to all routes
+router.use(authMiddleware);
 
 // GET /api/milestones - Get all milestones
 router.get('/', async (req: Request, res: Response) => {
