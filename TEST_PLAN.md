@@ -85,7 +85,7 @@ Set up Jest unit/integration tests across backend services + routes and frontend
 
 ⏳ **IN PROGRESS**
 
-- ✅ `test:backend` script added: `npm --prefix backend run test` 
+- ✅ `test:backend` script added: `npm --prefix backend run test`
 - ✅ `test:frontend` script added: `npm --prefix frontend run test`
 - ❌ `test:ci` script missing — should run: `build` → `test:backend` → `test:frontend` → (optionally `test:e2e`) → `lint` → `format:check`
 - ❌ `test:coverage` script exists but not fully integrated
@@ -115,6 +115,7 @@ Add to `backend/ARCHITECTURE.md` and root README:
 ## Verification
 
 ### Current Status (Feb 27, 2026)
+
 - ✅ Run `npm run test:backend` → 184 backend tests pass (13 routes + 5 services + 1 middleware)
 - ✅ Run `npm run test:frontend` → 188 frontend tests pass (3 components + 2 hooks + 6 utilities)
 - ✅ Run `npm test` → all 372 tests pass
@@ -123,6 +124,7 @@ Add to `backend/ARCHITECTURE.md` and root README:
 - ❌ Coverage thresholds → enforced at 60%, need raise to 80%
 
 ### To Complete
+
 - Fix remaining issues: `npm run ci` should pass all checks
 - Implement E2E tests with Playwright
 - Implement page-level integration tests
