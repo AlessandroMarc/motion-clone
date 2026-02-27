@@ -120,11 +120,20 @@ export class ProjectService {
     return data;
   }
 
-  // Delete project
+  // Delete project and all related tasks
   async deleteProject(
     id: string,
     client: SupabaseClient = serviceRoleSupabase
   ): Promise<boolean> {
+    const { error: tasksError } = await client
+      .from('tasks')
+      .delete()
+      .eq('project_id', id);
+
+    if (tasksError) {
+      throw new Error(`Failed to delete project tasks: ${tasksError.message}`);
+    }
+
     const { error } = await client.from('projects').delete().eq('id', id);
 
     if (error) {
