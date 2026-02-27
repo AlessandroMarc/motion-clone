@@ -91,7 +91,7 @@ export function GoogleCalendarSettings() {
     }
 
     loadStatus();
-  }, [user?.id, loadStatus]);
+  }, [user?.id, loadStatus, advanceToNextStep, onboardingStatus]);
 
   const handleConnect = () => {
     if (!user?.id) return;

@@ -1,4 +1,5 @@
 import { jest, describe, test, expect, beforeEach } from '@jest/globals';
+import type { SupabaseClient } from '@supabase/supabase-js';
 
 // Mock Supabase config BEFORE importing anything that uses it
 const mockServiceRoleSupabase = {
@@ -52,7 +53,7 @@ describe('ProjectService', () => {
       // Act
       const result = await projectService.deleteProject(
         'project-123',
-        mockClient as any
+        mockClient as unknown as SupabaseClient
       );
 
       // Assert: tasks were deleted first using project_id filter
@@ -75,7 +76,10 @@ describe('ProjectService', () => {
 
       // Act & Assert
       await expect(
-        projectService.deleteProject('project-123', mockClient as any)
+        projectService.deleteProject(
+          'project-123',
+          mockClient as unknown as SupabaseClient
+        )
       ).rejects.toThrow('Failed to delete project tasks: Task deletion failed');
     });
 
@@ -89,7 +93,10 @@ describe('ProjectService', () => {
 
       // Act & Assert
       await expect(
-        projectService.deleteProject('project-123', mockClient as any)
+        projectService.deleteProject(
+          'project-123',
+          mockClient as unknown as SupabaseClient
+        )
       ).rejects.toThrow('Failed to delete project: Project deletion failed');
     });
   });

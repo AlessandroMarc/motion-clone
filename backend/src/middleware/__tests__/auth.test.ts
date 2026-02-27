@@ -1,5 +1,5 @@
 import { jest, describe, test, expect, beforeEach } from '@jest/globals';
-import type { Response, NextFunction } from 'express';
+import type { Request, Response, NextFunction } from 'express';
 
 // Mock Supabase config BEFORE importing anything that uses it
 const mockGetAuthenticatedSupabase = jest.fn();
@@ -14,19 +14,27 @@ const { authMiddleware } = await import('../auth.js');
 const { mockAuthUser, mockAuthError } =
   await import('../../__tests__/helpers/supabaseMock.js');
 
+// Define types for test mocks
+interface MockSupabaseClient {
+  auth: {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    getUser: jest.Mock<any>;
+  };
+}
+
 // Define AuthRequest type inline
 interface AuthRequest extends Request {
   authToken: string;
   userId: string;
-  supabaseClient: any;
-  headers: any;
+  supabaseClient: MockSupabaseClient;
+  headers: Record<string, string>;
 }
 
 describe('authMiddleware', () => {
   let mockRequest: Partial<AuthRequest>;
   let mockResponse: Partial<Response>;
   let mockNext: NextFunction;
-  let mockSupabaseClient: any;
+  let mockSupabaseClient: MockSupabaseClient;
 
   beforeEach(() => {
     // Reset mocks before each test
@@ -39,8 +47,8 @@ describe('authMiddleware', () => {
 
     // Setup mock response with chainable methods
     mockResponse = {
-      status: jest.fn().mockReturnThis() as any,
-      json: jest.fn().mockReturnThis() as any,
+      status: jest.fn().mockReturnThis() as unknown as Response['status'],
+      json: jest.fn().mockReturnThis() as unknown as Response['json'],
     };
 
     // Setup mock next function
@@ -63,7 +71,7 @@ describe('authMiddleware', () => {
   describe('Missing or invalid Authorization header', () => {
     test('should return 401 when Authorization header is missing', async () => {
       await authMiddleware(
-        mockRequest as any,
+        mockRequest as AuthRequest,
         mockResponse as Response,
         mockNext
       );
@@ -84,7 +92,7 @@ describe('authMiddleware', () => {
       };
 
       await authMiddleware(
-        mockRequest as any,
+        mockRequest as AuthRequest,
         mockResponse as Response,
         mockNext
       );
@@ -99,7 +107,7 @@ describe('authMiddleware', () => {
       };
 
       await authMiddleware(
-        mockRequest as any,
+        mockRequest as AuthRequest,
         mockResponse as Response,
         mockNext
       );
@@ -123,7 +131,7 @@ describe('authMiddleware', () => {
       });
 
       await authMiddleware(
-        mockRequest as any,
+        mockRequest as AuthRequest,
         mockResponse as Response,
         mockNext
       );
@@ -155,7 +163,7 @@ describe('authMiddleware', () => {
       });
 
       await authMiddleware(
-        mockRequest as any,
+        mockRequest as AuthRequest,
         mockResponse as Response,
         mockNext
       );
@@ -178,7 +186,7 @@ describe('authMiddleware', () => {
       });
 
       await authMiddleware(
-        mockRequest as any,
+        mockRequest as AuthRequest,
         mockResponse as Response,
         mockNext
       );
@@ -213,7 +221,7 @@ describe('authMiddleware', () => {
       );
 
       await authMiddleware(
-        mockRequest as any,
+        mockRequest as AuthRequest,
         mockResponse as Response,
         mockNext
       );
@@ -239,7 +247,7 @@ describe('authMiddleware', () => {
       );
 
       await authMiddleware(
-        mockRequest as any,
+        mockRequest as AuthRequest,
         mockResponse as Response,
         mockNext
       );
@@ -263,7 +271,7 @@ describe('authMiddleware', () => {
       );
 
       await authMiddleware(
-        mockRequest as any,
+        mockRequest as AuthRequest,
         mockResponse as Response,
         mockNext
       );
@@ -284,7 +292,7 @@ describe('authMiddleware', () => {
       });
 
       await authMiddleware(
-        mockRequest as any,
+        mockRequest as AuthRequest,
         mockResponse as Response,
         mockNext
       );
@@ -309,7 +317,7 @@ describe('authMiddleware', () => {
       });
 
       await authMiddleware(
-        mockRequest as any,
+        mockRequest as AuthRequest,
         mockResponse as Response,
         mockNext
       );
@@ -336,7 +344,7 @@ describe('authMiddleware', () => {
       });
 
       await authMiddleware(
-        mockRequest as any,
+        mockRequest as AuthRequest,
         mockResponse as Response,
         mockNext
       );
@@ -361,7 +369,7 @@ describe('authMiddleware', () => {
       });
 
       await authMiddleware(
-        mockRequest as any,
+        mockRequest as AuthRequest,
         mockResponse as Response,
         mockNext
       );

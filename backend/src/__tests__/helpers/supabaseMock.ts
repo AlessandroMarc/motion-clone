@@ -23,7 +23,7 @@ export function createMockSupabaseClient(
       getSession: jest.fn(),
     },
     ...overrides,
-  } as any;
+  } as unknown as jest.Mocked<SupabaseClient>;
 
   return mockClient;
 }
@@ -31,7 +31,7 @@ export function createMockSupabaseClient(
 /**
  * Creates a standardized query response for Supabase mocks
  */
-export function mockSupabaseQuery<T>(data: T, error: any = null) {
+export function mockSupabaseQuery<T>(data: T, error: Error | null = null) {
   return Promise.resolve({ data, error });
 }
 
