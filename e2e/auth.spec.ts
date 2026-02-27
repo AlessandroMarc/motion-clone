@@ -16,10 +16,12 @@ test.describe('Landing page', () => {
 
   test('has a call-to-action button on the hero section', async ({ page }) => {
     await page.goto('/');
-    // Hero section should have at least one prominent action button/link
+    // Hero section should have at least one prominent action button/link.
+    // When the user is unauthenticated the hero shows a "Join" subscription
+    // form; the header always shows "Go to App". Both count as CTAs.
     const ctaButton = page
       .locator('a, button')
-      .filter({ hasText: /get started|sign in|try|start/i })
+      .filter({ hasText: /get started|sign in|try|start|go to app|join/i })
       .first();
     await expect(ctaButton).toBeVisible();
   });

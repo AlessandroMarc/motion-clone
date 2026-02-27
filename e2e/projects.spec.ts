@@ -10,6 +10,17 @@ import { mockProjects, mockTasks, apiSuccess } from './fixtures/apiMocks';
 
 test.describe('Projects page', () => {
   test.beforeEach(async ({ page }) => {
+    // IMPORTANT: Playwright executes route handlers in LIFO order (last
+    // registered = first executed).  Register the catch-all FIRST so it
+    // runs LAST, letting the specific handlers below take precedence.
+    await page.route('http://localhost:3003/**', route =>
+      route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ success: true, message: 'OK', data: [] }),
+      })
+    );
+
     // Mock GET /projects
     await page.route('http://localhost:3003/api/projects*', route => {
       if (route.request().method() === 'GET') {
@@ -45,15 +56,6 @@ test.describe('Projects page', () => {
         status: 200,
         contentType: 'application/json',
         body: JSON.stringify(apiSuccess([], 'OK', 0)),
-      })
-    );
-
-    // Catch-all for any other API calls
-    await page.route('http://localhost:3003/**', route =>
-      route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify({ success: true, message: 'OK', data: [] }),
       })
     );
 
