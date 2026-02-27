@@ -2,6 +2,7 @@ import {
   getAuthenticatedSupabase,
   serviceRoleSupabase,
 } from '../config/supabase.js';
+import type { SupabaseClient } from '@supabase/supabase-js';
 import type {
   CreateCalendarEventInput,
   UpdateCalendarEventInput,
@@ -92,7 +93,7 @@ export class CalendarEventService {
     endTimeIso: string,
     excludeEventId?: string,
     excludeEventIds?: string[],
-    client: any = serviceRoleSupabase
+    client: SupabaseClient = serviceRoleSupabase
   ): Promise<void> {
     if (new Date(startTimeIso) >= new Date(endTimeIso)) {
       throw new Error('Calendar event end time must be after start time');
@@ -134,14 +135,23 @@ export class CalendarEventService {
     if (data && data.length > 0) {
       console.log('[CalendarEventService] Overlap detected:', {
         newEvent: { start_time: startTimeIso, end_time: endTimeIso },
-        overlappingEvents: data.map((e: any) => ({
-          id: e.id,
-          title: e.title,
-          start_time: e.start_time,
-          end_time: e.end_time,
-          linked_task_id: e.linked_task_id,
-          synced_from_google: e.synced_from_google,
-        })),
+        overlappingEvents: data.map(
+          (e: {
+            id: string;
+            title: string;
+            start_time: string;
+            end_time: string;
+            linked_task_id: string | null;
+            synced_from_google: boolean;
+          }) => ({
+            id: e.id,
+            title: e.title,
+            start_time: e.start_time,
+            end_time: e.end_time,
+            linked_task_id: e.linked_task_id,
+            synced_from_google: e.synced_from_google,
+          })
+        ),
         excludeEventId,
       });
       throw new Error('Calendar event overlaps with an existing event');
@@ -980,7 +990,7 @@ export class CalendarEventService {
 
     console.log('[CalendarEventService] Fetched calendar events:', {
       count: data?.length || 0,
-          });
+    });
 
     return data || [];
   }
