@@ -65,16 +65,14 @@ describe('ProjectList', () => {
     });
 
     // Click the Delete button on the project
-    const deleteButton = screen.getByRole('button', { name: /delete project/i });
+    const deleteButton = screen.getByRole('button', {
+      name: /delete project/i,
+    });
     fireEvent.click(deleteButton);
 
     // The confirmation dialog should appear
-    expect(
-      screen.getByText('Delete project?')
-    ).toBeInTheDocument();
-    expect(
-      screen.getByText(/all its associated tasks/i)
-    ).toBeInTheDocument();
+    expect(screen.getByText('Delete project?')).toBeInTheDocument();
+    expect(screen.getByText(/all its associated tasks/i)).toBeInTheDocument();
   });
 
   it('does not call deleteProject when Cancel is clicked in the dialog', async () => {
@@ -84,7 +82,9 @@ describe('ProjectList', () => {
       expect(screen.getByText('Test Project')).toBeInTheDocument();
     });
 
-    const deleteButton = screen.getByRole('button', { name: /delete project/i });
+    const deleteButton = screen.getByRole('button', {
+      name: /delete project/i,
+    });
     fireEvent.click(deleteButton);
 
     // Click Cancel
@@ -102,7 +102,9 @@ describe('ProjectList', () => {
       expect(screen.getByText('Test Project')).toBeInTheDocument();
     });
 
-    const deleteButton = screen.getByRole('button', { name: /delete project/i });
+    const deleteButton = screen.getByRole('button', {
+      name: /delete project/i,
+    });
     fireEvent.click(deleteButton);
 
     // Click the confirm Delete button in the dialog

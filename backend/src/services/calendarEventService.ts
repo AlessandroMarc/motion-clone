@@ -980,7 +980,7 @@ export class CalendarEventService {
 
     console.log('[CalendarEventService] Fetched calendar events:', {
       count: data?.length || 0,
-          });
+    });
 
     return data || [];
   }

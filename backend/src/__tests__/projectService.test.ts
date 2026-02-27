@@ -22,7 +22,8 @@ const { ProjectService } = await import('../services/projectService.js');
 
 describe('ProjectService', () => {
   let projectService: InstanceType<typeof ProjectService>;
-  let mockClient: typeof mockServiceRoleSupabase;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let mockClient: any;
 
   beforeEach(() => {
     jest.clearAllMocks();
@@ -82,7 +83,9 @@ describe('ProjectService', () => {
       // Arrange: tasks deletion succeeds, project deletion fails
       mockClient.eq
         .mockResolvedValueOnce({ error: null }) // tasks delete
-        .mockResolvedValueOnce({ error: { message: 'Project deletion failed' } }); // project delete
+        .mockResolvedValueOnce({
+          error: { message: 'Project deletion failed' },
+        }); // project delete
 
       // Act & Assert
       await expect(

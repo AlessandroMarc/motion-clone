@@ -2,10 +2,7 @@ import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import type { ChangeItem, ChangeType } from '@/content/changelog';
 
-const typeConfig: Record<
-  ChangeType,
-  { label: string; className: string }
-> = {
+const typeConfig: Record<ChangeType, { label: string; className: string }> = {
   new: {
     label: 'New',
     className:
@@ -34,7 +31,9 @@ export function ChangeItemRow({ item }: ChangeItemRowProps) {
       <Badge className={cn('mt-0.5 shrink-0', config.className)}>
         {config.label}
       </Badge>
-      <span className="text-sm text-foreground leading-relaxed">{item.text}</span>
+      <span className="text-sm text-foreground leading-relaxed">
+        {item.text}
+      </span>
     </li>
   );
 }
