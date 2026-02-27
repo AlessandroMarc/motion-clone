@@ -86,7 +86,9 @@ describe('MilestoneService', () => {
         status: 'in-progress',
       });
 
-      const insertArg = (mockClient.insert.mock?.calls?.[0] as any[][] | undefined)?.[0]?.[0];
+      const insertArg = (
+        mockClient.insert.mock?.calls?.[0] as any[][] | undefined
+      )?.[0]?.[0];
       expect(insertArg?.status).toBe('in-progress');
     });
 
@@ -97,7 +99,11 @@ describe('MilestoneService', () => {
       });
 
       await expect(
-        service.createMilestone({ title: 'Test', project_id: 'proj-1', user_id: 'user-1' })
+        service.createMilestone({
+          title: 'Test',
+          project_id: 'proj-1',
+          user_id: 'user-1',
+        })
       ).rejects.toThrow('Failed to create milestone: Insert failed');
     });
   });
@@ -105,7 +111,10 @@ describe('MilestoneService', () => {
   // ─── getAllMilestones ─────────────────────────────────────────────────────────
   describe('getAllMilestones', () => {
     test('should return all milestones', async () => {
-      const milestones = [makeMilestone({ id: 'm1' }), makeMilestone({ id: 'm2' })];
+      const milestones = [
+        makeMilestone({ id: 'm1' }),
+        makeMilestone({ id: 'm2' }),
+      ];
       mockClient.order.mockResolvedValue({ data: milestones, error: null });
 
       const result = await service.getAllMilestones();
@@ -175,7 +184,9 @@ describe('MilestoneService', () => {
       const updated = makeMilestone({ title: 'Updated' });
       mockClient.single.mockResolvedValue({ data: updated, error: null });
 
-      const result = await service.updateMilestone('milestone-1', { title: 'Updated' });
+      const result = await service.updateMilestone('milestone-1', {
+        title: 'Updated',
+      });
 
       expect(mockClient.update).toHaveBeenCalled();
       expect(mockClient.eq).toHaveBeenCalledWith('id', 'milestone-1');
@@ -278,7 +289,9 @@ describe('MilestoneService', () => {
         error: { message: 'Status query failed' },
       });
 
-      await expect(service.getMilestonesByStatus('not-started')).rejects.toThrow(
+      await expect(
+        service.getMilestonesByStatus('not-started')
+      ).rejects.toThrow(
         'Failed to fetch milestones by status: Status query failed'
       );
     });

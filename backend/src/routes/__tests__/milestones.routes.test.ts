@@ -52,18 +52,16 @@ describe('GET /api/milestones', () => {
     ]);
     const res = await supertest(app).get('/api/milestones?project_id=p1');
     expect(res.status).toBe(200);
-    expect(
-      mockMilestoneService.getMilestonesByProjectId
-    ).toHaveBeenCalledWith('p1');
+    expect(mockMilestoneService.getMilestonesByProjectId).toHaveBeenCalledWith(
+      'p1'
+    );
   });
 
   test('filters by status', async () => {
     mockMilestoneService.getMilestonesByStatus.mockResolvedValue([
       sampleMilestone,
     ]);
-    const res = await supertest(app).get(
-      '/api/milestones?status=not-started'
-    );
+    const res = await supertest(app).get('/api/milestones?status=not-started');
     expect(res.status).toBe(200);
     expect(mockMilestoneService.getMilestonesByStatus).toHaveBeenCalledWith(
       'not-started'

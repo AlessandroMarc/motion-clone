@@ -1,17 +1,29 @@
 import React from 'react';
 import { render, screen } from '@testing-library/react';
-import type { Task, CalendarEvent, CalendarEventTask, CalendarEventUnion } from '@/types';
+import type {
+  Task,
+  CalendarEvent,
+  CalendarEventTask,
+  CalendarEventUnion,
+} from '@/types';
 import { CalendarEventCard } from '../CalendarEventCard';
 
 jest.mock('@/components/ui/tooltip', () => ({
-  TooltipProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
+  TooltipProvider: ({ children }: { children: React.ReactNode }) => (
+    <>{children}</>
+  ),
   Tooltip: ({ children }: { children: React.ReactNode }) => <>{children}</>,
-  TooltipTrigger: ({ children }: { children: React.ReactNode }) => <>{children}</>,
-  TooltipContent: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+  TooltipTrigger: ({ children }: { children: React.ReactNode }) => (
+    <>{children}</>
+  ),
+  TooltipContent: ({ children }: { children: React.ReactNode }) => (
+    <div>{children}</div>
+  ),
 }));
 
 jest.mock('@/utils/calendarUtils', () => ({
-  formatEventTime: (start: Date, end: Date) => `${start.getHours()}:00 - ${end.getHours()}:00`,
+  formatEventTime: (start: Date, end: Date) =>
+    `${start.getHours()}:00 - ${end.getHours()}:00`,
 }));
 
 // Fixed future dates so tests are time-stable
@@ -20,7 +32,9 @@ const FUTURE_END = new Date('2099-06-15T11:00:00');
 const PAST_START = new Date('2000-01-01T10:00:00');
 const PAST_END = new Date('2000-01-01T11:00:00');
 
-const makeCalendarEvent = (overrides: Partial<CalendarEvent> = {}): CalendarEvent =>
+const makeCalendarEvent = (
+  overrides: Partial<CalendarEvent> = {}
+): CalendarEvent =>
   ({
     id: 'ev-1',
     title: 'Meeting',
@@ -30,9 +44,11 @@ const makeCalendarEvent = (overrides: Partial<CalendarEvent> = {}): CalendarEven
     created_at: new Date(),
     updated_at: new Date(),
     ...overrides,
-  } as CalendarEvent);
+  }) as CalendarEvent;
 
-const makeTaskEvent = (overrides: Partial<CalendarEventTask> = {}): CalendarEventTask => ({
+const makeTaskEvent = (
+  overrides: Partial<CalendarEventTask> = {}
+): CalendarEventTask => ({
   id: 'task-ev-1',
   title: 'Task Event',
   start_time: FUTURE_START,
@@ -64,7 +80,9 @@ const makeTask = (overrides: Partial<Task> = {}): Task => ({
 
 describe('CalendarEventCard', () => {
   it('renders the event title', () => {
-    render(<CalendarEventCard event={makeCalendarEvent({ title: 'Stand-up' })} />);
+    render(
+      <CalendarEventCard event={makeCalendarEvent({ title: 'Stand-up' })} />
+    );
     expect(screen.getByText('Stand-up')).toBeInTheDocument();
   });
 
@@ -75,7 +93,9 @@ describe('CalendarEventCard', () => {
   });
 
   it('does not render completion checkmark for a regular calendar event', () => {
-    const { container } = render(<CalendarEventCard event={makeCalendarEvent()} />);
+    const { container } = render(
+      <CalendarEventCard event={makeCalendarEvent()} />
+    );
     // CheckCircle2 renders as an svg; there should be none
     expect(container.querySelectorAll('svg')).toHaveLength(0);
   });
@@ -102,14 +122,20 @@ describe('CalendarEventCard', () => {
   });
 
   it('applies opacity/grayscale styling for past events', () => {
-    const event = makeCalendarEvent({ start_time: PAST_START, end_time: PAST_END });
+    const event = makeCalendarEvent({
+      start_time: PAST_START,
+      end_time: PAST_END,
+    });
     const { container } = render(<CalendarEventCard event={event} />);
     const card = container.firstChild as HTMLElement;
     expect(card.className).toContain('grayscale');
   });
 
   it('does NOT apply past styling for future events', () => {
-    const event = makeCalendarEvent({ start_time: FUTURE_START, end_time: FUTURE_END });
+    const event = makeCalendarEvent({
+      start_time: FUTURE_START,
+      end_time: FUTURE_END,
+    });
     const { container } = render(<CalendarEventCard event={event} />);
     const card = container.firstChild as HTMLElement;
     expect(card.className).not.toContain('grayscale');
@@ -151,7 +177,9 @@ describe('CalendarEventCard', () => {
       start_time: new Date('2020-06-01T09:00:00'),
       end_time: new Date('2020-06-01T10:00:00'),
     });
-    render(<CalendarEventCard event={event as CalendarEventUnion} task={task} />);
+    render(
+      <CalendarEventCard event={event as CalendarEventUnion} task={task} />
+    );
     expect(screen.queryByText('Past deadline')).not.toBeInTheDocument();
   });
 
@@ -162,7 +190,9 @@ describe('CalendarEventCard', () => {
       end_time: new Date('2020-01-03T10:00:00'),
       completed_at: new Date(),
     });
-    const { container } = render(<CalendarEventCard event={event} task={task} />);
+    const { container } = render(
+      <CalendarEventCard event={event} task={task} />
+    );
     // CheckCircle2 SVG should still be present
     expect(container.querySelectorAll('svg').length).toBeGreaterThan(0);
   });

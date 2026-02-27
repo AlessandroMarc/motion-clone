@@ -65,7 +65,15 @@ describe('UserSettingsService', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-    for (const key of ['from', 'select', 'insert', 'update', 'upsert', 'eq', 'order']) {
+    for (const key of [
+      'from',
+      'select',
+      'insert',
+      'update',
+      'upsert',
+      'eq',
+      'order',
+    ]) {
       const mock = mockClient[key as keyof MockClient];
       if (mock) mock.mockReturnValue(mockClient);
     }
@@ -78,7 +86,10 @@ describe('UserSettingsService', () => {
       const scheduleRaw = makeScheduleRaw({ id: 'schedule-1' });
       // First single: user_settings with active_schedule_id
       mockClient.single
-        .mockResolvedValueOnce({ data: { active_schedule_id: 'schedule-1' }, error: null })
+        .mockResolvedValueOnce({
+          data: { active_schedule_id: 'schedule-1' },
+          error: null,
+        })
         // Second single: the specific schedule
         .mockResolvedValueOnce({ data: scheduleRaw, error: null });
 
@@ -93,7 +104,10 @@ describe('UserSettingsService', () => {
       const scheduleRaw = makeScheduleRaw({ is_default: true });
       // First single: settings with no active schedule
       mockClient.single
-        .mockResolvedValueOnce({ data: { active_schedule_id: null }, error: null })
+        .mockResolvedValueOnce({
+          data: { active_schedule_id: null },
+          error: null,
+        })
         // Second single: default schedule
         .mockResolvedValueOnce({ data: scheduleRaw, error: null });
 
@@ -106,9 +120,15 @@ describe('UserSettingsService', () => {
     test('should return hardcoded defaults when no schedule found at all', async () => {
       // First single: settings with no active schedule
       mockClient.single
-        .mockResolvedValueOnce({ data: { active_schedule_id: null }, error: null })
+        .mockResolvedValueOnce({
+          data: { active_schedule_id: null },
+          error: null,
+        })
         // Second single: no default schedule
-        .mockResolvedValueOnce({ data: null, error: { code: 'PGRST116', message: 'Not found' } });
+        .mockResolvedValueOnce({
+          data: null,
+          error: { code: 'PGRST116', message: 'Not found' },
+        });
 
       const result = await service.getActiveSchedule('user-1');
 
@@ -123,7 +143,10 @@ describe('UserSettingsService', () => {
   // ─── getUserSchedules ─────────────────────────────────────────────────────────
   describe('getUserSchedules', () => {
     test('should return all schedules for a user', async () => {
-      const schedules = [makeScheduleRaw({ id: 's1' }), makeScheduleRaw({ id: 's2' })];
+      const schedules = [
+        makeScheduleRaw({ id: 's1' }),
+        makeScheduleRaw({ id: 's2' }),
+      ];
       // getUserSchedules chains: select → eq → order → order (terminal)
       mockClient.order
         .mockReturnValueOnce(mockClient)
@@ -157,7 +180,9 @@ describe('UserSettingsService', () => {
 
       expect(mockClient.from).toHaveBeenCalledWith('schedules');
       expect(mockClient.insert).toHaveBeenCalled();
-      const insertArg = (mockClient.insert.mock?.calls?.[0] as any[][] | undefined)?.[0]?.[0];
+      const insertArg = (
+        mockClient.insert.mock?.calls?.[0] as any[][] | undefined
+      )?.[0]?.[0];
       expect(insertArg?.name).toBe('Default');
       expect(insertArg?.working_hours_start).toBe(9);
       expect(insertArg?.working_hours_end).toBe(22);
@@ -171,9 +196,9 @@ describe('UserSettingsService', () => {
         error: { message: 'Insert failed' },
       });
 
-      await expect(service.createSchedule({ user_id: 'user-1' })).rejects.toThrow(
-        'Failed to create schedule: Insert failed'
-      );
+      await expect(
+        service.createSchedule({ user_id: 'user-1' })
+      ).rejects.toThrow('Failed to create schedule: Insert failed');
     });
   });
 
@@ -183,7 +208,9 @@ describe('UserSettingsService', () => {
       const updated = makeScheduleRaw({ name: 'Work Hours' });
       mockClient.single.mockResolvedValue({ data: updated, error: null });
 
-      const result = await service.updateSchedule('schedule-1', 'user-1', { name: 'Work Hours' });
+      const result = await service.updateSchedule('schedule-1', 'user-1', {
+        name: 'Work Hours',
+      });
 
       expect(mockClient.update).toHaveBeenCalled();
       expect(mockClient.eq).toHaveBeenCalledWith('id', 'schedule-1');
@@ -212,9 +239,9 @@ describe('UserSettingsService', () => {
         error: null,
       });
 
-      await expect(service.deleteSchedule('schedule-1', 'user-1')).rejects.toThrow(
-        'Cannot delete the currently active schedule'
-      );
+      await expect(
+        service.deleteSchedule('schedule-1', 'user-1')
+      ).rejects.toThrow('Cannot delete the currently active schedule');
     });
 
     test('should throw when deleting the last remaining schedule', async () => {
@@ -225,16 +252,18 @@ describe('UserSettingsService', () => {
       });
 
       // Count query: from('schedules').select(..., { count }).eq() → { count: 1 }
-      const countEqMock = jest.fn().mockResolvedValue({ count: 1, error: null });
+      const countEqMock = jest
+        .fn()
+        .mockResolvedValue({ count: 1, error: null });
       const countSelectMock = jest.fn().mockReturnValue({ eq: countEqMock });
 
       mockClient.from
-        .mockReturnValueOnce(mockClient)                // user_settings chain
+        .mockReturnValueOnce(mockClient) // user_settings chain
         .mockReturnValueOnce({ select: countSelectMock }); // schedules count
 
-      await expect(service.deleteSchedule('schedule-1', 'user-1')).rejects.toThrow(
-        'Cannot delete your only schedule'
-      );
+      await expect(
+        service.deleteSchedule('schedule-1', 'user-1')
+      ).rejects.toThrow('Cannot delete your only schedule');
     });
 
     test('should delete successfully when not active and not last', async () => {
@@ -245,7 +274,9 @@ describe('UserSettingsService', () => {
       });
 
       // Count query: count = 2
-      const countEqMock = jest.fn().mockResolvedValue({ count: 2, error: null });
+      const countEqMock = jest
+        .fn()
+        .mockResolvedValue({ count: 2, error: null });
       const countSelectMock = jest.fn().mockReturnValue({ eq: countEqMock });
 
       // Delete chain: .delete().eq('id', ...).eq('user_id', ...) → { error: null }
@@ -254,9 +285,9 @@ describe('UserSettingsService', () => {
       const deleteChainMock = jest.fn().mockReturnValue({ eq: deleteEq1Mock });
 
       mockClient.from
-        .mockReturnValueOnce(mockClient)                        // user_settings
-        .mockReturnValueOnce({ select: countSelectMock })       // schedules count
-        .mockReturnValueOnce({ delete: deleteChainMock });      // schedules delete
+        .mockReturnValueOnce(mockClient) // user_settings
+        .mockReturnValueOnce({ select: countSelectMock }) // schedules count
+        .mockReturnValueOnce({ delete: deleteChainMock }); // schedules delete
 
       await service.deleteSchedule('schedule-1', 'user-1');
 
@@ -305,7 +336,9 @@ describe('UserSettingsService', () => {
   // ─── upsertUserSettings ───────────────────────────────────────────────────────
   describe('upsertUserSettings', () => {
     test('should upsert and return settings', async () => {
-      const settings = makeUserSettingsRaw({ active_schedule_id: 'schedule-1' });
+      const settings = makeUserSettingsRaw({
+        active_schedule_id: 'schedule-1',
+      });
       mockClient.single.mockResolvedValue({ data: settings, error: null });
 
       const result = await service.upsertUserSettings({
@@ -358,7 +391,10 @@ describe('UserSettingsService', () => {
       };
       // First single: PGRST116
       mockClient.single
-        .mockResolvedValueOnce({ data: null, error: { code: 'PGRST116', message: 'Not found' } })
+        .mockResolvedValueOnce({
+          data: null,
+          error: { code: 'PGRST116', message: 'Not found' },
+        })
         // Second single: after insert
         .mockResolvedValueOnce({ data: newData, error: null });
 

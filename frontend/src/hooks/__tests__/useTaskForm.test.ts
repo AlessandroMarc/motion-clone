@@ -45,7 +45,10 @@ describe('taskSchema', () => {
   });
 
   it('rejects title longer than 100 characters', () => {
-    const result = taskSchema.safeParse({ ...validData, title: 'a'.repeat(101) });
+    const result = taskSchema.safeParse({
+      ...validData,
+      title: 'a'.repeat(101),
+    });
     expect(result.success).toBe(false);
     if (!result.success) {
       expect(result.error.issues[0].path).toContain('title');
@@ -60,7 +63,9 @@ describe('taskSchema', () => {
     });
     expect(result.success).toBe(false);
     if (!result.success) {
-      const issue = result.error.issues.find(i => i.path.includes('actual_duration_minutes'));
+      const issue = result.error.issues.find(i =>
+        i.path.includes('actual_duration_minutes')
+      );
       expect(issue).toBeDefined();
     }
   });
@@ -146,7 +151,9 @@ describe('useTaskForm', () => {
   });
 
   it('onSubmit shows toast.error when onTaskCreate throws', async () => {
-    const onTaskCreate = jest.fn().mockRejectedValue(new Error('Create failed'));
+    const onTaskCreate = jest
+      .fn()
+      .mockRejectedValue(new Error('Create failed'));
     const { result } = renderHook(() => useTaskForm(onTaskCreate));
 
     await act(async () => {

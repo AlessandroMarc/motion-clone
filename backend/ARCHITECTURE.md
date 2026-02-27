@@ -201,7 +201,9 @@ Route integration tests use `supertest` with a minimal Express app mounting only
 
 ```ts
 jest.unstable_mockModule('../../config/supabase.js', () => ({
-  verifyAuthToken: jest.fn().mockReturnValue({ userId: 'user-1', exp: 9999999999 }),
+  verifyAuthToken: jest
+    .fn()
+    .mockReturnValue({ userId: 'user-1', exp: 9999999999 }),
   getAuthenticatedSupabase: jest.fn().mockReturnValue({}),
 }));
 ```

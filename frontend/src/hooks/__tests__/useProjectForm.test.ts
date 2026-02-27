@@ -41,7 +41,10 @@ describe('projectSchema', () => {
   });
 
   it('rejects name longer than 100 characters', () => {
-    const result = projectSchema.safeParse({ ...validData, name: 'a'.repeat(101) });
+    const result = projectSchema.safeParse({
+      ...validData,
+      name: 'a'.repeat(101),
+    });
     expect(result.success).toBe(false);
     if (!result.success) {
       expect(result.error.issues[0].path).toContain('name');
@@ -54,7 +57,10 @@ describe('projectSchema', () => {
   });
 
   it('accepts optional deadline', () => {
-    const result = projectSchema.safeParse({ name: 'My Project', deadline: '2025-12-31' });
+    const result = projectSchema.safeParse({
+      name: 'My Project',
+      deadline: '2025-12-31',
+    });
     expect(result.success).toBe(true);
   });
 });
@@ -120,14 +126,18 @@ describe('useProjectForm', () => {
   });
 
   it('onSubmit shows toast.error when onProjectCreate throws', async () => {
-    const onProjectCreate = jest.fn().mockRejectedValue(new Error('Create failed'));
+    const onProjectCreate = jest
+      .fn()
+      .mockRejectedValue(new Error('Create failed'));
     const { result } = renderHook(() => useProjectForm(onProjectCreate));
 
     await act(async () => {
       await result.current.onSubmit(validData);
     });
 
-    expect(toast.error).toHaveBeenCalledWith('Failed to create project. Please try again.');
+    expect(toast.error).toHaveBeenCalledWith(
+      'Failed to create project. Please try again.'
+    );
   });
 
   it('resets form after successful submission', async () => {
@@ -159,7 +169,10 @@ describe('useProjectForm', () => {
     const { result } = renderHook(() => useProjectForm(onProjectCreate));
 
     await act(async () => {
-      await result.current.onSubmit({ name: 'My Project', deadline: '2025-12-31' });
+      await result.current.onSubmit({
+        name: 'My Project',
+        deadline: '2025-12-31',
+      });
     });
 
     const callArg = onProjectCreate.mock.calls[0][0];

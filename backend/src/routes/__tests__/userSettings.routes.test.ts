@@ -25,7 +25,9 @@ const mockUserSettingsService = {
   completeOnboarding: jest.fn(),
 };
 jest.unstable_mockModule('../../services/userSettingsService.js', () => ({
-  UserSettingsService: jest.fn().mockImplementation(() => mockUserSettingsService),
+  UserSettingsService: jest
+    .fn()
+    .mockImplementation(() => mockUserSettingsService),
 }));
 
 // ── dynamic imports after mocks ───────────────────────────────────────────────
@@ -47,8 +49,17 @@ const sampleSchedule = {
   working_hours_end: 22,
   is_default: true,
 };
-const sampleSettings = { id: 'set1', user_id: 'user-1', active_schedule_id: null };
-const sampleOnboarding = { completed: false, step: null, started_at: null, completed_at: null };
+const sampleSettings = {
+  id: 'set1',
+  user_id: 'user-1',
+  active_schedule_id: null,
+};
+const sampleOnboarding = {
+  completed: false,
+  step: null,
+  started_at: null,
+  completed_at: null,
+};
 
 beforeEach(() => {
   jest.clearAllMocks();
@@ -64,7 +75,10 @@ describe('GET /api/user-settings/active-schedule', () => {
     expect(res.status).toBe(200);
     expect(res.body.success).toBe(true);
     expect(res.body.data.id).toBe('s1');
-    expect(mockUserSettingsService.getActiveSchedule).toHaveBeenCalledWith('user-1', 'fake-test-token');
+    expect(mockUserSettingsService.getActiveSchedule).toHaveBeenCalledWith(
+      'user-1',
+      'fake-test-token'
+    );
   });
 
   test('returns 401 without auth header', async () => {
@@ -76,7 +90,9 @@ describe('GET /api/user-settings/active-schedule', () => {
 // ── GET /api/user-settings/schedules ─────────────────────────────────────────
 describe('GET /api/user-settings/schedules', () => {
   test('returns all schedules', async () => {
-    mockUserSettingsService.getUserSchedules.mockResolvedValue([sampleSchedule]);
+    mockUserSettingsService.getUserSchedules.mockResolvedValue([
+      sampleSchedule,
+    ]);
     const res = await supertest(app)
       .get('/api/user-settings/schedules')
       .set(AUTH_HEADER);
@@ -100,7 +116,9 @@ describe('POST /api/user-settings/schedules', () => {
   });
 
   test('returns 400 when service throws', async () => {
-    mockUserSettingsService.createSchedule.mockRejectedValue(new Error('Validation error'));
+    mockUserSettingsService.createSchedule.mockRejectedValue(
+      new Error('Validation error')
+    );
     const res = await supertest(app)
       .post('/api/user-settings/schedules')
       .set(AUTH_HEADER)
@@ -121,7 +139,12 @@ describe('PUT /api/user-settings/schedules/:id', () => {
       .send({ name: 'Updated' });
     expect(res.status).toBe(200);
     expect(res.body.data.name).toBe('Updated');
-    expect(mockUserSettingsService.updateSchedule).toHaveBeenCalledWith('s1', 'user-1', { name: 'Updated' }, 'fake-test-token');
+    expect(mockUserSettingsService.updateSchedule).toHaveBeenCalledWith(
+      's1',
+      'user-1',
+      { name: 'Updated' },
+      'fake-test-token'
+    );
   });
 });
 
@@ -142,9 +165,7 @@ describe('DELETE /api/user-settings/schedules/:id', () => {
 describe('GET /api/user-settings', () => {
   test('returns user settings', async () => {
     mockUserSettingsService.getUserSettings.mockResolvedValue(sampleSettings);
-    const res = await supertest(app)
-      .get('/api/user-settings')
-      .set(AUTH_HEADER);
+    const res = await supertest(app).get('/api/user-settings').set(AUTH_HEADER);
     expect(res.status).toBe(200);
     expect(res.body.data.id).toBe('set1');
   });
@@ -158,7 +179,9 @@ describe('GET /api/user-settings', () => {
 // ── POST /api/user-settings ───────────────────────────────────────────────────
 describe('POST /api/user-settings', () => {
   test('upserts user settings and returns 201', async () => {
-    mockUserSettingsService.upsertUserSettings.mockResolvedValue(sampleSettings);
+    mockUserSettingsService.upsertUserSettings.mockResolvedValue(
+      sampleSettings
+    );
     const res = await supertest(app)
       .post('/api/user-settings')
       .set(AUTH_HEADER)
@@ -185,7 +208,9 @@ describe('PUT /api/user-settings', () => {
 // ── GET /api/user-settings/onboarding/status ─────────────────────────────────
 describe('GET /api/user-settings/onboarding/status', () => {
   test('returns onboarding status', async () => {
-    mockUserSettingsService.getOnboardingStatus.mockResolvedValue(sampleOnboarding);
+    mockUserSettingsService.getOnboardingStatus.mockResolvedValue(
+      sampleOnboarding
+    );
     const res = await supertest(app)
       .get('/api/user-settings/onboarding/status')
       .set(AUTH_HEADER);
@@ -205,7 +230,11 @@ describe('PUT /api/user-settings/onboarding/step', () => {
       .send({ step: 'task_created' });
     expect(res.status).toBe(200);
     expect(res.body.data.step).toBe('task_created');
-    expect(mockUserSettingsService.updateOnboardingStep).toHaveBeenCalledWith('user-1', 'task_created', 'fake-test-token');
+    expect(mockUserSettingsService.updateOnboardingStep).toHaveBeenCalledWith(
+      'user-1',
+      'task_created',
+      'fake-test-token'
+    );
   });
 
   test('returns 400 for invalid onboarding step', async () => {
@@ -228,6 +257,9 @@ describe('PUT /api/user-settings/onboarding/complete', () => {
       .set(AUTH_HEADER);
     expect(res.status).toBe(200);
     expect(res.body.data.completed).toBe(true);
-    expect(mockUserSettingsService.completeOnboarding).toHaveBeenCalledWith('user-1', 'fake-test-token');
+    expect(mockUserSettingsService.completeOnboarding).toHaveBeenCalledWith(
+      'user-1',
+      'fake-test-token'
+    );
   });
 });

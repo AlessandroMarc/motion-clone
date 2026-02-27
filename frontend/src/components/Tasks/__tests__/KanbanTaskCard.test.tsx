@@ -73,7 +73,10 @@ const makeTask = (overrides: Partial<Task> = {}): Task => ({
 describe('KanbanTaskCard', () => {
   it('renders task title', () => {
     render(
-      <KanbanTaskCard task={makeTask({ title: 'My Task' })} onDelete={jest.fn()} />
+      <KanbanTaskCard
+        task={makeTask({ title: 'My Task' })}
+        onDelete={jest.fn()}
+      />
     );
     expect(screen.getByText('My Task')).toBeInTheDocument();
   });
@@ -119,7 +122,11 @@ describe('KanbanTaskCard', () => {
 
   it('does not show "Scheduled" when isPlanned is false', () => {
     render(
-      <KanbanTaskCard task={makeTask()} onDelete={jest.fn()} isPlanned={false} />
+      <KanbanTaskCard
+        task={makeTask()}
+        onDelete={jest.fn()}
+        isPlanned={false}
+      />
     );
     expect(screen.queryByText('Scheduled')).not.toBeInTheDocument();
   });
@@ -130,7 +137,12 @@ describe('KanbanTaskCard', () => {
   });
 
   it('renders priority indicator text', () => {
-    render(<KanbanTaskCard task={makeTask({ priority: 'high' })} onDelete={jest.fn()} />);
+    render(
+      <KanbanTaskCard
+        task={makeTask({ priority: 'high' })}
+        onDelete={jest.fn()}
+      />
+    );
     expect(screen.getByText('high')).toBeInTheDocument();
   });
 
@@ -148,7 +160,11 @@ describe('KanbanTaskCard', () => {
 
   it('applies cursor-pointer class when onSelect is provided', () => {
     render(
-      <KanbanTaskCard task={makeTask()} onDelete={jest.fn()} onSelect={jest.fn()} />
+      <KanbanTaskCard
+        task={makeTask()}
+        onDelete={jest.fn()}
+        onSelect={jest.fn()}
+      />
     );
     const card = screen.getByTestId('card');
     expect(card.className).toContain('cursor-pointer');

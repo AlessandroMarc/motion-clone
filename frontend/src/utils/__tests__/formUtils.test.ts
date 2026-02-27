@@ -49,7 +49,10 @@ describe('transformFormDataToTask', () => {
 
   it('clamps actual_duration to 0 when negative', () => {
     const result = transformFormDataToTask(
-      makeFormData({ actual_duration_minutes: -5, planned_duration_minutes: 60 }),
+      makeFormData({
+        actual_duration_minutes: -5,
+        planned_duration_minutes: 60,
+      }),
       'u1'
     );
     expect(result.actual_duration_minutes).toBe(0);
@@ -57,7 +60,10 @@ describe('transformFormDataToTask', () => {
 
   it('clamps actual_duration to planned when it exceeds planned', () => {
     const result = transformFormDataToTask(
-      makeFormData({ actual_duration_minutes: 120, planned_duration_minutes: 60 }),
+      makeFormData({
+        actual_duration_minutes: 120,
+        planned_duration_minutes: 60,
+      }),
       'u1'
     );
     expect(result.actual_duration_minutes).toBe(60);
@@ -65,7 +71,10 @@ describe('transformFormDataToTask', () => {
 
   it('allows actual_duration equal to planned', () => {
     const result = transformFormDataToTask(
-      makeFormData({ actual_duration_minutes: 60, planned_duration_minutes: 60 }),
+      makeFormData({
+        actual_duration_minutes: 60,
+        planned_duration_minutes: 60,
+      }),
       'u1'
     );
     expect(result.actual_duration_minutes).toBe(60);
@@ -90,10 +99,7 @@ describe('transformFormDataToTask', () => {
   });
 
   it('sets due_date to null when dueDate is empty string', () => {
-    const result = transformFormDataToTask(
-      makeFormData({ dueDate: '' }),
-      'u1'
-    );
+    const result = transformFormDataToTask(makeFormData({ dueDate: '' }), 'u1');
     expect(result.due_date).toBeNull();
   });
 
@@ -129,7 +135,10 @@ describe('transformFormDataToTask', () => {
   it('defaults blockedBy to [] when not provided', () => {
     const data = makeFormData();
     delete (data as Record<string, unknown>).blockedBy;
-    const result = transformFormDataToTask(data as ReturnType<typeof makeFormData>, 'u1');
+    const result = transformFormDataToTask(
+      data as ReturnType<typeof makeFormData>,
+      'u1'
+    );
     expect(result.blockedBy).toEqual([]);
   });
 
