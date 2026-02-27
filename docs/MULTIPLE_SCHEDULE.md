@@ -69,7 +69,7 @@ Task Schedule (specifico per task) ← Può sovrascrivere lo schedule del proget
 - **Use cases**:
   - Task urgente da completare nel weekend
   - Task di supporto 24/7 (per un project altrimenti 9-17)
-  - Task con deadline ad orario spescifico
+  - Task con deadline ad orario specifico
 
 ## 3. Tipizzazione del Schedule
 

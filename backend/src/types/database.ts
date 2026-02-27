@@ -9,6 +9,8 @@ export type {
   CreateCalendarEventInput,
   UpdateCalendarEventInput,
   Schedule,
+  ProjectSchedule,
+  TaskSchedule,
   UserSettings,
   OnboardingStatus,
   OnboardingStep,
@@ -74,4 +76,30 @@ export interface UpdateMilestoneInput {
   status?: 'not-started' | 'in-progress' | 'completed';
   project_id?: string;
   user_id?: string;
+}
+
+export interface CreateProjectScheduleInput {
+  project_id: string;
+  schedule_id: string;
+  effective_from: Date | string;
+  effective_to?: Date | string | null;
+}
+
+export interface UpdateProjectScheduleInput {
+  schedule_id?: string;
+  effective_from?: Date | string;
+  effective_to?: Date | string | null;
+}
+
+export interface CreateTaskScheduleInput {
+  task_id: string;
+  schedule_id: string;
+  effective_from: Date | string;
+  effective_to?: Date | string | null;
+}
+
+export interface UpdateTaskScheduleInput {
+  schedule_id?: string;
+  effective_from?: Date | string;
+  effective_to?: Date | string | null;
 }

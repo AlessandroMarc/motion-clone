@@ -115,6 +115,26 @@ interface Schedule {
   updated_at: Date;
 }
 
+interface ProjectSchedule {
+  id: string;
+  project_id: string;
+  schedule_id: string;
+  effective_from: Date;
+  effective_to: Date | null;
+  created_at: Date;
+  updated_at: Date;
+}
+
+interface TaskSchedule {
+  id: string;
+  task_id: string;
+  schedule_id: string;
+  effective_from: Date;
+  effective_to: Date | null;
+  created_at: Date;
+  updated_at: Date;
+}
+
 type OnboardingStep =
   | 'task_created'
   | 'project_created'
@@ -151,6 +171,8 @@ export type {
   CreateCalendarEventInput,
   UpdateCalendarEventInput,
   Schedule,
+  ProjectSchedule,
+  TaskSchedule,
   UserSettings,
   OnboardingStatus,
   OnboardingStep,
