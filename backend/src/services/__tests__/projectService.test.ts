@@ -260,7 +260,10 @@ describe('ProjectService', () => {
 
     test('should throw on database error', async () => {
       const eqMock = jest.fn() as any;
-      eqMock.mockResolvedValue({ error: { message: 'Delete failed' } });
+      // First call (tasks delete) succeeds
+      eqMock.mockResolvedValueOnce({ error: null });
+      // Second call (project delete) fails
+      eqMock.mockResolvedValueOnce({ error: { message: 'Delete failed' } });
       mockClient.delete.mockReturnValue({ eq: eqMock });
 
       await expect(
