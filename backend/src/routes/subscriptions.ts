@@ -1,5 +1,6 @@
 import express, { type Request, type Response } from 'express';
 import { ResponseHelper } from '../utils/responseHelpers.js';
+import { isValidEmail } from '../utils/email.js';
 import { supabase } from '../config/supabase.js';
 
 const router = express.Router();
@@ -10,10 +11,6 @@ const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
 
 function getClientKey(req: Request): string {
   return req.ip || 'unknown';
-}
-
-function isValidEmail(email: string): boolean {
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 }
 
 router.post('/', async (req: Request, res: Response) => {
