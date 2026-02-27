@@ -211,3 +211,45 @@ All endpoints return appropriate HTTP status codes:
 - `500` - Internal Server Error
 
 Error responses include a JSON object with an `error` field containing the error message.
+
+## Testing
+
+### Running Tests
+
+```bash
+# Run all tests
+npm test
+
+# Watch mode (re-runs on file change)
+npm run test:watch
+
+# With coverage report
+npm run test:coverage
+```
+
+### Test Structure
+
+```
+src/
+├── middleware/__tests__/auth.test.ts         # Auth middleware (13 tests)
+├── utils/__tests__/responseHelpers.test.ts   # ResponseHelper (20 tests)
+├── services/__tests__/
+│   ├── taskService.test.ts                   # TaskService (21 tests)
+│   ├── projectService.test.ts               # ProjectService (21 tests)
+│   ├── milestoneService.test.ts             # MilestoneService (18 tests)
+│   └── userSettingsService.test.ts          # UserSettingsService (21 tests)
+└── routes/__tests__/
+    ├── tasks.routes.test.ts                  # Tasks routes (15 tests)
+    ├── projects.routes.test.ts              # Projects routes (13 tests)
+    ├── milestones.routes.test.ts            # Milestones routes (12 tests)
+    ├── userSettings.routes.test.ts          # UserSettings routes (15 tests)
+    └── googleCalendar.routes.test.ts        # Google Calendar routes (14 tests)
+```
+
+**181 tests total** — all unit tests mock Supabase via `jest.unstable_mockModule`; route tests use `supertest`.
+
+### Adding New Tests
+
+- **Service tests**: mock `../../config/supabase.js` and dynamically import the service
+- **Route tests**: mock the service class and build a minimal Express app with just that router
+- See existing test files for complete examples
