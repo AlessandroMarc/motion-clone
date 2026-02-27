@@ -1,1 +1,2 @@
 When working on a Pull Request, always check for feedback from CodeRabbit or other AI reviewers in the thread and ensure your suggestions align with or resolve their flags.
+Always run "npm run ci" before asking user approval to make sure the changes did not break the pipeline
