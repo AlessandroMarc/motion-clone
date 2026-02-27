@@ -6,6 +6,7 @@ Set up Jest unit/integration tests across backend services + routes and frontend
 
 ## Status Summary
 
+
 **Current: 397 tests passing** (213 frontend + 184 backend)
 
 - ✅ **Step 1: Backend Unit Tests** — DONE
