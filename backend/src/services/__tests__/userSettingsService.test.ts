@@ -233,67 +233,146 @@ describe('UserSettingsService', () => {
 
   // ─── deleteSchedule ───────────────────────────────────────────────────────────
   describe('deleteSchedule', () => {
-    test('should throw when trying to delete the active schedule', async () => {
-      mockClient.single.mockResolvedValueOnce({
-        data: { active_schedule_id: 'schedule-1' },
-        error: null,
-      });
-
-      await expect(
-        service.deleteSchedule('schedule-1', 'user-1')
-      ).rejects.toThrow('Cannot delete the currently active schedule');
-    });
-
     test('should throw when deleting the last remaining schedule', async () => {
-      // user_settings: active_schedule_id is different
-      mockClient.single.mockResolvedValueOnce({
-        data: { active_schedule_id: 'other-id' },
-        error: null,
-      });
-
-      // Count query: from('schedules').select(..., { count }).eq() → { count: 1 }
+      // Count query: from('schedules').select(..., { count, head }).eq() → { count: 1 }
       const countEqMock = jest
         .fn()
         .mockResolvedValue({ count: 1, error: null });
       const countSelectMock = jest.fn().mockReturnValue({ eq: countEqMock });
 
-      mockClient.from
-        .mockReturnValueOnce(mockClient) // user_settings chain
-        .mockReturnValueOnce({ select: countSelectMock }); // schedules count
+      mockClient.from.mockReturnValueOnce({ select: countSelectMock });
 
       await expect(
         service.deleteSchedule('schedule-1', 'user-1')
       ).rejects.toThrow('Cannot delete your only schedule');
     });
 
-    test('should delete successfully when not active and not last', async () => {
-      // user_settings: active_schedule_id is different
-      mockClient.single.mockResolvedValueOnce({
-        data: { active_schedule_id: 'other-id' },
-        error: null,
-      });
-
-      // Count query: count = 2
+    test('should reassign tasks and delete when not the active schedule', async () => {
+      // 1. Count query → count = 2
       const countEqMock = jest
         .fn()
         .mockResolvedValue({ count: 2, error: null });
       const countSelectMock = jest.fn().mockReturnValue({ eq: countEqMock });
 
-      // Delete chain: .delete().eq('id', ...).eq('user_id', ...) → { error: null }
-      const deleteEq2Mock = jest.fn().mockResolvedValue({ error: null });
-      const deleteEq1Mock = jest.fn().mockReturnValue({ eq: deleteEq2Mock });
-      const deleteChainMock = jest.fn().mockReturnValue({ eq: deleteEq1Mock });
+      // 2. Fallback query: .select().eq().neq().order().order()
+      const fallbackOrder2 = jest.fn().mockResolvedValue({
+        data: [{ id: 'fallback-1', is_default: true }],
+      });
+      const fallbackOrder1 = jest
+        .fn()
+        .mockReturnValue({ order: fallbackOrder2 });
+      const fallbackNeq = jest
+        .fn()
+        .mockReturnValue({ order: fallbackOrder1 });
+      const fallbackEq = jest.fn().mockReturnValue({ neq: fallbackNeq });
+      const fallbackSelect = jest.fn().mockReturnValue({ eq: fallbackEq });
+
+      // 3. Task reassignment: .update().eq().eq()
+      const taskEq2 = jest.fn().mockResolvedValue({ error: null });
+      const taskEq1 = jest.fn().mockReturnValue({ eq: taskEq2 });
+      const taskUpdate = jest.fn().mockReturnValue({ eq: taskEq1 });
+
+      // 4. Settings check: .select().eq().single()
+      const settingsSingle = jest.fn().mockResolvedValue({
+        data: { active_schedule_id: 'other-id' },
+        error: null,
+      });
+      const settingsEq = jest
+        .fn()
+        .mockReturnValue({ single: settingsSingle });
+      const settingsSelect = jest.fn().mockReturnValue({ eq: settingsEq });
+
+      // 5. Delete: .delete().eq().eq()
+      const deleteEq2 = jest.fn().mockResolvedValue({ error: null });
+      const deleteEq1 = jest.fn().mockReturnValue({ eq: deleteEq2 });
+      const deleteChain = jest.fn().mockReturnValue({ eq: deleteEq1 });
 
       mockClient.from
-        .mockReturnValueOnce(mockClient) // user_settings
-        .mockReturnValueOnce({ select: countSelectMock }) // schedules count
-        .mockReturnValueOnce({ delete: deleteChainMock }); // schedules delete
+        .mockReturnValueOnce({ select: countSelectMock }) // 1
+        .mockReturnValueOnce({ select: fallbackSelect }) // 2
+        .mockReturnValueOnce({ update: taskUpdate }) // 3
+        .mockReturnValueOnce({ select: settingsSelect }) // 4
+        .mockReturnValueOnce({ delete: deleteChain }); // 5
 
       await service.deleteSchedule('schedule-1', 'user-1');
 
-      expect(deleteChainMock).toHaveBeenCalled();
-      expect(deleteEq1Mock).toHaveBeenCalledWith('id', 'schedule-1');
-      expect(deleteEq2Mock).toHaveBeenCalledWith('user_id', 'user-1');
+      // Verify tasks were reassigned to fallback
+      expect(taskUpdate).toHaveBeenCalledWith(
+        expect.objectContaining({ schedule_id: 'fallback-1' })
+      );
+      expect(taskEq1).toHaveBeenCalledWith('schedule_id', 'schedule-1');
+      expect(taskEq2).toHaveBeenCalledWith('user_id', 'user-1');
+
+      // Verify delete happened
+      expect(deleteChain).toHaveBeenCalled();
+      expect(deleteEq1).toHaveBeenCalledWith('id', 'schedule-1');
+      expect(deleteEq2).toHaveBeenCalledWith('user_id', 'user-1');
+    });
+
+    test('should update active_schedule_id when deleting the active schedule', async () => {
+      // 1. Count query → count = 2
+      const countEqMock = jest
+        .fn()
+        .mockResolvedValue({ count: 2, error: null });
+      const countSelectMock = jest.fn().mockReturnValue({ eq: countEqMock });
+
+      // 2. Fallback query
+      const fallbackOrder2 = jest.fn().mockResolvedValue({
+        data: [{ id: 'fallback-1', is_default: true }],
+      });
+      const fallbackOrder1 = jest
+        .fn()
+        .mockReturnValue({ order: fallbackOrder2 });
+      const fallbackNeq = jest
+        .fn()
+        .mockReturnValue({ order: fallbackOrder1 });
+      const fallbackEq = jest.fn().mockReturnValue({ neq: fallbackNeq });
+      const fallbackSelect = jest.fn().mockReturnValue({ eq: fallbackEq });
+
+      // 3. Task reassignment
+      const taskEq2 = jest.fn().mockResolvedValue({ error: null });
+      const taskEq1 = jest.fn().mockReturnValue({ eq: taskEq2 });
+      const taskUpdate = jest.fn().mockReturnValue({ eq: taskEq1 });
+
+      // 4. Settings check — active_schedule_id MATCHES the deleted one
+      const settingsSingle = jest.fn().mockResolvedValue({
+        data: { active_schedule_id: 'schedule-1' },
+        error: null,
+      });
+      const settingsEq = jest
+        .fn()
+        .mockReturnValue({ single: settingsSingle });
+      const settingsSelect = jest.fn().mockReturnValue({ eq: settingsEq });
+
+      // 5. Settings update: .update().eq()
+      const settingsUpdateEq = jest.fn().mockResolvedValue({ error: null });
+      const settingsUpdateChain = jest
+        .fn()
+        .mockReturnValue({ eq: settingsUpdateEq });
+
+      // 6. Delete
+      const deleteEq2 = jest.fn().mockResolvedValue({ error: null });
+      const deleteEq1 = jest.fn().mockReturnValue({ eq: deleteEq2 });
+      const deleteChain = jest.fn().mockReturnValue({ eq: deleteEq1 });
+
+      mockClient.from
+        .mockReturnValueOnce({ select: countSelectMock }) // 1
+        .mockReturnValueOnce({ select: fallbackSelect }) // 2
+        .mockReturnValueOnce({ update: taskUpdate }) // 3
+        .mockReturnValueOnce({ select: settingsSelect }) // 4
+        .mockReturnValueOnce({ update: settingsUpdateChain }) // 5
+        .mockReturnValueOnce({ delete: deleteChain }); // 6
+
+      await service.deleteSchedule('schedule-1', 'user-1');
+
+      // Verify active_schedule_id was updated to fallback
+      expect(settingsUpdateChain).toHaveBeenCalledWith({
+        active_schedule_id: 'fallback-1',
+      });
+      expect(settingsUpdateEq).toHaveBeenCalledWith('user_id', 'user-1');
+
+      // Verify delete still happened
+      expect(deleteChain).toHaveBeenCalled();
     });
   });
 

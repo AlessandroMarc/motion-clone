@@ -82,6 +82,7 @@ export default function ProjectDetailPage({ params }: ProjectDetailPageProps) {
         description: taskData.description,
         dueDate: taskData.due_date,
         priority: taskData.priority,
+        scheduleId: taskData.schedule_id,
         project_id: projectId,
         plannedDurationMinutes: taskData.planned_duration_minutes,
         actualDurationMinutes: taskData.actual_duration_minutes,

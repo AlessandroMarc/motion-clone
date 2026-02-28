@@ -72,6 +72,7 @@ export class TaskService {
           description: input.description,
           due_date: dueDateString,
           priority: input.priority,
+          schedule_id: input.schedule_id,
           status,
           dependencies: input.dependencies || [],
           blocked_by: input.blockedBy || [],
@@ -150,6 +151,7 @@ export class TaskService {
       status?: 'not-started' | 'in-progress' | 'completed';
       dependencies?: string[];
       blocked_by?: string[];
+      schedule_id?: string | null;
       project_id?: string | null;
       planned_duration_minutes?: number;
       actual_duration_minutes?: number;
@@ -172,6 +174,8 @@ export class TaskService {
     if (input.dependencies !== undefined)
       updateData.dependencies = input.dependencies;
     if (input.blockedBy !== undefined) updateData.blocked_by = input.blockedBy;
+    if (input.schedule_id !== undefined)
+      updateData.schedule_id = input.schedule_id;
     if (input.project_id !== undefined)
       updateData.project_id = input.project_id;
 

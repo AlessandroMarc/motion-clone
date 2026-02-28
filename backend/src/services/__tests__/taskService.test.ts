@@ -48,6 +48,7 @@ const makeTask = (overrides: Partial<Task> = {}): Task => {
     updated_at: new Date(),
     planned_duration_minutes: 60,
     actual_duration_minutes: 0,
+    schedule_id: 'schedule-1',
   };
 
   const { project_id, ...rest } = overrides;
@@ -245,6 +246,27 @@ describe('TaskService', () => {
         )
       ).rejects.toThrow('Failed to create task: Insert failed');
     });
+
+    test('should include schedule_id in insert payload', async () => {
+      const task = makeTask({ schedule_id: 'schedule-2' });
+      mockClient.single.mockResolvedValue({ data: task, error: null });
+
+      await service.createTask(
+        {
+          title: 'Task',
+          priority: 'medium',
+          user_id: 'user-1',
+          schedule_id: 'schedule-2',
+          planned_duration_minutes: 60,
+        },
+        'token'
+      );
+
+      const insertCall = mockClient.insert.mock?.calls?.[0]?.[0] as
+        | any[]
+        | undefined;
+      expect(insertCall?.[0]?.schedule_id).toBe('schedule-2');
+    });
   });
 
   // ─── updateTask ──────────────────────────────────────────────────────────────
@@ -307,6 +329,25 @@ describe('TaskService', () => {
         expect.objectContaining({ title: 'New title' })
       );
       expect(calendarEqMock).toHaveBeenCalledWith('linked_task_id', 'task-1');
+    });
+
+    test('should persist schedule_id updates', async () => {
+      const existingTask = makeTask({ schedule_id: 'schedule-1' });
+      const updatedTask = makeTask({ schedule_id: 'schedule-2' });
+
+      mockClient.single
+        .mockResolvedValueOnce({ data: existingTask, error: null })
+        .mockResolvedValueOnce({ data: updatedTask, error: null });
+
+      await service.updateTask(
+        'task-1',
+        { schedule_id: 'schedule-2' },
+        'token'
+      );
+
+      expect(mockClient.update).toHaveBeenCalledWith(
+        expect.objectContaining({ schedule_id: 'schedule-2' })
+      );
     });
   });
 

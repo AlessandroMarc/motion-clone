@@ -22,6 +22,7 @@ export function toTask(raw: UnknownRecord): Task {
     due_date: toOptionalDate(raw.due_date),
     created_at: toDate(raw.created_at),
     updated_at: toDate(raw.updated_at),
+    schedule_id: typeof raw.schedule_id === 'string' ? raw.schedule_id : '',
     planned_duration_minutes: raw.planned_duration_minutes,
     actual_duration_minutes: raw.actual_duration_minutes,
     blockedBy: raw.blocked_by || [],

@@ -40,6 +40,7 @@ const sampleTask = {
   title: 'Task 1',
   user_id: 'user-1',
   status: 'not-started',
+  schedule_id: 'schedule-1',
 };
 
 beforeEach(() => {
@@ -139,6 +140,24 @@ describe('POST /api/tasks', () => {
     expect(res.status).toBe(400);
     expect(res.body.success).toBe(false);
   });
+
+  test('forwards schedule_id and auth user to service', async () => {
+    mockTaskService.createTask.mockResolvedValue(sampleTask);
+
+    await supertest(app)
+      .post('/api/tasks')
+      .set(AUTH_HEADER)
+      .send({ title: 'Task 1', schedule_id: 'schedule-1' });
+
+    expect(mockTaskService.createTask).toHaveBeenCalledWith(
+      expect.objectContaining({
+        title: 'Task 1',
+        schedule_id: 'schedule-1',
+        user_id: 'user-1',
+      }),
+      'fake-test-token'
+    );
+  });
 });
 
 // ── PUT /api/tasks/:id ────────────────────────────────────────────────────────
@@ -161,6 +180,21 @@ describe('PUT /api/tasks/:id', () => {
       .set(AUTH_HEADER)
       .send({ title: 'x' });
     expect(res.status).toBe(400);
+  });
+
+  test('forwards schedule_id on update', async () => {
+    mockTaskService.updateTask.mockResolvedValue(sampleTask);
+
+    await supertest(app)
+      .put('/api/tasks/t1')
+      .set(AUTH_HEADER)
+      .send({ schedule_id: 'schedule-2' });
+
+    expect(mockTaskService.updateTask).toHaveBeenCalledWith(
+      't1',
+      expect.objectContaining({ schedule_id: 'schedule-2' }),
+      'fake-test-token'
+    );
   });
 });
 

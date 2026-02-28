@@ -24,6 +24,7 @@ const validData = {
   title: 'My Task',
   description: '',
   priority: 'medium' as const,
+  scheduleId: 'schedule-1',
   planned_duration_minutes: 60,
   actual_duration_minutes: 0,
   blockedBy: [],
@@ -103,6 +104,7 @@ describe('useTaskForm', () => {
     expect(values.planned_duration_minutes).toBe(60);
     expect(values.actual_duration_minutes).toBe(0);
     expect(values.blockedBy).toEqual([]);
+    expect(values.scheduleId).toBe('');
   });
 
   it('handleCancel resets the form', async () => {

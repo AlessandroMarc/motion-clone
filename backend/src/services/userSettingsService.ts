@@ -165,26 +165,13 @@ export class UserSettingsService {
     };
   }
 
-  // Delete a schedule
+  // Delete a schedule — reassigns orphaned tasks to the fallback schedule.
   async deleteSchedule(
     scheduleId: string,
     userId: string,
     token?: string
   ): Promise<void> {
     const client = token ? getAuthenticatedSupabase(token) : supabase;
-
-    // Prevent deleting the active schedule
-    const { data: settings } = await client
-      .from('user_settings')
-      .select('active_schedule_id')
-      .eq('user_id', userId)
-      .single();
-
-    if (settings?.active_schedule_id === scheduleId) {
-      throw new Error(
-        'Cannot delete the currently active schedule. Please set another schedule as active first.'
-      );
-    }
 
     // Prevent deleting the last remaining schedule
     const { count } = await client
@@ -198,6 +185,44 @@ export class UserSettingsService {
       );
     }
 
+    // Determine a fallback schedule (prefer the default, otherwise first non-deleted one)
+    const { data: fallbackSchedules } = await client
+      .from('schedules')
+      .select('id, is_default')
+      .eq('user_id', userId)
+      .neq('id', scheduleId)
+      .order('is_default', { ascending: false })
+      .order('created_at', { ascending: true });
+
+    const fallbackId = fallbackSchedules?.[0]?.id;
+    if (!fallbackId) {
+      throw new Error(
+        'No fallback schedule available. You must have at least one other schedule.'
+      );
+    }
+
+    // Reassign any tasks referencing the doomed schedule
+    await client
+      .from('tasks')
+      .update({ schedule_id: fallbackId, updated_at: new Date().toISOString() })
+      .eq('schedule_id', scheduleId)
+      .eq('user_id', userId);
+
+    // If the deleted schedule was the active one, switch to the fallback
+    const { data: settings } = await client
+      .from('user_settings')
+      .select('active_schedule_id')
+      .eq('user_id', userId)
+      .single();
+
+    if (settings?.active_schedule_id === scheduleId) {
+      await client
+        .from('user_settings')
+        .update({ active_schedule_id: fallbackId })
+        .eq('user_id', userId);
+    }
+
+    // Delete the schedule
     const { error } = await client
       .from('schedules')
       .delete()

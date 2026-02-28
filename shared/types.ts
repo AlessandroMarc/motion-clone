@@ -40,6 +40,7 @@ interface Task {
   updated_at: Date;
   planned_duration_minutes: number;
   actual_duration_minutes: number;
+  schedule_id: string
 }
 
 interface Project {
