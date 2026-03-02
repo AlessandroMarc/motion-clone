@@ -230,10 +230,17 @@ describe('TaskService', () => {
     });
 
     test('should throw on database error', async () => {
-      mockClient.single.mockResolvedValue({
-        data: null,
-        error: { message: 'Insert failed' },
-      });
+      // 1. user_settings lookup → no active_schedule_id
+      mockClient.single
+        .mockResolvedValueOnce({ data: null, error: null })
+        // 2. default schedule lookup → none found
+        .mockResolvedValueOnce({ data: null, error: null })
+        // 3. any schedule lookup (limit 1) → none found
+        .mockResolvedValueOnce({ data: null, error: null })
+        // 4. create new schedule → succeeds
+        .mockResolvedValueOnce({ data: { id: 'sched-1' }, error: null })
+        // 5. task insert → fails
+        .mockResolvedValueOnce({ data: null, error: { message: 'Insert failed' } });
 
       await expect(
         service.createTask(
