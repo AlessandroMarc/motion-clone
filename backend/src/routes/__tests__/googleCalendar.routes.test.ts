@@ -184,6 +184,13 @@ describe('POST /api/google-calendar/sync', () => {
     );
   });
 
+  test('returns 401 without auth header', async () => {
+    const res = await supertest(app)
+      .post('/api/google-calendar/sync')
+      .send({ user_id: 'user-1' });
+    expect(res.status).toBe(401);
+  });
+
   test('returns 500 when sync fails', async () => {
     mockGoogleCalendarService.syncEventsFromGoogle.mockResolvedValue({
       success: false,
@@ -223,6 +230,13 @@ describe('DELETE /api/google-calendar/disconnect', () => {
     expect(
       mockGoogleCalendarService.disconnectGoogleCalendar
     ).toHaveBeenCalledWith('user-1');
+  });
+
+  test('returns 401 without auth header', async () => {
+    const res = await supertest(app)
+      .delete('/api/google-calendar/disconnect')
+      .send({ user_id: 'user-1' });
+    expect(res.status).toBe(401);
   });
 
   test('returns 400 when user_id is missing', async () => {
