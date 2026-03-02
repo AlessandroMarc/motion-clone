@@ -22,7 +22,6 @@ import { TaskDescriptionField } from './TaskDescriptionField';
 import { TaskDueDateField } from './TaskDueDateField';
 import { TaskPriorityField } from './TaskPriorityField';
 import { TaskProjectField } from './TaskProjectField';
-import { TaskScheduleField } from './TaskScheduleField';
 import { TaskBlockedByField } from './TaskBlockedByField';
 import { TaskDurationFields } from './TaskDurationFields';
 import { TaskFormActions } from './TaskFormActions';
@@ -45,7 +44,6 @@ const emptyFormValues: TaskFormData = {
   planned_duration_minutes: 60,
   actual_duration_minutes: 0,
   blockedBy: [],
-  scheduleId: '',
 };
 
 const formatDateOnly = (date: Date): string => {
@@ -64,7 +62,6 @@ const mapTaskToFormValues = (task: Task): TaskFormData => ({
   planned_duration_minutes: task.planned_duration_minutes ?? 60,
   actual_duration_minutes: task.actual_duration_minutes ?? 0,
   blockedBy: task.blockedBy || [],
-  scheduleId: task.schedule_id ?? '',
 });
 
 export function TaskEditDialogForm({
@@ -182,7 +179,6 @@ export function TaskEditDialogForm({
         plannedDurationMinutes: data.planned_duration_minutes,
         actualDurationMinutes: data.actual_duration_minutes ?? 0,
         blockedBy: data.blockedBy || [],
-        scheduleId: data.scheduleId,
       });
 
       onTaskUpdated(updatedTask);
@@ -241,7 +237,6 @@ export function TaskEditDialogForm({
                 errors={errors}
               />
               <TaskProjectField errors={errors} />
-              <TaskScheduleField errors={errors} />
               <TaskBlockedByField errors={errors} currentTaskId={task?.id} />
               <TaskDurationFields register={register} errors={errors} />
             </div>

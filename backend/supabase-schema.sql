@@ -52,7 +52,6 @@ CREATE TABLE tasks (
     dependencies UUID[] DEFAULT '{}',
     blocked_by UUID[] DEFAULT '{}',
     project_id UUID REFERENCES projects(id) ON DELETE SET NULL,
-    schedule_id UUID NOT NULL REFERENCES schedules(id) ON DELETE RESTRICT,
     planned_duration_minutes INTEGER NOT NULL DEFAULT 60,
     actual_duration_minutes INTEGER NOT NULL DEFAULT 0,
     user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
@@ -109,7 +108,6 @@ CREATE INDEX idx_tasks_project_id ON tasks(project_id);
 CREATE INDEX idx_tasks_status ON tasks(status);
 CREATE INDEX idx_tasks_priority ON tasks(priority);
 CREATE INDEX idx_tasks_created_at ON tasks(created_at);
-CREATE INDEX idx_tasks_schedule_id ON tasks(schedule_id);
 
 CREATE INDEX idx_user_settings_user_id ON user_settings(user_id);
 

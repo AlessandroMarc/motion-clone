@@ -12,7 +12,6 @@ class TaskService {
         ? normalizeToMidnight(input.dueDate).toISOString()
         : null,
       priority: input.priority,
-      schedule_id: input.scheduleId,
       dependencies: [],
       blocked_by: input.blockedBy || [],
       project_id: input.project_id,
@@ -59,7 +58,6 @@ class TaskService {
       blockedBy,
       plannedDurationMinutes,
       actualDurationMinutes,
-      scheduleId,
       ...rest
     } = input;
 
@@ -69,7 +67,6 @@ class TaskService {
         ...rest,
         due_date: dueDate ? normalizeToMidnight(dueDate).toISOString() : null,
         project_id: input.project_id,
-        schedule_id: scheduleId,
         blocked_by: blockedBy,
         planned_duration_minutes: plannedDurationMinutes,
         actual_duration_minutes: actualDurationMinutes,

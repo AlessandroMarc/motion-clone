@@ -19,7 +19,6 @@ import { TaskDescriptionField } from './TaskDescriptionField';
 import { TaskDueDateField } from './TaskDueDateField';
 import { TaskPriorityField } from './TaskPriorityField';
 import { TaskProjectField } from './TaskProjectField';
-import { TaskScheduleField } from './TaskScheduleField';
 import { TaskBlockedByField } from './TaskBlockedByField';
 import { TaskDurationFields } from './TaskDurationFields';
 import { TaskFormActions } from './TaskFormActions';
@@ -107,7 +106,6 @@ export function TaskCreateCardForm({ onTaskCreate }: TaskCreateFormProps) {
               </div>
 
               <TaskProjectField errors={errors} />
-              <TaskScheduleField errors={errors} id="quick-scheduleId" />
               <TaskBlockedByField errors={errors} />
               <TaskDurationFields
                 register={register}

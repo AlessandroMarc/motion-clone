@@ -24,7 +24,6 @@ export function transformFormDataToTask(
     planned_duration_minutes: planned,
     actual_duration_minutes: actual,
     blockedBy: data.blockedBy || [],
-    schedule_id: data.scheduleId
   };
   return transformed;
 }
