@@ -11,6 +11,7 @@ interface MockClient {
   eq: jest.Mock<any>;
   single: jest.Mock<any>;
   order: jest.Mock<any>;
+  limit: jest.Mock<any>;
   [key: string]: jest.Mock<any>;
 }
 
@@ -23,6 +24,7 @@ const mockClient: MockClient = {
   eq: jest.fn(),
   single: jest.fn(),
   order: jest.fn(),
+  limit: jest.fn(),
 };
 
 // Mock supabase BEFORE importing anything that uses it
@@ -66,7 +68,7 @@ describe('TaskService', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     // Default: all methods chain back to mockClient
-    for (const key of ['from', 'select', 'insert', 'update', 'eq', 'order']) {
+    for (const key of ['from', 'select', 'insert', 'update', 'eq', 'order', 'limit']) {
       const mock = mockClient[key as keyof MockClient];
       if (mock) mock.mockReturnValue(mockClient);
     }
@@ -229,10 +231,17 @@ describe('TaskService', () => {
     });
 
     test('should throw on database error', async () => {
-      mockClient.single.mockResolvedValue({
-        data: null,
-        error: { message: 'Insert failed' },
-      });
+      // 1. user_settings lookup → no active_schedule_id
+      mockClient.single
+        .mockResolvedValueOnce({ data: null, error: null })
+        // 2. default schedule lookup → none found
+        .mockResolvedValueOnce({ data: null, error: null })
+        // 3. any schedule lookup (limit 1) → none found
+        .mockResolvedValueOnce({ data: null, error: null })
+        // 4. create new schedule → succeeds
+        .mockResolvedValueOnce({ data: { id: 'sched-1' }, error: null })
+        // 5. task insert → fails
+        .mockResolvedValueOnce({ data: null, error: { message: 'Insert failed' } });
 
       await expect(
         service.createTask(
