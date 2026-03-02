@@ -11,6 +11,7 @@ interface MockClient {
   eq: jest.Mock<any>;
   single: jest.Mock<any>;
   order: jest.Mock<any>;
+  limit: jest.Mock<any>;
   [key: string]: jest.Mock<any>;
 }
 
@@ -23,6 +24,7 @@ const mockClient: MockClient = {
   eq: jest.fn(),
   single: jest.fn(),
   order: jest.fn(),
+  limit: jest.fn(),
 };
 
 // Mock supabase BEFORE importing anything that uses it
@@ -65,7 +67,7 @@ describe('TaskService', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     // Default: all methods chain back to mockClient
-    for (const key of ['from', 'select', 'insert', 'update', 'eq', 'order']) {
+    for (const key of ['from', 'select', 'insert', 'update', 'eq', 'order', 'limit']) {
       const mock = mockClient[key as keyof MockClient];
       if (mock) mock.mockReturnValue(mockClient);
     }
