@@ -59,13 +59,22 @@ export function GoogleCalendarSettings() {
     }
   }, [user?.id]);
 
+  // Load Google Calendar status whenever the user changes
   useEffect(() => {
     if (!user?.id) {
       setLoading(false);
       return;
     }
+    loadStatus();
+  }, [user?.id, loadStatus]);
 
-    // Check for OAuth callback parameters
+  // Check OAuth callback URL params once per user session.
+  // advanceToNextStep and onboardingStatus are intentionally omitted from deps:
+  // URL params are read once on mount/user-change and do not need to re-run
+  // when those values change (which would cause an infinite fetch loop).
+  useEffect(() => {
+    if (!user?.id) return;
+
     const params = new URLSearchParams(window.location.search);
     const connected = params.get('google_calendar_connected');
     const error = params.get('google_calendar_error');
@@ -89,9 +98,8 @@ export function GoogleCalendarSettings() {
       // Clean URL
       window.history.replaceState({}, '', window.location.pathname);
     }
-
-    loadStatus();
-  }, [user?.id, loadStatus, advanceToNextStep, onboardingStatus]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id]);
 
   const handleConnect = () => {
     if (!user?.id) return;

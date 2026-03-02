@@ -27,6 +27,7 @@ export interface CreateTaskInput {
   user_id: string;
   planned_duration_minutes: number;
   actual_duration_minutes?: number;
+  schedule_id?: string; // optional: auto-resolved from user's active schedule if omitted
 }
 
 export interface UpdateTaskInput {
