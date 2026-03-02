@@ -49,7 +49,7 @@ export function useOnboarding() {
   }, [isOnboardingActive, status, pathname]);
 
   // Avanza allo step successivo quando un'azione viene completata
-  const advanceToNextStep = async (
+  const advanceToNextStep = useCallback(async (
     currentAction: 'task' | 'project' | 'schedule' | 'calendar_sync'
   ) => {
     if (!user || !status || status.completed) return;
@@ -92,7 +92,7 @@ export function useOnboarding() {
     } catch (error) {
       console.error('Failed to advance onboarding step:', error);
     }
-  };
+  }, [user, status, updateStep, completeOnboarding]);
 
   // Inizializza l'onboarding per nuovi utenti
   useEffect(() => {
