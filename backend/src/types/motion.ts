@@ -1,27 +1,53 @@
 /**
  * TypeScript types for the Motion API (https://api.usemotion.com/v1).
- * Based on MIGRATION_DOCS.md.
+ * Based on real API response data.
  */
 
 export interface MotionUser {
   id: string;
-  name?: string;
+  name: string;
   email: string;
+  type?: string;
+  picture?: string;
+  createdTime?: string;
+  updatedTime?: string;
+  isPlaceholder?: boolean;
+  onboardingComplete?: boolean;
+  mainCalendarEmail?: string;
+  lastActive?: string;
+  hasActiveSubscription?: boolean;
+  apiDisabled?: boolean;
+  deletedTime?: string | null;
+  noExternalCalendarsModeEnabled?: boolean;
 }
+
+export type MotionWorkspaceType = 'INDIVIDUAL' | 'TEAM';
 
 export interface MotionWorkspace {
   id: string;
   name: string;
-  teamId?: string;
+  teamId: string | null;
+  type?: MotionWorkspaceType;
   statuses?: MotionStatus[];
   labels?: MotionLabel[];
   members?: MotionUser[];
 }
 
 export interface MotionStatus {
+  id?: string;
   name: string;
   isDefaultStatus: boolean;
   isResolvedStatus: boolean;
+  color?: string;
+  sortPosition?: string;
+  isSystemStatus?: boolean;
+  autoScheduleEnabled?: boolean;
+  createdTime?: string;
+  updatedTime?: string;
+  workspaceId?: string;
+  deletedTime?: string | null;
+  type?: string;
+  autoScheduleSetting?: string;
 }
 
 export interface MotionLabel {
@@ -30,7 +56,7 @@ export interface MotionLabel {
 
 export interface MotionScheduleSlot {
   start: string; // e.g. "09:00"
-  end: string; // e.g. "17:00"
+  end: string;   // e.g. "17:00"
 }
 
 export interface MotionSchedule {
@@ -48,14 +74,44 @@ export interface MotionSchedule {
   };
 }
 
+export type MotionProjectType = 'NORMAL' | string;
+export type MotionPriorityLevel = 'ASAP' | 'HIGH' | 'MEDIUM' | 'LOW';
+
 export interface MotionProject {
   id: string;
   name: string;
   description: string;
   workspaceId: string;
   status?: MotionStatus;
+  statusId?: string;
+  type?: MotionProjectType;
+  priorityLevel?: MotionPriorityLevel;
+  managerId?: string;
+  createdByUserId?: string;
+  manager?: MotionUser;
+  dueDate?: string | null;
+  startDate?: string | null;
   createdTime?: string;
   updatedTime?: string;
+  completedTime?: string | null;
+  color?: string;
+  rank?: string | null;
+  createdWithAi?: boolean;
+  projectDefinitionId?: string | null;
+  activeStageDefinitionId?: string | null;
+  reconciliationRequestedAt?: string | null;
+  reconciliationCompletedAt?: string | null;
+  reconciliationStatus?: string | null;
+  scheduledStatus?: string | null;
+  estimatedCompletionTime?: string | null;
+  duration?: number;
+  completedDuration?: number;
+  canceledDuration?: number;
+  taskCount?: number;
+  completedTaskCount?: number;
+  canceledTaskCount?: number;
+  labels?: MotionLabel[];
+  variableInstances?: unknown[];
   customFieldValues?: Record<string, MotionCustomFieldValue>;
 }
 
@@ -65,51 +121,56 @@ export type MotionPriority = 'ASAP' | 'HIGH' | 'MEDIUM' | 'LOW';
 /** Motion task deadline type values */
 export type MotionDeadlineType = 'HARD' | 'SOFT' | 'NONE';
 
+export interface MotionChunk {
+  id: string;
+  duration: number;
+  scheduledStart: string;
+  scheduledEnd: string;
+  completedTime: string | null;
+  isFixed: boolean;
+}
+
 export interface MotionTask {
   id: string;
   name: string;
   description: string;
   duration?: number | 'NONE' | 'REMINDER';
-  dueDate?: string;
+  dueDate?: string | null;
   deadlineType: MotionDeadlineType;
-  parentRecurringTaskId?: string;
+  parentRecurringTaskId: string | null;
   completed: boolean;
-  completedTime?: string;
+  completedTime: string | null;
   updatedTime?: string;
-  startOn?: string;
+  startOn?: string | null;
   creator: MotionUser;
-  project?: Pick<MotionProject, 'id' | 'name' | 'workspaceId'>;
-  workspace: Pick<MotionWorkspace, 'id' | 'name'>;
+  project: Pick<MotionProject, 'id' | 'name' | 'workspaceId'> | null;
+  workspace: MotionWorkspace;
   status: MotionStatus;
   priority: MotionPriority;
   labels: MotionLabel[];
   assignees: MotionUser[];
-  scheduledStart?: string;
+  scheduledStart: string | null;
   createdTime: string;
-  scheduledEnd?: string;
+  scheduledEnd: string | null;
   schedulingIssue: boolean;
   lastInteractedTime?: string;
   customFieldValues?: Record<string, MotionCustomFieldValue>;
-  chunks?: MotionChunk[];
+  chunks: MotionChunk[];
 }
 
 export interface MotionRecurringTask {
   id: string;
   name: string;
+  description?: string;
   creator: MotionUser;
   assignee: MotionUser;
-  project?: Pick<MotionProject, 'id' | 'name' | 'workspaceId'>;
+  project?: Pick<MotionProject, 'id' | 'name' | 'workspaceId'> | null;
   status: MotionStatus;
   priority: MotionPriority;
   labels: MotionLabel[];
-  workspace: Pick<MotionWorkspace, 'id' | 'name'>;
+  workspace: MotionWorkspace;
   frequency?: string;
   duration?: number | 'NONE' | 'REMINDER';
-}
-
-export interface MotionChunk {
-  scheduledStart: string;
-  scheduledEnd: string;
 }
 
 export type MotionCustomFieldValue =

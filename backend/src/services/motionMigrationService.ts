@@ -10,41 +10,23 @@
  *   3. For each workspace: get schedules, projects, tasks, and recurring tasks.
  *   4. Map and persist projects first, then tasks (regular + recurring instances).
  */
-import fs from 'fs/promises';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { MotionApiService } from './motionApiService.js';
+import { saveMotionSnapshot } from '../../export-motion-data.js';
+import type { MotionWorkspaceSnapshot } from '../../export-motion-data.js';
 import { ProjectService } from './projectService.js';
 import { TaskService } from './taskService.js';
 import { getAuthenticatedSupabase } from '../config/supabase.js';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type {
-  MotionUser,
-  MotionWorkspace,
   MotionTask,
   MotionRecurringTask,
-  MotionProject,
-  MotionSchedule,
   MotionPriority,
 } from '../types/motion.js';
 import type { CreateProjectInput, CreateTaskInput } from '../types/database.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-
-interface MotionWorkspaceSnapshot {
-  workspace: MotionWorkspace;
-  projects: MotionProject[];
-  tasks: MotionTask[];
-  recurringTasks: MotionRecurringTask[];
-}
-
-interface MotionSnapshot {
-  exportedAt: string;
-  user: MotionUser;
-  schedules: MotionSchedule[];
-  workspaces: MotionWorkspaceSnapshot[];
-}
 
 // ── Priority mapping ─────────────────────────────────────────────────────────
 
@@ -145,12 +127,12 @@ export interface MigrationResult {
 // ── Service ───────────────────────────────────────────────────────────────────
 
 export class MotionMigrationService {
-  private readonly motionApi: MotionApiService;
+  private readonly motionApiKey: string;
   private readonly projectService: ProjectService;
   private readonly taskService: TaskService;
 
   constructor(motionApiKey: string) {
-    this.motionApi = new MotionApiService(motionApiKey);
+    this.motionApiKey = motionApiKey;
     this.projectService = new ProjectService();
     this.taskService = new TaskService();
   }
@@ -169,34 +151,12 @@ export class MotionMigrationService {
     const supabaseClient: SupabaseClient =
       getAuthenticatedSupabase(nextoAuthToken);
 
-    // ── Phase 1: Fetch all data from Motion ──────────────────────────────────
-    const motionUser = await this.motionApi.getMe();
-    const schedules: MotionSchedule[] = await this.motionApi.listSchedules();
-    const workspaces = await this.motionApi.listWorkspaces();
+    // ── Phase 1: Fetch all data from Motion + save snapshot to JSON ──────────
+    const snapshotDir = path.join(__dirname, '../../../');
+    const snapshot = await saveMotionSnapshot(this.motionApiKey, snapshotDir);
+    const { user: motionUser, schedules, workspaces: workspaceSnapshots } = snapshot;
 
-    const workspaceSnapshots: MotionWorkspaceSnapshot[] = [];
-    for (const workspace of workspaces) {
-      let projects: MotionProject[] = [];
-      let tasks: MotionTask[] = [];
-      let recurringTasks: MotionRecurringTask[] = [];
-      try { projects = await this.motionApi.listProjects(workspace.id); } catch { /* handled in import phase */ }
-      try { tasks = await this.motionApi.listTasks(workspace.id); } catch { /* handled in import phase */ }
-      try { recurringTasks = await this.motionApi.listRecurringTasks(workspace.id); } catch { /* handled in import phase */ }
-      workspaceSnapshots.push({ workspace, projects, tasks, recurringTasks });
-    }
-
-    // ── Phase 2: Save snapshot to JSON ───────────────────────────────────────
-    const snapshot: MotionSnapshot = {
-      exportedAt: new Date().toISOString(),
-      user: motionUser,
-      schedules,
-      workspaces: workspaceSnapshots,
-    };
-    const snapshotPath = path.join(__dirname, '../../../motion-export.json');
-    await fs.writeFile(snapshotPath, JSON.stringify(snapshot, null, 2), 'utf-8');
-    console.log(`📄 Motion data snapshot saved to: ${snapshotPath}`);
-
-    // ── Phase 3: Import snapshot into Nexto ──────────────────────────────────
+    // ── Phase 2: Import snapshot into Nexto ──────────────────────────────────
     const result: MigrationResult = {
       userId: motionUser.id,
       schedulesFound: schedules.length,

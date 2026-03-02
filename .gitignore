@@ -16,3 +16,5 @@ backend/dist/
 # Playwright
 playwright-report/
 test-results/    
+backend/motion-export.json
+motion-export.json
