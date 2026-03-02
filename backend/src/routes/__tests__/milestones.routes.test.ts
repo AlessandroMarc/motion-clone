@@ -2,6 +2,15 @@ import { jest, describe, test, expect, beforeEach } from '@jest/globals';
 import type { Express } from 'express';
 
 // ── mock modules BEFORE any dynamic import ───────────────────────────────────
+jest.unstable_mockModule('../../config/supabase.js', () => ({
+  supabase: {},
+  serviceRoleSupabase: {},
+  getAuthenticatedSupabase: jest.fn().mockReturnValue({}),
+  verifyAuthToken: jest
+    .fn()
+    .mockReturnValue({ userId: 'user-1', exp: 9999999999 }),
+}));
+
 const mockMilestoneService = {
   getAllMilestones: jest.fn(),
   getMilestoneById: jest.fn(),
@@ -25,6 +34,7 @@ app.use(express.json());
 app.use('/api/milestones', milestoneRouter);
 
 // ── fixtures ──────────────────────────────────────────────────────────────────
+const AUTH_HEADER = { Authorization: 'Bearer fake-test-token' };
 const sampleMilestone = {
   id: 'm1',
   title: 'Milestone 1',
@@ -40,7 +50,7 @@ beforeEach(() => {
 describe('GET /api/milestones', () => {
   test('returns all milestones', async () => {
     mockMilestoneService.getAllMilestones.mockResolvedValue([sampleMilestone]);
-    const res = await supertest(app).get('/api/milestones');
+    const res = await supertest(app).get('/api/milestones').set(AUTH_HEADER);
     expect(res.status).toBe(200);
     expect(res.body.success).toBe(true);
     expect(res.body.data).toHaveLength(1);
@@ -50,7 +60,9 @@ describe('GET /api/milestones', () => {
     mockMilestoneService.getMilestonesByProjectId.mockResolvedValue([
       sampleMilestone,
     ]);
-    const res = await supertest(app).get('/api/milestones?project_id=p1');
+    const res = await supertest(app)
+      .get('/api/milestones?project_id=p1')
+      .set(AUTH_HEADER);
     expect(res.status).toBe(200);
     expect(mockMilestoneService.getMilestonesByProjectId).toHaveBeenCalledWith(
       'p1'
@@ -61,18 +73,25 @@ describe('GET /api/milestones', () => {
     mockMilestoneService.getMilestonesByStatus.mockResolvedValue([
       sampleMilestone,
     ]);
-    const res = await supertest(app).get('/api/milestones?status=not-started');
+    const res = await supertest(app)
+      .get('/api/milestones?status=not-started')
+      .set(AUTH_HEADER);
     expect(res.status).toBe(200);
     expect(mockMilestoneService.getMilestonesByStatus).toHaveBeenCalledWith(
       'not-started'
     );
   });
 
+  test('returns 401 without auth header', async () => {
+    const res = await supertest(app).get('/api/milestones');
+    expect(res.status).toBe(401);
+  });
+
   test('returns 500 when service throws', async () => {
     mockMilestoneService.getAllMilestones.mockRejectedValue(
       new Error('DB error')
     );
-    const res = await supertest(app).get('/api/milestones');
+    const res = await supertest(app).get('/api/milestones').set(AUTH_HEADER);
     expect(res.status).toBe(500);
     expect(res.body.success).toBe(false);
   });
@@ -82,14 +101,18 @@ describe('GET /api/milestones', () => {
 describe('GET /api/milestones/:id', () => {
   test('returns a milestone by id', async () => {
     mockMilestoneService.getMilestoneById.mockResolvedValue(sampleMilestone);
-    const res = await supertest(app).get('/api/milestones/m1');
+    const res = await supertest(app)
+      .get('/api/milestones/m1')
+      .set(AUTH_HEADER);
     expect(res.status).toBe(200);
     expect(res.body.data.id).toBe('m1');
   });
 
   test('returns 404 when milestone not found', async () => {
     mockMilestoneService.getMilestoneById.mockResolvedValue(null);
-    const res = await supertest(app).get('/api/milestones/missing');
+    const res = await supertest(app)
+      .get('/api/milestones/missing')
+      .set(AUTH_HEADER);
     expect(res.status).toBe(404);
     expect(res.body.success).toBe(false);
   });
@@ -98,7 +121,7 @@ describe('GET /api/milestones/:id', () => {
     mockMilestoneService.getMilestoneById.mockRejectedValue(
       new Error('DB error')
     );
-    const res = await supertest(app).get('/api/milestones/m1');
+    const res = await supertest(app).get('/api/milestones/m1').set(AUTH_HEADER);
     expect(res.status).toBe(500);
   });
 });
@@ -109,6 +132,7 @@ describe('POST /api/milestones', () => {
     mockMilestoneService.createMilestone.mockResolvedValue(sampleMilestone);
     const res = await supertest(app)
       .post('/api/milestones')
+      .set(AUTH_HEADER)
       .send({ title: 'Milestone 1', project_id: 'p1' });
     expect(res.status).toBe(201);
     expect(res.body.success).toBe(true);
@@ -121,6 +145,7 @@ describe('POST /api/milestones', () => {
     );
     const res = await supertest(app)
       .post('/api/milestones')
+      .set(AUTH_HEADER)
       .send({ title: '' });
     expect(res.status).toBe(400);
     expect(res.body.success).toBe(false);
@@ -134,6 +159,7 @@ describe('PUT /api/milestones/:id', () => {
     mockMilestoneService.updateMilestone.mockResolvedValue(updated);
     const res = await supertest(app)
       .put('/api/milestones/m1')
+      .set(AUTH_HEADER)
       .send({ title: 'Updated' });
     expect(res.status).toBe(200);
     expect(res.body.data.title).toBe('Updated');
@@ -145,6 +171,7 @@ describe('PUT /api/milestones/:id', () => {
     );
     const res = await supertest(app)
       .put('/api/milestones/m1')
+      .set(AUTH_HEADER)
       .send({ title: 'x' });
     expect(res.status).toBe(400);
   });
@@ -154,7 +181,9 @@ describe('PUT /api/milestones/:id', () => {
 describe('DELETE /api/milestones/:id', () => {
   test('deletes a milestone and returns 200', async () => {
     mockMilestoneService.deleteMilestone.mockResolvedValue(undefined);
-    const res = await supertest(app).delete('/api/milestones/m1');
+    const res = await supertest(app)
+      .delete('/api/milestones/m1')
+      .set(AUTH_HEADER);
     expect(res.status).toBe(200);
     expect(res.body.success).toBe(true);
   });
@@ -163,7 +192,9 @@ describe('DELETE /api/milestones/:id', () => {
     mockMilestoneService.deleteMilestone.mockRejectedValue(
       new Error('DB error')
     );
-    const res = await supertest(app).delete('/api/milestones/m1');
+    const res = await supertest(app)
+      .delete('/api/milestones/m1')
+      .set(AUTH_HEADER);
     expect(res.status).toBe(500);
   });
 });
