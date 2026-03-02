@@ -61,6 +61,63 @@ export class TaskService {
       dueDateString = normalizeToMidnight(input.due_date);
     }
 
+    // Resolve schedule_id: use provided value, then fall back to user's active/default schedule
+    let scheduleId = input.schedule_id;
+    if (!scheduleId) {
+      // 1. Try user_settings.active_schedule_id
+      const { data: settings } = await serviceRoleSupabase
+        .from('user_settings')
+        .select('active_schedule_id')
+        .eq('user_id', input.user_id)
+        .single();
+
+      if (settings?.active_schedule_id) {
+        scheduleId = settings.active_schedule_id;
+      } else {
+        // 2. Fall back to the user's default schedule
+        const { data: defaultSchedule } = await serviceRoleSupabase
+          .from('schedules')
+          .select('id')
+          .eq('user_id', input.user_id)
+          .eq('is_default', true)
+          .single();
+
+        if (defaultSchedule?.id) {
+          scheduleId = defaultSchedule.id;
+        } else {
+          // 3. Fall back to any schedule belonging to the user
+          const { data: anySchedule } = await serviceRoleSupabase
+            .from('schedules')
+            .select('id')
+            .eq('user_id', input.user_id)
+            .limit(1)
+            .single();
+
+          if (anySchedule?.id) {
+            scheduleId = anySchedule.id;
+          } else {
+            // 4. Create a default schedule for the user
+            const { data: newSchedule, error: scheduleError } = await serviceRoleSupabase
+              .from('schedules')
+              .insert([{
+                user_id: input.user_id,
+                name: 'Default',
+                working_hours_start: 9,
+                working_hours_end: 22,
+                is_default: true,
+              }])
+              .select('id')
+              .single();
+
+            if (scheduleError || !newSchedule?.id) {
+              throw new Error('No schedule found for user and could not create one');
+            }
+            scheduleId = newSchedule.id;
+          }
+        }
+      }
+    }
+
     const client = authToken
       ? getAuthenticatedSupabase(authToken)
       : serviceRoleSupabase;
@@ -80,6 +137,7 @@ export class TaskService {
           planned_duration_minutes: normalizedPlanned,
           actual_duration_minutes: normalizedActual,
           user_id: input.user_id,
+          schedule_id: scheduleId,
         },
       ])
       .select()
