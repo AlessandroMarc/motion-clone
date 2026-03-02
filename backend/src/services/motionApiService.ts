@@ -1,7 +1,14 @@
 /**
  * Motion API client.
  * Handles all HTTP communication with https://api.usemotion.com/v1,
- * including cursor-based pagination and basic rate-limit awareness.
+ * including cursor-based pagination and outgoing rate-limit compliance.
+ *
+ * Rate limits (from MIGRATION_DOCS.md):
+ *   - Individual tier: 12 requests per minute
+ *   - Team tier:      120 requests per minute
+ *
+ * This client defaults to the individual limit (12 req/min) and inserts a
+ * minimum delay between successive HTTP calls to stay within quota.
  */
 import type {
   MotionUser,
@@ -15,8 +22,22 @@ import type {
 
 const MOTION_API_BASE = 'https://api.usemotion.com/v1';
 
+/**
+ * Minimum gap between consecutive Motion API requests (ms).
+ * 12 req/min  →  60 000 ms / 12 = 5 000 ms gap.
+ * Using 5 100 ms adds a small safety margin.
+ */
+const MOTION_REQUEST_INTERVAL_MS = 5_100;
+
+/** Returns a Promise that resolves after `ms` milliseconds. */
+function sleep(ms: number): Promise<void> {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
 export class MotionApiService {
   private readonly headers: Record<string, string>;
+  /** Timestamp (ms) of the last outgoing request — used for throttling. */
+  private lastRequestTime = 0;
 
   constructor(apiKey: string) {
     if (!apiKey) {
@@ -30,7 +51,22 @@ export class MotionApiService {
 
   // ── Internal helpers ──────────────────────────────────────────────────────
 
+  /**
+   * Enforces the 12 req/min Motion API rate limit by waiting until at least
+   * MOTION_REQUEST_INTERVAL_MS have elapsed since the previous request.
+   */
+  private async throttle(): Promise<void> {
+    const now = Date.now();
+    const elapsed = now - this.lastRequestTime;
+    if (elapsed < MOTION_REQUEST_INTERVAL_MS) {
+      await sleep(MOTION_REQUEST_INTERVAL_MS - elapsed);
+    }
+    this.lastRequestTime = Date.now();
+  }
+
   private async get<T>(path: string, params?: Record<string, string>): Promise<T> {
+    await this.throttle();
+
     const url = new URL(`${MOTION_API_BASE}${path}`);
     if (params) {
       for (const [key, value] of Object.entries(params)) {

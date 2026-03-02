@@ -12,25 +12,12 @@
  *   MigrationResult (see motionMigrationService.ts)
  */
 import express, { type Request, type Response } from 'express';
-import rateLimit from 'express-rate-limit';
 import { MotionMigrationService } from '../services/motionMigrationService.js';
 import { ResponseHelper } from '../utils/responseHelpers.js';
 import { authMiddleware, type AuthRequest } from '../middleware/auth.js';
 
 const router = express.Router();
 
-// Limit to 5 migration requests per hour per IP to prevent abuse,
-// since each request makes many calls to the Motion API.
-const migrationRateLimit = rateLimit({
-  windowMs: 60 * 60 * 1000, // 1 hour
-  max: 5,
-  standardHeaders: true,
-  legacyHeaders: false,
-  message: { success: false, error: 'Too many migration requests. Please try again later.' },
-});
-
-// Apply rate limiting before auth (no wasted work on throttled requests)
-router.use(migrationRateLimit);
 // All endpoints require a valid Nexto JWT
 router.use(authMiddleware);
 
