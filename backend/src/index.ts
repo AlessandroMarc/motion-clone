@@ -28,6 +28,11 @@ try {
 const app = express();
 const PORT = process.env.PORT || 3003;
 
+// Trust the first proxy hop so req.ip reflects the real client IP when running
+// behind Vercel, Railway, or any other reverse proxy. Without this, all requests
+// share the same rate-limit bucket (the proxy's IP).
+app.set('trust proxy', 1);
+
 // Middleware
 app.use(cors());
 app.use(express.json());

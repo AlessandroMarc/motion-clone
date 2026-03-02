@@ -130,9 +130,19 @@ router.delete('/schedules/:id', async (req: Request, res: Response) => {
     );
     ResponseHelper.success(res, null, 'Schedule deleted successfully');
   } catch (error) {
-    ResponseHelper.badRequest(
+    if (error instanceof Error) {
+      // Business-rule violations (active schedule, last schedule) are 409 Conflict
+      // so the frontend can distinguish them from unexpected server errors (500).
+      const isConflict =
+        error.message.startsWith('Cannot delete the active schedule') ||
+        error.message.startsWith('Cannot delete your only schedule');
+      if (isConflict) {
+        return ResponseHelper.error(res, error.message, 409, error.message);
+      }
+    }
+    ResponseHelper.internalError(
       res,
-      error instanceof Error ? error.message : 'Bad request'
+      error instanceof Error ? error.message : 'Internal server error'
     );
   }
 });

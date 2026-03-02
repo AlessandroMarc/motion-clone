@@ -5,7 +5,7 @@
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
 -- Projects table
-CREATE TABLE projects (
+CREATE TABLE IF NOT EXISTS projects (
     id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
     name VARCHAR(255) NOT NULL,
     description TEXT,
@@ -17,7 +17,7 @@ CREATE TABLE projects (
 );
 
 -- Milestones table
-CREATE TABLE milestones (
+CREATE TABLE IF NOT EXISTS milestones (
     id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
     title VARCHAR(255) NOT NULL,
     description TEXT,
@@ -30,19 +30,22 @@ CREATE TABLE milestones (
 );
 
 -- Schedules table (must be created before tasks so the FK can reference it)
-CREATE TABLE schedules (
+CREATE TABLE IF NOT EXISTS schedules (
     id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
     user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
     name VARCHAR(255) NOT NULL DEFAULT 'Default',
     working_hours_start INTEGER NOT NULL DEFAULT 9 CHECK (working_hours_start BETWEEN 0 AND 23),
     working_hours_end INTEGER NOT NULL DEFAULT 22 CHECK (working_hours_end BETWEEN 0 AND 23),
+    -- Overnight schedules (e.g. 22-06) are not supported. Each day's window must
+    -- have a distinct start and end. Extend this if overnight support is needed.
+    CONSTRAINT schedules_hours_differ CHECK (working_hours_start != working_hours_end),
     is_default BOOLEAN NOT NULL DEFAULT false,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
 -- Tasks table
-CREATE TABLE tasks (
+CREATE TABLE IF NOT EXISTS tasks (
     id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
     title VARCHAR(255) NOT NULL,
     description TEXT,
@@ -60,7 +63,7 @@ CREATE TABLE tasks (
 );
 
 -- User settings table (stores active schedule and onboarding state per user)
-CREATE TABLE user_settings (
+CREATE TABLE IF NOT EXISTS user_settings (
     id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
     user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
     active_schedule_id UUID REFERENCES schedules(id) ON DELETE SET NULL,
@@ -74,7 +77,7 @@ CREATE TABLE user_settings (
 );
 
 -- Calendar Events table
-CREATE TABLE calendar_events (
+CREATE TABLE IF NOT EXISTS calendar_events (
     id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
     title VARCHAR(255) NOT NULL,
     start_time TIMESTAMP WITH TIME ZONE NOT NULL,
@@ -102,6 +105,8 @@ CREATE INDEX idx_milestones_created_at ON milestones(created_at);
 
 CREATE INDEX idx_schedules_user_id ON schedules(user_id);
 CREATE INDEX idx_schedules_is_default ON schedules(is_default);
+-- Only one schedule per user may be marked as default at a time.
+CREATE UNIQUE INDEX idx_schedules_one_default_per_user ON schedules(user_id) WHERE is_default = true;
 
 CREATE INDEX idx_tasks_user_id ON tasks(user_id);
 CREATE INDEX idx_tasks_project_id ON tasks(project_id);
@@ -109,7 +114,7 @@ CREATE INDEX idx_tasks_status ON tasks(status);
 CREATE INDEX idx_tasks_priority ON tasks(priority);
 CREATE INDEX idx_tasks_created_at ON tasks(created_at);
 
-CREATE INDEX idx_user_settings_user_id ON user_settings(user_id);
+-- No separate index on user_settings(user_id): UNIQUE(user_id) creates one implicitly.
 
 CREATE INDEX idx_calendar_events_user_id ON calendar_events(user_id);
 CREATE INDEX idx_calendar_events_start_time ON calendar_events(start_time);
@@ -149,7 +154,7 @@ CREATE TRIGGER update_calendar_events_updated_at BEFORE UPDATE ON calendar_event
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 -- Google Calendar Tokens table
-CREATE TABLE google_calendar_tokens (
+CREATE TABLE IF NOT EXISTS google_calendar_tokens (
     id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
     user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
     access_token TEXT NOT NULL,
@@ -201,7 +206,8 @@ CREATE POLICY "Users can delete own tasks" ON tasks FOR DELETE USING (auth.uid()
 CREATE POLICY "Users can view own settings" ON user_settings FOR SELECT USING (auth.uid() = user_id);
 CREATE POLICY "Users can insert own settings" ON user_settings FOR INSERT WITH CHECK (auth.uid() = user_id);
 CREATE POLICY "Users can update own settings" ON user_settings FOR UPDATE USING (auth.uid() = user_id);
-CREATE POLICY "Users can delete own settings" ON user_settings FOR DELETE USING (auth.uid() = user_id);
+-- No DELETE policy: user_settings rows must never be deleted. Deleting them
+-- would break the application for that user on their next request.
 
 CREATE POLICY "Users can view own calendar events" ON calendar_events FOR SELECT USING (auth.uid() = user_id);
 CREATE POLICY "Users can insert own calendar events" ON calendar_events FOR INSERT WITH CHECK (auth.uid() = user_id);

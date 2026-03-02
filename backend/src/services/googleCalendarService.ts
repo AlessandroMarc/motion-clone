@@ -285,145 +285,128 @@ export class GoogleCalendarService {
 
       const googleEvents = response.data.items || [];
       const errors: string[] = [];
-      let synced = 0;
 
+      const normalizeDate = (value: string | Date | null | undefined): string | null => {
+        if (!value) return null;
+        const date = new Date(value);
+        if (Number.isNaN(date.getTime())) return null;
+        return date.toISOString();
+      };
+
+      // 1. Fetch all existing google-synced events for this user in ONE query
+      const existingMap = await this.calendarEventService.getGoogleSyncedEventsMap(userId);
+
+      type InsertRow = {
+        title: string;
+        description: string | null;
+        start_time: string;
+        end_time: string;
+        user_id: string;
+        google_event_id: string;
+        synced_from_google: true;
+        linked_task_id: null;
+        completed_at: null;
+      };
+
+      const toInsert: InsertRow[] = [];
+      const updatePromises: Promise<void>[] = [];
+      let skipped = 0; // unchanged events
+
+      // 2. Classify in-memory — no per-event DB queries
       for (const googleEvent of googleEvents) {
         try {
-          if (!googleEvent.id || !googleEvent.start || !googleEvent.end) {
-            continue; // Skip events without required fields
-          }
+          if (!googleEvent.id || !googleEvent.start || !googleEvent.end) continue;
 
-          const startTime =
-            googleEvent.start.dateTime || googleEvent.start.date;
-          const endTime = googleEvent.end.dateTime || googleEvent.end.date;
+          const startTime = googleEvent.start.dateTime || googleEvent.start.date;
+          const endTime   = googleEvent.end.dateTime   || googleEvent.end.date;
+          if (!startTime || !endTime) continue;
 
-          if (!startTime || !endTime) {
-            continue;
-          }
+          const newTitle       = googleEvent.summary || 'Untitled Event';
+          const newStart       = new Date(startTime).toISOString();
+          const newEnd         = new Date(endTime).toISOString();
+          const newDescription = googleEvent.description ?? null;
 
-          // Check if event already exists
-          const existingEvent =
-            await this.calendarEventService.getCalendarEventByGoogleEventId(
-              userId,
-              googleEvent.id
-            );
+          const existing = existingMap.get(googleEvent.id);
 
-          const eventData: {
-            title: string;
-            description?: string;
-            start_time: string;
-            end_time: string;
-            user_id: string;
-            google_event_id: string;
-            synced_from_google: boolean;
-          } = {
-            title: googleEvent.summary || 'Untitled Event',
-            start_time: new Date(startTime).toISOString(),
-            end_time: new Date(endTime).toISOString(),
-            user_id: userId,
-            google_event_id: googleEvent.id,
-            synced_from_google: true,
-          };
-
-          if (googleEvent.description) {
-            eventData.description = googleEvent.description;
-          }
-
-          if (existingEvent) {
-            const normalizeDate = (
-              value: string | Date | null | undefined
-            ): string | null => {
-              if (!value) return null;
-              const date = new Date(value);
-              if (Number.isNaN(date.getTime())) return null;
-              return date.toISOString();
-            };
-
-            const existingStart = normalizeDate(
-              (
-                existingEvent as unknown as {
-                  start_time?: string | Date | null;
-                }
-              ).start_time
-            );
-            const existingEnd = normalizeDate(
-              (
-                existingEvent as unknown as {
-                  end_time?: string | Date | null;
-                }
-              ).end_time
-            );
-            const existingTitle =
-              (
-                existingEvent as unknown as {
-                  title?: string | null;
-                }
-              ).title ?? '';
-            const existingDescription =
-              (
-                existingEvent as unknown as {
-                  description?: string | null;
-                }
-              ).description ?? undefined;
-            const existingSyncedFromGoogle =
-              (
-                existingEvent as unknown as {
-                  synced_from_google?: boolean | null;
-                }
-              ).synced_from_google ?? false;
-
+          if (existing) {
             const isUnchanged =
-              existingTitle === eventData.title &&
-              existingStart === normalizeDate(eventData.start_time) &&
-              existingEnd === normalizeDate(eventData.end_time) &&
-              existingDescription === eventData.description &&
-              existingSyncedFromGoogle === true;
+              existing.title           === newTitle &&
+              normalizeDate(existing.start_time) === newStart &&
+              normalizeDate(existing.end_time)   === newEnd &&
+              (existing.description ?? null)      === newDescription &&
+              existing.synced_from_google         === true;
 
             if (isUnchanged) {
-              synced++;
+              skipped++;
               continue;
             }
 
-            // Update existing event only when fields actually changed
-            const updateData: {
-              title: string;
-              start_time: string;
-              end_time: string;
-              description?: string;
-              synced_from_google?: boolean;
-            } = {
-              title: eventData.title,
-              start_time: eventData.start_time,
-              end_time: eventData.end_time,
+            // Queue update (run in parallel below)
+            const updateData: Record<string, unknown> = {
+              title: newTitle,
+              start_time: newStart,
+              end_time: newEnd,
+              description: newDescription,
+              synced_from_google: true,
             };
-            if (eventData.description !== undefined) {
-              updateData.description = eventData.description;
-            }
-            if (!existingSyncedFromGoogle) {
-              updateData.synced_from_google = true;
-            }
-            await this.calendarEventService.updateCalendarEvent(
-              existingEvent.id,
-              updateData
+            updatePromises.push(
+              this.calendarEventService
+                .updateCalendarEvent(existing.id, updateData)
+                .then(() => undefined)
             );
           } else {
-            // Create new event
-            await this.calendarEventService.createCalendarEvent(eventData);
+            toInsert.push({
+              title: newTitle,
+              description: newDescription,
+              start_time: newStart,
+              end_time: newEnd,
+              user_id: userId,
+              google_event_id: googleEvent.id,
+              synced_from_google: true,
+              linked_task_id: null,
+              completed_at: null,
+            });
           }
-
-          synced++;
         } catch (error) {
           const errorMsg =
             error instanceof Error
               ? error.message
-              : `Failed to sync event ${googleEvent.id}`;
+              : `Failed to process event ${googleEvent.id}`;
           errors.push(errorMsg);
           console.error(
-            `[GoogleCalendarService] Error syncing event ${googleEvent.id}:`,
+            `[GoogleCalendarService] Error processing event ${googleEvent.id}:`,
             error
           );
         }
       }
+
+      // 3. Batch insert new events (ONE query) + parallel updates
+      const [inserted, ...updateResults] = await Promise.allSettled([
+        this.calendarEventService.batchInsertGoogleEvents(toInsert),
+        ...updatePromises,
+      ]);
+
+      let insertedCount = 0;
+      if (inserted.status === 'fulfilled') {
+        insertedCount = inserted.value;
+      } else {
+        errors.push(`Batch insert failed: ${String(inserted.reason)}`);
+      }
+
+      let updatedCount = 0;
+      for (const result of updateResults) {
+        if (result.status === 'rejected') {
+          errors.push(`Update failed: ${String(result.reason)}`);
+        } else {
+          updatedCount++;
+        }
+      }
+
+      const synced = skipped + insertedCount + updatedCount;
+      console.log(
+        `[GoogleCalendarService] Sync complete for user ${userId}: ` +
+        `${insertedCount} inserted, ${updatedCount} updated, ${skipped} unchanged, ${errors.length} errors`
+      );
 
       // Update last_synced_at
       await serviceRoleSupabase

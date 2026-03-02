@@ -1018,6 +1018,85 @@ export class CalendarEventService {
     return data || [];
   }
 
+  /**
+   * Fetch all google-synced events for a user in one query and return as a
+   * Map<google_event_id, record> for O(1) lookup during batch sync.
+   */
+  async getGoogleSyncedEventsMap(
+    userId: string
+  ): Promise<
+    Map<
+      string,
+      {
+        id: string;
+        title: string;
+        start_time: string;
+        end_time: string;
+        description: string | null;
+        synced_from_google: boolean;
+      }
+    >
+  > {
+    const { data, error } = await serviceRoleSupabase
+      .from('calendar_events')
+      .select('id, google_event_id, title, start_time, end_time, description, synced_from_google')
+      .eq('user_id', userId)
+      .eq('synced_from_google', true)
+      .not('google_event_id', 'is', null);
+
+    if (error) {
+      throw new Error(`Failed to fetch google-synced events: ${error.message}`);
+    }
+
+    const map = new Map<
+      string,
+      {
+        id: string;
+        title: string;
+        start_time: string;
+        end_time: string;
+        description: string | null;
+        synced_from_google: boolean;
+      }
+    >();
+    for (const row of data ?? []) {
+      if (row.google_event_id) map.set(row.google_event_id, row as never);
+    }
+    return map;
+  }
+
+  /**
+   * Batch-insert multiple Google-synced events in a single query.
+   * Skips duplicates via the unique index on (user_id, google_event_id).
+   * Returns the number of rows inserted.
+   */
+  async batchInsertGoogleEvents(
+    events: Array<{
+      title: string;
+      description: string | null;
+      start_time: string;
+      end_time: string;
+      user_id: string;
+      google_event_id: string;
+      synced_from_google: true;
+      linked_task_id: null;
+      completed_at: null;
+    }>
+  ): Promise<number> {
+    if (events.length === 0) return 0;
+
+    const { data, error } = await serviceRoleSupabase
+      .from('calendar_events')
+      .insert(events)
+      .select('id');
+
+    if (error) {
+      throw new Error(`Failed to batch-insert google events: ${error.message}`);
+    }
+
+    return data?.length ?? 0;
+  }
+
   // Get calendar event by Google event ID
   async getCalendarEventByGoogleEventId(
     userId: string,
