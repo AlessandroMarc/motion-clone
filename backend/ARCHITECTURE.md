@@ -165,18 +165,60 @@ CREATE POLICY "Users can view own settings" ON user_settings
 ```
 backend/src/
 ├── __tests__/helpers/
-│   └── supabaseMock.ts          # Reusable Supabase mocks
-└── middleware/__tests__/
-    └── auth.test.ts              # Auth middleware tests (13 tests)
+│   └── supabaseMock.ts               # Reusable Supabase mocks
+├── middleware/__tests__/
+│   └── auth.test.ts                  # Auth middleware (13 tests)
+├── utils/__tests__/
+│   └── responseHelpers.test.ts       # ResponseHelper (20 tests)
+├── services/__tests__/
+│   ├── taskService.test.ts           # TaskService (21 tests)
+│   ├── projectService.test.ts        # ProjectService (21 tests)
+│   ├── milestoneService.test.ts      # MilestoneService (18 tests)
+│   └── userSettingsService.test.ts   # UserSettingsService (21 tests)
+└── routes/__tests__/
+    ├── tasks.routes.test.ts          # Tasks routes (15 tests)
+    ├── projects.routes.test.ts       # Projects routes (13 tests)
+    ├── milestones.routes.test.ts     # Milestones routes (12 tests)
+    ├── userSettings.routes.test.ts   # UserSettings routes (15 tests)
+    └── googleCalendar.routes.test.ts # Google Calendar routes (14 tests)
+```
+
+**Total: 181 backend tests** (unit + integration).
+
+### Mocking Strategy
+
+All backend service tests mock `../../config/supabase.js` via `jest.unstable_mockModule` (ESM) with a chainable mock client:
+
+```ts
+jest.unstable_mockModule('../../config/supabase.js', () => ({
+  getAuthenticatedSupabase: jest.fn().mockReturnValue(mockClient),
+  serviceRoleSupabase: mockClient,
+}));
+const { TaskService } = await import('../taskService.js');
+```
+
+Route integration tests use `supertest` with a minimal Express app mounting only the router under test, and mock `verifyAuthToken` to avoid real JWT verification:
+
+```ts
+jest.unstable_mockModule('../../config/supabase.js', () => ({
+  verifyAuthToken: jest
+    .fn()
+    .mockReturnValue({ userId: 'user-1', exp: 9999999999 }),
+  getAuthenticatedSupabase: jest.fn().mockReturnValue({}),
+}));
 ```
 
 ### Running Tests
 
 ```bash
-npm test                # Run all tests
-npm test:watch          # Watch mode
-npm test:coverage       # With coverage report
+npm test                 # Run all tests
+npm run test:watch       # Watch mode
+npm run test:coverage    # With coverage report
 ```
+
+### Known Auth Gap
+
+The milestones routes (`src/routes/milestones.ts`) lack authentication middleware — requests do not require a JWT token. This is flagged for a future fix.
 
 ## Files Modified
 
@@ -306,6 +348,6 @@ For questions or issues:
 
 ---
 
-**Last Updated**: Phase 3 completion
-**Test Coverage**: 13 passing tests
+**Last Updated**: Phase 4 completion (test suite expansion)
+**Test Coverage**: 181 passing backend tests; 185 passing frontend tests (366 total)
 **Status**: Production ready

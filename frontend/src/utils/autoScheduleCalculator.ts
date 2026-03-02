@@ -16,7 +16,6 @@ import {
 const DEBUG = process.env.NODE_ENV === 'development';
 function log(...args: unknown[]) {
   if (DEBUG) {
-    // eslint-disable-next-line no-console
     console.log('[AutoScheduleCalculator]', ...args);
   }
 }

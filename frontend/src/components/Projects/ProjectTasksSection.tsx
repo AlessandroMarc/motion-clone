@@ -1,6 +1,12 @@
 'use client';
 
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardAction,
+} from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Calendar, AlertCircle, X, Clock } from 'lucide-react';
 import { formatDate } from '@/utils/dateUtils';
@@ -51,14 +57,14 @@ export function ProjectTasksSection({
 
   return (
     <Card>
-      <CardHeader className="pb-4">
-        <div className="flex items-center justify-between">
-          <CardTitle className="text-xl font-semibold">Project Tasks</CardTitle>
+      <CardHeader>
+        <CardTitle className="text-xl font-semibold">Project Tasks</CardTitle>
+        <CardAction>
           <ProjectTaskCreateDialog
             projectId={projectId}
             onTaskCreate={handleTaskCreate}
           />
-        </div>
+        </CardAction>
       </CardHeader>
       <CardContent>
         {tasks.length === 0 ? (

@@ -123,7 +123,10 @@ router.delete('/:id', async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     if (!id || typeof id !== 'string') {
-      return ResponseHelper.badRequest(res, 'Project ID is required and must be a string');
+      return ResponseHelper.badRequest(
+        res,
+        'Project ID is required and must be a string'
+      );
     }
     await projectService.deleteProject(id, authReq.supabaseClient);
     ResponseHelper.deleted(res, 'Project deleted successfully');

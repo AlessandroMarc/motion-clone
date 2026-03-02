@@ -17,6 +17,16 @@ import {
 import { PROJECT_STATUS_CONFIG } from '@/utils/statusUtils';
 import { ProjectItem } from './ProjectItem';
 import { checkProjectSchedulingStatus } from '@/utils/projectSchedulingStatus';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 interface ProjectListProps {
   refreshTrigger?: number;
@@ -34,6 +44,7 @@ export function ProjectList({
   );
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [projectToDelete, setProjectToDelete] = useState<string | null>(null);
 
   const fetchProjects = async () => {
     try {
@@ -140,29 +151,61 @@ export function ProjectList({
   }
 
   return (
-    <StatusGroupedList
-      items={projects}
-      statusConfig={PROJECT_STATUS_CONFIG}
-      getItemStatus={project => project.status}
-      renderItem={project => {
-        const schedulingStatus = projectSchedulingStatuses.get(project.id);
-        return (
-          <ProjectItem
-            key={project.id}
-            project={project}
-            schedulingStatus={schedulingStatus}
-            onStatusToggle={handleStatusToggle}
-            onDelete={handleDeleteProject}
+    <>
+      <StatusGroupedList
+        items={projects}
+        statusConfig={PROJECT_STATUS_CONFIG}
+        getItemStatus={project => project.status}
+        renderItem={project => {
+          const schedulingStatus = projectSchedulingStatuses.get(project.id);
+          return (
+            <ProjectItem
+              key={project.id}
+              project={project}
+              schedulingStatus={schedulingStatus}
+              onStatusToggle={handleStatusToggle}
+              onDelete={setProjectToDelete}
+            />
+          );
+        }}
+        renderEmptyState={statusConfig => (
+          <EmptyStateCard
+            key={statusConfig.key}
+            statusConfig={statusConfig}
+            message={`No ${statusConfig.label.toLowerCase()} projects`}
           />
-        );
-      }}
-      renderEmptyState={statusConfig => (
-        <EmptyStateCard
-          key={statusConfig.key}
-          statusConfig={statusConfig}
-          message={`No ${statusConfig.label.toLowerCase()} projects`}
-        />
-      )}
-    />
+        )}
+      />
+      <AlertDialog
+        open={projectToDelete !== null}
+        onOpenChange={open => {
+          if (!open) setProjectToDelete(null);
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete project?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete the project and all its associated
+              tasks. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => {
+                if (projectToDelete) {
+                  handleDeleteProject(projectToDelete);
+                  setProjectToDelete(null);
+                }
+              }}
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
 }

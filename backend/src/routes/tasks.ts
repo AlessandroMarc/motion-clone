@@ -3,6 +3,7 @@ import { TaskService } from '../services/taskService.js';
 import type { CreateTaskInput, UpdateTaskInput } from '../types/database.js';
 import { ResponseHelper } from '../utils/responseHelpers.js';
 import { authMiddleware, type AuthRequest } from '../middleware/auth.js';
+import type { WorkItemStatus } from '../../../shared/types.js';
 
 const router = express.Router();
 const taskService = new TaskService();
@@ -25,7 +26,7 @@ router.get('/', async (req: Request, res: Response) => {
       tasks = await taskService.getTasksByProjectId(project_id, token);
     } else if (status && typeof status === 'string') {
       tasks = await taskService.getTasksByStatus(
-        status as 'pending' | 'in-progress' | 'completed',
+        status as WorkItemStatus,
         token
       );
     } else {

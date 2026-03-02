@@ -20,7 +20,7 @@ export class TaskService {
   private determineStatus(
     plannedDuration: number | null | undefined,
     actualDuration: number | null | undefined
-  ): 'pending' | 'in-progress' | 'completed' {
+  ): 'not-started' | 'in-progress' | 'completed' {
     const planned = plannedDuration ?? 0;
     const actual = actualDuration ?? 0;
 
@@ -28,7 +28,7 @@ export class TaskService {
     const normalizedActual = actual < 0 ? 0 : actual;
 
     if (normalizedActual <= 0) {
-      return 'pending';
+      return 'not-started';
     }
 
     if (normalizedPlanned <= 0) {
@@ -147,7 +147,7 @@ export class TaskService {
       description?: string;
       due_date?: string | null;
       priority?: 'low' | 'medium' | 'high';
-      status?: 'pending' | 'in-progress' | 'completed';
+      status?: 'not-started' | 'in-progress' | 'completed';
       dependencies?: string[];
       blocked_by?: string[];
       project_id?: string | null;
@@ -266,7 +266,7 @@ export class TaskService {
 
   // Get tasks by status
   async getTasksByStatus(
-    status: 'pending' | 'in-progress' | 'completed',
+    status: 'not-started' | 'in-progress' | 'completed',
     authToken?: string
   ): Promise<Task[]> {
     const client = authToken

@@ -13,6 +13,7 @@ import { SyncScheduler } from './services/syncScheduler.js';
 import { OnboardingEmailScheduler } from './services/onboardingEmailScheduler.js';
 import { loadEnv } from './config/loadEnv.js';
 import { validateEnvOrThrow, validateEnv } from './config/validateEnv.js';
+import { apiRateLimiter } from './middleware/rateLimit.js';
 
 loadEnv();
 
@@ -32,6 +33,7 @@ const PORT = process.env.PORT || 3003;
 // Middleware
 app.use(cors());
 app.use(express.json());
+app.use('/api', apiRateLimiter);
 
 // Routes
 app.get('/api/health', (req: Request, res: Response) => {

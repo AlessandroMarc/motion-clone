@@ -19,7 +19,12 @@ export function OnboardingChecklist() {
       return stepId === 'task_created' ? 'current' : 'pending';
     }
 
-    const stepOrder = ['task_created', 'project_created', 'scheduled', 'calendar_synced'];
+    const stepOrder = [
+      'task_created',
+      'project_created',
+      'scheduled',
+      'calendar_synced',
+    ];
     const currentIndex = stepOrder.indexOf(status.step);
     const stepIndex = stepOrder.indexOf(stepId);
 

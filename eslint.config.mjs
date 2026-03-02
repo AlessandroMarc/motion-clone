@@ -67,9 +67,9 @@ export default [
       '@typescript-eslint/no-explicit-any': 'warn',
     },
   },
-  // Backend TypeScript files with project reference
+  // Backend TypeScript files (non-test) with project reference
   {
-    files: ['backend/**/*.ts'],
+    files: ['backend/src/**/*.ts'],
     languageOptions: {
       parser: tsParser,
       parserOptions: {
@@ -94,6 +94,30 @@ export default [
         },
       ],
       '@typescript-eslint/no-explicit-any': 'warn',
+    },
+  },
+  // Test files – allow 'any' for mocking and testing flexibility (must be last)
+  {
+    files: [
+      '**/__tests__/**/*.ts',
+      '**/__tests__/**/*.tsx',
+      '**/*.test.ts',
+      '**/*.test.tsx',
+    ],
+    languageOptions: {
+      parser: tsParser,
+      parserOptions: {
+        ecmaVersion: 2020,
+        sourceType: 'module',
+      },
+    },
+    plugins: {
+      '@typescript-eslint': tsPlugin,
+    },
+    rules: {
+      '@typescript-eslint/no-explicit-any': 'off',
+      '@typescript-eslint/no-unused-vars': 'off',
+      'no-unused-vars': 'off',
     },
   },
 ];

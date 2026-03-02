@@ -1,5 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
-import jwt from 'jsonwebtoken';
+import jwt, { type JwtPayload } from 'jsonwebtoken';
 import { loadEnv } from './loadEnv.js';
 
 loadEnv();
@@ -87,7 +87,7 @@ export function verifyAuthToken(token: string): VerifiedTokenPayload {
     // Verify and decode the JWT
     const decoded = jwt.verify(token, secret, {
       algorithms: ['HS256'], // Supabase uses HS256
-    }) as any;
+    }) as JwtPayload;
 
     // Extract user ID from the 'sub' claim (standard JWT claim for user identifier)
     const userId = decoded.sub;

@@ -35,6 +35,12 @@ export function Header({ content }: HeaderProps) {
           >
             How it works
           </Link>
+          <Link
+            href="/changelog"
+            className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors"
+          >
+            Changelog
+          </Link>
         </nav>
 
         <div className="flex items-center gap-4">
