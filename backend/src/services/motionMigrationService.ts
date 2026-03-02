@@ -10,12 +10,17 @@
  *   3. For each workspace: get schedules, projects, tasks, and recurring tasks.
  *   4. Map and persist projects first, then tasks (regular + recurring instances).
  */
+import fs from 'fs/promises';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import { MotionApiService } from './motionApiService.js';
 import { ProjectService } from './projectService.js';
 import { TaskService } from './taskService.js';
 import { getAuthenticatedSupabase } from '../config/supabase.js';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type {
+  MotionUser,
+  MotionWorkspace,
   MotionTask,
   MotionRecurringTask,
   MotionProject,
@@ -23,6 +28,23 @@ import type {
   MotionPriority,
 } from '../types/motion.js';
 import type { CreateProjectInput, CreateTaskInput } from '../types/database.js';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+interface MotionWorkspaceSnapshot {
+  workspace: MotionWorkspace;
+  projects: MotionProject[];
+  tasks: MotionTask[];
+  recurringTasks: MotionRecurringTask[];
+}
+
+interface MotionSnapshot {
+  exportedAt: string;
+  user: MotionUser;
+  schedules: MotionSchedule[];
+  workspaces: MotionWorkspaceSnapshot[];
+}
 
 // ── Priority mapping ─────────────────────────────────────────────────────────
 
@@ -146,15 +168,35 @@ export class MotionMigrationService {
   ): Promise<MigrationResult> {
     const supabaseClient: SupabaseClient =
       getAuthenticatedSupabase(nextoAuthToken);
-    // 1. Verify Motion credentials and get user info
+
+    // ── Phase 1: Fetch all data from Motion ──────────────────────────────────
     const motionUser = await this.motionApi.getMe();
-
-    // 2. Fetch schedules (informational – stored in result summary)
     const schedules: MotionSchedule[] = await this.motionApi.listSchedules();
-
-    // 3. Fetch workspaces
     const workspaces = await this.motionApi.listWorkspaces();
 
+    const workspaceSnapshots: MotionWorkspaceSnapshot[] = [];
+    for (const workspace of workspaces) {
+      let projects: MotionProject[] = [];
+      let tasks: MotionTask[] = [];
+      let recurringTasks: MotionRecurringTask[] = [];
+      try { projects = await this.motionApi.listProjects(workspace.id); } catch { /* handled in import phase */ }
+      try { tasks = await this.motionApi.listTasks(workspace.id); } catch { /* handled in import phase */ }
+      try { recurringTasks = await this.motionApi.listRecurringTasks(workspace.id); } catch { /* handled in import phase */ }
+      workspaceSnapshots.push({ workspace, projects, tasks, recurringTasks });
+    }
+
+    // ── Phase 2: Save snapshot to JSON ───────────────────────────────────────
+    const snapshot: MotionSnapshot = {
+      exportedAt: new Date().toISOString(),
+      user: motionUser,
+      schedules,
+      workspaces: workspaceSnapshots,
+    };
+    const snapshotPath = path.join(__dirname, '../../../motion-export.json');
+    await fs.writeFile(snapshotPath, JSON.stringify(snapshot, null, 2), 'utf-8');
+    console.log(`📄 Motion data snapshot saved to: ${snapshotPath}`);
+
+    // ── Phase 3: Import snapshot into Nexto ──────────────────────────────────
     const result: MigrationResult = {
       userId: motionUser.id,
       schedulesFound: schedules.length,
@@ -164,11 +206,9 @@ export class MotionMigrationService {
       totalRecurringTasksImported: 0,
     };
 
-    // 4. Process each workspace
-    for (const workspace of workspaces) {
-      const summary = await this.migrateWorkspace(
-        workspace.id,
-        workspace.name,
+    for (const snap of workspaceSnapshots) {
+      const summary = await this.importWorkspace(
+        snap,
         nextoUserId,
         nextoAuthToken,
         supabaseClient
@@ -182,16 +222,15 @@ export class MotionMigrationService {
     return result;
   }
 
-  private async migrateWorkspace(
-    workspaceId: string,
-    workspaceName: string,
+  private async importWorkspace(
+    { workspace, projects: motionProjects, tasks: motionTasks, recurringTasks: motionRecurring }: MotionWorkspaceSnapshot,
     nextoUserId: string,
     nextoAuthToken: string,
     supabaseClient: SupabaseClient
   ): Promise<MigrationWorkspaceSummary> {
     const summary: MigrationWorkspaceSummary = {
-      motionWorkspaceId: workspaceId,
-      motionWorkspaceName: workspaceName,
+      motionWorkspaceId: workspace.id,
+      motionWorkspaceName: workspace.name,
       projectsImported: 0,
       tasksImported: 0,
       recurringTasksImported: 0,
@@ -199,15 +238,6 @@ export class MotionMigrationService {
     };
 
     // ── Projects ────────────────────────────────────────────────────────────
-    let motionProjects: MotionProject[] = [];
-    try {
-      motionProjects = await this.motionApi.listProjects(workspaceId);
-    } catch (err) {
-      summary.errors.push(
-        `Failed to fetch projects for workspace ${workspaceId}: ${err instanceof Error ? err.message : String(err)}`
-      );
-    }
-
     // Build a map from Motion project id → Nexto project id
     const projectIdMap = new Map<string, string>();
 
@@ -237,15 +267,6 @@ export class MotionMigrationService {
     }
 
     // ── Regular tasks ────────────────────────────────────────────────────────
-    let motionTasks: MotionTask[] = [];
-    try {
-      motionTasks = await this.motionApi.listTasks(workspaceId);
-    } catch (err) {
-      summary.errors.push(
-        `Failed to fetch tasks for workspace ${workspaceId}: ${err instanceof Error ? err.message : String(err)}`
-      );
-    }
-
     for (const mt of motionTasks) {
       try {
         const nextoProjectId = mt.project?.id
@@ -267,15 +288,6 @@ export class MotionMigrationService {
     }
 
     // ── Recurring tasks ──────────────────────────────────────────────────────
-    let motionRecurring: MotionRecurringTask[] = [];
-    try {
-      motionRecurring = await this.motionApi.listRecurringTasks(workspaceId);
-    } catch (err) {
-      summary.errors.push(
-        `Failed to fetch recurring tasks for workspace ${workspaceId}: ${err instanceof Error ? err.message : String(err)}`
-      );
-    }
-
     for (const rt of motionRecurring) {
       try {
         const nextoProjectId = rt.project?.id
