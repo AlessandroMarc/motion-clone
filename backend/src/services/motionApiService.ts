@@ -34,10 +34,16 @@ function sleep(ms: number): Promise<void> {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
+/**
+ * Module-level timestamp of the last outgoing Motion API request.
+ * Shared across ALL MotionApiService instances so that concurrent migrations
+ * (e.g. two requests hitting the server simultaneously) respect the same
+ * 12 req/min quota — not independent per-instance clocks.
+ */
+let globalLastMotionRequestTime = 0;
+
 export class MotionApiService {
   private readonly headers: Record<string, string>;
-  /** Timestamp (ms) of the last outgoing request — used for throttling. */
-  private lastRequestTime = 0;
 
   constructor(apiKey: string) {
     if (!apiKey) {
@@ -57,11 +63,11 @@ export class MotionApiService {
    */
   private async throttle(): Promise<void> {
     const now = Date.now();
-    const elapsed = now - this.lastRequestTime;
+    const elapsed = now - globalLastMotionRequestTime;
     if (elapsed < MOTION_REQUEST_INTERVAL_MS) {
       await sleep(MOTION_REQUEST_INTERVAL_MS - elapsed);
     }
-    this.lastRequestTime = Date.now();
+    globalLastMotionRequestTime = Date.now();
   }
 
   private async get<T>(path: string, params?: Record<string, string>): Promise<T> {

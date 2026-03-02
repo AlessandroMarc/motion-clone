@@ -119,4 +119,7 @@ async function main() {
   }
 }
 
-main();
+// Only run when executed directly (not when imported as a module)
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
+  main();
+}

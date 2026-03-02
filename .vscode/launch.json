@@ -20,9 +20,7 @@
       "runtimeArgs": ["--import", "tsx/esm"],
       "console": "integratedTerminal",
       "cwd": "${workspaceFolder}/backend",
-      "env": {
-        "MOTION_API_KEY": "agdwGhYScTtU9fBIwwFfhq49nDmiE2vffH8Y9GQQjeA=",
-      }
+      "envFile": "${workspaceFolder}/backend/.env.debug"
     }
   ]
 }

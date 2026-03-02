@@ -10,10 +10,7 @@
  *   3. For each workspace: get schedules, projects, tasks, and recurring tasks.
  *   4. Map and persist projects first, then tasks (regular + recurring instances).
  */
-import path from 'path';
-import { fileURLToPath } from 'url';
-import { saveMotionSnapshot } from '../../export-motion-data.js';
-import type { MotionWorkspaceSnapshot } from '../../export-motion-data.js';
+import { MotionApiService } from './motionApiService.js';
 import { ProjectService } from './projectService.js';
 import { TaskService } from './taskService.js';
 import { getAuthenticatedSupabase } from '../config/supabase.js';
@@ -21,12 +18,20 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import type {
   MotionTask,
   MotionRecurringTask,
+  MotionProject,
+  MotionSchedule,
+  MotionWorkspace,
   MotionPriority,
 } from '../types/motion.js';
 import type { CreateProjectInput, CreateTaskInput } from '../types/database.js';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+interface MotionWorkspaceSnapshot {
+  workspace: MotionWorkspace;
+  projects: MotionProject[];
+  tasks: MotionTask[];
+  recurringTasks: MotionRecurringTask[];
+  fetchErrors: string[];
+}
 
 // ── Priority mapping ─────────────────────────────────────────────────────────
 
@@ -73,22 +78,15 @@ export function mapMotionTaskToCreateInput(
   nextoProjectId?: string,
   isRecurring = false
 ): CreateTaskInput {
-  // MotionTask has `completed`; MotionRecurringTask does not
-  const motionTask = task as MotionTask;
+  const title = isRecurring ? `[Recurring] ${task.name}` : task.name;
 
-  const title = isRecurring
-    ? `[Recurring] ${task.name}`
-    : task.name;
-
+  // MotionTask has `dueDate` and `description`; MotionRecurringTask does not
   const dueDate =
-    'dueDate' in motionTask && motionTask.dueDate
-      ? new Date(motionTask.dueDate)
-      : null;
+    'dueDate' in task && task.dueDate ? new Date(task.dueDate) : null;
 
   const priority = mapPriority(task.priority);
   const plannedDuration = mapDuration(task.duration);
-  const description =
-    'description' in motionTask ? motionTask.description : undefined;
+  const description = 'description' in task ? task.description : undefined;
 
   const input: CreateTaskInput = {
     title,
@@ -127,12 +125,12 @@ export interface MigrationResult {
 // ── Service ───────────────────────────────────────────────────────────────────
 
 export class MotionMigrationService {
-  private readonly motionApiKey: string;
+  private readonly motionApi: MotionApiService;
   private readonly projectService: ProjectService;
   private readonly taskService: TaskService;
 
   constructor(motionApiKey: string) {
-    this.motionApiKey = motionApiKey;
+    this.motionApi = new MotionApiService(motionApiKey);
     this.projectService = new ProjectService();
     this.taskService = new TaskService();
   }
@@ -148,15 +146,40 @@ export class MotionMigrationService {
     nextoUserId: string,
     nextoAuthToken: string
   ): Promise<MigrationResult> {
-    const supabaseClient: SupabaseClient =
-      getAuthenticatedSupabase(nextoAuthToken);
+    const supabaseClient: SupabaseClient = getAuthenticatedSupabase(nextoAuthToken);
 
-    // ── Phase 1: Fetch all data from Motion + save snapshot to JSON ──────────
-    const snapshotDir = path.join(__dirname, '../../../');
-    const snapshot = await saveMotionSnapshot(this.motionApiKey, snapshotDir);
-    const { user: motionUser, schedules, workspaces: workspaceSnapshots } = snapshot;
+    // ── Phase 1: Fetch data from Motion (no disk I/O) ────────────────────────
+    const motionUser = await this.motionApi.getMe();
+    const schedules: MotionSchedule[] = await this.motionApi.listSchedules();
+    const workspaces = await this.motionApi.listWorkspaces();
 
-    // ── Phase 2: Import snapshot into Nexto ──────────────────────────────────
+    const workspaceSnapshots: MotionWorkspaceSnapshot[] = [];
+    for (const workspace of workspaces) {
+      const fetchErrors: string[] = [];
+      let projects: MotionProject[] = [];
+      let tasks: MotionTask[] = [];
+      let recurringTasks: MotionRecurringTask[] = [];
+
+      try {
+        projects = await this.motionApi.listProjects(workspace.id);
+      } catch (err) {
+        fetchErrors.push(`Failed to fetch projects: ${err instanceof Error ? err.message : String(err)}`);
+      }
+      try {
+        tasks = await this.motionApi.listTasks(workspace.id);
+      } catch (err) {
+        fetchErrors.push(`Failed to fetch tasks: ${err instanceof Error ? err.message : String(err)}`);
+      }
+      try {
+        recurringTasks = await this.motionApi.listRecurringTasks(workspace.id);
+      } catch (err) {
+        fetchErrors.push(`Failed to fetch recurring tasks: ${err instanceof Error ? err.message : String(err)}`);
+      }
+
+      workspaceSnapshots.push({ workspace, projects, tasks, recurringTasks, fetchErrors });
+    }
+
+    // ── Phase 2: Persist into Nexto ──────────────────────────────────────────
     const result: MigrationResult = {
       userId: motionUser.id,
       schedulesFound: schedules.length,
@@ -183,7 +206,7 @@ export class MotionMigrationService {
   }
 
   private async importWorkspace(
-    { workspace, projects: motionProjects, tasks: motionTasks, recurringTasks: motionRecurring }: MotionWorkspaceSnapshot,
+    { workspace, projects: motionProjects, tasks: motionTasks, recurringTasks: motionRecurring, fetchErrors }: MotionWorkspaceSnapshot,
     nextoUserId: string,
     nextoAuthToken: string,
     supabaseClient: SupabaseClient
@@ -194,7 +217,8 @@ export class MotionMigrationService {
       projectsImported: 0,
       tasksImported: 0,
       recurringTasksImported: 0,
-      errors: [],
+      // Seed with any errors that occurred during data fetching
+      errors: [...fetchErrors],
     };
 
     // ── Projects ────────────────────────────────────────────────────────────

@@ -15,6 +15,13 @@ backend/dist/
 
 # Playwright
 playwright-report/
-test-results/    
+test-results/
+
+# Motion export snapshots (may contain PII)
 backend/motion-export.json
 motion-export.json
+
+# Local debug environment files (contain secrets)
+backend/.env.debug
+.env.debug
+.vscode/launch.json
