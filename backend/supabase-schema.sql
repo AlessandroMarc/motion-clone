@@ -29,6 +29,18 @@ CREATE TABLE milestones (
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
+-- Schedules table (must be created before tasks so the FK can reference it)
+CREATE TABLE schedules (
+    id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+    user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+    name VARCHAR(255) NOT NULL DEFAULT 'Default',
+    working_hours_start INTEGER NOT NULL DEFAULT 9 CHECK (working_hours_start BETWEEN 0 AND 23),
+    working_hours_end INTEGER NOT NULL DEFAULT 22 CHECK (working_hours_end BETWEEN 0 AND 23),
+    is_default BOOLEAN NOT NULL DEFAULT false,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
 -- Tasks table
 CREATE TABLE tasks (
     id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
@@ -36,12 +48,30 @@ CREATE TABLE tasks (
     description TEXT,
     due_date TIMESTAMP WITH TIME ZONE,
     priority VARCHAR(10) NOT NULL CHECK (priority IN ('low', 'medium', 'high')),
-    status VARCHAR(20) NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'in-progress', 'completed')),
+    status VARCHAR(20) NOT NULL DEFAULT 'not-started' CHECK (status IN ('not-started', 'in-progress', 'completed')),
     dependencies UUID[] DEFAULT '{}',
+    blocked_by UUID[] DEFAULT '{}',
     project_id UUID REFERENCES projects(id) ON DELETE SET NULL,
+    schedule_id UUID NOT NULL REFERENCES schedules(id) ON DELETE RESTRICT,
+    planned_duration_minutes INTEGER NOT NULL DEFAULT 60,
+    actual_duration_minutes INTEGER NOT NULL DEFAULT 0,
     user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- User settings table (stores active schedule and onboarding state per user)
+CREATE TABLE user_settings (
+    id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+    user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+    active_schedule_id UUID REFERENCES schedules(id) ON DELETE SET NULL,
+    onboarding_completed BOOLEAN NOT NULL DEFAULT false,
+    onboarding_step VARCHAR(50),
+    onboarding_started_at TIMESTAMP WITH TIME ZONE,
+    onboarding_completed_at TIMESTAMP WITH TIME ZONE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    UNIQUE(user_id)
 );
 
 -- Calendar Events table
@@ -71,11 +101,17 @@ CREATE INDEX idx_milestones_project_id ON milestones(project_id);
 CREATE INDEX idx_milestones_status ON milestones(status);
 CREATE INDEX idx_milestones_created_at ON milestones(created_at);
 
+CREATE INDEX idx_schedules_user_id ON schedules(user_id);
+CREATE INDEX idx_schedules_is_default ON schedules(is_default);
+
 CREATE INDEX idx_tasks_user_id ON tasks(user_id);
 CREATE INDEX idx_tasks_project_id ON tasks(project_id);
 CREATE INDEX idx_tasks_status ON tasks(status);
 CREATE INDEX idx_tasks_priority ON tasks(priority);
 CREATE INDEX idx_tasks_created_at ON tasks(created_at);
+CREATE INDEX idx_tasks_schedule_id ON tasks(schedule_id);
+
+CREATE INDEX idx_user_settings_user_id ON user_settings(user_id);
 
 CREATE INDEX idx_calendar_events_user_id ON calendar_events(user_id);
 CREATE INDEX idx_calendar_events_start_time ON calendar_events(start_time);
@@ -102,7 +138,13 @@ CREATE TRIGGER update_projects_updated_at BEFORE UPDATE ON projects
 CREATE TRIGGER update_milestones_updated_at BEFORE UPDATE ON milestones
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
+CREATE TRIGGER update_schedules_updated_at BEFORE UPDATE ON schedules
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
 CREATE TRIGGER update_tasks_updated_at BEFORE UPDATE ON tasks
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TRIGGER update_user_settings_updated_at BEFORE UPDATE ON user_settings
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 CREATE TRIGGER update_calendar_events_updated_at BEFORE UPDATE ON calendar_events
@@ -130,7 +172,9 @@ CREATE TRIGGER update_google_calendar_tokens_updated_at BEFORE UPDATE ON google_
 -- Enable Row Level Security (RLS) - you can customize this based on your auth needs
 ALTER TABLE projects ENABLE ROW LEVEL SECURITY;
 ALTER TABLE milestones ENABLE ROW LEVEL SECURITY;
+ALTER TABLE schedules ENABLE ROW LEVEL SECURITY;
 ALTER TABLE tasks ENABLE ROW LEVEL SECURITY;
+ALTER TABLE user_settings ENABLE ROW LEVEL SECURITY;
 ALTER TABLE calendar_events ENABLE ROW LEVEL SECURITY;
 ALTER TABLE google_calendar_tokens ENABLE ROW LEVEL SECURITY;
 
@@ -146,10 +190,20 @@ CREATE POLICY "Users can insert own milestones" ON milestones FOR INSERT WITH CH
 CREATE POLICY "Users can update own milestones" ON milestones FOR UPDATE USING (auth.uid() = user_id);
 CREATE POLICY "Users can delete own milestones" ON milestones FOR DELETE USING (auth.uid() = user_id);
 
+CREATE POLICY "Users can view own schedules" ON schedules FOR SELECT USING (auth.uid() = user_id);
+CREATE POLICY "Users can insert own schedules" ON schedules FOR INSERT WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "Users can update own schedules" ON schedules FOR UPDATE USING (auth.uid() = user_id);
+CREATE POLICY "Users can delete own schedules" ON schedules FOR DELETE USING (auth.uid() = user_id);
+
 CREATE POLICY "Users can view own tasks" ON tasks FOR SELECT USING (auth.uid() = user_id);
 CREATE POLICY "Users can insert own tasks" ON tasks FOR INSERT WITH CHECK (auth.uid() = user_id);
 CREATE POLICY "Users can update own tasks" ON tasks FOR UPDATE USING (auth.uid() = user_id);
 CREATE POLICY "Users can delete own tasks" ON tasks FOR DELETE USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can view own settings" ON user_settings FOR SELECT USING (auth.uid() = user_id);
+CREATE POLICY "Users can insert own settings" ON user_settings FOR INSERT WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "Users can update own settings" ON user_settings FOR UPDATE USING (auth.uid() = user_id);
+CREATE POLICY "Users can delete own settings" ON user_settings FOR DELETE USING (auth.uid() = user_id);
 
 CREATE POLICY "Users can view own calendar events" ON calendar_events FOR SELECT USING (auth.uid() = user_id);
 CREATE POLICY "Users can insert own calendar events" ON calendar_events FOR INSERT WITH CHECK (auth.uid() = user_id);
