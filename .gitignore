@@ -12,3 +12,6 @@ backend/dist/
 
 # Cursor
 .cursor/    
+# Playwright
+playwright-report/
+test-results/
