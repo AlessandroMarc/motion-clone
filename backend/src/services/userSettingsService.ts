@@ -195,7 +195,9 @@ export class UserSettingsService {
       .order('created_at', { ascending: true });
 
     if (fallbackError) {
-      throw new Error(`Failed to resolve fallback schedule: ${fallbackError.message}`);
+      throw new Error(
+        `Failed to resolve fallback schedule: ${fallbackError.message}`
+      );
     }
 
     const fallbackId = fallbackSchedules?.[0]?.id;
@@ -233,7 +235,9 @@ export class UserSettingsService {
         .update({ active_schedule_id: fallbackId })
         .eq('user_id', userId);
       if (updateSettingsError) {
-        throw new Error(`Failed to update active schedule: ${updateSettingsError.message}`);
+        throw new Error(
+          `Failed to update active schedule: ${updateSettingsError.message}`
+        );
       }
     }
 

@@ -73,7 +73,9 @@ export class TaskService {
         .single();
 
       if (!ownedSchedule) {
-        throw new Error('Unauthorized: schedule does not belong to the current user');
+        throw new Error(
+          'Unauthorized: schedule does not belong to the current user'
+        );
       }
     } else {
       // 1. Try user_settings.active_schedule_id
@@ -109,20 +111,25 @@ export class TaskService {
             scheduleId = anySchedule.id;
           } else {
             // 4. Create a default schedule for the user
-            const { data: newSchedule, error: scheduleError } = await serviceRoleSupabase
-              .from('schedules')
-              .insert([{
-                user_id: input.user_id,
-                name: 'Default',
-                working_hours_start: 9,
-                working_hours_end: 22,
-                is_default: true,
-              }])
-              .select('id')
-              .single();
+            const { data: newSchedule, error: scheduleError } =
+              await serviceRoleSupabase
+                .from('schedules')
+                .insert([
+                  {
+                    user_id: input.user_id,
+                    name: 'Default',
+                    working_hours_start: 9,
+                    working_hours_end: 22,
+                    is_default: true,
+                  },
+                ])
+                .select('id')
+                .single();
 
             if (scheduleError || !newSchedule?.id) {
-              throw new Error('No schedule found for user and could not create one');
+              throw new Error(
+                'No schedule found for user and could not create one'
+              );
             }
             scheduleId = newSchedule.id;
           }
@@ -255,7 +262,9 @@ export class TaskService {
           .single();
 
         if (!ownedSchedule) {
-          throw new Error('Unauthorized: schedule does not belong to the current user');
+          throw new Error(
+            'Unauthorized: schedule does not belong to the current user'
+          );
         }
       }
       updateData.schedule_id = input.schedule_id;

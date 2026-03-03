@@ -93,15 +93,8 @@ export function calculateAutoSchedule(params: {
   ).length;
   log('by deadline', { tasksWithDeadlineCount, tasksWithoutDeadlineCount });
 
-  const config: TaskSchedulingConfig = createConfigFromSchedule(
-    activeSchedule,
-    eventDuration
-  );
-
   // Build a lookup so each task can use its own schedule's working hours
-  const scheduleMap = new Map<string, Schedule>(
-    schedules.map(s => [s.id, s])
-  );
+  const scheduleMap = new Map<string, Schedule>(schedules.map(s => [s.id, s]));
 
   const completedTaskEvents = allCalendarEvents.filter(
     event => isCalendarEventTask(event) && event.completed_at !== null

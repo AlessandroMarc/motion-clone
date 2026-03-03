@@ -41,7 +41,9 @@ export function TaskScheduleField({
 
       setIsLoading(true);
       try {
-        const userSchedules = await userSettingsService.getUserSchedules(user.id);
+        const userSchedules = await userSettingsService.getUserSchedules(
+          user.id
+        );
         if (!cancelled) {
           setSchedules(userSchedules);
         }

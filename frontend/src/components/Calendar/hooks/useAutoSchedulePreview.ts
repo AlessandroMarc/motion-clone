@@ -31,5 +31,12 @@ export function useAutoSchedulePreview(params: {
       eventDuration,
       schedules,
     });
-  }, [tasks, existingEvents, allCalendarEvents, activeSchedule, eventDuration, schedules]);
+  }, [
+    tasks,
+    existingEvents,
+    allCalendarEvents,
+    activeSchedule,
+    eventDuration,
+    schedules,
+  ]);
 }

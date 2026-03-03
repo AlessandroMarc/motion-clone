@@ -261,9 +261,7 @@ describe('UserSettingsService', () => {
       const fallbackOrder1 = jest
         .fn()
         .mockReturnValue({ order: fallbackOrder2 });
-      const fallbackNeq = jest
-        .fn()
-        .mockReturnValue({ order: fallbackOrder1 });
+      const fallbackNeq = jest.fn().mockReturnValue({ order: fallbackOrder1 });
       const fallbackEq = jest.fn().mockReturnValue({ neq: fallbackNeq });
       const fallbackSelect = jest.fn().mockReturnValue({ eq: fallbackEq });
 
@@ -277,9 +275,7 @@ describe('UserSettingsService', () => {
         data: { active_schedule_id: 'other-id' },
         error: null,
       });
-      const settingsEq = jest
-        .fn()
-        .mockReturnValue({ single: settingsSingle });
+      const settingsEq = jest.fn().mockReturnValue({ single: settingsSingle });
       const settingsSelect = jest.fn().mockReturnValue({ eq: settingsEq });
 
       // 5. Delete: .delete().eq().eq()
@@ -323,9 +319,7 @@ describe('UserSettingsService', () => {
       const fallbackOrder1 = jest
         .fn()
         .mockReturnValue({ order: fallbackOrder2 });
-      const fallbackNeq = jest
-        .fn()
-        .mockReturnValue({ order: fallbackOrder1 });
+      const fallbackNeq = jest.fn().mockReturnValue({ order: fallbackOrder1 });
       const fallbackEq = jest.fn().mockReturnValue({ neq: fallbackNeq });
       const fallbackSelect = jest.fn().mockReturnValue({ eq: fallbackEq });
 
@@ -339,9 +333,7 @@ describe('UserSettingsService', () => {
         data: { active_schedule_id: 'schedule-1' },
         error: null,
       });
-      const settingsEq = jest
-        .fn()
-        .mockReturnValue({ single: settingsSingle });
+      const settingsEq = jest.fn().mockReturnValue({ single: settingsSingle });
       const settingsSelect = jest.fn().mockReturnValue({ eq: settingsEq });
 
       // 5. Settings update: .update().eq()

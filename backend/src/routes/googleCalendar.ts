@@ -162,26 +162,27 @@ router.delete(
   '/disconnect',
   authMiddleware,
   async (req: Request, res: Response) => {
-  try {
-    const userId = req.body?.user_id as string;
+    try {
+      const userId = req.body?.user_id as string;
 
-    if (!userId) {
-      return ResponseHelper.badRequest(res, 'User ID is required');
+      if (!userId) {
+        return ResponseHelper.badRequest(res, 'User ID is required');
+      }
+
+      await googleCalendarService.disconnectGoogleCalendar(userId);
+      ResponseHelper.success(
+        res,
+        null,
+        'Google Calendar disconnected successfully'
+      );
+    } catch (error) {
+      console.error('[GoogleCalendarRoute] Disconnect error:', error);
+      ResponseHelper.internalError(
+        res,
+        error instanceof Error ? error.message : 'Internal server error'
+      );
     }
-
-    await googleCalendarService.disconnectGoogleCalendar(userId);
-    ResponseHelper.success(
-      res,
-      null,
-      'Google Calendar disconnected successfully'
-    );
-  } catch (error) {
-    console.error('[GoogleCalendarRoute] Disconnect error:', error);
-    ResponseHelper.internalError(
-      res,
-      error instanceof Error ? error.message : 'Internal server error'
-    );
   }
-});
+);
 
 export default router;

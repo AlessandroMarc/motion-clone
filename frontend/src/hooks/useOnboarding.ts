@@ -49,50 +49,53 @@ export function useOnboarding() {
   }, [isOnboardingActive, status, pathname]);
 
   // Avanza allo step successivo quando un'azione viene completata
-  const advanceToNextStep = useCallback(async (
-    currentAction: 'task' | 'project' | 'schedule' | 'calendar_sync'
-  ) => {
-    if (!user || !status || status.completed) return;
+  const advanceToNextStep = useCallback(
+    async (
+      currentAction: 'task' | 'project' | 'schedule' | 'calendar_sync'
+    ) => {
+      if (!user || !status || status.completed) return;
 
-    try {
-      switch (currentAction) {
-        case 'task':
-          if (status.step === null) {
-            await updateStep('task_created');
-            // Naviga alla pagina projects dopo un breve delay
-            setTimeout(() => {
-              window.location.href = '/projects';
-            }, 1000);
-          }
-          break;
-        case 'project':
-          if (status.step === 'task_created') {
-            await updateStep('project_created');
-            // Naviga alla pagina calendar dopo un breve delay
-            setTimeout(() => {
-              window.location.href = '/calendar';
-            }, 1000);
-          }
-          break;
-        case 'schedule':
-          if (status.step === 'project_created') {
-            await updateStep('scheduled');
-            // Naviga alla pagina profile dopo un breve delay
-            setTimeout(() => {
-              window.location.href = '/profile';
-            }, 1000);
-          }
-          break;
-        case 'calendar_sync':
-          if (status.step === 'scheduled') {
-            await completeOnboarding();
-          }
-          break;
+      try {
+        switch (currentAction) {
+          case 'task':
+            if (status.step === null) {
+              await updateStep('task_created');
+              // Naviga alla pagina projects dopo un breve delay
+              setTimeout(() => {
+                window.location.href = '/projects';
+              }, 1000);
+            }
+            break;
+          case 'project':
+            if (status.step === 'task_created') {
+              await updateStep('project_created');
+              // Naviga alla pagina calendar dopo un breve delay
+              setTimeout(() => {
+                window.location.href = '/calendar';
+              }, 1000);
+            }
+            break;
+          case 'schedule':
+            if (status.step === 'project_created') {
+              await updateStep('scheduled');
+              // Naviga alla pagina profile dopo un breve delay
+              setTimeout(() => {
+                window.location.href = '/profile';
+              }, 1000);
+            }
+            break;
+          case 'calendar_sync':
+            if (status.step === 'scheduled') {
+              await completeOnboarding();
+            }
+            break;
+        }
+      } catch (error) {
+        console.error('Failed to advance onboarding step:', error);
       }
-    } catch (error) {
-      console.error('Failed to advance onboarding step:', error);
-    }
-  }, [user, status, updateStep, completeOnboarding]);
+    },
+    [user, status, updateStep, completeOnboarding]
+  );
 
   // Inizializza l'onboarding per nuovi utenti
   useEffect(() => {

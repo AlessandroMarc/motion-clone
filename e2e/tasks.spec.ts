@@ -17,7 +17,11 @@ test.describe('Tasks page', () => {
           status: 200,
           contentType: 'application/json',
           body: JSON.stringify(
-            apiSuccess(mockTasks, 'Tasks retrieved successfully', mockTasks.length)
+            apiSuccess(
+              mockTasks,
+              'Tasks retrieved successfully',
+              mockTasks.length
+            )
           ),
         });
       }
@@ -30,7 +34,11 @@ test.describe('Tasks page', () => {
         status: 200,
         contentType: 'application/json',
         body: JSON.stringify(
-          apiSuccess(mockProjects, 'Projects retrieved successfully', mockProjects.length)
+          apiSuccess(
+            mockProjects,
+            'Projects retrieved successfully',
+            mockProjects.length
+          )
         ),
       })
     );

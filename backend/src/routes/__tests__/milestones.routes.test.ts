@@ -101,9 +101,7 @@ describe('GET /api/milestones', () => {
 describe('GET /api/milestones/:id', () => {
   test('returns a milestone by id', async () => {
     mockMilestoneService.getMilestoneById.mockResolvedValue(sampleMilestone);
-    const res = await supertest(app)
-      .get('/api/milestones/m1')
-      .set(AUTH_HEADER);
+    const res = await supertest(app).get('/api/milestones/m1').set(AUTH_HEADER);
     expect(res.status).toBe(200);
     expect(res.body.data.id).toBe('m1');
   });
