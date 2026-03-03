@@ -10,7 +10,7 @@ const mockServiceRoleSupabase: any = {
   update: jest.fn().mockReturnThis(),
   delete: jest.fn().mockReturnThis(),
   eq: jest.fn().mockReturnThis(),
-  single: jest.fn() as jest.Mock<any>,
+  single: jest.fn(),
   order: jest.fn().mockReturnThis(),
 };
 
@@ -51,16 +51,17 @@ describe('ProjectService', () => {
       let taskDeleteCallCount = 0;
       let projectDeleteCallCount = 0;
 
-      mockClient.from.mockImplementation((table: string) => {
+      mockClient.from.mockImplementation((_table: string) => {
         callCount++;
         if (callCount === 1) {
           // First from('tasks').select().eq() - list tasks (returns some tasks)
           return {
             select: jest.fn().mockReturnValue({
+              // @ts-expect-error - jest mock typing limitation
               eq: jest.fn().mockResolvedValue({
                 data: [{ id: 'task-1' }],
                 error: null,
-              }),
+              } as any),
             }),
           } as any;
         } else if (callCount === 2) {
@@ -69,7 +70,8 @@ describe('ProjectService', () => {
             delete: jest.fn().mockImplementation(() => {
               taskDeleteCallCount++;
               return {
-                eq: jest.fn().mockResolvedValue({ error: null }),
+                // @ts-expect-error - jest mock typing limitation
+                eq: jest.fn().mockResolvedValue({ error: null } as any),
               };
             }),
           } as any;
@@ -79,7 +81,8 @@ describe('ProjectService', () => {
             delete: jest.fn().mockImplementation(() => {
               projectDeleteCallCount++;
               return {
-                eq: jest.fn().mockResolvedValue({ error: null }),
+                // @ts-expect-error - jest mock typing limitation
+                eq: jest.fn().mockResolvedValue({ error: null } as any),
               };
             }),
           } as any;
@@ -111,19 +114,21 @@ describe('ProjectService', () => {
           // First from('tasks').select().eq() - list tasks (returns some tasks)
           return {
             select: jest.fn().mockReturnValue({
+              // @ts-expect-error - jest mock typing limitation
               eq: jest.fn().mockResolvedValue({
                 data: [{ id: 'task-1' }],
                 error: null,
-              }),
+              } as any),
             }),
           } as any;
         } else {
           // Second from('tasks').delete().eq() - tasks delete fails
           return {
             delete: jest.fn().mockReturnValue({
+              // @ts-expect-error - jest mock typing limitation
               eq: jest.fn().mockResolvedValue({
                 error: { message: 'Task deletion failed' },
-              }),
+              } as any),
             }),
           } as any;
         }
@@ -141,32 +146,35 @@ describe('ProjectService', () => {
     test('should throw an error if deleting the project fails', async () => {
       // Arrange: tasks deletion succeeds, project deletion fails
       let callCount = 0;
-      mockClient.from.mockImplementation(() => {
+      mockClient.from.mockImplementation((_table: string) => {
         callCount++;
         if (callCount === 1) {
           // First from('tasks').select().eq() - list tasks (returns some tasks)
           return {
             select: jest.fn().mockReturnValue({
+              // @ts-expect-error - jest mock typing limitation
               eq: jest.fn().mockResolvedValue({
                 data: [{ id: 'task-1' }],
                 error: null,
-              }),
+              } as any),
             }),
           } as any;
         } else if (callCount === 2) {
           // Second from('tasks').delete().eq() - tasks delete succeeds
           return {
             delete: jest.fn().mockReturnValue({
-              eq: jest.fn().mockResolvedValue({ error: null }),
+              // @ts-expect-error - jest mock typing limitation
+              eq: jest.fn().mockResolvedValue({ error: null } as any),
             }),
           } as any;
         } else {
           // Third from('projects').delete().eq() - project delete fails
           return {
             delete: jest.fn().mockReturnValue({
+              // @ts-expect-error - jest mock typing limitation
               eq: jest.fn().mockResolvedValue({
                 error: { message: 'Project deletion failed' },
-              }),
+              } as any),
             }),
           } as any;
         }

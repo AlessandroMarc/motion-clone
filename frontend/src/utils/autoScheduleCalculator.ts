@@ -10,7 +10,6 @@ import {
   createConfigFromSchedule,
   prepareTaskEvents,
   sortTasksForScheduling,
-  type TaskSchedulingConfig,
 } from '@/utils/taskScheduler';
 
 const DEBUG = process.env.NODE_ENV === 'development';

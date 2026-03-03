@@ -10,7 +10,7 @@ const mockClient: any = {
   update: jest.fn(),
   delete: jest.fn(),
   eq: jest.fn(),
-  single: jest.fn() as jest.Mock<any>,
+  single: jest.fn(),
   order: jest.fn(),
   limit: jest.fn(),
 };
@@ -56,16 +56,9 @@ describe('TaskService', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     // Default: all methods chain back to mockClient
-    for (const key of [
-      'from',
-      'select',
-      'insert',
-      'update',
-      'eq',
-      'order',
-      'limit',
-    ]) {
-      const mock = mockClient[key as keyof MockClient];
+    const keys = ['from', 'select', 'insert', 'update', 'eq', 'order', 'limit'];
+    for (const key of keys) {
+      const mock = mockClient[key];
       if (mock) mock.mockReturnValue(mockClient);
     }
     service = new TaskService();
@@ -228,10 +221,11 @@ describe('TaskService', () => {
       // Mock insert to fail
       mockClient.insert.mockReturnValueOnce({
         select: jest.fn().mockReturnValue({
+          // @ts-expect-error - jest mock typing limitation
           single: jest.fn().mockResolvedValueOnce({
             data: null,
             error: { message: 'Insert failed' },
-          }),
+          } as any),
         }),
       } as any);
 
