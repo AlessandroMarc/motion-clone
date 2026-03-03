@@ -495,7 +495,7 @@ export function useAutoSchedule(
       if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
-  }, [user, isInitialSyncComplete, tasksFingerprint, events.length]);
+  }, [user, isInitialSyncComplete, tasksFingerprint, events.length, schedules.length]);
 
   return {
     tasksMap,
