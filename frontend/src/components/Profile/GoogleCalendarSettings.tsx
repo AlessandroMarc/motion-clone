@@ -30,6 +30,17 @@ import { Badge } from '@/components/ui/badge';
 import { Calendar, Loader2, RefreshCw, Unlink } from 'lucide-react';
 import { toast } from 'sonner';
 
+/**
+ * Render Google Calendar integration settings and controls.
+ *
+ * Displays current connection status, last sync time, and actions to connect,
+ * manually sync, or disconnect the user's Google Calendar. Handles the OAuth
+ * callback once per user session (showing success/error toasts and advancing
+ * onboarding when appropriate), loads and refreshes calendar status, and shows
+ * progress states for sync and disconnect operations.
+ *
+ * @returns A JSX element containing the Google Calendar integration UI.
+ */
 export function GoogleCalendarSettings() {
   const { user } = useAuth();
   const { advanceToNextStep, status: onboardingStatus } = useOnboarding();

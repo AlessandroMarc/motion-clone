@@ -5,6 +5,12 @@ import { getGoogleOAuthEnv } from '../config/env.js';
 import { loadEnv } from '../config/loadEnv.js';
 import type { CalendarEventUnion } from '../types/database.js';
 
+/**
+ * Loads environment variables and returns the validated Google OAuth configuration.
+ *
+ * @returns The Google OAuth configuration loaded from environment variables.
+ * @throws If required OAuth environment variables are missing or malformed.
+ */
 function getOAuthConfigOrThrow() {
   loadEnv();
   // Validates required vars and URL format (no defaults).
