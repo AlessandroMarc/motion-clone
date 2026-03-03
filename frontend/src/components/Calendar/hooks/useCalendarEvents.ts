@@ -101,12 +101,12 @@ export function useCalendarEvents(weekDates: Date[]) {
       setEvents(weekEvents);
       return weekEvents;
     } catch (err) {
-      const errorMessage =
-        err instanceof Error
-          ? err.message.includes('Unable to connect')
-            ? err.message
-            : 'Failed to load calendar events. Please ensure the backend server is running.'
-          : 'Failed to load calendar events';
+      const msg = err instanceof Error ? err.message : '';
+      const errorMessage = msg.startsWith('429:')
+        ? msg
+        : msg.includes('Unable to connect')
+          ? msg
+          : 'Failed to load calendar events. Please ensure the backend server is running.';
       // Error is handled via error state - no need to log to console
       // Callers will show toast notifications if needed
       setError(errorMessage);

@@ -48,8 +48,12 @@ export function OnboardingProvider({
       setStatus(onboardingStatus);
     } catch (error) {
       console.error('Failed to load onboarding status:', error);
-      // Keep status as null so onboarding is not triggered on fetch failure (e.g. 404)
-      setStatus(null);
+      // Only reset to null on 404 (resource doesn't exist).
+      // Transient errors (429, 5xx, network) should not overwrite existing status.
+      const msg = error instanceof Error ? error.message : '';
+      if (msg.includes('status: 404')) {
+        setStatus(null);
+      }
     } finally {
       setLoading(false);
     }
