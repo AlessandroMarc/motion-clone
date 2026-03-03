@@ -48,13 +48,12 @@ export function OnboardingProvider({
       setStatus(onboardingStatus);
     } catch (error) {
       console.error('Failed to load onboarding status:', error);
-      // Set default status on error
-      setStatus({
-        completed: false,
-        step: null,
-        started_at: null,
-        completed_at: null,
-      });
+      // Only reset to null on 404 (resource doesn't exist).
+      // Transient errors (429, 5xx, network) should not overwrite existing status.
+      const msg = error instanceof Error ? error.message : '';
+      if (msg.includes('status: 404')) {
+        setStatus(null);
+      }
     } finally {
       setLoading(false);
     }

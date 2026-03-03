@@ -6,6 +6,7 @@ export interface CreateTaskInput {
   description?: string;
   dueDate?: Date | null;
   priority: 'low' | 'medium' | 'high';
+  scheduleId?: string;
   project_id?: string;
   blockedBy?: string[];
   plannedDurationMinutes: number;
@@ -18,6 +19,7 @@ export interface UpdateTaskInput {
   description?: string;
   dueDate?: Date | null;
   priority?: 'low' | 'medium' | 'high';
+  scheduleId?: string | null;
   project_id?: string | null;
   blockedBy?: string[];
   plannedDurationMinutes?: number;
