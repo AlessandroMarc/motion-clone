@@ -15,11 +15,22 @@ describe('TaskRecurrenceFields', () => {
   const mockOnIntervalChange = jest.fn();
   const emptyErrors: FieldErrors<TaskFormData> = {};
 
+  // Store original methods to restore later
+  let originalHasPointerCapture: any;
+  let originalSetPointerCapture: any;
+  let originalReleasePointerCapture: any;
+
   beforeEach(() => {
     jest.clearAllMocks();
   });
 
   beforeAll(() => {
+    // Save original methods
+    originalHasPointerCapture = HTMLElement.prototype.hasPointerCapture;
+    originalSetPointerCapture = HTMLElement.prototype.setPointerCapture;
+    originalReleasePointerCapture = HTMLElement.prototype.releasePointerCapture;
+
+    // Patch methods
     if (!HTMLElement.prototype.hasPointerCapture) {
       HTMLElement.prototype.hasPointerCapture = () => false;
     }
@@ -28,6 +39,25 @@ describe('TaskRecurrenceFields', () => {
     }
     if (!HTMLElement.prototype.releasePointerCapture) {
       HTMLElement.prototype.releasePointerCapture = () => {};
+    }
+  });
+
+  afterAll(() => {
+    // Restore original methods
+    if (originalHasPointerCapture !== undefined) {
+      HTMLElement.prototype.hasPointerCapture = originalHasPointerCapture;
+    } else {
+      delete (HTMLElement.prototype as any).hasPointerCapture;
+    }
+    if (originalSetPointerCapture !== undefined) {
+      HTMLElement.prototype.setPointerCapture = originalSetPointerCapture;
+    } else {
+      delete (HTMLElement.prototype as any).setPointerCapture;
+    }
+    if (originalReleasePointerCapture !== undefined) {
+      HTMLElement.prototype.releasePointerCapture = originalReleasePointerCapture;
+    } else {
+      delete (HTMLElement.prototype as any).releasePointerCapture;
     }
   });
 
@@ -240,7 +270,7 @@ describe('TaskRecurrenceFields', () => {
         ) as HTMLInputElement;
       fireEvent.change(intervalInput, { target: { value: '0' } });
 
-      expect(mockOnIntervalChange).toHaveBeenCalledWith(expect.any(Number));
+      expect(mockOnIntervalChange).toHaveBeenCalledWith(1);
     });
   });
 

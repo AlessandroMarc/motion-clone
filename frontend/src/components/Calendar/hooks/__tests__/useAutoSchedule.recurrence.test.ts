@@ -16,6 +16,7 @@ describe('autoSchedule Integration - Recurring Tasks', () => {
     planned_duration_minutes: 30,
     actual_duration_minutes: 0,
     due_date: new Date('2026-03-15'),
+    schedule_id: 'schedule-1',
     is_recurring: true,
     recurrence_pattern: 'daily',
     recurrence_interval: 1,
@@ -36,6 +37,7 @@ describe('autoSchedule Integration - Recurring Tasks', () => {
     planned_duration_minutes: 60,
     actual_duration_minutes: 0,
     due_date: new Date('2026-03-20'),
+    schedule_id: 'schedule-1',
     is_recurring: false,
     dependencies: [],
     blocked_by: [],
@@ -338,7 +340,7 @@ describe('autoSchedule Integration - Recurring Tasks', () => {
 
       const syntheticEvents = expandRecurringTasks([task], []);
       // Should still generate events, using today or cutoff
-      expect(syntheticEvents.length).toBeGreaterThanOrEqual(0);
+      expect(syntheticEvents.length).toBeGreaterThan(0);
     });
 
     it('should handle empty task list', () => {

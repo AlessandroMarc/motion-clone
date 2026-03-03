@@ -15,6 +15,11 @@ export function calculateNextOccurrence(
   pattern: string,
   interval: number
 ): Date {
+  // Validate interval
+  if (!Number.isInteger(interval) || interval <= 0) {
+    throw new Error('interval must be a positive integer');
+  }
+
   const next = new Date(date);
 
   switch (pattern) {
@@ -58,7 +63,7 @@ export function calculateNextOccurrence(
  * @param pattern 'daily' | 'weekly' | 'monthly'
  * @param interval Interval count
  * @param horizonEnd End date of the generation window
- * @returns Array of occurrence dates (not including startDate if it's already passed)
+ * @returns Array of occurrence dates (including startDate if it's within the window)
  */
 export function generateOccurrenceDates(
   startDate: Date,
@@ -76,8 +81,8 @@ export function generateOccurrenceDates(
   const end = new Date(horizonEnd);
   end.setHours(23, 59, 59, 999);
 
-  // Start from the first occurrence after the given start date
-  if (currentDate <= start) {
+  // Start from the first occurrence at or after the given start date
+  if (currentDate < start) {
     currentDate = calculateNextOccurrence(currentDate, pattern, interval);
   }
 

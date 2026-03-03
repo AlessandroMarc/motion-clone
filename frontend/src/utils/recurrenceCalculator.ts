@@ -13,6 +13,11 @@ export function calculateNextOccurrence(
   pattern: string,
   interval: number
 ): Date {
+  // Validate interval
+  if (!Number.isInteger(interval) || interval <= 0) {
+    throw new Error('interval must be a positive integer');
+  }
+
   const next = new Date(date);
 
   switch (pattern) {
@@ -102,8 +107,16 @@ export function generateSyntheticRecurringEvents(
   }
 
   const syntheticEvents: CalendarEventTask[] = [];
+  
+  // Clamp start date to today to avoid generating past events
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  
+  const startDate = task.next_generation_cutoff || task.due_date || new Date();
+  const clampedStart = startDate > today ? new Date(startDate) : new Date(today);
+  
   const occurrenceDates = generateOccurrenceDates(
-    task.next_generation_cutoff || task.due_date || new Date(),
+    clampedStart,
     task.recurrence_pattern,
     task.recurrence_interval || 1,
     get90DayHorizon()

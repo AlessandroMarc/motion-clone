@@ -36,7 +36,7 @@ describe('taskSchema - Recurrence Validation', () => {
         actual_duration_minutes: 0,
         blockedBy: [],
         is_recurring: false,
-        recurrence_interval: 1,
+        // Recurrence fields should be optional when is_recurring is false
       };
 
       const result = taskSchema.safeParse(data);

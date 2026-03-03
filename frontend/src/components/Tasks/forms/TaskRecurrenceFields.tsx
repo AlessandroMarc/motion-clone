@@ -65,6 +65,8 @@ export function TaskRecurrenceFields({
               onValueChange={onPatternChange}
             >
               <SelectTrigger
+                id="recurrence_pattern"
+                aria-invalid={patternError}
                 className={`${patternError ? 'border-red-500' : ''}`}
               >
                 <SelectValue placeholder="Select pattern" />
