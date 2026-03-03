@@ -1087,6 +1087,6 @@ export class CalendarEventService {
       );
     }
 
-    return data || [];
+    return (data || []) as unknown as CalendarEventUnion[];
   }
 }

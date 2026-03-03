@@ -541,16 +541,17 @@ export class GoogleCalendarService {
               )
             )
           );
-          for (let j = 0; j < results.length; j++) {
-            const result = results[j];
+          for (const result of results) {
             if (result.status === 'fulfilled') {
               updateSuccessCount++;
             } else {
-              const item = batch[j];
+              const rejected = result as PromiseRejectedResult;
+              const idx = results.indexOf(result);
+              const item = batch[idx];
               errors.push(
                 `Failed to update event ${item?.id ?? 'unknown'}: ${
-                  result.reason instanceof Error
-                    ? result.reason.message
+                  rejected.reason instanceof Error
+                    ? rejected.reason.message
                     : 'Unknown error'
                 }`
               );
