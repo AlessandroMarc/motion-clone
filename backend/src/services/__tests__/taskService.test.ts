@@ -67,7 +67,15 @@ describe('TaskService', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     // Default: all methods chain back to mockClient
-    for (const key of ['from', 'select', 'insert', 'update', 'eq', 'order', 'limit']) {
+    for (const key of [
+      'from',
+      'select',
+      'insert',
+      'update',
+      'eq',
+      'order',
+      'limit',
+    ]) {
       const mock = mockClient[key as keyof MockClient];
       if (mock) mock.mockReturnValue(mockClient);
     }
@@ -240,7 +248,10 @@ describe('TaskService', () => {
         // 4. create new schedule → succeeds
         .mockResolvedValueOnce({ data: { id: 'sched-1' }, error: null })
         // 5. task insert → fails
-        .mockResolvedValueOnce({ data: null, error: { message: 'Insert failed' } });
+        .mockResolvedValueOnce({
+          data: null,
+          error: { message: 'Insert failed' },
+        });
 
       await expect(
         service.createTask(

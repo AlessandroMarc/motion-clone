@@ -92,7 +92,6 @@ describe('Frontend recurrenceCalculator Utils', () => {
 
   describe('get90DayHorizon', () => {
     it('should return date 90 days from now', () => {
-      const now = new Date();
       const horizon = get90DayHorizon();
       const expected = new Date();
       expected.setDate(expected.getDate() + 90);
@@ -133,8 +132,6 @@ describe('Frontend recurrenceCalculator Utils', () => {
     };
 
     it('should generate synthetic events for recurring task', () => {
-      // Mock horizon to be short for testing
-      const horizon = new Date('2026-03-20');
       const result = generateSyntheticRecurringEvents(mockTask, []);
 
       expect(result.length).toBeGreaterThan(0);
@@ -169,7 +166,9 @@ describe('Frontend recurrenceCalculator Utils', () => {
         updated_at: new Date(),
       };
 
-      const result = generateSyntheticRecurringEvents(mockTask, [existingEvent]);
+      const result = generateSyntheticRecurringEvents(mockTask, [
+        existingEvent,
+      ]);
 
       const hasDuplicate = result.some(
         e => e.start_time.toDateString() === '2026-03-15'

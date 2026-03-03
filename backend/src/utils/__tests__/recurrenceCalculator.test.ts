@@ -50,9 +50,9 @@ describe('recurrenceCalculator', () => {
       // Jan 31 + 1 month should be Feb 28/29, not Mar 3
       const date = new Date('2026-01-31');
       const next = calculateNextOccurrence(date, 'monthly', 1);
-        // Note: Current implementation may have overflow behavior
-        // Verify it moves to next month at least
-        expect(next > date).toBe(true);
+      // Note: Current implementation may have overflow behavior
+      // Verify it moves to next month at least
+      expect(next > date).toBe(true);
     });
 
     it('should handle month-end overflow for leap year', () => {

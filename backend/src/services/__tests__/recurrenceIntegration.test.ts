@@ -63,7 +63,10 @@ describe('TaskService - Recurrence integration', () => {
 
   test('createTask persists recurrence fields when recurring is enabled', async () => {
     mockClient.single
-      .mockResolvedValueOnce({ data: { active_schedule_id: 'sched-1' }, error: null })
+      .mockResolvedValueOnce({
+        data: { active_schedule_id: 'sched-1' },
+        error: null,
+      })
       .mockResolvedValueOnce({
         data: makeTask({
           is_recurring: true,
@@ -94,7 +97,10 @@ describe('TaskService - Recurrence integration', () => {
 
   test('createTask clears recurrence fields when recurring is disabled', async () => {
     mockClient.single
-      .mockResolvedValueOnce({ data: { active_schedule_id: 'sched-1' }, error: null })
+      .mockResolvedValueOnce({
+        data: { active_schedule_id: 'sched-1' },
+        error: null,
+      })
       .mockResolvedValueOnce({ data: makeTask(), error: null });
 
     await service.createTask({
@@ -147,7 +153,10 @@ describe('TaskService - Recurrence integration', () => {
         }),
         error: null,
       })
-      .mockResolvedValueOnce({ data: makeTask({ is_recurring: false }), error: null });
+      .mockResolvedValueOnce({
+        data: makeTask({ is_recurring: false }),
+        error: null,
+      });
 
     await service.updateTask('11111111-1111-1111-1111-111111111111', {
       is_recurring: false,

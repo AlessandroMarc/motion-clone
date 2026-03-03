@@ -254,21 +254,21 @@ export function TaskEditDialogForm({
               <TaskDurationFields register={register} errors={errors} />
               <TaskRecurrenceFields
                 isRecurring={isRecurring}
-                onIsRecurringChange={(checked) =>
+                onIsRecurringChange={checked =>
                   setValue('is_recurring', checked, {
                     shouldDirty: true,
                     shouldValidate: true,
                   })
                 }
                 recurrencePattern={recurrencePattern}
-                onPatternChange={(value) =>
+                onPatternChange={value =>
                   setValue('recurrence_pattern', value, {
                     shouldDirty: true,
                     shouldValidate: true,
                   })
                 }
                 recurrenceInterval={recurrenceInterval}
-                onIntervalChange={(value) =>
+                onIntervalChange={value =>
                   setValue('recurrence_interval', value, {
                     shouldDirty: true,
                     shouldValidate: true,

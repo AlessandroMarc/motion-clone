@@ -2,13 +2,10 @@
  * Integration tests for autoSchedule with recurring tasks
  */
 
-import { useAutoSchedule } from '@/components/Calendar/hooks/useAutoSchedule';
 import { expandRecurringTasks } from '@/utils/recurrenceCalculator';
-import type { Task, CalendarEventTask, CalendarEventUnion } from '@/types';
+import type { Task, CalendarEventTask } from '@/types';
 
 describe('autoSchedule Integration - Recurring Tasks', () => {
-  const mockUser = { id: 'user-1' };
-
   const mockRecurringTask: Task = {
     id: 'recurring-1',
     user_id: 'user-1',
@@ -88,7 +85,7 @@ describe('autoSchedule Integration - Recurring Tasks', () => {
     it('should include is_recurring in task fingerprint', () => {
       // Simulate the fingerprint calculation from useAutoSchedule
       const tasks = [mockRecurringTask];
-      
+
       const fingerprint = tasks
         .map(
           t =>
@@ -103,7 +100,10 @@ describe('autoSchedule Integration - Recurring Tasks', () => {
 
     it('should change fingerprint when recurrence pattern changes', () => {
       const task1: Task = { ...mockRecurringTask, recurrence_pattern: 'daily' };
-      const task2: Task = { ...mockRecurringTask, recurrence_pattern: 'weekly' };
+      const task2: Task = {
+        ...mockRecurringTask,
+        recurrence_pattern: 'weekly',
+      };
 
       const fingerprint1 = `${task1.id}:${task1.recurrence_pattern}`;
       const fingerprint2 = `${task2.id}:${task2.recurrence_pattern}`;
@@ -123,7 +123,11 @@ describe('autoSchedule Integration - Recurring Tasks', () => {
 
     it('should change fingerprint when turning recurrence on', () => {
       const nonRecurring: Task = { ...mockOneTimeTask, is_recurring: false };
-      const recurring: Task = { ...mockOneTimeTask, is_recurring: true, recurrence_pattern: 'daily' };
+      const recurring: Task = {
+        ...mockOneTimeTask,
+        is_recurring: true,
+        recurrence_pattern: 'daily',
+      };
 
       const fingerprint1 = `${nonRecurring.id}:${nonRecurring.is_recurring}`;
       const fingerprint2 = `${recurring.id}:${recurring.is_recurring}`;
@@ -151,10 +155,7 @@ describe('autoSchedule Integration - Recurring Tasks', () => {
     });
 
     it('should mark synthetic events with synthetic ID pattern', () => {
-      const syntheticEvents = expandRecurringTasks(
-        [mockRecurringTask],
-        []
-      );
+      const syntheticEvents = expandRecurringTasks([mockRecurringTask], []);
 
       expect(syntheticEvents[0].id).toMatch(/^synthetic-recurring-1-/);
     });
@@ -187,12 +188,8 @@ describe('autoSchedule Integration - Recurring Tasks', () => {
 
   describe('90-day horizon constraint', () => {
     it('should respect 90-day horizon for recurring task expansion', () => {
-      const syntheticEvents = expandRecurringTasks(
-        [mockRecurringTask],
-        []
-      );
+      const syntheticEvents = expandRecurringTasks([mockRecurringTask], []);
 
-      const now = new Date();
       const maxDate = new Date();
       maxDate.setDate(maxDate.getDate() + 90);
 
@@ -284,9 +281,15 @@ describe('autoSchedule Integration - Recurring Tasks', () => {
         []
       );
 
-      const dailyEvents = syntheticEvents.filter(e => e.linked_task_id === 'daily-1');
-      const weeklyEvents = syntheticEvents.filter(e => e.linked_task_id === 'weekly-1');
-      const monthlyEvents = syntheticEvents.filter(e => e.linked_task_id === 'monthly-1');
+      const dailyEvents = syntheticEvents.filter(
+        e => e.linked_task_id === 'daily-1'
+      );
+      const weeklyEvents = syntheticEvents.filter(
+        e => e.linked_task_id === 'weekly-1'
+      );
+      const monthlyEvents = syntheticEvents.filter(
+        e => e.linked_task_id === 'monthly-1'
+      );
 
       // Daily should have most events
       expect(dailyEvents.length).toBeGreaterThan(weeklyEvents.length);
@@ -302,8 +305,12 @@ describe('autoSchedule Integration - Recurring Tasks', () => {
 
       const syntheticEvents = expandRecurringTasks(tasks, []);
 
-      const task1Events = syntheticEvents.filter(e => e.linked_task_id === 'task-1');
-      const task2Events = syntheticEvents.filter(e => e.linked_task_id === 'task-2');
+      const task1Events = syntheticEvents.filter(
+        e => e.linked_task_id === 'task-1'
+      );
+      const task2Events = syntheticEvents.filter(
+        e => e.linked_task_id === 'task-2'
+      );
 
       expect(task1Events.length).toBeGreaterThan(0);
       expect(task2Events.length).toBeGreaterThan(0);
@@ -340,10 +347,7 @@ describe('autoSchedule Integration - Recurring Tasks', () => {
     });
 
     it('should handle empty existing events list', () => {
-      const syntheticEvents = expandRecurringTasks(
-        [mockRecurringTask],
-        []
-      );
+      const syntheticEvents = expandRecurringTasks([mockRecurringTask], []);
       expect(syntheticEvents.length).toBeGreaterThan(0);
     });
   });

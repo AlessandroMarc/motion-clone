@@ -97,20 +97,25 @@ export class TaskService {
             scheduleId = anySchedule.id;
           } else {
             // 4. Create a default schedule for the user
-            const { data: newSchedule, error: scheduleError } = await serviceRoleSupabase
-              .from('schedules')
-              .insert([{
-                user_id: input.user_id,
-                name: 'Default',
-                working_hours_start: 9,
-                working_hours_end: 22,
-                is_default: true,
-              }])
-              .select('id')
-              .single();
+            const { data: newSchedule, error: scheduleError } =
+              await serviceRoleSupabase
+                .from('schedules')
+                .insert([
+                  {
+                    user_id: input.user_id,
+                    name: 'Default',
+                    working_hours_start: 9,
+                    working_hours_end: 22,
+                    is_default: true,
+                  },
+                ])
+                .select('id')
+                .single();
 
             if (scheduleError || !newSchedule?.id) {
-              throw new Error('No schedule found for user and could not create one');
+              throw new Error(
+                'No schedule found for user and could not create one'
+              );
             }
             scheduleId = newSchedule.id;
           }
@@ -143,7 +148,9 @@ export class TaskService {
           schedule_id: scheduleId,
           is_recurring: isRecurring,
           recurrence_pattern: isRecurring ? input.recurrence_pattern : null,
-          recurrence_interval: isRecurring ? input.recurrence_interval ?? 1 : 1,
+          recurrence_interval: isRecurring
+            ? (input.recurrence_interval ?? 1)
+            : 1,
           next_generation_cutoff: nextGenerationCutoff,
         },
       ])
@@ -258,12 +265,12 @@ export class TaskService {
             : null;
         } else if (!existingTask.next_generation_cutoff) {
           // If due_date wasn't updated, but next_generation_cutoff is null, set it
-          const dueDateToUse =
-            updateData.due_date ?? existingTask.due_date;
+          const dueDateToUse = updateData.due_date ?? existingTask.due_date;
           if (dueDateToUse) {
-            updateData.next_generation_cutoff = typeof dueDateToUse === 'string'
-              ? dueDateToUse
-              : normalizeToMidnight(dueDateToUse);
+            updateData.next_generation_cutoff =
+              typeof dueDateToUse === 'string'
+                ? dueDateToUse
+                : normalizeToMidnight(dueDateToUse);
           }
         }
       } else {

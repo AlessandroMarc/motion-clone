@@ -9,7 +9,13 @@ test.describe('Recurring tasks', () => {
         return route.fulfill({
           status: 200,
           contentType: 'application/json',
-          body: JSON.stringify(apiSuccess(mockTasks, 'Tasks retrieved successfully', mockTasks.length)),
+          body: JSON.stringify(
+            apiSuccess(
+              mockTasks,
+              'Tasks retrieved successfully',
+              mockTasks.length
+            )
+          ),
         });
       }
       return route.fulfill({
@@ -23,7 +29,13 @@ test.describe('Recurring tasks', () => {
       route.fulfill({
         status: 200,
         contentType: 'application/json',
-        body: JSON.stringify(apiSuccess(mockProjects, 'Projects retrieved successfully', mockProjects.length)),
+        body: JSON.stringify(
+          apiSuccess(
+            mockProjects,
+            'Projects retrieved successfully',
+            mockProjects.length
+          )
+        ),
       })
     );
 
@@ -38,8 +50,13 @@ test.describe('Recurring tasks', () => {
     await page.goto('/tasks');
   });
 
-  test('shows recurrence controls when repeating is enabled', async ({ page }) => {
-    await page.getByRole('button', { name: /create task/i }).first().click();
+  test('shows recurrence controls when repeating is enabled', async ({
+    page,
+  }) => {
+    await page
+      .getByRole('button', { name: /create task/i })
+      .first()
+      .click();
 
     await expect(page.getByText('Repeating Task')).toBeVisible();
 
@@ -47,11 +64,18 @@ test.describe('Recurring tasks', () => {
 
     await expect(page.getByText('Pattern')).toBeVisible();
     await expect(page.locator('input#recurrence_interval')).toBeVisible();
-    await expect(page.getByText(/events will be generated up to 90 days ahead/i)).toBeVisible();
+    await expect(
+      page.getByText(/events will be generated up to 90 days ahead/i)
+    ).toBeVisible();
   });
 
-  test('hides recurrence controls when repeating is disabled', async ({ page }) => {
-    await page.getByRole('button', { name: /create task/i }).first().click();
+  test('hides recurrence controls when repeating is disabled', async ({
+    page,
+  }) => {
+    await page
+      .getByRole('button', { name: /create task/i })
+      .first()
+      .click();
 
     const repeating = page.getByRole('checkbox', { name: /repeating task/i });
     await repeating.click();

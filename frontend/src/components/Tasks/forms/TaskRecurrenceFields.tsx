@@ -8,10 +8,7 @@ import {
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
-import {
-  hasFieldError,
-  getFieldError,
-} from '@/utils/formUtils';
+import { hasFieldError, getFieldError } from '@/utils/formUtils';
 import type { FieldErrors } from 'react-hook-form';
 import type { TaskFormData } from '@/hooks/useTaskForm';
 
@@ -44,7 +41,7 @@ export function TaskRecurrenceFields({
   return (
     <div className={`space-y-4 ${className}`}>
       {/* Toggle for recurring */}
-      <div className="flex items-center justify-between rounded-lg border border-gray-200 p-3">
+      <div className="flex items-center justify-between rounded-lg border border-gray-200 dark:border-gray-700 p-3">
         <div className="flex items-center gap-3">
           <Checkbox
             id="is_recurring"
@@ -59,11 +56,14 @@ export function TaskRecurrenceFields({
 
       {/* Recurrence pattern and interval (only shown when recurring) */}
       {isRecurring && (
-        <div className="space-y-3 rounded-lg border border-blue-200 bg-blue-50 p-4">
+        <div className="space-y-3 rounded-lg border border-blue-200 dark:border-blue-900/40 bg-blue-50 dark:bg-blue-900/20 p-4">
           {/* Recurrence Pattern */}
           <div className="space-y-2">
             <Label htmlFor="recurrence_pattern">Pattern</Label>
-            <Select value={recurrencePattern || ''} onValueChange={onPatternChange}>
+            <Select
+              value={recurrencePattern || ''}
+              onValueChange={onPatternChange}
+            >
               <SelectTrigger
                 className={`${patternError ? 'border-red-500' : ''}`}
               >
@@ -89,10 +89,12 @@ export function TaskRecurrenceFields({
                 type="number"
                 min="1"
                 value={recurrenceInterval}
-                onChange={e => onIntervalChange(Math.max(1, parseInt(e.target.value) || 1))}
+                onChange={e =>
+                  onIntervalChange(Math.max(1, parseInt(e.target.value) || 1))
+                }
                 className={`w-20 ${intervalError ? 'border-red-500' : ''}`}
               />
-              <span className="text-sm text-gray-600">
+              <span className="text-sm text-gray-600 dark:text-gray-400">
                 {recurrencePattern === 'daily' && 'day(s)'}
                 {recurrencePattern === 'weekly' && 'week(s)'}
                 {recurrencePattern === 'monthly' && 'month(s)'}
@@ -102,7 +104,7 @@ export function TaskRecurrenceFields({
             {intervalError && (
               <p className="text-sm text-red-500">{intervalErrorMessage}</p>
             )}
-            <p className="text-xs text-gray-500">
+            <p className="text-xs text-gray-500 dark:text-gray-400">
               Events will be generated up to 90 days ahead when scheduled
             </p>
           </div>

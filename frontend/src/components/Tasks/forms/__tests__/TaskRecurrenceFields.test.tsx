@@ -41,7 +41,9 @@ describe('TaskRecurrenceFields', () => {
         />
       );
 
-      const checkbox = screen.getByRole('checkbox', { name: /repeating task/i });
+      const checkbox = screen.getByRole('checkbox', {
+        name: /repeating task/i,
+      });
       expect(checkbox).toBeInTheDocument();
     });
 
@@ -187,7 +189,9 @@ describe('TaskRecurrenceFields', () => {
         />
       );
 
-      const intervalInput = screen.getByLabelText(/every/i).parentElement?.querySelector('input[type="number"]');
+      const intervalInput = screen
+        .getByLabelText(/every/i)
+        .parentElement?.querySelector('input[type="number"]');
       expect(intervalInput).toHaveValue(2);
     });
 
@@ -205,7 +209,11 @@ describe('TaskRecurrenceFields', () => {
         />
       );
 
-      const intervalInput = screen.getByLabelText(/every/i).parentElement?.querySelector('input[type="number"]') as HTMLInputElement;
+      const intervalInput = screen
+        .getByLabelText(/every/i)
+        .parentElement?.querySelector(
+          'input[type="number"]'
+        ) as HTMLInputElement;
       await user.clear(intervalInput);
       await user.type(intervalInput, '3');
 
@@ -213,7 +221,6 @@ describe('TaskRecurrenceFields', () => {
     });
 
     it('should enforce minimum interval of 1', async () => {
-      const user = await userEvent.setup();
       render(
         <TaskRecurrenceFields
           isRecurring={true}
@@ -226,7 +233,11 @@ describe('TaskRecurrenceFields', () => {
         />
       );
 
-      const intervalInput = screen.getByLabelText(/every/i).parentElement?.querySelector('input[type="number"]') as HTMLInputElement;
+      const intervalInput = screen
+        .getByLabelText(/every/i)
+        .parentElement?.querySelector(
+          'input[type="number"]'
+        ) as HTMLInputElement;
       fireEvent.change(intervalInput, { target: { value: '0' } });
 
       expect(mockOnIntervalChange).toHaveBeenCalledWith(expect.any(Number));
@@ -290,7 +301,7 @@ describe('TaskRecurrenceFields', () => {
         recurrence_pattern: {
           message: errorMessage,
         },
-      } as any;
+      } as unknown as FieldErrors<TaskFormData>;
 
       render(
         <TaskRecurrenceFields
@@ -313,7 +324,7 @@ describe('TaskRecurrenceFields', () => {
         recurrence_interval: {
           message: errorMessage,
         },
-      } as any;
+      } as unknown as FieldErrors<TaskFormData>;
 
       render(
         <TaskRecurrenceFields
@@ -335,7 +346,7 @@ describe('TaskRecurrenceFields', () => {
         recurrence_pattern: {
           message: 'Error',
         },
-      } as any;
+      } as unknown as FieldErrors<TaskFormData>;
 
       const { container } = render(
         <TaskRecurrenceFields
@@ -398,7 +409,9 @@ describe('TaskRecurrenceFields', () => {
         />
       );
 
-      const intervalInput = container.querySelector('input[type="number"]') as HTMLInputElement;
+      const intervalInput = container.querySelector(
+        'input[type="number"]'
+      ) as HTMLInputElement;
       expect(intervalInput.value).toBe('1');
     });
   });

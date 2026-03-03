@@ -90,15 +90,15 @@ export function TaskCreateDialogForm({ onTaskCreate }: TaskCreateFormProps) {
               <TaskDurationFields register={register} errors={errors} />
               <TaskRecurrenceFields
                 isRecurring={isRecurring}
-                onIsRecurringChange={(checked) =>
+                onIsRecurringChange={checked =>
                   form.setValue('is_recurring', checked)
                 }
                 recurrencePattern={recurrencePattern}
-                onPatternChange={(value) =>
+                onPatternChange={value =>
                   form.setValue('recurrence_pattern', value)
                 }
                 recurrenceInterval={recurrenceInterval}
-                onIntervalChange={(value) =>
+                onIntervalChange={value =>
                   form.setValue('recurrence_interval', value)
                 }
                 errors={errors}

@@ -4,7 +4,6 @@
  */
 
 import type { Task, CalendarEventTask } from '@/types';
-import { isCalendarEventTask } from '@/types';
 
 /**
  * Calculate the next occurrence date based on recurrence pattern and interval

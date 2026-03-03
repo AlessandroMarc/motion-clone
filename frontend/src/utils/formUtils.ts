@@ -26,7 +26,9 @@ export function transformFormDataToTask(
     blockedBy: data.blockedBy || [],
     is_recurring: data.is_recurring ?? false,
     recurrence_pattern: data.is_recurring ? data.recurrence_pattern : undefined,
-    recurrence_interval: data.is_recurring ? (data.recurrence_interval ?? 1) : undefined,
+    recurrence_interval: data.is_recurring
+      ? (data.recurrence_interval ?? 1)
+      : undefined,
   };
   return transformed;
 }

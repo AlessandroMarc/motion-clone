@@ -32,7 +32,11 @@ export function calculateNextOccurrence(
 
       // Handle month-end overflow: if the day doesn't exist in target month,
       // cap at the last day of that month
-      const lastDayOfMonth = new Date(next.getFullYear(), next.getMonth() + 1, 0).getDate();
+      const lastDayOfMonth = new Date(
+        next.getFullYear(),
+        next.getMonth() + 1,
+        0
+      ).getDate();
       if (originalDate > lastDayOfMonth) {
         next.setDate(lastDayOfMonth);
       } else {

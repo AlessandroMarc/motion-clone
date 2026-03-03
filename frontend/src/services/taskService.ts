@@ -19,7 +19,9 @@ class TaskService {
       actual_duration_minutes: input.actualDurationMinutes ?? 0,
       is_recurring: input.isRecurring ?? false,
       recurrence_pattern: input.isRecurring ? input.recurrencePattern : null,
-      recurrence_interval: input.isRecurring ? (input.recurrenceInterval ?? 1) : 1,
+      recurrence_interval: input.isRecurring
+        ? (input.recurrenceInterval ?? 1)
+        : 1,
     };
 
     const response = await request<UnknownRecord>('/tasks', {

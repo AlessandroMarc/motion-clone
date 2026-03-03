@@ -80,7 +80,12 @@ export function ProjectTaskCreateDialog({
 
         <FormProvider {...form}>
           {/* @ts-ignore - react-hook-form type inference issue with complex form data */}
-          <form onSubmit={handleSubmit((data: TaskFormData) => originalOnSubmit(data))} className="space-y-6">
+          <form
+            onSubmit={handleSubmit((data: TaskFormData) =>
+              originalOnSubmit(data)
+            )}
+            className="space-y-6"
+          >
             <div className="space-y-4">
               <TaskTitleField register={register} errors={errors} />
               <TaskDescriptionField register={register} errors={errors} />
