@@ -418,12 +418,15 @@ export class CalendarEventService {
   async createCalendarEvent(
     input: CreateCalendarEventInput,
     excludeEventIds?: string[],
-    authToken?: string
+    authToken?: string,
+    skipLogging = false
   ): Promise<CalendarEventUnion> {
-    console.log(
-      '[CalendarEventService] createCalendarEvent called with input:',
-      input
-    );
+    if (!skipLogging) {
+      console.log(
+        '[CalendarEventService] createCalendarEvent called with input:',
+        input
+      );
+    }
 
     // #region agent log
     try {
@@ -498,7 +501,9 @@ export class CalendarEventService {
       insertData.synced_from_google = input.synced_from_google;
     }
 
-    console.log('[CalendarEventService] Inserting calendar event:', insertData);
+    if (!skipLogging) {
+      console.log('[CalendarEventService] Inserting calendar event:', insertData);
+    }
 
     const client = authToken
       ? getAuthenticatedSupabase(authToken)
@@ -520,10 +525,12 @@ export class CalendarEventService {
       throw new Error(`Failed to create calendar event: ${error.message}`);
     }
 
-    console.log(
-      '[CalendarEventService] Calendar event created successfully:',
-      data
-    );
+    if (!skipLogging) {
+      console.log(
+        '[CalendarEventService] Calendar event created successfully:',
+        data
+      );
+    }
 
     if (input.linked_task_id && insertData.completed_at) {
       const eventDurationMinutes = this.calculateEventDurationMinutes(
@@ -590,14 +597,17 @@ export class CalendarEventService {
   async updateCalendarEvent(
     id: string,
     input: UpdateCalendarEventInput,
-    authToken?: string
+    authToken?: string,
+    skipLogging = false
   ): Promise<CalendarEventUnion> {
-    console.log('[CalendarEventService] updateCalendarEvent called:', {
-      id,
-      input,
-      completed_at: input.completed_at,
-      completed_at_type: typeof input.completed_at,
-    });
+    if (!skipLogging) {
+      console.log('[CalendarEventService] updateCalendarEvent called:', {
+        id,
+        input,
+        completed_at: input.completed_at,
+        completed_at_type: typeof input.completed_at,
+      });
+    }
     const existing = await this.getCalendarEventById(id, authToken);
     if (!existing) {
       throw new Error('Calendar event not found');
@@ -1044,5 +1054,28 @@ export class CalendarEventService {
     }
 
     return data;
+  }
+
+  // Get all calendar events synced from Google for a user (batch fetch)
+  async getAllGoogleCalendarEventsByUserId(
+    userId: string,
+    authToken?: string
+  ): Promise<CalendarEventUnion[]> {
+    const client = authToken
+      ? getAuthenticatedSupabase(authToken)
+      : serviceRoleSupabase;
+    const { data, error } = await client
+      .from('calendar_events')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('synced_from_google', true);
+
+    if (error) {
+      throw new Error(
+        `Failed to fetch Google calendar events: ${error.message}`
+      );
+    }
+
+    return data || [];
   }
 }

@@ -3,6 +3,7 @@ import { serviceRoleSupabase } from '../config/supabase.js';
 import { CalendarEventService } from './calendarEventService.js';
 import { getGoogleOAuthEnv } from '../config/env.js';
 import { loadEnv } from '../config/loadEnv.js';
+import type { CalendarEventUnion } from '../types/database.js';
 
 function getOAuthConfigOrThrow() {
   loadEnv();
@@ -28,7 +29,7 @@ export class GoogleCalendarService {
   private calendarEventService: CalendarEventService;
   private static inFlightSyncs = new Map<
     string,
-    Promise<{ success: boolean; synced: number; errors: string[] }>
+    Promise<{ success: boolean; synced: number; errors: string[]; durationMs: number }>
   >();
 
   constructor() {
@@ -214,6 +215,7 @@ export class GoogleCalendarService {
     success: boolean;
     synced: number;
     errors: string[];
+    durationMs: number;
   }> {
     const existingSync = GoogleCalendarService.inFlightSyncs.get(userId);
     if (existingSync) {
@@ -232,6 +234,7 @@ export class GoogleCalendarService {
           errors: [
             error instanceof Error ? error.message : 'Unknown sync error',
           ],
+          durationMs: 0,
         };
       })
       .finally(() => {
@@ -246,7 +249,9 @@ export class GoogleCalendarService {
     success: boolean;
     synced: number;
     errors: string[];
+    durationMs: number;
   }> {
+    const startTime = Date.now();
     try {
       const { clientId, clientSecret, redirectUri } = getOAuthConfigOrThrow();
       const accessToken = await this.getValidAccessToken(userId);
@@ -287,9 +292,60 @@ export class GoogleCalendarService {
       const errors: string[] = [];
       let synced = 0;
 
+      console.log(
+        `[GoogleCalendarService] Processing ${googleEvents.length} events from Google Calendar`
+      );
+
+      // Batch fetch ALL existing Google Calendar events for this user
+      const fetchStart = Date.now();
+      const existingGoogleEvents =
+        await this.calendarEventService.getAllGoogleCalendarEventsByUserId(
+          userId
+        );
+      const fetchDuration = Date.now() - fetchStart;
+      console.log(
+        `[GoogleCalendarService] Fetched ${existingGoogleEvents.length} existing events in ${fetchDuration}ms`
+      );
+
+      // Build a Map for O(1) lookup by google_event_id
+      const existingEventsMap = new Map<string, CalendarEventUnion>();
+      for (const event of existingGoogleEvents) {
+        const googleEventId = (
+          event as unknown as { google_event_id?: string | null }
+        ).google_event_id;
+        if (googleEventId) {
+          existingEventsMap.set(googleEventId, event);
+        }
+      }
+
+      // Batch collections
+      const eventsToCreate: Array<{
+        title: string;
+        description?: string;
+        start_time: string;
+        end_time: string;
+        user_id: string;
+        google_event_id: string;
+        synced_from_google: boolean;
+      }> = [];
+      const eventsToUpdate: Array<{
+        id: string;
+        data: {
+          title: string;
+          start_time: string;
+          end_time: string;
+          description?: string;
+          synced_from_google?: boolean;
+        };
+      }> = [];
+      let skipped = 0;
+
+      // First pass: classify events into create/update/skip
+      const classifyStart = Date.now();
       for (const googleEvent of googleEvents) {
         try {
           if (!googleEvent.id || !googleEvent.start || !googleEvent.end) {
+            skipped++;
             continue; // Skip events without required fields
           }
 
@@ -298,15 +354,14 @@ export class GoogleCalendarService {
           const endTime = googleEvent.end.dateTime || googleEvent.end.date;
 
           if (!startTime || !endTime) {
+            skipped++;
             continue;
           }
 
-          // Check if event already exists
-          const existingEvent =
-            await this.calendarEventService.getCalendarEventByGoogleEventId(
-              userId,
-              googleEvent.id
-            );
+          // Check if event already exists using Map lookup (O(1) instead of query)
+          const existingEvent = googleEvent.id
+            ? existingEventsMap.get(googleEvent.id)
+            : null;
 
           const eventData: {
             title: string;
@@ -384,7 +439,7 @@ export class GoogleCalendarService {
               continue;
             }
 
-            // Update existing event only when fields actually changed
+            // Queue for batch update
             const updateData: {
               title: string;
               start_time: string;
@@ -402,28 +457,89 @@ export class GoogleCalendarService {
             if (!existingSyncedFromGoogle) {
               updateData.synced_from_google = true;
             }
-            await this.calendarEventService.updateCalendarEvent(
-              existingEvent.id,
-              updateData
-            );
+            eventsToUpdate.push({ id: existingEvent.id, data: updateData });
           } else {
-            // Create new event
-            await this.calendarEventService.createCalendarEvent(eventData);
+            // Queue for batch create
+            eventsToCreate.push(eventData);
           }
-
-          synced++;
         } catch (error) {
           const errorMsg =
             error instanceof Error
               ? error.message
-              : `Failed to sync event ${googleEvent.id}`;
+              : `Failed to process event ${googleEvent.id}`;
           errors.push(errorMsg);
-          console.error(
-            `[GoogleCalendarService] Error syncing event ${googleEvent.id}:`,
-            error
+          skipped++;
+        }
+      }
+      const classifyDuration = Date.now() - classifyStart;
+      console.log(
+        `[GoogleCalendarService] Classified events in ${classifyDuration}ms: ${eventsToCreate.length} to create, ${eventsToUpdate.length} to update, ${skipped} skipped`
+      );
+
+      // Second pass: batch create events
+      if (eventsToCreate.length > 0) {
+        console.log(
+          `[GoogleCalendarService] Creating ${eventsToCreate.length} new events`
+        );
+        try {
+          const createResults =
+            await this.calendarEventService.createCalendarEventsBatch(
+              eventsToCreate
+            );
+          const successfulCreates = createResults.filter(r => r.success).length;
+          synced += successfulCreates;
+          
+          const failedCreates = createResults.filter(r => !r.success);
+          if (failedCreates.length > 0) {
+            failedCreates.forEach(result => {
+              if (result.error) {
+                errors.push(result.error);
+              }
+            });
+            console.warn(
+              `[GoogleCalendarService] ${failedCreates.length} events failed to create`
+            );
+          }
+        } catch (error) {
+          errors.push(
+            `Batch create failed: ${
+              error instanceof Error ? error.message : 'Unknown error'
+            }`
+          );
+          console.error('[GoogleCalendarService] Batch create error:', error);
+        }
+      }
+
+      // Third pass: batch update events (update individually with reduced logging)
+      if (eventsToUpdate.length > 0) {
+        console.log(
+          `[GoogleCalendarService] Updating ${eventsToUpdate.length} existing events`
+        );
+        let updateSuccessCount = 0;
+        for (const { id, data } of eventsToUpdate) {
+          try {
+            await this.calendarEventService.updateCalendarEvent(id, data);
+            updateSuccessCount++;
+          } catch (error) {
+            errors.push(
+              `Failed to update event ${id}: ${
+                error instanceof Error ? error.message : 'Unknown error'
+              }`
+            );
+          }
+        }
+        synced += updateSuccessCount;
+        if (eventsToUpdate.length - updateSuccessCount > 0) {
+          console.warn(
+            `[GoogleCalendarService] ${eventsToUpdate.length - updateSuccessCount} events failed to update`
           );
         }
       }
+
+      const durationMs = Date.now() - startTime;
+      console.log(
+        `[GoogleCalendarService] Sync complete: ${synced} synced, ${skipped} skipped, ${errors.length} errors, ${durationMs}ms (fetch: ${fetchDuration}ms, classify: ${classifyDuration}ms)`
+      );
 
       // Update last_synced_at
       await serviceRoleSupabase
@@ -433,12 +549,14 @@ export class GoogleCalendarService {
         })
         .eq('user_id', userId);
 
-      return { success: true, synced, errors };
+      return { success: true, synced, errors, durationMs };
     } catch (error) {
+      const durationMs = Date.now() - startTime;
       return {
         success: false,
         synced: 0,
         errors: [error instanceof Error ? error.message : 'Unknown sync error'],
+        durationMs,
       };
     }
   }

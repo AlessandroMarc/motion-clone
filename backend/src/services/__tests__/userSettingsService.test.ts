@@ -488,4 +488,197 @@ describe('UserSettingsService', () => {
       );
     });
   });
+
+  // ─── Schedule Cache Optimization Tests ────────────────────────────────────────
+  describe('schedule cache - getActiveSchedule optimization', () => {
+    beforeEach(() => {
+      // Clear the static cache before each test
+      (UserSettingsService as any).scheduleCache.clear();
+    });
+
+    test('should cache schedules and reuse them on subsequent calls (cache hit)', async () => {
+      const schedules = [
+        makeScheduleRaw({ id: 's1', is_default: true }),
+        makeScheduleRaw({ id: 's2', is_default: false }),
+      ];
+
+      // First call: cache miss, fetch from DB
+      mockClient.single
+        .mockResolvedValueOnce({
+          data: { active_schedule_id: 's1' },
+          error: null,
+        })
+        .mockResolvedValueOnce({
+          data: schedules,
+          error: null,
+        });
+      mockClient.order
+        .mockReturnValueOnce(mockClient)
+        .mockResolvedValueOnce({ data: schedules, error: null });
+
+      const result1 = await service.getActiveSchedule('user-1');
+      expect(result1?.id).toBe('s1');
+
+      // Clear the from() mock to ensure it's not called for the second query
+      mockClient.from.mockClear();
+      mockClient.single.mockClear();
+
+      // Second call: should use cache - verify fewer DB calls
+      mockClient.single.mockResolvedValueOnce({
+        data: { active_schedule_id: 's1' },
+        error: null,
+      });
+
+      const result2 = await service.getActiveSchedule('user-1');
+      expect(result2?.id).toBe('s1');
+
+      // Verify that we're hitting the cache (fewer database operations)
+      expect(mockClient.order).not.toHaveBeenCalled();
+    });
+
+    test('should invalidate cache when creating a schedule', async () => {
+      const newSchedule = makeScheduleRaw({ id: 'new-1' });
+      mockClient.single.mockResolvedValue({
+        data: newSchedule,
+        error: null,
+      });
+
+      // Manually set cache for user-1
+      (UserSettingsService as any).scheduleCache.set('user-1', {
+        schedules: [{ id: 'old' }],
+        timestamp: Date.now(),
+      });
+
+      // Verify cache is set
+      expect(
+        (UserSettingsService as any).scheduleCache.has('user-1')
+      ).toBe(true);
+
+      // Create a schedule (should invalidate cache)
+      await service.createSchedule({ user_id: 'user-1' });
+
+      // Verify cache was cleared
+      expect(
+        (UserSettingsService as any).scheduleCache.has('user-1')
+      ).toBe(false);
+    });
+
+    test('should invalidate cache when updating a schedule', async () => {
+      const updated = makeScheduleRaw({ name: 'Updated' });
+      mockClient.single.mockResolvedValue({
+        data: updated,
+        error: null,
+      });
+
+      // Set cache
+      (UserSettingsService as any).scheduleCache.set('user-1', {
+        schedules: [{ id: 's1', name: 'Old' }],
+        timestamp: Date.now(),
+      });
+
+      expect(
+        (UserSettingsService as any).scheduleCache.has('user-1')
+      ).toBe(true);
+
+      // Update schedule (should invalidate)
+      await service.updateSchedule('s1', 'user-1', { name: 'Updated' });
+
+      // Cache should be cleared
+      expect(
+        (UserSettingsService as any).scheduleCache.has('user-1')
+      ).toBe(false);
+    });
+
+    test('should invalidate cache when deleting a schedule', async () => {
+      // Setup: count = 2, fallback schedule, task reassignment, settings check, delete
+      const countEq = jest
+        .fn()
+        .mockResolvedValueOnce({ count: 2, error: null });
+      const countSelect = jest.fn().mockReturnValue({ eq: countEq });
+
+      const fallbackOrder2 = jest.fn().mockResolvedValueOnce({
+        data: [{ id: 'fallback-1', is_default: true }],
+      });
+      const fallbackOrder1 = jest
+        .fn()
+        .mockReturnValue({ order: fallbackOrder2 });
+      const fallbackNeq = jest.fn().mockReturnValue({ order: fallbackOrder1 });
+      const fallbackEq = jest.fn().mockReturnValue({ neq: fallbackNeq });
+      const fallbackSelect = jest.fn().mockReturnValue({ eq: fallbackEq });
+
+      const taskEqFinal = jest.fn().mockResolvedValueOnce({ error: null });
+      const taskEq1 = jest.fn().mockReturnValue({ eq: taskEqFinal });
+      const taskUpdate = jest.fn().mockReturnValue({ eq: taskEq1 });
+
+      const settingsSingle = jest.fn().mockResolvedValueOnce({
+        data: { active_schedule_id: 'other' },
+        error: null,
+      });
+      const settingsEq = jest.fn().mockReturnValue({ single: settingsSingle });
+      const settingsSelect = jest.fn().mockReturnValue({ eq: settingsEq });
+
+      const deleteEq2 = jest.fn().mockResolvedValueOnce({ error: null });
+      const deleteEq1 = jest.fn().mockReturnValue({ eq: deleteEq2 });
+      const deleteChain = jest.fn().mockReturnValue({ eq: deleteEq1 });
+
+      mockClient.from
+        .mockReturnValueOnce({ select: countSelect })
+        .mockReturnValueOnce({ select: fallbackSelect })
+        .mockReturnValueOnce({ update: taskUpdate })
+        .mockReturnValueOnce({ select: settingsSelect })
+        .mockReturnValueOnce({ delete: deleteChain });
+
+      // Set cache
+      (UserSettingsService as any).scheduleCache.set('user-1', {
+        schedules: [{ id: 's1', is_default: true }],
+        timestamp: Date.now(),
+      });
+
+      expect(
+        (UserSettingsService as any).scheduleCache.has('user-1')
+      ).toBe(true);
+
+      // Delete schedule (should invalidate)
+      await service.deleteSchedule('s1', 'user-1');
+
+      // Cache should be cleared
+      expect(
+        (UserSettingsService as any).scheduleCache.has('user-1')
+      ).toBe(false);
+    });
+
+    test('should treat expired cache as miss and refetch', async () => {
+      const schedules = [makeScheduleRaw({ id: 's1', is_default: true })];
+
+      // Manually set an EXPIRED cache (timestamp 10 minutes ago)
+      const expiredTimestamp = Date.now() - 11 * 60 * 1000;
+      (UserSettingsService as any).scheduleCache.set('user-1', {
+        schedules: [{ id: 'old' }],
+        timestamp: expiredTimestamp,
+      });
+
+      // Fresh DB query should be made
+      mockClient.single
+        .mockResolvedValueOnce({
+          data: { active_schedule_id: 's1' },
+          error: null,
+        })
+        .mockResolvedValueOnce({
+          data: schedules,
+          error: null,
+        });
+      mockClient.order
+        .mockReturnValueOnce(mockClient)
+        .mockResolvedValueOnce({ data: schedules, error: null });
+
+      const result = await service.getActiveSchedule('user-1');
+
+      expect(result?.id).toBe('s1');
+      // Cache should be refreshed with new timestamp
+      const cacheEntry = (UserSettingsService as any).scheduleCache.get(
+        'user-1'
+      );
+      expect(cacheEntry?.timestamp).toBeGreaterThan(expiredTimestamp);
+    });
+  });
 });

@@ -270,7 +270,104 @@ describe('ProjectService', () => {
         service.deleteProject('proj-1', mockClient as any)
       ).rejects.toThrow('Failed to delete project: Delete failed');
     });
+
+    test('should delete related tasks before project (transaction-like pattern)', async () => {
+      const tasks = [{ id: 'task-1' }, { id: 'task-2' }];
+      
+      let callCount = 0;
+      mockClient.from.mockImplementation(() => {
+        callCount++;
+        if (callCount === 1) {
+          // First call: from('tasks').select().eq() - list tasks
+          return { 
+            select: jest.fn().mockReturnValue({
+              eq: jest.fn().mockResolvedValue({
+                data: tasks,
+                error: null,
+              })
+            })
+          } as any;
+        } else if (callCount === 2) {
+          // Second call: from('tasks').delete().eq() - delete tasks
+          return {
+            delete: jest.fn().mockReturnValue({
+              eq: jest.fn().mockResolvedValue({ error: null })
+            })
+          } as any;
+        } else {
+          // Third call: from('projects').delete().eq() - delete project
+          return {
+            delete: jest.fn().mockReturnValue({
+              eq: jest.fn().mockResolvedValue({ error: null })
+            })
+          } as any;
+        }
+      });
+
+      const result = await service.deleteProject('proj-1', mockClient as any);
+
+      // Verify all three from() calls were made in order
+      expect(mockClient.from).toHaveBeenCalledTimes(3);
+      expect(mockClient.from).toHaveBeenNthCalledWith(1, 'tasks');
+      expect(mockClient.from).toHaveBeenNthCalledWith(2, 'tasks');
+      expect(mockClient.from).toHaveBeenNthCalledWith(3, 'projects');
+      expect(result).toBe(true);
+    });
+
+    test('should fail if task deletion fails (prevents orphanage)', async () => {
+      const tasks = [{ id: 'task-1' }];
+      
+      // First call: list tasks returns tasks and no error
+      mockClient.select.mockReturnValueOnce(
+        { 
+          eq: jest.fn().mockResolvedValueOnce({
+            data: tasks,
+            error: null,
+          })
+        } as any
+      );
+
+      // Second call: delete tasks - will fail
+      const deleteEq = jest.fn().mockResolvedValue({
+        error: { message: 'Task deletion failed' },
+      });
+      mockClient.delete.mockReturnValue({ eq: deleteEq } as any);
+
+      // Set up from() to return appropriate chain
+      let callCount = 0;
+      mockClient.from.mockImplementation(() => {
+        callCount++;
+        if (callCount === 1) {
+          // First call: from('tasks').select().eq()
+          return { 
+            select: jest.fn().mockReturnValue({
+              eq: jest.fn().mockResolvedValue({
+                data: tasks,
+                error: null,
+              })
+            })
+          } as any;
+        } else {
+          // Second call: from('tasks').delete().eq()
+          return {
+            delete: jest.fn().mockReturnValue({
+              eq: jest.fn().mockResolvedValue({
+                error: { message: 'Task deletion failed' },
+              })
+            })
+          } as any;
+        }
+      });
+
+      await expect(
+        service.deleteProject('proj-1', mockClient as any)
+      ).rejects.toThrow('Failed to delete project tasks: Task deletion failed');
+
+      // Verify that we stopped after task deletion failed (project delete not attempted)
+      expect(mockClient.from).toHaveBeenCalledTimes(2);
+    });
   });
+
 
   // ─── getProjectsByStatus ──────────────────────────────────────────────────────
   describe('getProjectsByStatus', () => {

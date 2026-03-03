@@ -48,6 +48,7 @@ export class ProjectService {
   async getAllProjects(
     client: SupabaseClient = serviceRoleSupabase
   ): Promise<Project[]> {
+    const startTime = Date.now();
     const { data, error } = await client
       .from('projects')
       .select('*')
@@ -55,6 +56,14 @@ export class ProjectService {
 
     if (error) {
       throw new Error(`Failed to fetch projects: ${error.message}`);
+    }
+
+    const duration = Date.now() - startTime;
+    const projectCount = data?.length || 0;
+    if (duration > 300) {
+      console.log(
+        `[ProjectService] Fetched ${projectCount} projects in ${duration}ms`
+      );
     }
 
     return data || [];
@@ -121,26 +130,61 @@ export class ProjectService {
   }
 
   // Delete project and all related tasks
+  // Uses a transaction-like pattern to prevent orphaning data
   async deleteProject(
     id: string,
     client: SupabaseClient = serviceRoleSupabase
   ): Promise<boolean> {
-    const { error: tasksError } = await client
+    const startTime = Date.now();
+
+    // Step 1: Get all related tasks (verification checkpoint)
+    const { data: relatedTasks, error: tasksListError } = await client
       .from('tasks')
-      .delete()
+      .select('id')
       .eq('project_id', id);
 
-    if (tasksError) {
-      throw new Error(`Failed to delete project tasks: ${tasksError.message}`);
+    if (tasksListError) {
+      throw new Error(`Failed to list tasks: ${tasksListError.message}`);
     }
 
-    const { error } = await client.from('projects').delete().eq('id', id);
+    try {
+      // Step 2: Delete all related tasks first (before project)
+      if (relatedTasks && relatedTasks.length > 0) {
+        const { error: tasksError } = await client
+          .from('tasks')
+          .delete()
+          .eq('project_id', id);
 
-    if (error) {
-      throw new Error(`Failed to delete project: ${error.message}`);
+        if (tasksError) {
+          throw new Error(`Failed to delete project tasks: ${tasksError.message}`);
+        }
+      }
+
+      // Step 3: Delete the project (only if tasks deletion succeeded)
+      const { error: projectError } = await client
+        .from('projects')
+        .delete()
+        .eq('id', id);
+
+      if (projectError) {
+        throw new Error(`Failed to delete project: ${projectError.message}`);
+      }
+
+      const duration = Date.now() - startTime;
+      const taskCount = relatedTasks?.length || 0;
+      console.log(
+        `[ProjectService] Deleted project with ${taskCount} tasks in ${duration}ms`
+      );
+
+      return true;
+    } catch (error) {
+      const duration = Date.now() - startTime;
+      console.error(
+        `[ProjectService] Delete failed after ${duration}ms:`,
+        error
+      );
+      throw error;
     }
-
-    return true;
   }
 
   // Get projects by status

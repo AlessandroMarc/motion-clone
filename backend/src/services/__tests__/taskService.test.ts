@@ -453,4 +453,54 @@ describe('TaskService', () => {
       );
     });
   });
+
+  // ─── Schedule Resolution Optimization Tests ──────────────────────────────────
+  describe('createTask - schedule resolution optimization', () => {
+    test('should use provided schedule_id directly', async () => {
+      const task = makeTask({ schedule_id: 'provided-schedule-1' });
+      mockClient.single.mockResolvedValue({ data: task, error: null });
+
+      await service.createTask(
+        {
+          title: 'Task',
+          priority: 'medium',
+          user_id: 'user-1',
+          schedule_id: 'provided-schedule-1',
+          planned_duration_minutes: 60,
+        },
+        'token'
+      );
+
+      // Verify the task was created with the provided schedule_id
+      const insertCall = mockClient.insert.mock?.calls?.[0]?.[0] as
+        | any[]
+        | undefined;
+      expect(insertCall?.[0]?.schedule_id).toBe('provided-schedule-1');
+    });
+
+    test('should resolve schedule from active or default without provided schedule_id', async () => {
+      const task = makeTask({ schedule_id: 'resolved-schedule' });
+      // Mock successful task creation (all intermediate queries mocked by default to return mockClient)
+      mockClient.single.mockResolvedValue({ data: task, error: null });
+
+      await service.createTask(
+        {
+          title: 'Task',
+          priority: 'medium',
+          user_id: 'user-1',
+          planned_duration_minutes: 60,
+        },
+        'token'
+      );
+
+      // Verify task was created successfully
+      expect(mockClient.insert).toHaveBeenCalled();
+      const insertCall = mockClient.insert.mock?.calls?.[0]?.[0] as
+        | any[]
+        | undefined;
+      expect(insertCall?.[0]?.title).toBe('Task');
+      // Schedule should be resolved to some value
+      expect(insertCall?.[0]?.schedule_id).toBeDefined();
+    });
+  });
 });
