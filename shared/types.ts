@@ -40,6 +40,11 @@ interface Task {
   updated_at: Date;
   planned_duration_minutes: number;
   actual_duration_minutes: number;
+  // Recurring task fields
+  is_recurring: boolean; // whether this task repeats
+  recurrence_pattern?: 'daily' | 'weekly' | 'monthly'; // frequency (required if is_recurring)
+  recurrence_interval?: number; // interval count, e.g., 2 for "every 2 weeks" (required if is_recurring, min: 1)
+  next_generation_cutoff?: Date; // tracks how far into the future calendar events have been generated
 }
 
 interface Project {

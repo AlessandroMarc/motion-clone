@@ -17,6 +17,9 @@ class TaskService {
       project_id: input.project_id,
       planned_duration_minutes: input.plannedDurationMinutes,
       actual_duration_minutes: input.actualDurationMinutes ?? 0,
+      is_recurring: input.isRecurring ?? false,
+      recurrence_pattern: input.isRecurring ? input.recurrencePattern : null,
+      recurrence_interval: input.isRecurring ? (input.recurrenceInterval ?? 1) : 1,
     };
 
     const response = await request<UnknownRecord>('/tasks', {
@@ -58,6 +61,9 @@ class TaskService {
       blockedBy,
       plannedDurationMinutes,
       actualDurationMinutes,
+      isRecurring,
+      recurrencePattern,
+      recurrenceInterval,
       ...rest
     } = input;
 
@@ -70,6 +76,9 @@ class TaskService {
         blocked_by: blockedBy,
         planned_duration_minutes: plannedDurationMinutes,
         actual_duration_minutes: actualDurationMinutes,
+        is_recurring: isRecurring,
+        recurrence_pattern: recurrencePattern,
+        recurrence_interval: recurrenceInterval,
       }),
     });
 

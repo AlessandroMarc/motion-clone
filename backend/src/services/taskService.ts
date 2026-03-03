@@ -118,6 +118,10 @@ export class TaskService {
       }
     }
 
+    // Set up recurrence fields
+    const isRecurring = input.is_recurring ?? false;
+    const nextGenerationCutoff = isRecurring ? dueDateString : null;
+
     const client = authToken
       ? getAuthenticatedSupabase(authToken)
       : serviceRoleSupabase;
@@ -137,6 +141,10 @@ export class TaskService {
           actual_duration_minutes: normalizedActual,
           user_id: input.user_id,
           schedule_id: scheduleId,
+          is_recurring: isRecurring,
+          recurrence_pattern: isRecurring ? input.recurrence_pattern : null,
+          recurrence_interval: isRecurring ? input.recurrence_interval ?? 1 : 1,
+          next_generation_cutoff: nextGenerationCutoff,
         },
       ])
       .select()
@@ -211,6 +219,10 @@ export class TaskService {
       project_id?: string | null;
       planned_duration_minutes?: number;
       actual_duration_minutes?: number;
+      is_recurring?: boolean;
+      recurrence_pattern?: string | null;
+      recurrence_interval?: number;
+      next_generation_cutoff?: string | null;
     } = {
       updated_at: new Date().toISOString(),
     };
@@ -232,6 +244,34 @@ export class TaskService {
     if (input.blockedBy !== undefined) updateData.blocked_by = input.blockedBy;
     if (input.project_id !== undefined)
       updateData.project_id = input.project_id;
+
+    // Handle recurrence fields
+    if (input.is_recurring !== undefined) {
+      updateData.is_recurring = input.is_recurring;
+      if (input.is_recurring) {
+        updateData.recurrence_pattern = input.recurrence_pattern ?? null;
+        updateData.recurrence_interval = input.recurrence_interval ?? 1;
+        // Set next_generation_cutoff to due_date for new recurring tasks
+        if (input.due_date !== undefined) {
+          updateData.next_generation_cutoff = input.due_date
+            ? normalizeToMidnight(input.due_date)
+            : null;
+        } else if (!existingTask.next_generation_cutoff) {
+          // If due_date wasn't updated, but next_generation_cutoff is null, set it
+          const dueDateToUse =
+            updateData.due_date ?? existingTask.due_date;
+          if (dueDateToUse) {
+            updateData.next_generation_cutoff = typeof dueDateToUse === 'string'
+              ? dueDateToUse
+              : normalizeToMidnight(dueDateToUse);
+          }
+        }
+      } else {
+        // When turning off recurrence, clear the fields
+        updateData.recurrence_pattern = null;
+        updateData.recurrence_interval = 1;
+      }
+    }
 
     const rawPlanned =
       input.planned_duration_minutes ?? existingTask.planned_duration_minutes;

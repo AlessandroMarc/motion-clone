@@ -23,6 +23,7 @@ import { TaskProjectField } from './TaskProjectField';
 import { TaskBlockedByField } from './TaskBlockedByField';
 import { TaskFormActions } from './TaskFormActions';
 import { TaskDurationFields } from './TaskDurationFields';
+import { TaskRecurrenceFields } from './TaskRecurrenceFields';
 
 export function TaskCreateDialogForm({ onTaskCreate }: TaskCreateFormProps) {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -38,6 +39,10 @@ export function TaskCreateDialogForm({ onTaskCreate }: TaskCreateFormProps) {
     handleCancel,
     setPriority,
   } = useTaskForm(onTaskCreate);
+
+  const isRecurring = form.watch('is_recurring');
+  const recurrencePattern = form.watch('recurrence_pattern');
+  const recurrenceInterval = form.watch('recurrence_interval');
 
   const handleFormSubmit = async (data: TaskFormData) => {
     const success = await onSubmit(data);
@@ -69,6 +74,7 @@ export function TaskCreateDialogForm({ onTaskCreate }: TaskCreateFormProps) {
         </DialogHeader>
 
         <FormProvider {...form}>
+          {/* @ts-ignore - react-hook-form type inference issue with complex form data */}
           <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-6">
             <div className="space-y-4">
               <TaskTitleField register={register} errors={errors} />
@@ -82,6 +88,21 @@ export function TaskCreateDialogForm({ onTaskCreate }: TaskCreateFormProps) {
               <TaskProjectField errors={errors} />
               <TaskBlockedByField errors={errors} />
               <TaskDurationFields register={register} errors={errors} />
+              <TaskRecurrenceFields
+                isRecurring={isRecurring}
+                onIsRecurringChange={(checked) =>
+                  form.setValue('is_recurring', checked)
+                }
+                recurrencePattern={recurrencePattern}
+                onPatternChange={(value) =>
+                  form.setValue('recurrence_pattern', value)
+                }
+                recurrenceInterval={recurrenceInterval}
+                onIntervalChange={(value) =>
+                  form.setValue('recurrence_interval', value)
+                }
+                errors={errors}
+              />
             </div>
 
             <TaskFormActions

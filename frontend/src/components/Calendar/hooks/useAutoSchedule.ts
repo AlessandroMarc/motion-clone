@@ -11,6 +11,7 @@ import { calendarService } from '@/services/calendarService';
 import { toast } from 'sonner';
 import { logger } from '@/lib/logger';
 import { calculateAutoSchedule } from '@/utils/autoScheduleCalculator';
+import { expandRecurringTasks } from '@/utils/recurrenceCalculator';
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -284,9 +285,21 @@ export function useAutoSchedule(
         e => isCalendarEventTask(e) && !e.completed_at
       ) as CalendarEventTask[];
 
+      // Expand recurring tasks to synthetic events for the 90-day horizon
+      const recurringTaskSyntheticEvents = expandRecurringTasks(
+        tasksToUse,
+        existingTaskEvents
+      );
+
+      // Combine existing events with synthetic recurring task events
+      const allTaskEventsForScheduling = [
+        ...existingTaskEvents,
+        ...recurringTaskSyntheticEvents,
+      ];
+
       const { taskEvents } = calculateAutoSchedule({
         tasks: tasksToUse,
-        existingEvents: existingTaskEvents,
+        existingEvents: allTaskEventsForScheduling,
         allCalendarEvents: eventsToUse,
         activeSchedule: activeSchedule || null,
         eventDuration: DEFAULT_EVENT_DURATION,
@@ -435,14 +448,14 @@ export function useAutoSchedule(
   // -----------------------------------------------------------------------
   // Stable fingerprint of schedule-relevant task data to drive the effect.
   // Changes when tasks are added/removed or when scheduling-relevant fields
-  // (duration, status, updated_at) change.
+  // (duration, status, updated_at, recurrence settings) change.
   // -----------------------------------------------------------------------
   const tasksFingerprint = useMemo(
     () =>
       tasks
         .map(
           t =>
-            `${t.id}:${t.planned_duration_minutes}:${t.actual_duration_minutes}:${t.status}:${(t.blockedBy ?? []).join(',')}:${t.updated_at ?? t.created_at}`
+            `${t.id}:${t.planned_duration_minutes}:${t.actual_duration_minutes}:${t.status}:${(t.blockedBy ?? []).join(',')}:${t.is_recurring}:${t.recurrence_pattern}:${t.recurrence_interval}:${t.updated_at ?? t.created_at}`
         )
         .join('|'),
     [tasks]

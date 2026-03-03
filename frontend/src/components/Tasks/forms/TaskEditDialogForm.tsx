@@ -24,6 +24,7 @@ import { TaskPriorityField } from './TaskPriorityField';
 import { TaskProjectField } from './TaskProjectField';
 import { TaskBlockedByField } from './TaskBlockedByField';
 import { TaskDurationFields } from './TaskDurationFields';
+import { TaskRecurrenceFields } from './TaskRecurrenceFields';
 import { TaskFormActions } from './TaskFormActions';
 import { formatEventTime } from '@/utils/calendarUtils';
 import posthog from 'posthog-js';
@@ -44,6 +45,9 @@ const emptyFormValues: TaskFormData = {
   planned_duration_minutes: 60,
   actual_duration_minutes: 0,
   blockedBy: [],
+  is_recurring: false,
+  recurrence_pattern: undefined,
+  recurrence_interval: 1,
 };
 
 const formatDateOnly = (date: Date): string => {
@@ -62,6 +66,9 @@ const mapTaskToFormValues = (task: Task): TaskFormData => ({
   planned_duration_minutes: task.planned_duration_minutes ?? 60,
   actual_duration_minutes: task.actual_duration_minutes ?? 0,
   blockedBy: task.blockedBy || [],
+  is_recurring: task.is_recurring ?? false,
+  recurrence_pattern: task.recurrence_pattern,
+  recurrence_interval: task.recurrence_interval ?? 1,
 });
 
 export function TaskEditDialogForm({
@@ -95,6 +102,9 @@ export function TaskEditDialogForm({
   } = form;
 
   const priority = watch('priority');
+  const isRecurring = watch('is_recurring');
+  const recurrencePattern = watch('recurrence_pattern');
+  const recurrenceInterval = watch('recurrence_interval');
 
   useEffect(() => {
     reset(initialValues);
@@ -179,6 +189,9 @@ export function TaskEditDialogForm({
         plannedDurationMinutes: data.planned_duration_minutes,
         actualDurationMinutes: data.actual_duration_minutes ?? 0,
         blockedBy: data.blockedBy || [],
+        isRecurring: data.is_recurring,
+        recurrencePattern: data.is_recurring ? data.recurrence_pattern : null,
+        recurrenceInterval: data.is_recurring ? data.recurrence_interval : null,
       });
 
       onTaskUpdated(updatedTask);
@@ -239,6 +252,30 @@ export function TaskEditDialogForm({
               <TaskProjectField errors={errors} />
               <TaskBlockedByField errors={errors} currentTaskId={task?.id} />
               <TaskDurationFields register={register} errors={errors} />
+              <TaskRecurrenceFields
+                isRecurring={isRecurring}
+                onIsRecurringChange={(checked) =>
+                  setValue('is_recurring', checked, {
+                    shouldDirty: true,
+                    shouldValidate: true,
+                  })
+                }
+                recurrencePattern={recurrencePattern}
+                onPatternChange={(value) =>
+                  setValue('recurrence_pattern', value, {
+                    shouldDirty: true,
+                    shouldValidate: true,
+                  })
+                }
+                recurrenceInterval={recurrenceInterval}
+                onIntervalChange={(value) =>
+                  setValue('recurrence_interval', value, {
+                    shouldDirty: true,
+                    shouldValidate: true,
+                  })
+                }
+                errors={errors}
+              />
             </div>
 
             <div className="space-y-3 max-h-[10vh] overflow-y-auto">

@@ -29,6 +29,12 @@ export const taskSchema = z
       .number()
       .min(0, 'Actual duration cannot be negative'),
     blockedBy: z.array(z.string()).optional(),
+    // Recurring task fields
+    is_recurring: z.boolean(),
+    recurrence_pattern: z.enum(['daily', 'weekly', 'monthly']).optional(),
+    recurrence_interval: z
+      .number()
+      .min(1, 'Interval must be at least 1'),
   })
   .superRefine((data, ctx) => {
     if (data.actual_duration_minutes > data.planned_duration_minutes) {
@@ -37,6 +43,24 @@ export const taskSchema = z
         path: ['actual_duration_minutes'],
         message: 'Actual duration cannot exceed planned duration',
       });
+    }
+
+    // Validate recurrence fields when is_recurring is true
+    if (data.is_recurring) {
+      if (!data.recurrence_pattern) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['recurrence_pattern'],
+          message: 'Pattern is required for recurring tasks',
+        });
+      }
+      if (!data.recurrence_interval || data.recurrence_interval < 1) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['recurrence_interval'],
+          message: 'Interval must be at least 1',
+        });
+      }
     }
   });
 
@@ -66,6 +90,9 @@ export function useTaskForm(onTaskCreate: TaskCreateFormProps['onTaskCreate']) {
       planned_duration_minutes: 60,
       actual_duration_minutes: 0,
       blockedBy: [],
+      is_recurring: false,
+      recurrence_pattern: undefined,
+      recurrence_interval: 1,
     },
   });
 
