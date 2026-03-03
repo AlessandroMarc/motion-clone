@@ -35,7 +35,12 @@ export class GoogleCalendarService {
   private calendarEventService: CalendarEventService;
   private static inFlightSyncs = new Map<
     string,
-    Promise<{ success: boolean; synced: number; errors: string[]; durationMs: number }>
+    Promise<{
+      success: boolean;
+      synced: number;
+      errors: string[];
+      durationMs: number;
+    }>
   >();
 
   constructor() {
@@ -494,7 +499,7 @@ export class GoogleCalendarService {
             );
           const successfulCreates = createResults.filter(r => r.success).length;
           synced += successfulCreates;
-          
+
           const failedCreates = createResults.filter(r => !r.success);
           if (failedCreates.length > 0) {
             failedCreates.forEach(result => {

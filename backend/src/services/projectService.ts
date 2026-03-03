@@ -156,7 +156,9 @@ export class ProjectService {
           .eq('project_id', id);
 
         if (tasksError) {
-          throw new Error(`Failed to delete project tasks: ${tasksError.message}`);
+          throw new Error(
+            `Failed to delete project tasks: ${tasksError.message}`
+          );
         }
       }
 

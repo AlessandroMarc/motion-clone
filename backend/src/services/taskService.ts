@@ -66,7 +66,7 @@ export class TaskService {
     // Uses a single optimized query instead of 4 sequential queries
     const scheduleStart = Date.now();
     let scheduleId = input.schedule_id;
-    
+
     if (scheduleId) {
       // Verify the provided schedule belongs to this user before using it
       const { data: ownedSchedule } = await serviceRoleSupabase
@@ -185,9 +185,7 @@ export class TaskService {
     const duration = Date.now() - startTime;
     const taskCount = data?.length || 0;
     if (duration > 500 || taskCount > 100) {
-      console.log(
-        `[TaskService] Fetched ${taskCount} tasks in ${duration}ms`
-      );
+      console.log(`[TaskService] Fetched ${taskCount} tasks in ${duration}ms`);
     }
 
     return data || [];

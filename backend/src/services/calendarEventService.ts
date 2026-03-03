@@ -502,7 +502,10 @@ export class CalendarEventService {
     }
 
     if (!skipLogging) {
-      console.log('[CalendarEventService] Inserting calendar event:', insertData);
+      console.log(
+        '[CalendarEventService] Inserting calendar event:',
+        insertData
+      );
     }
 
     const client = authToken

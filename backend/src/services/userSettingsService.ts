@@ -14,7 +14,10 @@ import type {
 
 export class UserSettingsService {
   // Schedule cache: Map<userId, Schedule[]>
-  private static scheduleCache = new Map<string, { schedules: Schedule[]; timestamp: number }>();
+  private static scheduleCache = new Map<
+    string,
+    { schedules: Schedule[]; timestamp: number }
+  >();
   private static readonly CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
 
   private static isCacheValid(timestamp: number): boolean {
@@ -45,7 +48,9 @@ export class UserSettingsService {
         .eq('user_id', userId)
         .single();
 
-      let schedule = cached.schedules.find(s => s.id === settings?.active_schedule_id);
+      let schedule = cached.schedules.find(
+        s => s.id === settings?.active_schedule_id
+      );
       if (!schedule) {
         schedule = cached.schedules.find(s => s.is_default);
       }
@@ -71,7 +76,9 @@ export class UserSettingsService {
       .order('created_at', { ascending: true });
 
     if (schedulesError) {
-      console.error(`[UserSettingsService] Failed to fetch schedules: ${schedulesError.message}`);
+      console.error(
+        `[UserSettingsService] Failed to fetch schedules: ${schedulesError.message}`
+      );
       // Return default if fetch fails
       return {
         id: '',
@@ -108,7 +115,8 @@ export class UserSettingsService {
 
     // Find active schedule
     if (settings?.active_schedule_id) {
-      schedule = schedules.find(s => s.id === settings.active_schedule_id) || null;
+      schedule =
+        schedules.find(s => s.id === settings.active_schedule_id) || null;
     }
 
     // Fall back to default schedule
