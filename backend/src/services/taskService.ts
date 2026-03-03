@@ -114,8 +114,7 @@ export class TaskService {
 
       // Fall back to default or oldest schedule
       if (!scheduleId) {
-        const fallback =
-          schedules?.find(s => s.is_default) ?? schedules?.[0];
+        const fallback = schedules?.find(s => s.is_default) ?? schedules?.[0];
         if (fallback?.id) {
           scheduleId = fallback.id;
         }

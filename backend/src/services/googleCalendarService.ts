@@ -533,7 +533,12 @@ export class GoogleCalendarService {
           const batch = eventsToUpdate.slice(i, i + CONCURRENCY);
           const results = await Promise.allSettled(
             batch.map(({ id, data }) =>
-              this.calendarEventService.updateCalendarEvent(id, data, undefined, true)
+              this.calendarEventService.updateCalendarEvent(
+                id,
+                data,
+                undefined,
+                true
+              )
             )
           );
           for (let j = 0; j < results.length; j++) {

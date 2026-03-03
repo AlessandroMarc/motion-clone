@@ -28,10 +28,7 @@ export class UserSettingsService {
   private static enforceCacheBound(): void {
     if (this.scheduleCache.size < this.MAX_CACHE_ENTRIES) return;
     // Evict the oldest 10% of entries to reduce frequent iteration
-    const evictCount = Math.max(
-      1,
-      Math.floor(this.MAX_CACHE_ENTRIES * 0.1)
-    );
+    const evictCount = Math.max(1, Math.floor(this.MAX_CACHE_ENTRIES * 0.1));
     const entries = Array.from(this.scheduleCache.entries()).sort(
       (a, b) => a[1].timestamp - b[1].timestamp
     );
@@ -98,9 +95,7 @@ export class UserSettingsService {
       .order('created_at', { ascending: true });
 
     if (schedulesError) {
-      throw new Error(
-        `Failed to fetch schedules: ${schedulesError.message}`
-      );
+      throw new Error(`Failed to fetch schedules: ${schedulesError.message}`);
     }
 
     // Get user settings to find active schedule
@@ -111,7 +106,9 @@ export class UserSettingsService {
       .single();
 
     if (settingsError && settingsError.code !== 'PGRST116') {
-      throw new Error(`Failed to fetch user settings: ${settingsError.message}`);
+      throw new Error(
+        `Failed to fetch user settings: ${settingsError.message}`
+      );
     }
 
     const schedules = (allSchedules || []).map(s => ({

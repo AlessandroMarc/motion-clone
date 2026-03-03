@@ -312,9 +312,7 @@ describe('ProjectService', () => {
 
       await expect(
         service.deleteProject('proj-1', mockClient as any)
-      ).rejects.toThrow(
-        'Failed to delete project tasks: Task deletion failed'
-      );
+      ).rejects.toThrow('Failed to delete project tasks: Task deletion failed');
     });
   });
 
