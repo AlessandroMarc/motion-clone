@@ -442,7 +442,8 @@ export class GoogleCalendarService {
               existingTitle === eventData.title &&
               existingStart === normalizeDate(eventData.start_time) &&
               existingEnd === normalizeDate(eventData.end_time) &&
-              existingDescription === eventData.description &&
+              (eventData.description === undefined ||
+                existingDescription === eventData.description) &&
               existingSyncedFromGoogle === true;
 
             if (isUnchanged) {
@@ -521,22 +522,34 @@ export class GoogleCalendarService {
         }
       }
 
-      // Third pass: batch update events (update individually with reduced logging)
+      // Third pass: batch update events with bounded concurrency
       if (eventsToUpdate.length > 0) {
         console.log(
           `[GoogleCalendarService] Updating ${eventsToUpdate.length} existing events`
         );
+        const CONCURRENCY = 5;
         let updateSuccessCount = 0;
-        for (const { id, data } of eventsToUpdate) {
-          try {
-            await this.calendarEventService.updateCalendarEvent(id, data);
-            updateSuccessCount++;
-          } catch (error) {
-            errors.push(
-              `Failed to update event ${id}: ${
-                error instanceof Error ? error.message : 'Unknown error'
-              }`
-            );
+        for (let i = 0; i < eventsToUpdate.length; i += CONCURRENCY) {
+          const batch = eventsToUpdate.slice(i, i + CONCURRENCY);
+          const results = await Promise.allSettled(
+            batch.map(({ id, data }) =>
+              this.calendarEventService.updateCalendarEvent(id, data, undefined, true)
+            )
+          );
+          for (let j = 0; j < results.length; j++) {
+            const result = results[j];
+            if (result.status === 'fulfilled') {
+              updateSuccessCount++;
+            } else {
+              const item = batch[j];
+              errors.push(
+                `Failed to update event ${item?.id ?? 'unknown'}: ${
+                  result.reason instanceof Error
+                    ? result.reason.message
+                    : 'Unknown error'
+                }`
+              );
+            }
           }
         }
         synced += updateSuccessCount;

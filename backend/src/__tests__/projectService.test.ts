@@ -51,17 +51,20 @@ describe('ProjectService', () => {
       let taskDeleteCallCount = 0;
       let projectDeleteCallCount = 0;
 
+      const listEq = jest.fn().mockResolvedValue({
+        data: [{ id: 'task-1' }],
+        error: null,
+      });
+      const taskDeleteEq = jest.fn().mockResolvedValue({ error: null });
+      const projectDeleteEq = jest.fn().mockResolvedValue({ error: null });
+
       mockClient.from.mockImplementation((_table: string) => {
         callCount++;
         if (callCount === 1) {
           // First from('tasks').select().eq() - list tasks (returns some tasks)
           return {
             select: jest.fn().mockReturnValue({
-              // @ts-expect-error - jest mock typing limitation
-              eq: jest.fn().mockResolvedValue({
-                data: [{ id: 'task-1' }],
-                error: null,
-              } as any),
+              eq: listEq,
             }),
           } as any;
         } else if (callCount === 2) {
@@ -70,8 +73,7 @@ describe('ProjectService', () => {
             delete: jest.fn().mockImplementation(() => {
               taskDeleteCallCount++;
               return {
-                // @ts-expect-error - jest mock typing limitation
-                eq: jest.fn().mockResolvedValue({ error: null } as any),
+                eq: taskDeleteEq,
               };
             }),
           } as any;
@@ -81,8 +83,7 @@ describe('ProjectService', () => {
             delete: jest.fn().mockImplementation(() => {
               projectDeleteCallCount++;
               return {
-                // @ts-expect-error - jest mock typing limitation
-                eq: jest.fn().mockResolvedValue({ error: null } as any),
+                eq: projectDeleteEq,
               };
             }),
           } as any;
@@ -101,8 +102,9 @@ describe('ProjectService', () => {
       expect(taskDeleteCallCount).toBe(1);
       expect(projectDeleteCallCount).toBe(1);
       expect(result).toBe(true);
-
-      expect(result).toBe(true);
+      expect(listEq).toHaveBeenCalledWith('project_id', 'project-123');
+      expect(taskDeleteEq).toHaveBeenCalledWith('project_id', 'project-123');
+      expect(projectDeleteEq).toHaveBeenCalledWith('id', 'project-123');
     });
 
     test('should throw an error if deleting tasks fails', async () => {

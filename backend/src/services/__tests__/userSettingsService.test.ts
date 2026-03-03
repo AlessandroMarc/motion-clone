@@ -65,6 +65,7 @@ describe('UserSettingsService', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    (UserSettingsService as any).scheduleCache.clear();
     for (const key of [
       'from',
       'select',
@@ -521,10 +522,7 @@ describe('UserSettingsService', () => {
 
   // ─── Schedule Cache Optimization Tests ────────────────────────────────────────
   describe('schedule cache - getActiveSchedule optimization', () => {
-    beforeEach(() => {
-      // Clear the static cache before each test
-      (UserSettingsService as any).scheduleCache.clear();
-    });
+    // cache clear handled by shared beforeEach
 
     test('should cache schedules and reuse them on subsequent calls (cache hit)', async () => {
       const schedules = [

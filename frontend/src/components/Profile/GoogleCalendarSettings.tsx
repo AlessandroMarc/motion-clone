@@ -125,7 +125,10 @@ export function GoogleCalendarSettings() {
     try {
       setSyncing(true);
       const result: SyncResult = await googleCalendarService.sync(user.id);
-      const durationSeconds = (result.durationMs / 1000).toFixed(1);
+      const durationMs = Number.isFinite(result.durationMs)
+        ? result.durationMs
+        : 0;
+      const durationSeconds = (durationMs / 1000).toFixed(1);
       toast.success(
         `Successfully synced ${result.synced} events in ${durationSeconds}s${
           result.errors.length > 0

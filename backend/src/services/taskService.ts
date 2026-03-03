@@ -82,22 +82,46 @@ export class TaskService {
         );
       }
     } else {
-      // Single optimized query: get active schedule OR default schedule OR any schedule in one go
-      const { data: schedules, error: queryError } = await serviceRoleSupabase
-        .from('schedules')
-        .select('id, is_default')
-        .eq('user_id', input.user_id)
-        .order('is_default', { ascending: false })
-        .order('created_at', { ascending: true })
-        .limit(1);
+      // Fetch user's active schedule and all their schedules in parallel
+      const [{ data: userSettings }, { data: schedules, error: queryError }] =
+        await Promise.all([
+          serviceRoleSupabase
+            .from('user_settings')
+            .select('active_schedule_id')
+            .eq('user_id', input.user_id)
+            .single(),
+          serviceRoleSupabase
+            .from('schedules')
+            .select('id, is_default')
+            .eq('user_id', input.user_id)
+            .order('is_default', { ascending: false })
+            .order('created_at', { ascending: true }),
+        ]);
 
       if (queryError) {
         throw new Error(`Failed to fetch schedule: ${queryError.message}`);
       }
 
-      if (schedules && schedules.length > 0 && schedules[0]?.id) {
-        scheduleId = schedules[0].id;
-      } else {
+      // Prefer the user's active schedule
+      if (userSettings?.active_schedule_id) {
+        const activeSchedule = schedules?.find(
+          s => s.id === userSettings.active_schedule_id
+        );
+        if (activeSchedule) {
+          scheduleId = activeSchedule.id;
+        }
+      }
+
+      // Fall back to default or oldest schedule
+      if (!scheduleId) {
+        const fallback =
+          schedules?.find(s => s.is_default) ?? schedules?.[0];
+        if (fallback?.id) {
+          scheduleId = fallback.id;
+        }
+      }
+
+      if (!scheduleId) {
         // Create a default schedule for the user if none exists
         const { data: newSchedule, error: scheduleError } =
           await serviceRoleSupabase
@@ -116,7 +140,9 @@ export class TaskService {
 
         if (scheduleError || !newSchedule?.id) {
           throw new Error(
-            'No schedule found for user and could not create one'
+            `No schedule found for user and could not create one: ${
+              scheduleError?.message ?? 'unknown insert error'
+            }`
           );
         }
         scheduleId = newSchedule.id;
