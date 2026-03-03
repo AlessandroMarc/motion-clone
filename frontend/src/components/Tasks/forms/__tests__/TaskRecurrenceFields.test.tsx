@@ -55,7 +55,8 @@ describe('TaskRecurrenceFields', () => {
       delete (HTMLElement.prototype as any).setPointerCapture;
     }
     if (originalReleasePointerCapture !== undefined) {
-      HTMLElement.prototype.releasePointerCapture = originalReleasePointerCapture;
+      HTMLElement.prototype.releasePointerCapture =
+        originalReleasePointerCapture;
     } else {
       delete (HTMLElement.prototype as any).releasePointerCapture;
     }

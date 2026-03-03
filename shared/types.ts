@@ -41,11 +41,11 @@ interface Task {
   planned_duration_minutes: number;
   actual_duration_minutes: number;
   // Schedule association for task scheduling
-  schedule_id: string;
+  schedule_id?: string;
   // Recurring task fields
   is_recurring: boolean; // whether this task repeats
-  recurrence_pattern?: 'daily' | 'weekly' | 'monthly' | null; // frequency (required if is_recurring)
-  recurrence_interval?: number | null; // interval count, e.g., 2 for "every 2 weeks" (required if is_recurring, min: 1)
+  recurrence_pattern?: 'daily' | 'weekly' | 'monthly'; // frequency (required if is_recurring)
+  recurrence_interval?: number; // interval count, e.g., 2 for "every 2 weeks" (required if is_recurring, min: 1)
   next_generation_cutoff?: Date | null; // tracks how far into the future calendar events have been generated
 }
 

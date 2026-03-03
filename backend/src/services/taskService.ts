@@ -139,21 +139,25 @@ export class TaskService {
 
     // Set up recurrence fields
     const isRecurring = input.is_recurring ?? false;
-    
+
     // Validate recurrence fields when is_recurring is true
     if (isRecurring) {
       if (!input.recurrence_pattern) {
-        throw new Error('recurrence_pattern is required when is_recurring is true');
+        throw new Error(
+          'recurrence_pattern is required when is_recurring is true'
+        );
       }
       if (!['daily', 'weekly', 'monthly'].includes(input.recurrence_pattern)) {
-        throw new Error('recurrence_pattern must be one of: daily, weekly, monthly');
+        throw new Error(
+          'recurrence_pattern must be one of: daily, weekly, monthly'
+        );
       }
       const interval = input.recurrence_interval ?? 1;
       if (!Number.isInteger(interval) || interval <= 0) {
         throw new Error('recurrence_interval must be a positive integer');
       }
     }
-    
+
     const nextGenerationCutoff = isRecurring ? dueDateString : null;
 
     const client = authToken
@@ -307,16 +311,22 @@ export class TaskService {
       if (input.is_recurring) {
         // Validate recurrence fields when enabling recurring
         if (!input.recurrence_pattern) {
-          throw new Error('recurrence_pattern is required when is_recurring is true');
+          throw new Error(
+            'recurrence_pattern is required when is_recurring is true'
+          );
         }
-        if (!['daily', 'weekly', 'monthly'].includes(input.recurrence_pattern)) {
-          throw new Error('recurrence_pattern must be one of: daily, weekly, monthly');
+        if (
+          !['daily', 'weekly', 'monthly'].includes(input.recurrence_pattern)
+        ) {
+          throw new Error(
+            'recurrence_pattern must be one of: daily, weekly, monthly'
+          );
         }
         const interval = input.recurrence_interval ?? 1;
         if (!Number.isInteger(interval) || interval <= 0) {
           throw new Error('recurrence_interval must be a positive integer');
         }
-        
+
         updateData.recurrence_pattern = input.recurrence_pattern;
         updateData.recurrence_interval = interval;
         // Set next_generation_cutoff to due_date for new recurring tasks

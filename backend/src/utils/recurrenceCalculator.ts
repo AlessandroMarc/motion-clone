@@ -33,6 +33,8 @@ export function calculateNextOccurrence(
 
     case 'monthly': {
       const originalDate = date.getDate();
+      // Set to day 1 first to avoid overflow issues
+      next.setDate(1);
       next.setMonth(next.getMonth() + interval);
 
       // Handle month-end overflow: if the day doesn't exist in target month,

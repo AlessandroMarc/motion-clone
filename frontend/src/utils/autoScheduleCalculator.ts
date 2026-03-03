@@ -10,7 +10,6 @@ import {
   createConfigFromSchedule,
   prepareTaskEvents,
   sortTasksForScheduling,
-  type TaskSchedulingConfig,
 } from '@/utils/taskScheduler';
 
 const DEBUG = process.env.NODE_ENV === 'development';
@@ -121,7 +120,9 @@ export function calculateAutoSchedule(params: {
     const task = sortedTasks[i];
 
     // Use the schedule assigned to this task; fall back to the active schedule
-    const taskSchedule = scheduleMap.get(task.schedule_id) ?? activeSchedule;
+    const taskSchedule =
+      (task.schedule_id ? scheduleMap.get(task.schedule_id) : undefined) ??
+      activeSchedule;
     const taskConfig = createConfigFromSchedule(taskSchedule, eventDuration);
     const gapMs = (taskConfig.gapBetweenEventsMinutes ?? 5) * 60 * 1000;
 
