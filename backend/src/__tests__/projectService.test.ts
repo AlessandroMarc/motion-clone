@@ -54,18 +54,7 @@ describe('ProjectService', () => {
       mockClient.from.mockImplementation((_table: string) => {
         callCount++;
         if (callCount === 1) {
-          // First from('tasks').select().eq() - list tasks (returns some tasks)
-          return {
-            select: jest.fn().mockReturnValue({
-              // @ts-expect-error - jest mock typing limitation
-              eq: jest.fn().mockResolvedValue({
-                data: [{ id: 'task-1' }],
-                error: null,
-              } as any),
-            }),
-          } as any;
-        } else if (callCount === 2) {
-          // Second from('tasks').delete().eq() - tasks delete succeeds
+          // First from('tasks').delete().eq() - tasks delete succeeds
           return {
             delete: jest.fn().mockImplementation(() => {
               taskDeleteCallCount++;
@@ -76,7 +65,7 @@ describe('ProjectService', () => {
             }),
           } as any;
         } else {
-          // Third from('projects').delete().eq() - project delete succeeds
+          // Second from('projects').delete().eq() - project delete succeeds
           return {
             delete: jest.fn().mockImplementation(() => {
               projectDeleteCallCount++;
@@ -107,31 +96,16 @@ describe('ProjectService', () => {
 
     test('should throw an error if deleting tasks fails', async () => {
       // Arrange: tasks deletion fails
-      let callCount = 0;
       mockClient.from.mockImplementation(() => {
-        callCount++;
-        if (callCount === 1) {
-          // First from('tasks').select().eq() - list tasks (returns some tasks)
-          return {
-            select: jest.fn().mockReturnValue({
-              // @ts-expect-error - jest mock typing limitation
-              eq: jest.fn().mockResolvedValue({
-                data: [{ id: 'task-1' }],
-                error: null,
-              } as any),
-            }),
-          } as any;
-        } else {
-          // Second from('tasks').delete().eq() - tasks delete fails
-          return {
-            delete: jest.fn().mockReturnValue({
-              // @ts-expect-error - jest mock typing limitation
-              eq: jest.fn().mockResolvedValue({
-                error: { message: 'Task deletion failed' },
-              } as any),
-            }),
-          } as any;
-        }
+        // First (and only) from('tasks').delete().eq() - tasks delete fails
+        return {
+          delete: jest.fn().mockReturnValue({
+            // @ts-expect-error - jest mock typing limitation
+            eq: jest.fn().mockResolvedValue({
+              error: { message: 'Task deletion failed' },
+            } as any),
+          }),
+        } as any;
       });
 
       // Act & Assert
@@ -149,18 +123,7 @@ describe('ProjectService', () => {
       mockClient.from.mockImplementation((_table: string) => {
         callCount++;
         if (callCount === 1) {
-          // First from('tasks').select().eq() - list tasks (returns some tasks)
-          return {
-            select: jest.fn().mockReturnValue({
-              // @ts-expect-error - jest mock typing limitation
-              eq: jest.fn().mockResolvedValue({
-                data: [{ id: 'task-1' }],
-                error: null,
-              } as any),
-            }),
-          } as any;
-        } else if (callCount === 2) {
-          // Second from('tasks').delete().eq() - tasks delete succeeds
+          // First from('tasks').delete().eq() - tasks delete succeeds
           return {
             delete: jest.fn().mockReturnValue({
               // @ts-expect-error - jest mock typing limitation
@@ -168,7 +131,7 @@ describe('ProjectService', () => {
             }),
           } as any;
         } else {
-          // Third from('projects').delete().eq() - project delete fails
+          // Second from('projects').delete().eq() - project delete fails
           return {
             delete: jest.fn().mockReturnValue({
               // @ts-expect-error - jest mock typing limitation

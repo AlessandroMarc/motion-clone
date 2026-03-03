@@ -22,7 +22,7 @@ describe('autoSchedule Integration - Recurring Tasks', () => {
     recurrence_interval: 1,
     next_generation_cutoff: new Date('2026-03-15'),
     dependencies: [],
-    blocked_by: [],
+    blockedBy: [],
     created_at: new Date(),
     updated_at: new Date(),
   };
@@ -40,7 +40,7 @@ describe('autoSchedule Integration - Recurring Tasks', () => {
     schedule_id: 'schedule-1',
     is_recurring: false,
     dependencies: [],
-    blocked_by: [],
+    blockedBy: [],
     created_at: new Date(),
     updated_at: new Date(),
   };
@@ -335,7 +335,7 @@ describe('autoSchedule Integration - Recurring Tasks', () => {
     it('should handle task with no due_date', () => {
       const task: Task = {
         ...mockRecurringTask,
-        due_date: undefined,
+        due_date: null,
       };
 
       const syntheticEvents = expandRecurringTasks([task], []);
