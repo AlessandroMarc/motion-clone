@@ -31,6 +31,8 @@ export function TaskScheduleField({
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
+    let cancelled = false;
+
     const fetchSchedules = async () => {
       if (!user?.id) {
         setSchedules([]);
@@ -40,15 +42,25 @@ export function TaskScheduleField({
       setIsLoading(true);
       try {
         const userSchedules = await userSettingsService.getUserSchedules(user.id);
-        setSchedules(userSchedules);
+        if (!cancelled) {
+          setSchedules(userSchedules);
+        }
       } catch (error) {
         console.error('Failed to fetch schedules:', error);
+        if (!cancelled) {
+          setSchedules([]);
+        }
       } finally {
-        setIsLoading(false);
+        if (!cancelled) {
+          setIsLoading(false);
+        }
       }
     };
 
     fetchSchedules();
+    return () => {
+      cancelled = true;
+    };
   }, [user?.id]);
 
   useEffect(() => {
@@ -89,7 +101,7 @@ export function TaskScheduleField({
           })
         }
       >
-        <SelectTrigger>
+        <SelectTrigger id={id}>
           <SelectValue placeholder="Select schedule" />
         </SelectTrigger>
         <SelectContent>

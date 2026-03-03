@@ -63,7 +63,19 @@ export class TaskService {
 
     // Resolve schedule_id: use provided value, then fall back to user's active/default schedule
     let scheduleId = input.schedule_id;
-    if (!scheduleId) {
+    if (scheduleId) {
+      // Verify the provided schedule belongs to this user before using it
+      const { data: ownedSchedule } = await serviceRoleSupabase
+        .from('schedules')
+        .select('id')
+        .eq('id', scheduleId)
+        .eq('user_id', input.user_id)
+        .single();
+
+      if (!ownedSchedule) {
+        throw new Error('Unauthorized: schedule does not belong to the current user');
+      }
+    } else {
       // 1. Try user_settings.active_schedule_id
       const { data: settings } = await serviceRoleSupabase
         .from('user_settings')
@@ -129,7 +141,6 @@ export class TaskService {
           description: input.description,
           due_date: dueDateString,
           priority: input.priority,
-          schedule_id: input.schedule_id,
           status,
           dependencies: input.dependencies || [],
           blocked_by: input.blockedBy || [],
@@ -232,8 +243,23 @@ export class TaskService {
     if (input.dependencies !== undefined)
       updateData.dependencies = input.dependencies;
     if (input.blockedBy !== undefined) updateData.blocked_by = input.blockedBy;
-    if (input.schedule_id !== undefined)
+    if (input.schedule_id !== undefined) {
+      if (input.schedule_id !== null) {
+        // Verify the provided schedule belongs to this task's owner
+        const userId = input.user_id ?? existingTask.user_id;
+        const { data: ownedSchedule } = await serviceRoleSupabase
+          .from('schedules')
+          .select('id')
+          .eq('id', input.schedule_id)
+          .eq('user_id', userId)
+          .single();
+
+        if (!ownedSchedule) {
+          throw new Error('Unauthorized: schedule does not belong to the current user');
+        }
+      }
       updateData.schedule_id = input.schedule_id;
+    }
     if (input.project_id !== undefined)
       updateData.project_id = input.project_id;
 

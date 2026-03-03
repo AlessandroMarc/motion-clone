@@ -186,13 +186,17 @@ export class UserSettingsService {
     }
 
     // Determine a fallback schedule (prefer the default, otherwise first non-deleted one)
-    const { data: fallbackSchedules } = await client
+    const { data: fallbackSchedules, error: fallbackError } = await client
       .from('schedules')
       .select('id, is_default')
       .eq('user_id', userId)
       .neq('id', scheduleId)
       .order('is_default', { ascending: false })
       .order('created_at', { ascending: true });
+
+    if (fallbackError) {
+      throw new Error(`Failed to resolve fallback schedule: ${fallbackError.message}`);
+    }
 
     const fallbackId = fallbackSchedules?.[0]?.id;
     if (!fallbackId) {
@@ -202,24 +206,35 @@ export class UserSettingsService {
     }
 
     // Reassign any tasks referencing the doomed schedule
-    await client
+    const { error: reassignError } = await client
       .from('tasks')
       .update({ schedule_id: fallbackId, updated_at: new Date().toISOString() })
       .eq('schedule_id', scheduleId)
       .eq('user_id', userId);
 
+    if (reassignError) {
+      throw new Error(`Failed to reassign tasks: ${reassignError.message}`);
+    }
+
     // If the deleted schedule was the active one, switch to the fallback
-    const { data: settings } = await client
+    const { data: settings, error: settingsError } = await client
       .from('user_settings')
       .select('active_schedule_id')
       .eq('user_id', userId)
       .single();
 
+    if (settingsError && settingsError.code !== 'PGRST116') {
+      throw new Error(`Failed to read user settings: ${settingsError.message}`);
+    }
+
     if (settings?.active_schedule_id === scheduleId) {
-      await client
+      const { error: updateSettingsError } = await client
         .from('user_settings')
         .update({ active_schedule_id: fallbackId })
         .eq('user_id', userId);
+      if (updateSettingsError) {
+        throw new Error(`Failed to update active schedule: ${updateSettingsError.message}`);
+      }
     }
 
     // Delete the schedule

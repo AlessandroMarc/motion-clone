@@ -17,12 +17,18 @@ export function toOptionalDate(value: unknown): Date | null {
 }
 
 export function toTask(raw: UnknownRecord): Task {
+  if (typeof raw.schedule_id !== 'string' || raw.schedule_id.length === 0) {
+    throw new Error(
+      `Invalid task payload: schedule_id must be a non-empty string, got ${JSON.stringify(raw.schedule_id)}`
+    );
+  }
+
   return {
     ...raw,
     due_date: toOptionalDate(raw.due_date),
     created_at: toDate(raw.created_at),
     updated_at: toDate(raw.updated_at),
-    schedule_id: typeof raw.schedule_id === 'string' ? raw.schedule_id : '',
+    schedule_id: raw.schedule_id,
     planned_duration_minutes: raw.planned_duration_minutes,
     actual_duration_minutes: raw.actual_duration_minutes,
     blockedBy: raw.blocked_by || [],

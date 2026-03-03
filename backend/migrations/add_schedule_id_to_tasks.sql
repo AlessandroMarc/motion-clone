@@ -15,7 +15,7 @@ CREATE TABLE IF NOT EXISTS schedules (
 
 -- Indexes
 CREATE INDEX IF NOT EXISTS idx_schedules_user_id ON schedules(user_id);
-CREATE INDEX IF NOT EXISTS idx_schedules_is_default ON schedules(is_default);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_schedules_user_default ON schedules(user_id) WHERE is_default = true;
 
 -- RLS
 ALTER TABLE schedules ENABLE ROW LEVEL SECURITY;
@@ -90,7 +90,7 @@ FROM tasks t
 WHERE NOT EXISTS (
     SELECT 1 FROM schedules s WHERE s.user_id = t.user_id
 )
-ON CONFLICT DO NOTHING;
+ON CONFLICT (user_id) WHERE is_default = true DO NOTHING;
 
 -- 4b. Set schedule_id on tasks that don't have one yet.
 UPDATE tasks
