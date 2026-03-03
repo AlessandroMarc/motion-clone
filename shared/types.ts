@@ -40,6 +40,8 @@ interface Task {
   updated_at: Date;
   planned_duration_minutes: number;
   actual_duration_minutes: number;
+  // Schedule association for task scheduling
+  schedule_id: string;
   // Recurring task fields
   is_recurring: boolean; // whether this task repeats
   recurrence_pattern?: 'daily' | 'weekly' | 'monthly'; // frequency (required if is_recurring)

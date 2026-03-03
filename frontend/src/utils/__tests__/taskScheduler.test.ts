@@ -194,11 +194,12 @@ describe('taskScheduler', () => {
         defaultDaysWithoutDeadline: 7,
       };
 
-      const events = distributeEvents(task, 180, config, []);
+      const startFrom = new Date('2024-01-02T09:00:00');
+      const events = distributeEvents(task, 180, config, [], startFrom);
 
       expect(events.length).toBe(3);
       // Events should be within default range
-      const maxDate = new Date();
+      const maxDate = new Date(startFrom);
       maxDate.setDate(maxDate.getDate() + 7);
       events.forEach(event => {
         expect(event.start_time.getTime()).toBeLessThanOrEqual(
@@ -415,9 +416,16 @@ describe('taskScheduler', () => {
       });
       const existingEvents: CalendarEventTask[] = [];
       const config = { ...DEFAULT_CONFIG, eventDurationMinutes: 60 };
+      const startFrom = new Date('2024-01-01T09:00:00');
 
-      const result = prepareTaskEvents(task, existingEvents, config, []);
-
+      const result = prepareTaskEvents(
+        task,
+        existingEvents,
+        config,
+        [],
+        startFrom
+      );
+      
       expect(result.events.length).toBe(2);
       // Check if any violations exist (depends on distribution logic)
       expect(Array.isArray(result.violations)).toBe(true);
@@ -429,12 +437,14 @@ describe('taskScheduler', () => {
       const end = new Date('2024-01-01T10:00:00');
       const existingEvents = [createMockEvent(start, end, task.id)];
       const config = { ...DEFAULT_CONFIG, eventDurationMinutes: 60 };
+      const startFrom = new Date('2024-01-02T09:00:00');
 
       const result = prepareTaskEvents(
         task,
         existingEvents,
         config,
-        existingEvents
+        existingEvents,
+        startFrom
       );
 
       expect(result.events.length).toBe(2); // 180 - 60 = 120 minutes remaining

@@ -176,13 +176,7 @@ class UserSettingsService {
     );
 
     if (!response.success || !response.data) {
-      // Return default status if not found
-      return {
-        completed: false,
-        step: null,
-        started_at: null,
-        completed_at: null,
-      };
+      throw new Error(response.error || 'Failed to retrieve onboarding status');
     }
 
     return {

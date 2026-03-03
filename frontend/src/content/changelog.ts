@@ -15,6 +15,35 @@ export interface ChangelogEntry {
 
 export const changelogEntries: ChangelogEntry[] = [
   {
+    version: '1.4.0',
+    date: 'March 2026',
+    title: 'Multiple Schedules',
+    description:
+      'Assign tasks to dedicated schedules and let the auto-scheduler respect per-task working hours.',
+    items: [
+      {
+        type: 'new',
+        text: 'Schedule selector in the task form — assign any task to a specific schedule at creation or edit time.',
+      },
+      {
+        type: 'new',
+        text: 'Auto-scheduling now respects per-task schedules and prefetches schedule data to reduce API round-trips.',
+      },
+      {
+        type: 'improved',
+        text: 'Deleting a schedule automatically reassigns its tasks to a fallback schedule and updates the active schedule.',
+      },
+      {
+        type: 'improved',
+        text: 'Rate-limit (429) errors now display a human-readable "retry after N seconds" message.',
+      },
+      {
+        type: 'improved',
+        text: 'API rate limit raised to accommodate schedule-aware scheduling requests.',
+      },
+    ],
+  },
+  {
     version: '1.3.0',
     date: 'February 2026',
     title: 'Drag-to-Reschedule & Calendar Polish',

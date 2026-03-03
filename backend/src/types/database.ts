@@ -39,6 +39,7 @@ export interface UpdateTaskInput {
   description?: string;
   due_date?: Date | null;
   priority?: 'low' | 'medium' | 'high';
+  schedule_id?: string | null;
   dependencies?: string[];
   blockedBy?: string[];
   project_id?: string;

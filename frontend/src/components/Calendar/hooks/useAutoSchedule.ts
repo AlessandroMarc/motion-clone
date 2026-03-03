@@ -8,6 +8,7 @@ import {
 } from '@/types';
 import { taskService } from '@/services/taskService';
 import { calendarService } from '@/services/calendarService';
+import { userSettingsService } from '@/services/userSettingsService';
 import { toast } from 'sonner';
 import { logger } from '@/lib/logger';
 import { calculateAutoSchedule } from '@/utils/autoScheduleCalculator';
@@ -17,7 +18,7 @@ import { expandRecurringTasks } from '@/utils/recurrenceCalculator';
 // Constants
 // ---------------------------------------------------------------------------
 const DEBOUNCE_MS = 1_000;
-const THROTTLE_MS = 5_000;
+const THROTTLE_MS = 30_000;
 const DEFAULT_EVENT_DURATION = 60;
 
 // ---------------------------------------------------------------------------
@@ -95,6 +96,7 @@ export function useAutoSchedule(
 ) {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [tasksMap, setTasksMap] = useState<Map<string, Task>>(new Map());
+  const [schedules, setSchedules] = useState<Schedule[]>([]);
   const [isRefreshing, setIsRefreshing] = useState(false);
 
   // Single guard: prevents concurrent scheduling runs
@@ -139,9 +141,22 @@ export function useAutoSchedule(
     }
   }, []);
 
+  const loadSchedules = useCallback(async (): Promise<Schedule[]> => {
+    if (!user?.id) return [];
+    try {
+      const allSchedules = await userSettingsService.getUserSchedules(user.id);
+      setSchedules(allSchedules);
+      return allSchedules;
+    } catch (err) {
+      logger.error('Failed to fetch schedules for auto-scheduling:', err);
+      return [];
+    }
+  }, [user?.id]);
+
   useEffect(() => {
     loadTasks();
-  }, [loadTasks]);
+    loadSchedules();
+  }, [loadTasks, loadSchedules]);
 
   // -----------------------------------------------------------------------
   // applySchedule — mutates the backend (create / delete events)
@@ -157,19 +172,15 @@ export function useAutoSchedule(
         linked_task_id: string;
         user_id: string;
       }>,
-      currentTasks: Task[]
+      currentTasks: Task[],
+      // Pre-computed from the same fetch used in computeProposedSchedule — avoids a
+      // redundant GET /calendar-events request inside applySchedule.
+      prefetchedTaskEvents: CalendarEventTask[]
     ) => {
       if (!user) return;
 
-      // Refresh events to get the latest server state
-      const latestEvents = await refreshEventsRef.current();
-
-      const existingTaskEvents = latestEvents.filter(
-        event => isCalendarEventTask(event) && !event.completed_at
-      ) as CalendarEventTask[];
-
       const existingByKey = new Map(
-        existingTaskEvents.map(event => [
+        prefetchedTaskEvents.map(event => [
           eventKey(event.linked_task_id, event.start_time, event.end_time),
           event,
         ])
@@ -303,6 +314,7 @@ export function useAutoSchedule(
         allCalendarEvents: eventsToUse,
         activeSchedule: activeSchedule || null,
         eventDuration: DEFAULT_EVENT_DURATION,
+        schedules,
       });
 
       const eventsToCreate = taskEvents.flatMap(({ task, events: evts }) =>
@@ -318,7 +330,7 @@ export function useAutoSchedule(
 
       return { existingTaskEvents, eventsToCreate, allTasks: tasksToUse };
     },
-    [user, activeSchedule]
+    [user, activeSchedule, schedules]
   );
 
   // -----------------------------------------------------------------------
@@ -362,9 +374,10 @@ export function useAutoSchedule(
           return;
         }
 
-        // 4. Apply
+        // 4. Apply — pass in already-fetched existingTaskEvents to avoid a
+        //    redundant GET /calendar-events inside applySchedule.
         logger.info('Auto-schedule: Applying new schedule...');
-        await applySchedule(eventsToCreate, allTasks);
+        await applySchedule(eventsToCreate, allTasks, existingTaskEvents);
       } catch (err) {
         logger.error('Auto-schedule run failed:', err);
         toast.error('Failed to schedule tasks');
@@ -495,7 +508,7 @@ export function useAutoSchedule(
       if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
-  }, [user, isInitialSyncComplete, tasksFingerprint, events.length]);
+  }, [user, isInitialSyncComplete, tasksFingerprint, events.length, schedules.length]);
 
   return {
     tasksMap,

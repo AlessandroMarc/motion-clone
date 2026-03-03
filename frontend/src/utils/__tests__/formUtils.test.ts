@@ -9,6 +9,7 @@ const makeFormData = (overrides: Record<string, unknown> = {}) => ({
   title: 'Test Task',
   description: 'A description',
   priority: 'medium' as const,
+  scheduleId: 'schedule-1',
   project_id: null as string | null | undefined,
   planned_duration_minutes: 60,
   actual_duration_minutes: 0,
@@ -20,6 +21,14 @@ describe('transformFormDataToTask', () => {
   it('sets user_id from the userId param', () => {
     const result = transformFormDataToTask(makeFormData(), 'user-42');
     expect(result.user_id).toBe('user-42');
+  });
+
+  it('maps scheduleId to schedule_id', () => {
+    const result = transformFormDataToTask(
+      makeFormData({ scheduleId: 'sched-42' }),
+      'u1'
+    );
+    expect(result.schedule_id).toBe('sched-42');
   });
 
   it('uses the title and description from form data', () => {

@@ -29,10 +29,11 @@ export const taskSchema = z
       .number()
       .min(0, 'Actual duration cannot be negative'),
     blockedBy: z.array(z.string()).optional(),
+    scheduleId: z.string().min(1, 'Schedule is required'),
     // Recurring task fields
     is_recurring: z.boolean(),
     recurrence_pattern: z.enum(['daily', 'weekly', 'monthly']).optional(),
-    recurrence_interval: z.number().min(1, 'Interval must be at least 1'),
+    recurrence_interval: z.number().min(1, 'Interval must be at least 1')
   })
   .superRefine((data, ctx) => {
     if (data.actual_duration_minutes > data.planned_duration_minutes) {
@@ -88,6 +89,7 @@ export function useTaskForm(onTaskCreate: TaskCreateFormProps['onTaskCreate']) {
       planned_duration_minutes: 60,
       actual_duration_minutes: 0,
       blockedBy: [],
+      scheduleId: '',
       is_recurring: false,
       recurrence_pattern: undefined,
       recurrence_interval: 1,
