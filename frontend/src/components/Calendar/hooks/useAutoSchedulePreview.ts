@@ -11,6 +11,7 @@ export function useAutoSchedulePreview(params: {
   allCalendarEvents: CalendarEventUnion[];
   activeSchedule: Schedule | null;
   eventDuration: number;
+  schedules?: Schedule[];
 }) {
   const {
     tasks,
@@ -18,6 +19,7 @@ export function useAutoSchedulePreview(params: {
     allCalendarEvents,
     activeSchedule,
     eventDuration,
+    schedules = [],
   } = params;
 
   return useMemo(() => {
@@ -27,6 +29,7 @@ export function useAutoSchedulePreview(params: {
       allCalendarEvents,
       activeSchedule,
       eventDuration,
+      schedules,
     });
-  }, [tasks, existingEvents, allCalendarEvents, activeSchedule, eventDuration]);
+  }, [tasks, existingEvents, allCalendarEvents, activeSchedule, eventDuration, schedules]);
 }

@@ -48,13 +48,8 @@ export function OnboardingProvider({
       setStatus(onboardingStatus);
     } catch (error) {
       console.error('Failed to load onboarding status:', error);
-      // Set default status on error
-      setStatus({
-        completed: false,
-        step: null,
-        started_at: null,
-        completed_at: null,
-      });
+      // Keep status as null so onboarding is not triggered on fetch failure (e.g. 404)
+      setStatus(null);
     } finally {
       setLoading(false);
     }

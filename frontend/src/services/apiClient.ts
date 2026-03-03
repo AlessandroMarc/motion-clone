@@ -54,6 +54,11 @@ export async function request<T>(
     });
 
     if (!response.ok) {
+      if (response.status === 429) {
+        const retryAfter = response.headers.get('Retry-After');
+        const wait = retryAfter ? ` Retry after ${retryAfter}s.` : '';
+        throw new Error(`429: Too many requests — rate limit exceeded.${wait}`);
+      }
       const bodyText = await response.text().catch(() => '');
       const details = bodyText ? `, message: ${bodyText}` : '';
       throw new Error(

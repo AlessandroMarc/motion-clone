@@ -214,7 +214,20 @@ export function WeekCalendarContainer({
   }, [sentinelHour]);
 
   if (loading) return <CalendarSkeleton />;
-  if (error) return <ErrorState message={error} onRetry={refreshEvents} />;
+  if (error) {
+    if (error.startsWith('429:')) {
+      return (
+        <div className="flex items-start gap-3 m-4 p-4 rounded-lg bg-yellow-50 border border-yellow-300 text-yellow-800 dark:bg-yellow-900/20 dark:border-yellow-700 dark:text-yellow-300">
+          <span className="text-xl leading-none mt-0.5">⚠️</span>
+          <div>
+            <p className="font-semibold text-sm">Rate limit reached (429)</p>
+            <p className="text-sm mt-1">{error.replace(/^429:\s*/, '')}</p>
+          </div>
+        </div>
+      );
+    }
+    return <ErrorState message={error} onRetry={refreshEvents} />;
+  }
 
   // Mobile: zen-style vertical scroll of consecutive days (not only today)
   if (isMobile) {
