@@ -25,6 +25,7 @@ import { TaskProjectField } from './TaskProjectField';
 import { TaskScheduleField } from './TaskScheduleField';
 import { TaskBlockedByField } from './TaskBlockedByField';
 import { TaskDurationFields } from './TaskDurationFields';
+import { TaskRecurrenceFields } from './TaskRecurrenceFields';
 import { TaskFormActions } from './TaskFormActions';
 import { formatEventTime } from '@/utils/calendarUtils';
 import posthog from 'posthog-js';
@@ -46,6 +47,10 @@ const emptyFormValues: TaskFormData = {
   actual_duration_minutes: 0,
   blockedBy: [],
   scheduleId: '',
+  is_recurring: false,
+  recurrence_pattern: undefined,
+  recurrence_interval: 1,
+  recurrenceStartDate: undefined,
 };
 
 const formatDateOnly = (date: Date): string => {
@@ -65,6 +70,12 @@ const mapTaskToFormValues = (task: Task): TaskFormData => ({
   actual_duration_minutes: task.actual_duration_minutes ?? 0,
   blockedBy: task.blockedBy || [],
   scheduleId: task.schedule_id ?? '',
+  is_recurring: task.is_recurring ?? false,
+  recurrence_pattern: task.recurrence_pattern,
+  recurrence_interval: task.recurrence_interval ?? 1,
+  recurrenceStartDate: task.recurrence_start_date
+    ? formatDateOnly(new Date(task.recurrence_start_date))
+    : undefined,
 });
 
 export function TaskEditDialogForm({
@@ -98,6 +109,10 @@ export function TaskEditDialogForm({
   } = form;
 
   const priority = watch('priority');
+  const isRecurring = watch('is_recurring');
+  const recurrencePattern = watch('recurrence_pattern');
+  const recurrenceInterval = watch('recurrence_interval');
+  const recurrenceStartDate = watch('recurrenceStartDate');
 
   useEffect(() => {
     reset(initialValues);
@@ -183,6 +198,13 @@ export function TaskEditDialogForm({
         actualDurationMinutes: data.actual_duration_minutes ?? 0,
         blockedBy: data.blockedBy || [],
         scheduleId: data.scheduleId,
+        isRecurring: data.is_recurring,
+        recurrencePattern: data.is_recurring ? data.recurrence_pattern : null,
+        recurrenceInterval: data.is_recurring ? data.recurrence_interval : null,
+        recurrenceStartDate:
+          data.is_recurring && data.recurrenceStartDate
+            ? new Date(data.recurrenceStartDate)
+            : null,
       });
 
       onTaskUpdated(updatedTask);
@@ -218,7 +240,7 @@ export function TaskEditDialogForm({
 
   return (
     <Dialog open={open && !!task} onOpenChange={handleDialogOpenChange}>
-      <DialogContent className="sm:max-w-[500px] overflow-y-auto">
+      <DialogContent className="sm:max-w-[500px] max-h-[90vh] flex flex-col overflow-hidden">
         <DialogHeader>
           <DialogTitle>Edit Task</DialogTitle>
           {task && (
@@ -230,11 +252,16 @@ export function TaskEditDialogForm({
         </DialogHeader>
 
         <FormProvider {...form}>
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+          <form
+            onSubmit={handleSubmit(onSubmit)}
+            className="space-y-6 overflow-y-auto flex-1 pr-1"
+          >
             <div className="space-y-4">
               <TaskTitleField register={register} errors={errors} />
               <TaskDescriptionField register={register} errors={errors} />
-              <TaskDueDateField register={register} errors={errors} />
+              {!isRecurring && (
+                <TaskDueDateField register={register} errors={errors} />
+              )}
               <TaskPriorityField
                 value={priority}
                 onValueChange={handlePriorityChange}
@@ -243,10 +270,56 @@ export function TaskEditDialogForm({
               <TaskProjectField errors={errors} />
               <TaskScheduleField errors={errors} />
               <TaskBlockedByField errors={errors} currentTaskId={task?.id} />
-              <TaskDurationFields register={register} errors={errors} />
+              <TaskDurationFields
+                register={register}
+                errors={errors}
+                hideActualDuration={isRecurring}
+              />
+              <TaskRecurrenceFields
+                isRecurring={isRecurring}
+                onIsRecurringChange={checked => {
+                  setValue('is_recurring', checked, {
+                    shouldDirty: true,
+                    shouldValidate: true,
+                  });
+                  if (checked) {
+                    // Clear conflicting fields when enabling recurrence
+                    setValue('dueDate', undefined, {
+                      shouldDirty: true,
+                      shouldValidate: true,
+                    });
+                    setValue('actual_duration_minutes', 0, {
+                      shouldDirty: true,
+                      shouldValidate: true,
+                    });
+                  }
+                }}
+                recurrencePattern={recurrencePattern}
+                onPatternChange={value =>
+                  setValue('recurrence_pattern', value, {
+                    shouldDirty: true,
+                    shouldValidate: true,
+                  })
+                }
+                recurrenceInterval={recurrenceInterval}
+                onIntervalChange={value =>
+                  setValue('recurrence_interval', value, {
+                    shouldDirty: true,
+                    shouldValidate: true,
+                  })
+                }
+                recurrenceStartDate={recurrenceStartDate}
+                onRecurrenceStartDateChange={value =>
+                  setValue('recurrenceStartDate', value, {
+                    shouldDirty: true,
+                    shouldValidate: true,
+                  })
+                }
+                errors={errors}
+              />
             </div>
 
-            <div className="space-y-3 max-h-[10vh] overflow-y-auto">
+            <div className="space-y-3">
               <div className="flex items-center justify-between">
                 <h3 className="text-sm font-medium">
                   {!areEventsLoading && !eventsError && linkedEvents.length > 0
@@ -271,7 +344,7 @@ export function TaskEditDialogForm({
                   </p>
                 )}
               {linkedEvents.length > 0 && (
-                <ul className="space-y-2 max-h-[300px] overflow-y-auto pr-2">
+                <ul className="space-y-2 max-h-[200px] overflow-y-auto pr-2">
                   {linkedEvents.map(event => (
                     <li
                       key={event.id}

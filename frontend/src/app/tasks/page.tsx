@@ -29,6 +29,10 @@ export default function TasksPage() {
         project_id: taskData.project_id,
         plannedDurationMinutes: taskData.planned_duration_minutes,
         actualDurationMinutes: taskData.actual_duration_minutes,
+        isRecurring: taskData.is_recurring,
+        recurrencePattern: taskData.recurrence_pattern,
+        recurrenceInterval: taskData.recurrence_interval,
+        recurrenceStartDate: taskData.recurrence_start_date,
       });
       setRefreshTrigger(prev => prev + 1);
     } catch (error) {

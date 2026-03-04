@@ -6,7 +6,7 @@ import {
   type CalendarEventUnion,
   type Task,
 } from '@/types';
-import { CalendarHeader } from './CalendarHeader';
+import { CalendarHeader, CalendarLegend } from './CalendarHeader';
 import WeekScrollableGrid from './WeekScrollableGrid';
 import CalendarEditDialog from './CalendarEditDialog';
 import { DeadlineViolationsBar } from './DeadlineViolationsBar';
@@ -139,6 +139,8 @@ export function WeekCalendarView({
         onPreviousDay={isMobile ? onPreviousDay : undefined}
         onNextDay={isMobile ? onNextDay : undefined}
       />
+
+      <CalendarLegend />
 
       <WeekScrollableGrid
         weekDates={displayDates}

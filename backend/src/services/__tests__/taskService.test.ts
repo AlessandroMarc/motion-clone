@@ -25,6 +25,7 @@ const { TaskService } = await import('../taskService.js');
 
 const makeTask = (overrides: Partial<Task> = {}): Task => {
   const base: Omit<Task, 'project_id'> = {
+    is_recurring: false,
     id: 'task-1',
     title: 'Test task',
     description: 'desc',
@@ -322,27 +323,93 @@ describe('TaskService', () => {
 
   // ─── deleteTask ──────────────────────────────────────────────────────────────
   describe('deleteTask', () => {
-    test('should delete a task and return true', async () => {
-      // delete().eq() is the terminal chain for deleteTask
-      const eqMock = jest.fn() as any;
-      eqMock.mockResolvedValue({ error: null });
-      mockClient.delete.mockReturnValue({ eq: eqMock });
+    test('should delete related calendar events before deleting the task', async () => {
+      // Set up calendar event deletion mock
+      const calendarEqMock = jest.fn() as any;
+      calendarEqMock.mockResolvedValue({ error: null });
+      const calendarDeleteMock = jest.fn().mockReturnValue({
+        eq: calendarEqMock,
+      });
+
+      // Set up task deletion mock
+      const taskEqMock = jest.fn() as any;
+      taskEqMock.mockResolvedValue({ error: null });
+      const taskDeleteMock = jest.fn().mockReturnValue({ eq: taskEqMock });
+
+      // Set up mockClient.from to return different delete mocks based on table name
+      mockClient.from.mockImplementation((tableName: string) => {
+        if (tableName === 'calendar_events') {
+          return { delete: calendarDeleteMock };
+        }
+        if (tableName === 'tasks') {
+          return { delete: taskDeleteMock };
+        }
+        return mockClient;
+      });
 
       const result = await service.deleteTask('task-1', 'token');
 
+      // Verify calendar events were deleted first
+      expect(mockClient.from).toHaveBeenCalledWith('calendar_events');
+      expect(calendarDeleteMock).toHaveBeenCalled();
+      expect(calendarEqMock).toHaveBeenCalledWith('linked_task_id', 'task-1');
+
+      // Verify task was deleted after
       expect(mockClient.from).toHaveBeenCalledWith('tasks');
-      expect(mockClient.delete).toHaveBeenCalled();
-      expect(eqMock).toHaveBeenCalledWith('id', 'task-1');
+      expect(taskDeleteMock).toHaveBeenCalled();
+      expect(taskEqMock).toHaveBeenCalledWith('id', 'task-1');
+
       expect(result).toBe(true);
     });
 
-    test('should throw on database error', async () => {
-      const eqMock = jest.fn() as any;
-      eqMock.mockResolvedValue({ error: { message: 'Delete failed' } });
-      mockClient.delete.mockReturnValue({ eq: eqMock });
+    test('should throw if calendar event deletion fails', async () => {
+      const calendarEqMock = jest.fn() as any;
+      calendarEqMock.mockResolvedValue({
+        error: { message: 'Calendar delete failed' },
+      });
+      const calendarDeleteMock = jest.fn().mockReturnValue({
+        eq: calendarEqMock,
+      });
+
+      mockClient.from.mockImplementation((tableName: string) => {
+        if (tableName === 'calendar_events') {
+          return { delete: calendarDeleteMock };
+        }
+        return mockClient;
+      });
 
       await expect(service.deleteTask('task-1')).rejects.toThrow(
-        'Failed to delete task: Delete failed'
+        'Failed to delete related calendar events: Calendar delete failed'
+      );
+    });
+
+    test('should throw if task deletion fails after calendar events are deleted', async () => {
+      // Set up calendar event deletion mock (succeeds)
+      const calendarEqMock = jest.fn() as any;
+      calendarEqMock.mockResolvedValue({ error: null });
+      const calendarDeleteMock = jest.fn().mockReturnValue({
+        eq: calendarEqMock,
+      });
+
+      // Set up task deletion mock (fails)
+      const taskEqMock = jest.fn() as any;
+      taskEqMock.mockResolvedValue({
+        error: { message: 'Task delete failed' },
+      });
+      const taskDeleteMock = jest.fn().mockReturnValue({ eq: taskEqMock });
+
+      mockClient.from.mockImplementation((tableName: string) => {
+        if (tableName === 'calendar_events') {
+          return { delete: calendarDeleteMock };
+        }
+        if (tableName === 'tasks') {
+          return { delete: taskDeleteMock };
+        }
+        return mockClient;
+      });
+
+      await expect(service.deleteTask('task-1')).rejects.toThrow(
+        'Failed to delete task: Task delete failed'
       );
     });
   });

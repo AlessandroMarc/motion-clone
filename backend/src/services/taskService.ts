@@ -16,6 +16,28 @@ function normalizeToMidnight(date: Date | string): string {
   return normalized.toISOString();
 }
 
+/**
+ * Extract a plain YYYY-MM-DD string from a Date or string value.
+ * Used for Supabase DATE columns (due_date, recurrence_start_date) so the
+ * stored value matches the user's local calendar date regardless of timezone.
+ *
+ * If the input is already "YYYY-MM-DD" it is returned as-is.
+ * If the input is a full ISO timestamp or Date object, it extracts the local date parts.
+ */
+function toDateOnly(value: Date | string): string {
+  if (typeof value === 'string') {
+    // Already a plain date string — pass through
+    const dateOnlyMatch = /^\d{4}-\d{2}-\d{2}$/.exec(value);
+    if (dateOnlyMatch) return value;
+  }
+  // Full ISO timestamp or Date object — extract local date parts
+  const d = typeof value === 'string' ? new Date(value) : value;
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+
 export class TaskService {
   private determineStatus(
     plannedDuration: number | null | undefined,
@@ -45,9 +67,10 @@ export class TaskService {
   // Create a new task
   async createTask(input: CreateTaskInput, authToken?: string): Promise<Task> {
     const startTime = Date.now();
+    const isRecurring = input.is_recurring ?? false;
     const rawPlanned = input.planned_duration_minutes;
     const normalizedPlanned = rawPlanned < 0 ? 0 : rawPlanned;
-    const rawActual = input.actual_duration_minutes ?? 0;
+    const rawActual = isRecurring ? 0 : (input.actual_duration_minutes ?? 0);
     const normalizedActual = Math.min(
       Math.max(rawActual, 0),
       normalizedPlanned
@@ -58,8 +81,12 @@ export class TaskService {
     // Handle both Date objects and ISO strings (from JSON)
     // Normalize to midnight for date-only deadlines
     let dueDateString: string | null = null;
-    if (input.due_date !== null && input.due_date !== undefined) {
-      dueDateString = normalizeToMidnight(input.due_date);
+    if (
+      !isRecurring &&
+      input.due_date !== null &&
+      input.due_date !== undefined
+    ) {
+      dueDateString = toDateOnly(input.due_date);
     }
 
     // Resolve schedule_id: use provided value, then fall back to user's active/default schedule
@@ -154,6 +181,36 @@ export class TaskService {
       );
     }
 
+    // Validate recurrence fields when is_recurring is true
+    if (isRecurring) {
+      if (!input.recurrence_pattern) {
+        throw new Error(
+          'recurrence_pattern is required when is_recurring is true'
+        );
+      }
+      if (!['daily', 'weekly', 'monthly'].includes(input.recurrence_pattern)) {
+        throw new Error(
+          'recurrence_pattern must be one of: daily, weekly, monthly'
+        );
+      }
+      const interval = input.recurrence_interval ?? 1;
+      if (!Number.isInteger(interval) || interval <= 0) {
+        throw new Error('recurrence_interval must be a positive integer');
+      }
+    }
+
+    const nextGenerationCutoff = isRecurring
+      ? normalizeToMidnight(new Date())
+      : null;
+
+    // Normalize recurrence_start_date (use today if not provided)
+    let recurrenceStartDateString: string | null = null;
+    if (isRecurring) {
+      recurrenceStartDateString = input.recurrence_start_date
+        ? toDateOnly(input.recurrence_start_date)
+        : toDateOnly(new Date());
+    }
+
     const client = authToken
       ? getAuthenticatedSupabase(authToken)
       : serviceRoleSupabase;
@@ -173,6 +230,13 @@ export class TaskService {
           actual_duration_minutes: normalizedActual,
           user_id: input.user_id,
           schedule_id: scheduleId,
+          is_recurring: isRecurring,
+          recurrence_pattern: isRecurring ? input.recurrence_pattern : null,
+          recurrence_interval: isRecurring
+            ? (input.recurrence_interval ?? 1)
+            : 1,
+          next_generation_cutoff: nextGenerationCutoff,
+          recurrence_start_date: recurrenceStartDateString,
         },
       ])
       .select()
@@ -262,6 +326,11 @@ export class TaskService {
       project_id?: string | null;
       planned_duration_minutes?: number;
       actual_duration_minutes?: number;
+      is_recurring?: boolean;
+      recurrence_pattern?: string | null;
+      recurrence_interval?: number;
+      next_generation_cutoff?: string | null;
+      recurrence_start_date?: string | null;
     } = {
       updated_at: new Date().toISOString(),
     };
@@ -274,7 +343,7 @@ export class TaskService {
       if (input.due_date === null) {
         updateData.due_date = null;
       } else {
-        updateData.due_date = normalizeToMidnight(input.due_date);
+        updateData.due_date = toDateOnly(input.due_date);
       }
     }
     if (input.priority !== undefined) updateData.priority = input.priority;
@@ -303,6 +372,55 @@ export class TaskService {
     if (input.project_id !== undefined)
       updateData.project_id = input.project_id;
 
+    const resultingIsRecurring =
+      input.is_recurring !== undefined
+        ? input.is_recurring
+        : existingTask.is_recurring;
+
+    if (resultingIsRecurring) {
+      updateData.due_date = null;
+      updateData.actual_duration_minutes = 0;
+    }
+
+    // Handle recurrence fields
+    if (input.is_recurring !== undefined) {
+      updateData.is_recurring = input.is_recurring;
+      if (input.is_recurring) {
+        // Validate recurrence fields when enabling recurring
+        if (!input.recurrence_pattern) {
+          throw new Error(
+            'recurrence_pattern is required when is_recurring is true'
+          );
+        }
+        if (
+          !['daily', 'weekly', 'monthly'].includes(input.recurrence_pattern)
+        ) {
+          throw new Error(
+            'recurrence_pattern must be one of: daily, weekly, monthly'
+          );
+        }
+        const interval = input.recurrence_interval ?? 1;
+        if (!Number.isInteger(interval) || interval <= 0) {
+          throw new Error('recurrence_interval must be a positive integer');
+        }
+
+        updateData.recurrence_pattern = input.recurrence_pattern;
+        updateData.recurrence_interval = interval;
+        updateData.next_generation_cutoff = normalizeToMidnight(new Date());
+        // Update start date if provided; otherwise keep existing
+        if (input.recurrence_start_date !== undefined) {
+          updateData.recurrence_start_date = input.recurrence_start_date
+            ? toDateOnly(input.recurrence_start_date)
+            : null;
+        }
+      } else {
+        // When turning off recurrence, clear all recurrence fields
+        updateData.recurrence_pattern = null;
+        updateData.recurrence_interval = 1;
+        updateData.next_generation_cutoff = null;
+      }
+    }
+
     const rawPlanned =
       input.planned_duration_minutes ?? existingTask.planned_duration_minutes;
     const normalizedPlanned = rawPlanned < 0 ? 0 : rawPlanned;
@@ -311,10 +429,11 @@ export class TaskService {
       updateData.planned_duration_minutes = normalizedPlanned;
     }
 
-    const rawActual =
-      input.actual_duration_minutes ??
-      existingTask.actual_duration_minutes ??
-      0;
+    const rawActual = resultingIsRecurring
+      ? 0
+      : (input.actual_duration_minutes ??
+        existingTask.actual_duration_minutes ??
+        0);
     const normalizedActual = Math.min(
       Math.max(rawActual, 0),
       normalizedPlanned
@@ -362,6 +481,20 @@ export class TaskService {
     const client = authToken
       ? getAuthenticatedSupabase(authToken)
       : serviceRoleSupabase;
+
+    // First, delete all calendar events linked to this task
+    const { error: calendarError } = await client
+      .from('calendar_events')
+      .delete()
+      .eq('linked_task_id', id);
+
+    if (calendarError) {
+      throw new Error(
+        `Failed to delete related calendar events: ${calendarError.message}`
+      );
+    }
+
+    // Then delete the task itself
     const { error } = await client.from('tasks').delete().eq('id', id);
 
     if (error) {

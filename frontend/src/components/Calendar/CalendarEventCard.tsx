@@ -24,6 +24,7 @@ export function CalendarEventCard({
 }: CalendarEventCardProps) {
   const isTaskEvent = isCalendarEventTask(event);
   const isCompleted = isTaskEvent && !!event.completed_at;
+  const isRecurring = isTaskEvent && task?.is_recurring;
   const now = new Date();
   const eventEnd = new Date(event.end_time);
   const isPast = eventEnd < now;
@@ -45,14 +46,19 @@ export function CalendarEventCard({
       className={cn(
         'calendar-event-card h-full overflow-hidden rounded-md cursor-pointer transition-all',
         'text-[10px] leading-tight',
-        // Base styles - using primary color like the landing page demo
+        // Color per event type for easy visual distinction
         isTaskEvent
           ? isAfterDeadline
-            ? 'bg-red-500/80 text-white shadow-sm'
-            : isCompleted
-              ? 'bg-primary/40 text-primary-foreground/70'
-              : 'bg-primary/70 text-primary-foreground shadow-sm hover:bg-primary/80'
-          : 'bg-muted text-muted-foreground hover:bg-muted/80',
+            ? 'bg-red-500/80 text-white shadow-sm hover:bg-red-500/90'
+            : isRecurring
+              ? isCompleted
+                ? 'bg-emerald-500/30 text-emerald-800 dark:text-emerald-200'
+                : 'bg-emerald-500/75 text-white shadow-sm hover:bg-emerald-500/85'
+              : isCompleted
+                ? 'bg-sky-500/30 text-sky-800 dark:text-sky-200'
+                : 'bg-sky-500/75 text-white shadow-sm hover:bg-sky-500/85'
+          : // External (Google Calendar) events
+            'bg-violet-500/70 text-white shadow-sm hover:bg-violet-500/80',
         isCompleted && 'opacity-60',
         // Grey out past events
         isPast &&

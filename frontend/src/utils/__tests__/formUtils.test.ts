@@ -158,6 +158,34 @@ describe('transformFormDataToTask', () => {
     );
     expect(result.blockedBy).toEqual(['task-1', 'task-2']);
   });
+
+  it('ignores dueDate for recurring tasks', () => {
+    const result = transformFormDataToTask(
+      makeFormData({
+        dueDate: '2026-03-15',
+        is_recurring: true,
+        recurrence_pattern: 'monthly',
+        recurrence_interval: 1,
+      }),
+      'u1'
+    );
+
+    expect(result.due_date).toBeNull();
+  });
+
+  it('forces actual_duration_minutes to 0 for recurring tasks', () => {
+    const result = transformFormDataToTask(
+      makeFormData({
+        actual_duration_minutes: 45,
+        is_recurring: true,
+        recurrence_pattern: 'monthly',
+        recurrence_interval: 1,
+      }),
+      'u1'
+    );
+
+    expect(result.actual_duration_minutes).toBe(0);
+  });
 });
 
 describe('getPriorityColor', () => {
