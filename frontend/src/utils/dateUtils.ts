@@ -45,6 +45,17 @@ export function toLocalDateString(date: Date): string {
   return `${y}-${m}-${d}`;
 }
 
+/**
+ * Parse a YYYY-MM-DD date string as local midnight.
+ * JavaScript's `new Date("YYYY-MM-DD")` treats ISO date-only strings as
+ * UTC midnight, which shifts the date back one day for UTC+ users.
+ * This function avoids that by constructing the date in local time.
+ */
+export function parseLocalDate(value: string): Date {
+  const [y, m, d] = value.split('-').map(Number);
+  return new Date(y, m - 1, d);
+}
+
 /** Time only, e.g. "9:00 AM". */
 export function formatTime(date: Date): string {
   return date.toLocaleTimeString('en-US', {

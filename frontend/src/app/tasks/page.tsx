@@ -32,6 +32,7 @@ export default function TasksPage() {
         isRecurring: taskData.is_recurring,
         recurrencePattern: taskData.recurrence_pattern,
         recurrenceInterval: taskData.recurrence_interval,
+        recurrenceStartDate: taskData.recurrence_start_date,
       });
       setRefreshTrigger(prev => prev + 1);
     } catch (error) {

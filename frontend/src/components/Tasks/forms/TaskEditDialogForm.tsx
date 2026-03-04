@@ -231,7 +231,7 @@ export function TaskEditDialogForm({
 
   return (
     <Dialog open={open && !!task} onOpenChange={handleDialogOpenChange}>
-      <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-[500px] max-h-[90vh] flex flex-col overflow-hidden">
         <DialogHeader>
           <DialogTitle>Edit Task</DialogTitle>
           {task && (
@@ -243,7 +243,7 @@ export function TaskEditDialogForm({
         </DialogHeader>
 
         <FormProvider {...form}>
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-6 overflow-y-auto flex-1 pr-1">
             <div className="space-y-4">
               <TaskTitleField register={register} errors={errors} />
               <TaskDescriptionField register={register} errors={errors} />

@@ -66,7 +66,7 @@ export function TaskCreateDialogForm({ onTaskCreate }: TaskCreateFormProps) {
           Create Task
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[500px]">
+      <DialogContent className="sm:max-w-[500px] max-h-[90vh] flex flex-col overflow-hidden">
         <DialogHeader>
           <DialogTitle>Create New Task</DialogTitle>
           <DialogDescription>
@@ -77,7 +77,7 @@ export function TaskCreateDialogForm({ onTaskCreate }: TaskCreateFormProps) {
 
         <FormProvider {...form}>
           {/* @ts-ignore - react-hook-form type inference issue with complex form data */}
-          <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-6">
+          <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-6 overflow-y-auto flex-1 pr-1">
             <div className="space-y-4">
               <TaskTitleField register={register} errors={errors} />
               <TaskDescriptionField register={register} errors={errors} />
