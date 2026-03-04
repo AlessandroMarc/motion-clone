@@ -6,7 +6,10 @@ interface PriorityDotProps {
   className?: string;
 }
 
-export function PriorityDot({ priority, className }: PriorityDotProps): React.ReactElement | null {
+export function PriorityDot({
+  priority,
+  className,
+}: PriorityDotProps): React.ReactElement | null {
   if (!priority) return null;
   const priorityColors: Record<string, string> = {
     low: 'bg-blue-500',
@@ -16,7 +19,11 @@ export function PriorityDot({ priority, className }: PriorityDotProps): React.Re
   };
   return (
     <div
-      className={cn('h-2 w-2 rounded-full shrink-0', priorityColors[priority], className)}
+      className={cn(
+        'h-2 w-2 rounded-full shrink-0',
+        priorityColors[priority],
+        className
+      )}
     />
   );
 }

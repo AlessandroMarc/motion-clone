@@ -7,7 +7,6 @@ import type { Project, Task } from '@/types';
 import { ErrorState, LoadingState } from '@/components/shared';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Button } from '@/components/ui/button';
-import { cn } from '@/lib/utils';
 import { MobileTaskList } from './MobileTaskList';
 import { ProjectKanbanBoard } from './ProjectKanbanBoard';
 import { TaskEditDialogForm } from './forms';

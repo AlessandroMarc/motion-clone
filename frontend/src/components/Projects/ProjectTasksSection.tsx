@@ -101,7 +101,7 @@ export function ProjectTasksSection({
           />
         </CardAction>
       </CardHeader>
-      <CardContent className='pb-4'>
+      <CardContent className="pb-4">
         {tasks.length === 0 ? (
           <div className="text-center py-12 bg-muted/30 rounded-lg">
             <p className="text-muted-foreground mb-4">

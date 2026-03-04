@@ -1,13 +1,14 @@
 import React from 'react';
 import { Clock } from 'lucide-react';
-import { cn } from '@/lib/utils';
 import type { Task } from '@/types';
 
 interface ScheduleBadgeProps {
   task: Task;
 }
 
-export function ScheduleBadge({ task }: ScheduleBadgeProps): React.ReactElement | null {
+export function ScheduleBadge({
+  task,
+}: ScheduleBadgeProps): React.ReactElement | null {
   if (task.is_recurring) {
     return (
       <span className="px-2 py-1 rounded text-xs font-medium shrink-0 bg-white/80 text-gray-700 flex items-center gap-1 border border-gray-200">

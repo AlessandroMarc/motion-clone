@@ -9,8 +9,11 @@ interface DueDateDisplayProps {
   task: Task;
 }
 
-export function DueDateDisplay({ task }: DueDateDisplayProps): React.ReactElement {
-  if (!task.due_date) return <span className="text-xs text-muted-foreground">-</span>;
+export function DueDateDisplay({
+  task,
+}: DueDateDisplayProps): React.ReactElement {
+  if (!task.due_date)
+    return <span className="text-xs text-muted-foreground">-</span>;
   const dueDate = new Date(task.due_date);
   const now = new Date();
   const isCompleted = isTaskCompleted(task);

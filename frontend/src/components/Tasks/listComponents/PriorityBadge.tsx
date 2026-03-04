@@ -5,7 +5,9 @@ interface PriorityBadgeProps {
   priority?: string | null;
 }
 
-export function PriorityBadge({ priority }: PriorityBadgeProps): React.ReactElement | null {
+export function PriorityBadge({
+  priority,
+}: PriorityBadgeProps): React.ReactElement | null {
   if (!priority) return null;
   const priorityColors: Record<string, string> = {
     low: 'bg-blue-100/50 text-blue-700',

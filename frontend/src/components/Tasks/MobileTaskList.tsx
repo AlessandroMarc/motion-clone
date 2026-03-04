@@ -147,7 +147,9 @@ export function MobileTaskList({
   onSelectTask,
   isDesktop = false,
 }: MobileTaskListProps): React.ReactElement {
-  const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
+  const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(
+    new Set()
+  );
 
   const groups = useMemo((): TaskGroup[] => {
     const { unassigned, byProject } = groupTasksByProject(tasks, projects);
