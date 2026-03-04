@@ -1,10 +1,11 @@
-import { Task, CalendarEventTask } from '@/types';
+import { Task, CalendarEventTask, Schedule } from '@/types';
 import {
   calculateRemainingDurationMinutes,
   distributeEvents,
   sortTasksForScheduling,
   checkDeadlineViolations,
   prepareTaskEvents,
+  createConfigFromSchedule,
   DEFAULT_CONFIG,
   TaskSchedulingConfig,
 } from '../taskScheduler';
@@ -25,6 +26,11 @@ describe('taskScheduler', () => {
     updated_at: new Date(),
     planned_duration_minutes: 120,
     actual_duration_minutes: 0,
+    is_recurring: false,
+    recurrence_pattern: null,
+    recurrence_interval: 1,
+    next_generation_cutoff: null,
+    recurrence_start_date: null,
     ...overrides,
   });
 
@@ -140,7 +146,7 @@ describe('taskScheduler', () => {
         );
       }, 0);
       expect(totalMinutes).toBeLessThanOrEqual(
-        240 + config.gapBetweenEventsMinutes * events.length
+        240 + (config.gapBetweenEventsMinutes ?? 0) * events.length
       );
 
       // All events should be within working hours
@@ -483,6 +489,614 @@ describe('taskScheduler', () => {
       expect(dependencyEvent.start_time.getTime()).toBeLessThanOrEqual(
         taskEvent.start_time.getTime()
       );
+    });
+
+    it('should return no events when task is already fully covered by existing events', () => {
+      const task = createMockTask({ planned_duration_minutes: 60 });
+      const start = new Date('2024-01-02T09:00:00');
+      const end = new Date('2024-01-02T10:00:00');
+      const existingEvents = [createMockEvent(start, end, task.id)];
+      const config = { ...DEFAULT_CONFIG, eventDurationMinutes: 60 };
+      const startFrom = new Date('2024-01-03T09:00:00');
+
+      const result = prepareTaskEvents(
+        task,
+        existingEvents,
+        config,
+        [],
+        startFrom
+      );
+
+      expect(result.events.length).toBe(0);
+      expect(result.violations).toEqual([]);
+    });
+
+    it('should account for actual_duration_minutes when preparing events', () => {
+      // Task has 180 planned, 60 already done (actual), so only 120 remain
+      const task = createMockTask({
+        planned_duration_minutes: 180,
+        actual_duration_minutes: 60,
+      });
+      const config = { ...DEFAULT_CONFIG, eventDurationMinutes: 60 };
+      const startFrom = new Date('2024-01-02T09:00:00');
+
+      const result = prepareTaskEvents(task, [], config, [], startFrom);
+
+      expect(result.events.length).toBe(2);
+    });
+
+    it('should detect violations when scheduling starts after the deadline', () => {
+      // Deadline was yesterday — any events scheduled now will be past the deadline
+      const dueDate = new Date('2024-01-01T23:59:59');
+      const task = createMockTask({
+        planned_duration_minutes: 120,
+        due_date: dueDate,
+      });
+      const config = { ...DEFAULT_CONFIG, eventDurationMinutes: 60 };
+      // Start from a time after the deadline
+      const startFrom = new Date('2024-01-02T09:00:00');
+
+      const result = prepareTaskEvents(task, [], config, [], startFrom);
+
+      // All scheduled events start after the deadline → all are violations
+      expect(result.violations.length).toBeGreaterThan(0);
+    });
+  });
+
+  describe('calculateRemainingDurationMinutes (additional cases)', () => {
+    it('should subtract actual_duration_minutes from planned', () => {
+      const task = createMockTask({
+        planned_duration_minutes: 180,
+        actual_duration_minutes: 60,
+      });
+      const config = DEFAULT_CONFIG;
+
+      const remaining = calculateRemainingDurationMinutes(task, [], config);
+      expect(remaining).toBe(120);
+    });
+
+    it('should return 0 when actual_duration_minutes exceeds planned', () => {
+      const task = createMockTask({
+        planned_duration_minutes: 60,
+        actual_duration_minutes: 90,
+      });
+      const config = DEFAULT_CONFIG;
+
+      const remaining = calculateRemainingDurationMinutes(task, [], config);
+      expect(remaining).toBe(0);
+    });
+
+    it('should subtract both actual and existing events duration', () => {
+      const task = createMockTask({
+        planned_duration_minutes: 240,
+        actual_duration_minutes: 60,
+      });
+      const start = new Date('2024-01-01T09:00:00');
+      const end = new Date('2024-01-01T10:00:00');
+      const existingEvents = [createMockEvent(start, end, task.id)];
+      const config = DEFAULT_CONFIG;
+
+      // 240 planned - 60 actual - 60 existing event = 120 remaining
+      const remaining = calculateRemainingDurationMinutes(
+        task,
+        existingEvents,
+        config
+      );
+      expect(remaining).toBe(120);
+    });
+
+    it('should return eventDurationMinutes when both planned and remaining are 0', () => {
+      const task = createMockTask({
+        planned_duration_minutes: 0,
+        actual_duration_minutes: 0,
+      });
+      const config = { ...DEFAULT_CONFIG, eventDurationMinutes: 45 };
+
+      const remaining = calculateRemainingDurationMinutes(task, [], config);
+      expect(remaining).toBe(45);
+    });
+
+    it('should handle multiple existing events for the same task', () => {
+      const task = createMockTask({ planned_duration_minutes: 180 });
+      const e1Start = new Date('2024-01-01T09:00:00');
+      const e1End = new Date('2024-01-01T10:00:00');
+      const e2Start = new Date('2024-01-02T09:00:00');
+      const e2End = new Date('2024-01-02T09:30:00');
+      const existingEvents = [
+        createMockEvent(e1Start, e1End, task.id),
+        createMockEvent(e2Start, e2End, task.id),
+      ];
+      const config = DEFAULT_CONFIG;
+
+      // 180 - 60 - 30 = 90 remaining
+      const remaining = calculateRemainingDurationMinutes(
+        task,
+        existingEvents,
+        config
+      );
+      expect(remaining).toBe(90);
+    });
+  });
+
+  describe('distributeEvents (additional cases)', () => {
+    it('should skip weekends when skipWeekends is true', () => {
+      // Monday 2024-01-08 09:00
+      const startFrom = new Date('2024-01-08T09:00:00');
+      const task = createMockTask({ due_date: null });
+      const config = {
+        ...DEFAULT_CONFIG,
+        skipWeekends: true,
+        eventDurationMinutes: 60,
+        defaultDaysWithoutDeadline: 14,
+      };
+
+      const events = distributeEvents(task, 120, config, [], startFrom);
+
+      events.forEach(event => {
+        const day = event.start_time.getDay();
+        // day 0 = Sunday, day 6 = Saturday
+        expect(day).not.toBe(0);
+        expect(day).not.toBe(6);
+      });
+    });
+
+    it('should schedule a large task across multiple days', () => {
+      // 780 minutes = 13 hours, well over a single working day (max ~13h from 9-22 = 780 mins)
+      const task = createMockTask({ due_date: null });
+      const config = {
+        ...DEFAULT_CONFIG,
+        eventDurationMinutes: 60,
+        gapBetweenEventsMinutes: 0,
+        defaultDaysWithoutDeadline: 30,
+      };
+      const startFrom = new Date('2024-01-01T09:00:00');
+
+      const events = distributeEvents(task, 900, config, [], startFrom);
+
+      // Should have events on multiple different days
+      const uniqueDays = new Set(events.map(e => e.start_time.toDateString()));
+      expect(uniqueDays.size).toBeGreaterThan(1);
+    });
+
+    it('should respect minBlockMinutes and not schedule tiny fragments', () => {
+      const task = createMockTask({ due_date: null });
+      const config = {
+        ...DEFAULT_CONFIG,
+        eventDurationMinutes: 60,
+        minBlockMinutes: 15,
+        defaultDaysWithoutDeadline: 7,
+      };
+      const startFrom = new Date('2024-01-01T09:00:00');
+
+      const events = distributeEvents(task, 120, config, [], startFrom);
+
+      events.forEach(event => {
+        const durationMinutes =
+          (event.end_time.getTime() - event.start_time.getTime()) / (1000 * 60);
+        expect(durationMinutes).toBeGreaterThanOrEqual(15);
+      });
+    });
+
+    it('should respect the gap between events', () => {
+      const task = createMockTask({ due_date: null });
+      const gapMinutes = 10;
+      const config = {
+        ...DEFAULT_CONFIG,
+        eventDurationMinutes: 60,
+        gapBetweenEventsMinutes: gapMinutes,
+        defaultDaysWithoutDeadline: 7,
+      };
+      const startFrom = new Date('2024-01-01T09:00:00');
+
+      const events = distributeEvents(task, 240, config, [], startFrom);
+
+      // For consecutive events on the same day, there should be a gap >= gapMinutes
+      for (let i = 1; i < events.length; i++) {
+        const prev = events[i - 1];
+        const curr = events[i];
+        // Only check same-day consecutive events
+        if (prev.end_time.toDateString() === curr.start_time.toDateString()) {
+          const gapMs = curr.start_time.getTime() - prev.end_time.getTime();
+          expect(gapMs).toBeGreaterThanOrEqual(gapMinutes * 60 * 1000);
+        }
+      }
+    });
+
+    it('should handle remaining minutes smaller than eventDurationMinutes', () => {
+      const task = createMockTask({ due_date: null });
+      const config = {
+        ...DEFAULT_CONFIG,
+        eventDurationMinutes: 60,
+        minBlockMinutes: 15,
+        defaultDaysWithoutDeadline: 7,
+      };
+      const startFrom = new Date('2024-01-01T09:00:00');
+
+      // Only 30 minutes remaining (< eventDurationMinutes of 60)
+      const events = distributeEvents(task, 30, config, [], startFrom);
+
+      expect(events.length).toBe(1);
+      const durationMinutes =
+        (events[0].end_time.getTime() - events[0].start_time.getTime()) /
+        (1000 * 60);
+      expect(durationMinutes).toBe(30);
+    });
+
+    it('should return empty array when day is completely blocked by existing events', () => {
+      const startFrom = new Date('2024-01-01T09:00:00');
+      const dueDate = new Date('2024-01-01T23:59:59');
+      const task = createMockTask({ due_date: dueDate });
+      const config = {
+        ...DEFAULT_CONFIG,
+        eventDurationMinutes: 60,
+        minBlockMinutes: 15,
+      };
+
+      // Block the entire working day (9:00 to 22:00)
+      const blockStart = new Date('2024-01-01T09:00:00');
+      const blockEnd = new Date('2024-01-01T22:00:00');
+      const blockingEvent: CalendarEventTask = {
+        id: 'block-1',
+        title: 'All Day Block',
+        start_time: blockStart,
+        end_time: blockEnd,
+        description: '',
+        user_id: 'user-1',
+        created_at: new Date(),
+        updated_at: new Date(),
+        linked_task_id: 'other-task',
+        completed_at: null,
+      };
+
+      const events = distributeEvents(
+        task,
+        60,
+        config,
+        [blockingEvent],
+        startFrom
+      );
+
+      expect(events).toEqual([]);
+    });
+
+    it('should not schedule any events when remainingMinutes is negative', () => {
+      const task = createMockTask();
+      const events = distributeEvents(task, -10, DEFAULT_CONFIG, []);
+      expect(events).toEqual([]);
+    });
+
+    it('should schedule events starting exactly at workingHoursStart when startFrom is before working hours', () => {
+      const task = createMockTask({ due_date: null });
+      const config = {
+        ...DEFAULT_CONFIG,
+        eventDurationMinutes: 60,
+        workingHoursStart: 9,
+        defaultDaysWithoutDeadline: 7,
+      };
+      // Start from 7:00 AM, before working hours
+      const startFrom = new Date('2024-01-01T07:00:00');
+
+      const events = distributeEvents(task, 60, config, [], startFrom);
+
+      expect(events.length).toBeGreaterThan(0);
+      expect(events[0].start_time.getHours()).toBeGreaterThanOrEqual(9);
+    });
+
+    it('should produce events that fall entirely within working hours', () => {
+      const task = createMockTask({ due_date: null });
+      const config = {
+        ...DEFAULT_CONFIG,
+        eventDurationMinutes: 60,
+        workingHoursStart: 9,
+        workingHoursEnd: 22,
+        defaultDaysWithoutDeadline: 7,
+      };
+      const startFrom = new Date('2024-01-01T09:00:00');
+
+      const events = distributeEvents(task, 300, config, [], startFrom);
+
+      events.forEach(event => {
+        const endHour = event.end_time.getHours();
+        const endMinute = event.end_time.getMinutes();
+        // end_time should be at or before workingHoursEnd (22:00)
+        expect(endHour * 60 + endMinute).toBeLessThanOrEqual(22 * 60);
+      });
+    });
+  });
+
+  describe('sortTasksForScheduling — blockedBy / topological sort', () => {
+    it('should schedule a blocker task before the task it blocks', () => {
+      const blocker = createMockTask({ id: 'A', due_date: null });
+      const blocked = createMockTask({
+        id: 'B',
+        due_date: null,
+        blockedBy: ['A'],
+      });
+
+      const sorted = sortTasksForScheduling([blocked, blocker]);
+
+      const indexA = sorted.findIndex(t => t.id === 'A');
+      const indexB = sorted.findIndex(t => t.id === 'B');
+      expect(indexA).toBeLessThan(indexB);
+    });
+
+    it('should handle a multi-level dependency chain A → B → C', () => {
+      const taskA = createMockTask({ id: 'A', due_date: null });
+      const taskB = createMockTask({
+        id: 'B',
+        due_date: null,
+        blockedBy: ['A'],
+      });
+      const taskC = createMockTask({
+        id: 'C',
+        due_date: null,
+        blockedBy: ['B'],
+      });
+
+      const sorted = sortTasksForScheduling([taskC, taskA, taskB]);
+
+      const idx = (id: string) => sorted.findIndex(t => t.id === id);
+      expect(idx('A')).toBeLessThan(idx('B'));
+      expect(idx('B')).toBeLessThan(idx('C'));
+    });
+
+    it('should handle multiple blockers (A and B must both come before C)', () => {
+      const taskA = createMockTask({ id: 'A', due_date: null });
+      const taskB = createMockTask({ id: 'B', due_date: null });
+      const taskC = createMockTask({
+        id: 'C',
+        due_date: null,
+        blockedBy: ['A', 'B'],
+      });
+
+      const sorted = sortTasksForScheduling([taskC, taskB, taskA]);
+
+      const idx = (id: string) => sorted.findIndex(t => t.id === id);
+      expect(idx('A')).toBeLessThan(idx('C'));
+      expect(idx('B')).toBeLessThan(idx('C'));
+    });
+
+    it('should handle cycles in blockedBy without crashing', () => {
+      // A is blocked by B, B is blocked by A — cycle
+      const taskA = createMockTask({ id: 'A', blockedBy: ['B'] });
+      const taskB = createMockTask({ id: 'B', blockedBy: ['A'] });
+
+      expect(() => sortTasksForScheduling([taskA, taskB])).not.toThrow();
+      const sorted = sortTasksForScheduling([taskA, taskB]);
+      expect(sorted.length).toBe(2);
+    });
+
+    it('should ignore blockers not present in the task set', () => {
+      // Task A references blocker 'missing-id' which is not in the list
+      const taskA = createMockTask({ id: 'A', blockedBy: ['missing-id'] });
+      const taskB = createMockTask({ id: 'B' });
+
+      expect(() => sortTasksForScheduling([taskA, taskB])).not.toThrow();
+      const sorted = sortTasksForScheduling([taskA, taskB]);
+      expect(sorted.length).toBe(2);
+    });
+
+    it('should preserve deadline ordering among independent tasks even with blockedBy on others', () => {
+      const taskA = createMockTask({
+        id: 'A',
+        due_date: new Date('2024-01-10'),
+      });
+      const taskB = createMockTask({
+        id: 'B',
+        due_date: new Date('2024-01-05'),
+      });
+      // C is blocked by A but has no deadline relationship with B
+      const taskC = createMockTask({
+        id: 'C',
+        due_date: new Date('2024-01-20'),
+        blockedBy: ['A'],
+      });
+
+      const sorted = sortTasksForScheduling([taskC, taskA, taskB]);
+
+      // A must come before C (blocker)
+      const idx = (id: string) => sorted.findIndex(t => t.id === id);
+      expect(idx('A')).toBeLessThan(idx('C'));
+      // B has an earlier deadline than A and is independent, so B should come first
+      expect(idx('B')).toBeLessThan(idx('A'));
+    });
+  });
+
+  describe('checkDeadlineViolations (additional cases)', () => {
+    it('should flag all events when all are after the deadline', () => {
+      const task = createMockTask({
+        due_date: new Date('2024-01-01T23:59:59'),
+      });
+      const events = [
+        {
+          task_id: task.id,
+          start_time: new Date('2024-01-02T10:00:00'),
+          end_time: new Date('2024-01-02T11:00:00'),
+        },
+        {
+          task_id: task.id,
+          start_time: new Date('2024-01-03T10:00:00'),
+          end_time: new Date('2024-01-03T11:00:00'),
+        },
+      ];
+
+      const violations = checkDeadlineViolations(events, task);
+
+      expect(violations.length).toBe(2);
+    });
+
+    it('should not flag an event that starts exactly on the deadline day', () => {
+      const task = createMockTask({
+        due_date: new Date('2024-01-05T10:00:00'),
+      });
+      const events = [
+        {
+          task_id: task.id,
+          start_time: new Date('2024-01-05T09:00:00'),
+          end_time: new Date('2024-01-05T10:00:00'),
+        },
+      ];
+
+      const violations = checkDeadlineViolations(events, task);
+
+      // The event starts on the deadline date (before 23:59:59), no violation
+      expect(violations).toEqual([]);
+    });
+
+    it('should flag an event that starts the day after the deadline', () => {
+      const task = createMockTask({
+        due_date: new Date('2024-01-05T10:00:00'),
+      });
+      const events = [
+        {
+          task_id: task.id,
+          start_time: new Date('2024-01-06T09:00:00'),
+          end_time: new Date('2024-01-06T10:00:00'),
+        },
+      ];
+
+      const violations = checkDeadlineViolations(events, task);
+
+      expect(violations.length).toBe(1);
+    });
+
+    it('should return empty array when events list is empty', () => {
+      const task = createMockTask({
+        due_date: new Date('2024-01-05T23:59:59'),
+      });
+
+      const violations = checkDeadlineViolations([], task);
+
+      expect(violations).toEqual([]);
+    });
+  });
+
+  describe('createConfigFromSchedule', () => {
+    it('should return DEFAULT_CONFIG values when schedule is null', () => {
+      const config = createConfigFromSchedule(null);
+
+      expect(config.workingHoursStart).toBe(DEFAULT_CONFIG.workingHoursStart);
+      expect(config.workingHoursEnd).toBe(DEFAULT_CONFIG.workingHoursEnd);
+      expect(config.eventDurationMinutes).toBe(60);
+    });
+
+    it('should use schedule working hours when provided', () => {
+      const schedule: Schedule = {
+        id: 'sched-1',
+        user_id: 'user-1',
+        name: 'Work Schedule',
+        working_hours_start: 8,
+        working_hours_end: 20,
+        is_default: true,
+        created_at: new Date(),
+        updated_at: new Date(),
+      };
+
+      const config = createConfigFromSchedule(schedule);
+
+      expect(config.workingHoursStart).toBe(8);
+      expect(config.workingHoursEnd).toBe(20);
+    });
+
+    it('should use the provided eventDurationMinutes parameter', () => {
+      const config = createConfigFromSchedule(null, 90);
+
+      expect(config.eventDurationMinutes).toBe(90);
+    });
+
+    it('should inherit all other DEFAULT_CONFIG values', () => {
+      const config = createConfigFromSchedule(null);
+
+      expect(config.skipWeekends).toBe(DEFAULT_CONFIG.skipWeekends);
+      expect(config.defaultDaysWithoutDeadline).toBe(
+        DEFAULT_CONFIG.defaultDaysWithoutDeadline
+      );
+      expect(config.minBlockMinutes).toBe(DEFAULT_CONFIG.minBlockMinutes);
+      expect(config.gapBetweenEventsMinutes).toBe(
+        DEFAULT_CONFIG.gapBetweenEventsMinutes
+      );
+    });
+  });
+
+  describe('stress / high-volume scenarios', () => {
+    it('should correctly sort 50 tasks with mixed deadlines and priorities', () => {
+      const tasks: Task[] = Array.from({ length: 50 }, (_, i) =>
+        createMockTask({
+          id: `task-${i}`,
+          due_date: i % 5 === 0 ? null : new Date(2024, 0, (i % 28) + 1),
+          priority: i % 3 === 0 ? 'high' : i % 3 === 1 ? 'medium' : 'low',
+        })
+      );
+
+      expect(() => sortTasksForScheduling(tasks)).not.toThrow();
+      const sorted = sortTasksForScheduling(tasks);
+      expect(sorted.length).toBe(50);
+
+      // Tasks with a deadline should come before tasks without
+      const firstNoDeadlineIdx = sorted.findIndex(t => t.due_date === null);
+      const lastWithDeadlineIdx = sorted.reduce(
+        (last, t, i) => (t.due_date !== null ? i : last),
+        -1
+      );
+      if (firstNoDeadlineIdx !== -1 && lastWithDeadlineIdx !== -1) {
+        expect(lastWithDeadlineIdx).toBeLessThan(firstNoDeadlineIdx);
+      }
+    });
+
+    it('should schedule 10 tasks without crashing and produce non-overlapping events', () => {
+      const startFrom = new Date('2024-01-01T09:00:00');
+      const config = { ...DEFAULT_CONFIG, eventDurationMinutes: 60 };
+      const allEvents: CalendarEventTask[] = [];
+
+      const tasks: Task[] = Array.from({ length: 10 }, (_, i) =>
+        createMockTask({
+          id: `task-${i}`,
+          planned_duration_minutes: 120,
+          due_date: null,
+        })
+      );
+
+      const sorted = sortTasksForScheduling(tasks);
+
+      for (const task of sorted) {
+        const { events } = prepareTaskEvents(
+          task,
+          [],
+          config,
+          allEvents,
+          startFrom
+        );
+        expect(events.length).toBeGreaterThan(0);
+
+        // Add produced events to the pool for subsequent scheduling
+        events.forEach(e => {
+          allEvents.push({
+            id: `evt-${e.task_id}-${e.start_time.getTime()}`,
+            title: task.title,
+            start_time: e.start_time,
+            end_time: e.end_time,
+            description: '',
+            user_id: task.user_id,
+            created_at: new Date(),
+            updated_at: new Date(),
+            linked_task_id: task.id,
+            completed_at: null,
+          });
+        });
+      }
+
+      // Verify no two events overlap across all tasks
+      const sortedEvents = allEvents.sort(
+        (a, b) =>
+          new Date(a.start_time).getTime() - new Date(b.start_time).getTime()
+      );
+      for (let i = 1; i < sortedEvents.length; i++) {
+        const prev = sortedEvents[i - 1];
+        const curr = sortedEvents[i];
+        expect(new Date(prev.end_time).getTime()).toBeLessThanOrEqual(
+          new Date(curr.start_time).getTime()
+        );
+      }
     });
   });
 });
