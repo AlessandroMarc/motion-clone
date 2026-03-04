@@ -82,15 +82,16 @@ export function calculateAutoSchedule(params: {
     e.id.startsWith('synthetic-')
   );
 
-  const pendingTaskEvents = existingEvents.filter(
-    e => !e.id.startsWith('synthetic-') && e.completed_at === null
-  );
-
+  // Existing pending task events are NOT included in the initial blocking pool.
+  // Including them caused tasks with deadlines to be blocked by old auto-scheduled
+  // events for no-deadline tasks from the previous run, pushing deadline tasks
+  // past their due date.  Instead, each task's proposed events are added to the
+  // pool dynamically as it is processed (in deadline-first sort order), so
+  // higher-priority / deadline tasks always get first pick of available slots.
   const accumulatedScheduledEvents: CalendarEventUnion[] = [
     ...regularEvents,
     ...completedTaskEvents,
     ...syntheticEvents,
-    ...pendingTaskEvents,
   ];
 
   const taskEvents: TaskEventBlock[] = [];

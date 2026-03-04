@@ -144,7 +144,7 @@ export class UserSettingsService {
         user_id: userId,
         name: 'Default',
         working_hours_start: 9,
-        working_hours_end: 22,
+        working_hours_end: 18,
         is_default: true,
         created_at: new Date(),
         updated_at: new Date(),

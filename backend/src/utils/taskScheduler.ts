@@ -44,7 +44,7 @@ export interface TaskSchedulingConfig {
 export const DEFAULT_CONFIG: TaskSchedulingConfig = {
   eventDurationMinutes: 60,
   workingHoursStart: 9,
-  workingHoursEnd: 22,
+  workingHoursEnd: 18,
   skipWeekends: false,
   defaultDaysWithoutDeadline: 14,
   minBlockMinutes: 15,
@@ -350,7 +350,9 @@ export function distributeEvents(
       hasOverlap(slot.start_time.getTime(), slot.end_time.getTime())
     ) {
       currentTime.setHours(currentTime.getHours() + 1, 0, 0, 0);
-      if (currentTime.getHours() >= config.workingHoursEnd) {
+      const todayHours = getDayWorkingHours(config, currentTime.getDay());
+      const endHour = todayHours ? todayHours.end : config.workingHoursEnd;
+      if (currentTime.getHours() >= endHour) {
         slot = null;
       }
     }
