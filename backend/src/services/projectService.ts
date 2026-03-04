@@ -48,6 +48,7 @@ export class ProjectService {
   async getAllProjects(
     client: SupabaseClient = serviceRoleSupabase
   ): Promise<Project[]> {
+    const startTime = Date.now();
     const { data, error } = await client
       .from('projects')
       .select('*')
@@ -55,6 +56,14 @@ export class ProjectService {
 
     if (error) {
       throw new Error(`Failed to fetch projects: ${error.message}`);
+    }
+
+    const duration = Date.now() - startTime;
+    const projectCount = data?.length || 0;
+    if (duration > 300) {
+      console.log(
+        `[ProjectService] Fetched ${projectCount} projects in ${duration}ms`
+      );
     }
 
     return data || [];
@@ -120,27 +129,45 @@ export class ProjectService {
     return data;
   }
 
-  // Delete project and all related tasks
+  // Delete project and all related tasks atomically
+  // Uses a database transaction via stored procedure to prevent data loss
+  // If any step fails, the entire operation is rolled back
   async deleteProject(
     id: string,
     client: SupabaseClient = serviceRoleSupabase
   ): Promise<boolean> {
-    const { error: tasksError } = await client
-      .from('tasks')
-      .delete()
-      .eq('project_id', id);
+    const startTime = Date.now();
 
-    if (tasksError) {
-      throw new Error(`Failed to delete project tasks: ${tasksError.message}`);
+    try {
+      // Call the atomic delete function as an RPC
+      const { data, error } = await client.rpc('delete_project_and_tasks', {
+        p_project_id: id,
+      });
+
+      if (error) {
+        throw new Error(`Failed to delete project: ${error.message}`);
+      }
+
+      // Verify the RPC returned a success response
+      if (!data || !data[0] || !data[0].success) {
+        const message = data?.[0]?.message || 'Unknown error';
+        throw new Error(`Project deletion failed: ${message}`);
+      }
+
+      const duration = Date.now() - startTime;
+      console.log(
+        `[ProjectService] Deleted project and all related data in ${duration}ms`
+      );
+
+      return true;
+    } catch (error) {
+      const duration = Date.now() - startTime;
+      console.error(
+        `[ProjectService] Delete failed after ${duration}ms:`,
+        error
+      );
+      throw error;
     }
-
-    const { error } = await client.from('projects').delete().eq('id', id);
-
-    if (error) {
-      throw new Error(`Failed to delete project: ${error.message}`);
-    }
-
-    return true;
   }
 
   // Get projects by status

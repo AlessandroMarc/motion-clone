@@ -1,5 +1,10 @@
 import { test, expect } from '@playwright/test';
-import { mockCalendarEvents, mockTasks, mockProjects, apiSuccess } from './fixtures/apiMocks';
+import {
+  mockCalendarEvents,
+  mockTasks,
+  mockProjects,
+  apiSuccess,
+} from './fixtures/apiMocks';
 
 /**
  * Calendar page E2E tests.
@@ -31,7 +36,11 @@ test.describe('Calendar page', () => {
         status: 200,
         contentType: 'application/json',
         body: JSON.stringify(
-          apiSuccess(mockTasks, 'Tasks retrieved successfully', mockTasks.length)
+          apiSuccess(
+            mockTasks,
+            'Tasks retrieved successfully',
+            mockTasks.length
+          )
         ),
       })
     );
@@ -79,14 +88,18 @@ test.describe('Calendar page', () => {
 
   test('shows a week navigation control', async ({ page }) => {
     // Week calendar should show navigation buttons (prev/next week)
-    const navButtons = page.getByRole('button').filter({ hasText: /today|week/i });
+    const navButtons = page
+      .getByRole('button')
+      .filter({ hasText: /today|week/i });
     // At least "Today" button should appear
     await expect(navButtons.first()).toBeVisible({ timeout: 10_000 });
   });
 
   test('shows the Tasks side panel on desktop', async ({ page }) => {
     // The Tasks heading in the side panel
-    await expect(page.getByText('Tasks').first()).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByText('Tasks').first()).toBeVisible({
+      timeout: 10_000,
+    });
   });
 
   test('has a panel toggle button', async ({ page }) => {

@@ -6,7 +6,6 @@ Set up Jest unit/integration tests across backend services + routes and frontend
 
 ## Status Summary
 
-
 **Current: 397 unit/integration tests passing** (213 frontend + 188 backend) + **15 E2E tests**
 
 - ✅ **Step 1: Backend Unit Tests** — DONE
@@ -121,6 +120,7 @@ Set up Jest unit/integration tests across backend services + routes and frontend
 ## Verification
 
 ### Current Status (Feb 27, 2026)
+
 - ✅ Run `npm run test:backend` → 188 backend tests pass (auth gaps fixed in milestones + Google Calendar)
 - ✅ Run `npm run test:frontend` → 213 frontend tests pass
 - ✅ Run `npm test` → all 401 unit/integration tests pass
@@ -129,6 +129,7 @@ Set up Jest unit/integration tests across backend services + routes and frontend
 - ⚠️ Coverage thresholds → frontend `collectCoverageFrom` configured; 80% threshold enforcement needs more service/context tests
 
 ### Completed
+
 - ✅ All 9 steps from the plan are implemented
 - ✅ Auth gaps fixed: milestones routes now require auth; Google Calendar `/status`, `/sync`, `/disconnect` now require auth
 - ✅ Playwright E2E suite with 15 tests, route interception for all API calls, auth bypass

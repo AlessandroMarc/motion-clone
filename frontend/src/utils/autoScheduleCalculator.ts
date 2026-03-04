@@ -10,7 +10,6 @@ import {
   createConfigFromSchedule,
   prepareTaskEvents,
   sortTasksForScheduling,
-  type TaskSchedulingConfig,
 } from '@/utils/taskScheduler';
 
 const DEBUG = process.env.NODE_ENV === 'development';
@@ -52,6 +51,7 @@ export function calculateAutoSchedule(params: {
   allCalendarEvents: CalendarEventUnion[];
   activeSchedule: Schedule | null;
   eventDuration: number;
+  schedules?: Schedule[];
 }): AutoScheduleResult {
   const {
     tasks,
@@ -59,6 +59,7 @@ export function calculateAutoSchedule(params: {
     allCalendarEvents,
     activeSchedule,
     eventDuration,
+    schedules = [],
   } = params;
 
   log('--- run ---', {
@@ -91,10 +92,8 @@ export function calculateAutoSchedule(params: {
   ).length;
   log('by deadline', { tasksWithDeadlineCount, tasksWithoutDeadlineCount });
 
-  const config: TaskSchedulingConfig = createConfigFromSchedule(
-    activeSchedule,
-    eventDuration
-  );
+  // Build a lookup so each task can use its own schedule's working hours
+  const scheduleMap = new Map<string, Schedule>(schedules.map(s => [s.id, s]));
 
   const completedTaskEvents = allCalendarEvents.filter(
     event => isCalendarEventTask(event) && event.completed_at !== null
@@ -103,45 +102,82 @@ export function calculateAutoSchedule(params: {
     event => !isCalendarEventTask(event)
   );
 
+  // Synthetic recurring-task placeholder events (id starts with "synthetic-").
+  // Add them to accumulatedScheduledEvents so slot-avoidance respects the
+  // time blocks that will be occupied by recurring tasks.
+  const syntheticEvents = existingEvents.filter(e =>
+    e.id.startsWith('synthetic-')
+  );
+
+  // All real (non-synthetic, non-completed) pending task events from OTHER
+  // tasks that are already persisted in the DB. Including these from the start
+  // ensures that recurring-task new-slot finding (and any task's slot search)
+  // never lands on a time block already occupied by another task's event.
+  const pendingTaskEvents = existingEvents.filter(
+    e => !e.id.startsWith('synthetic-') && e.completed_at === null
+  );
+
   const accumulatedScheduledEvents: CalendarEventUnion[] = [
     ...regularEvents,
     ...completedTaskEvents,
+    ...syntheticEvents,
+    ...pendingTaskEvents,
   ];
 
   const taskEvents: TaskEventBlock[] = [];
-  // Start from schedule's working hours start, or current time if later
+  // roundedNow is used as a floor when computing each task's start time
   const now = new Date();
-  const workingHoursStart = new Date(now);
-  workingHoursStart.setHours(config.workingHoursStart, 0, 0, 0);
-  workingHoursStart.setSeconds(0);
-  workingHoursStart.setMilliseconds(0);
-
-  // Use the later of: working hours start or current time (rounded to next 15 min)
   const roundedNow = roundToNext15Minutes(now);
-  const baseStartTime =
-    roundedNow > workingHoursStart ? roundedNow : workingHoursStart;
-  log('scheduling window', {
-    now: now.toISOString(),
-    roundedNow: roundedNow.toISOString(),
-    workingHoursStart: workingHoursStart.toISOString(),
-    baseStartTime: baseStartTime.toISOString(),
-  });
 
   // Track the latest event end time per task so blocked tasks can enforce
   // that they start only after ALL their blockers have finished.
   const taskLatestEndTime = new Map<string, Date>();
-  const gapMs = (config.gapBetweenEventsMinutes ?? 5) * 60 * 1000;
 
   for (let i = 0; i < sortedTasks.length; i++) {
     const task = sortedTasks[i];
+
+    // Use the schedule assigned to this task; fall back to the active schedule
+    const taskSchedule =
+      (task.schedule_id ? scheduleMap.get(task.schedule_id) : undefined) ??
+      activeSchedule;
+    const taskConfig = createConfigFromSchedule(taskSchedule, eventDuration);
+    const gapMs = (taskConfig.gapBetweenEventsMinutes ?? 5) * 60 * 1000;
+
+    // Base start time for this task according to its own schedule's working hours
+    const taskWorkingHoursStart = new Date(now);
+    taskWorkingHoursStart.setHours(taskConfig.workingHoursStart, 0, 0, 0);
+    taskWorkingHoursStart.setSeconds(0);
+    taskWorkingHoursStart.setMilliseconds(0);
+    const taskBaseStartTime =
+      roundedNow > taskWorkingHoursStart ? roundedNow : taskWorkingHoursStart;
+
+    // Real (non-synthetic) existing events for this task:
+    // - For recurring tasks: used for deduplication (which occurrence dates are
+    //   already persisted in the DB and must not be re-created).
+    // - For regular tasks: used to subtract already-done work from remaining minutes.
+    // Exclude synthetic placeholder events (id starts with "synthetic-") so we
+    // never mistake a placeholder for a persisted calendar event.
     const taskExistingEvents = existingEvents.filter(
-      event => event.linked_task_id === task.id && event.completed_at !== null
+      event =>
+        event.linked_task_id === task.id && !event.id.startsWith('synthetic-')
     );
+    if (task.is_recurring) {
+      console.log(
+        `[AUTOSCHEDULE:calc] task "${task.title}" is_recurring=true`,
+        {
+          totalExistingEvents: existingEvents.length,
+          taskExistingEvents: taskExistingEvents.length,
+          taskExistingDates: taskExistingEvents.map(e =>
+            new Date(e.start_time).toDateString()
+          ),
+        }
+      );
+    }
 
     // Determine the earliest this task can start:
-    // - at least baseStartTime
+    // - at least taskBaseStartTime (from its own schedule)
     // - if blocked by other tasks, after all blocker events have finished
-    let taskStartTime = new Date(baseStartTime);
+    let taskStartTime = new Date(taskBaseStartTime);
     const blockers = (task.blockedBy ?? []).filter(id =>
       taskLatestEndTime.has(id)
     );
@@ -163,7 +199,7 @@ export function calculateAutoSchedule(params: {
     const { events, violations } = prepareTaskEvents(
       task,
       taskExistingEvents,
-      config,
+      taskConfig,
       accumulatedScheduledEvents,
       taskStartTime
     );

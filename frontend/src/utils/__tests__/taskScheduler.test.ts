@@ -419,7 +419,13 @@ describe('taskScheduler', () => {
       const config = { ...DEFAULT_CONFIG, eventDurationMinutes: 60 };
       const startFrom = new Date('2024-01-01T09:00:00');
 
-      const result = prepareTaskEvents(task, existingEvents, config, [], startFrom);
+      const result = prepareTaskEvents(
+        task,
+        existingEvents,
+        config,
+        [],
+        startFrom
+      );
 
       expect(result.events.length).toBe(2);
       // Check if any violations exist (depends on distribution logic)

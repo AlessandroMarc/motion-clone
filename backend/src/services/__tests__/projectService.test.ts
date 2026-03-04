@@ -11,6 +11,7 @@ interface MockClient {
   eq: jest.Mock<any>;
   single: jest.Mock<any>;
   order: jest.Mock<any>;
+  rpc: jest.Mock<any>;
   [key: string]: jest.Mock<any>;
 }
 
@@ -23,6 +24,7 @@ const mockClient: MockClient = {
   eq: jest.fn(),
   single: jest.fn(),
   order: jest.fn(),
+  rpc: jest.fn(),
 };
 
 // Mock supabase BEFORE importing anything that uses it
@@ -62,7 +64,10 @@ describe('ProjectService', () => {
   describe('getAllProjects', () => {
     test('should return all projects', async () => {
       const projects = [makeProject({ id: 'p1' }), makeProject({ id: 'p2' })];
-      mockClient.order.mockResolvedValue({ data: projects, error: null });
+      // Set up the chain: from().select().order() awaits to the result
+      mockClient.select.mockReturnValueOnce({
+        order: jest.fn().mockResolvedValue({ data: projects, error: null }),
+      } as any);
 
       const result = await service.getAllProjects(mockClient as any);
 
@@ -71,7 +76,9 @@ describe('ProjectService', () => {
     });
 
     test('should return empty array when no projects', async () => {
-      mockClient.order.mockResolvedValue({ data: null, error: null });
+      mockClient.select.mockReturnValueOnce({
+        order: jest.fn().mockResolvedValue({ data: null, error: null }),
+      } as any);
 
       const result = await service.getAllProjects(mockClient as any);
 
@@ -246,29 +253,64 @@ describe('ProjectService', () => {
 
   // ─── deleteProject ────────────────────────────────────────────────────────────
   describe('deleteProject', () => {
-    test('should delete a project and return true', async () => {
-      const eqMock = jest.fn() as any;
-      eqMock.mockResolvedValue({ error: null });
-      mockClient.delete.mockReturnValue({ eq: eqMock });
+    test('should delete project and all related data atomically via RPC', async () => {
+      const mockRpc = jest.fn().mockResolvedValue({
+        data: [
+          {
+            success: true,
+            message: 'Project and all related data deleted successfully',
+          },
+        ],
+        error: null,
+      });
+      mockClient.rpc = mockRpc;
 
       const result = await service.deleteProject('proj-1', mockClient as any);
 
-      expect(mockClient.from).toHaveBeenCalledWith('projects');
-      expect(eqMock).toHaveBeenCalledWith('id', 'proj-1');
+      expect(mockRpc).toHaveBeenCalledWith('delete_project_and_tasks', {
+        p_project_id: 'proj-1',
+      });
       expect(result).toBe(true);
     });
 
-    test('should throw on database error', async () => {
-      const eqMock = jest.fn() as any;
-      // First call (tasks delete) succeeds
-      eqMock.mockResolvedValueOnce({ error: null });
-      // Second call (project delete) fails
-      eqMock.mockResolvedValueOnce({ error: { message: 'Delete failed' } });
-      mockClient.delete.mockReturnValue({ eq: eqMock });
+    test('should throw an error if RPC call fails', async () => {
+      const mockRpc = jest.fn().mockResolvedValue({
+        data: null,
+        error: { message: 'RPC call failed' },
+      });
+      mockClient.rpc = mockRpc;
+
+      // Suppress expected error log
+      const consoleErrorSpy = jest
+        .spyOn(console, 'error')
+        .mockImplementation(() => {});
 
       await expect(
         service.deleteProject('proj-1', mockClient as any)
-      ).rejects.toThrow('Failed to delete project: Delete failed');
+      ).rejects.toThrow('Failed to delete project: RPC call failed');
+
+      consoleErrorSpy.mockRestore();
+    });
+
+    test('should throw an error if RPC returns failure status', async () => {
+      const mockRpc = jest.fn().mockResolvedValue({
+        data: [{ success: false, message: 'Database constraint violation' }],
+        error: null,
+      });
+      mockClient.rpc = mockRpc;
+
+      // Suppress expected error log
+      const consoleErrorSpy = jest
+        .spyOn(console, 'error')
+        .mockImplementation(() => {});
+
+      await expect(
+        service.deleteProject('proj-1', mockClient as any)
+      ).rejects.toThrow(
+        'Project deletion failed: Database constraint violation'
+      );
+
+      consoleErrorSpy.mockRestore();
     });
   });
 
@@ -276,7 +318,7 @@ describe('ProjectService', () => {
   describe('getProjectsByStatus', () => {
     test('should return projects filtered by status', async () => {
       const projects = [makeProject({ status: 'in-progress' })];
-      mockClient.order.mockResolvedValue({ data: projects, error: null });
+      mockClient.order.mockResolvedValueOnce({ data: projects, error: null });
 
       const result = await service.getProjectsByStatus(
         'in-progress',
@@ -288,7 +330,7 @@ describe('ProjectService', () => {
     });
 
     test('should return empty array when none match', async () => {
-      mockClient.order.mockResolvedValue({ data: null, error: null });
+      mockClient.order.mockResolvedValueOnce({ data: [], error: null });
 
       const result = await service.getProjectsByStatus(
         'completed',
@@ -299,14 +341,14 @@ describe('ProjectService', () => {
     });
 
     test('should throw on database error', async () => {
-      mockClient.order.mockResolvedValue({
+      mockClient.order.mockResolvedValueOnce({
         data: null,
-        error: { message: 'Filter failed' },
+        error: { message: 'DB error' },
       });
 
       await expect(
         service.getProjectsByStatus('not-started', mockClient as any)
-      ).rejects.toThrow('Failed to fetch projects by status: Filter failed');
+      ).rejects.toThrow('Failed to fetch projects by status: DB error');
     });
   });
 });
