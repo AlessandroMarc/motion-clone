@@ -18,7 +18,7 @@ import { expandRecurringTasks } from '@/utils/recurrenceCalculator';
 // Constants
 // ---------------------------------------------------------------------------
 const DEBOUNCE_MS = 1_000;
-const THROTTLE_MS = 30_000;
+const THROTTLE_MS = 3_000;
 const DEFAULT_EVENT_DURATION = 60;
 /** Minimum time between two consecutive auto-applies (safety net). */
 const APPLY_COOLDOWN_MS = 15_000;
@@ -741,6 +741,7 @@ export function useAutoSchedule(
     // NOTE: events.length was intentionally removed — it caused re-triggering
     // after every apply (since apply changes event count), leading to infinite
     // oscillation loops.
+    schedulesState.length,
   ]);
 
   return {

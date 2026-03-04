@@ -252,6 +252,8 @@ export function calculateAutoSchedule(params: {
     // alongside any new events. Previously, existing events were dropped when
     // events.length > 0, causing the scheduler to delete valid persisted events
     // on the next cycle and creating an infinite oscillation loop.
+    // NOTE: Use effectiveExistingEvents (overlapping events excluded) so we never
+    // reclaim events that overlap with other events.
     const existingMapped = effectiveExistingEvents.map(e => ({
       task_id: task.id,
       start_time: new Date(e.start_time),
