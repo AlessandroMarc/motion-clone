@@ -266,6 +266,34 @@ class CalendarService {
       }));
     }
   }
+  /**
+   * Run the auto-schedule algorithm on the backend.
+   * The backend fetches tasks, events and schedules, computes the optimal
+   * schedule and applies the diff (creates / deletes calendar events).
+   *
+   * Returns a summary of what changed.
+   */
+  async runAutoSchedule(): Promise<{
+    unchanged: boolean;
+    eventsCreated: number;
+    eventsDeleted: number;
+    violations: number;
+  }> {
+    const response = await request<{
+      unchanged: boolean;
+      eventsCreated: number;
+      eventsDeleted: number;
+      violations: number;
+    }>('/auto-schedule/run', {
+      method: 'POST',
+    });
+
+    if (!response.success || !response.data) {
+      throw new Error(response.error || 'Failed to run auto-schedule');
+    }
+
+    return response.data;
+  }
 }
 
 export const calendarService = new CalendarService();

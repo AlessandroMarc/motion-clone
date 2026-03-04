@@ -1,3 +1,8 @@
+/**
+ * Task scheduling utilities — backend port of frontend/src/utils/taskScheduler.ts
+ * Handles slot-finding, event distribution and sort logic.
+ */
+
 import type {
   Task,
   CalendarEventTask,
@@ -5,23 +10,35 @@ import type {
   Schedule,
   DayOfWeek,
   DaySchedule,
-} from '@/types';
-import { TASK_PRIORITY_RANK } from '@/utils/taskUtils';
+} from '../types/database.js';
 import {
   generateOccurrenceDates,
   get90DayHorizon,
-} from '@/utils/recurrenceCalculator';
+} from './recurrenceCalculator.js';
+
+// ---------------------------------------------------------------------------
+// Priority rank (mirrors frontend/src/utils/taskUtils.ts)
+// ---------------------------------------------------------------------------
+const TASK_PRIORITY_RANK: Record<'low' | 'medium' | 'high', number> = {
+  high: 3,
+  medium: 2,
+  low: 1,
+};
+
+// ---------------------------------------------------------------------------
+// Config
+// ---------------------------------------------------------------------------
 
 export interface TaskSchedulingConfig {
   eventDurationMinutes: number;
-  workingHoursStart: number; // 9
-  workingHoursEnd: number; // 22
-  workingDays?: Record<DayOfWeek, DaySchedule | null>; // per-day overrides; when set, takes precedence over workingHoursStart/End and skipWeekends
+  workingHoursStart: number;
+  workingHoursEnd: number;
+  workingDays?: Record<DayOfWeek, DaySchedule | null>;
   skipWeekends?: boolean;
   sortStrategy?: (tasks: Task[]) => Task[];
   defaultDaysWithoutDeadline?: number;
-  minBlockMinutes?: number; // Minimum duration for a partial block
-  gapBetweenEventsMinutes?: number; // Gap between events
+  minBlockMinutes?: number;
+  gapBetweenEventsMinutes?: number;
 }
 
 export const DEFAULT_CONFIG: TaskSchedulingConfig = {
@@ -34,22 +51,22 @@ export const DEFAULT_CONFIG: TaskSchedulingConfig = {
   gapBetweenEventsMinutes: 5,
 };
 
-/**
- * Create a TaskSchedulingConfig from a Schedule
- */
 export function createConfigFromSchedule(
   schedule: Schedule | null,
   eventDurationMinutes = 60
 ): TaskSchedulingConfig {
-  return {
+  const config: TaskSchedulingConfig = {
     ...DEFAULT_CONFIG,
     eventDurationMinutes,
     workingHoursStart:
       schedule?.working_hours_start ?? DEFAULT_CONFIG.workingHoursStart,
     workingHoursEnd:
       schedule?.working_hours_end ?? DEFAULT_CONFIG.workingHoursEnd,
-    workingDays: schedule?.working_days ?? undefined,
   };
+  if (schedule?.working_days) {
+    config.workingDays = schedule.working_days;
+  }
+  return config;
 }
 
 export interface ScheduledEvent {
@@ -58,13 +75,30 @@ export interface ScheduledEvent {
   end_time: Date;
 }
 
-/**
- * Calculate remaining planned minutes after accounting for work already done.
- * Subtracts both `task.actual_duration_minutes` and the total duration of
- * existing calendar events linked to this task from the planned duration.
- * If planned_duration_minutes is 0 or unset, we return one block's worth so the
- * task still gets scheduled during auto-schedule.
- */
+// ---------------------------------------------------------------------------
+// Working hours helpers
+// ---------------------------------------------------------------------------
+
+export function getDayWorkingHours(
+  config: TaskSchedulingConfig,
+  dayOfWeek: number
+): DaySchedule | null {
+  if (config.workingDays) {
+    const day = dayOfWeek as DayOfWeek;
+    if (day in config.workingDays) {
+      return config.workingDays[day] ?? null;
+    }
+  }
+  if (config.skipWeekends && (dayOfWeek === 0 || dayOfWeek === 6)) {
+    return null;
+  }
+  return { start: config.workingHoursStart, end: config.workingHoursEnd };
+}
+
+// ---------------------------------------------------------------------------
+// Duration helpers
+// ---------------------------------------------------------------------------
+
 export function calculateRemainingDurationMinutes(
   task: Task,
   existingEvents: CalendarEventTask[],
@@ -84,55 +118,23 @@ export function calculateRemainingDurationMinutes(
     planned - actual - existingEventsDuration
   );
 
-  // Tasks with 0 planned (or already covered) get a single block so they still appear
   return remainingDuration === 0 && planned === 0
     ? config.eventDurationMinutes
     : remainingDuration;
 }
 
-/**
- * Check if a time slot overlaps with any existing calendar events
- */
+// ---------------------------------------------------------------------------
+// Round to next 15 minutes
+// ---------------------------------------------------------------------------
 
-/**
- * Return the working hours for a given day-of-week according to the config.
- * Returns null when the day is not a working day.
- * Falls back to global workingHoursStart/End (respecting skipWeekends) when
- * workingDays is not configured or when a specific day key is missing.
- */
-export function getDayWorkingHours(
-  config: TaskSchedulingConfig,
-  dayOfWeek: number
-): DaySchedule | null {
-  if (config.workingDays) {
-    // Check if this specific day is configured in workingDays
-    const day = dayOfWeek as DayOfWeek;
-    if (day in config.workingDays) {
-      // Return the value (could be null for non-working days or a DaySchedule)
-      return config.workingDays[day];
-    }
-    // Day key is missing in workingDays - fall back to legacy behavior
-  }
-  // Legacy: use global hours, optionally skipping weekends
-  if (config.skipWeekends && (dayOfWeek === 0 || dayOfWeek === 6)) {
-    return null;
-  }
-  return { start: config.workingHoursStart, end: config.workingHoursEnd };
-}
-
-/**
- * Round time to next 15-minute interval
- */
 function roundToNext15Minutes(date: Date): Date {
   const rounded = new Date(date);
   const minutes = rounded.getMinutes();
   const remainder = minutes % 15;
 
   if (remainder === 0) {
-    // Already on a 15-minute boundary, add 15 minutes
     rounded.setMinutes(minutes + 15);
   } else {
-    // Round up to next 15-minute boundary
     rounded.setMinutes(minutes + (15 - remainder));
   }
 
@@ -141,10 +143,10 @@ function roundToNext15Minutes(date: Date): Date {
   return rounded;
 }
 
-/**
- * Get the next available time slot starting from a given time
- * Returns null if no slot is available before end of day
- */
+// ---------------------------------------------------------------------------
+// Slot finder
+// ---------------------------------------------------------------------------
+
 interface TimeRange {
   start: number;
   end: number;
@@ -162,13 +164,11 @@ function getNextAvailableSlot(
   const dayOfWeek = dateObj.getDay();
   const dayHours = getDayWorkingHours(config, dayOfWeek);
 
-  // No working hours on this day
   if (!dayHours) return null;
 
   dateObj.setHours(dayHours.end, 0, 0, 0);
   const endOfDay = dateObj.getTime();
 
-  // Ensure we're within working hours
   const workingStartObj = new Date(startFrom);
   workingStartObj.setHours(dayHours.start, 0, 0, 0);
   const workingStart = workingStartObj.getTime();
@@ -185,56 +185,53 @@ function getNextAvailableSlot(
   const minBlockMs = (config.minBlockMinutes ?? 15) * 60 * 1000;
   const duration60min = config.eventDurationMinutes * 60 * 1000;
 
-  // Helper: check if a proposed slot overlaps with any existing event
   const wouldOverlap = (slotStart: number, slotEnd: number): boolean => {
     return sortedExistingEvents.some(
       e => slotStart < e.end && slotEnd > e.start
     );
   };
 
-  // Filter events that might affect today's schedule
   const relevantEvents = sortedExistingEvents.filter(
     e => e.start < endOfDay && e.end > workingStart
   );
 
-  // Build gaps explicitly
   const gaps: Array<{ start: number; end: number }> = [];
 
   if (relevantEvents.length === 0) {
-    // Whole day is free
     gaps.push({ start: currentTime, end: endOfDay });
   } else {
-    // Sort events by start time
     const sorted = [...relevantEvents].sort((a, b) => a.start - b.start);
+    const firstEvent = sorted[0];
+    const lastEvent = sorted[sorted.length - 1];
 
-    // Gap at beginning of day
-    if (sorted[0].start > currentTime) {
+    if (firstEvent && firstEvent.start > currentTime) {
       gaps.push({
         start: Math.max(currentTime, workingStart),
-        end: sorted[0].start,
+        end: firstEvent.start,
       });
     }
 
-    // Gaps between events
     for (let i = 0; i < sorted.length - 1; i++) {
-      const gapStart = sorted[i].end + gapMs;
-      const gapEnd = sorted[i + 1].start;
-      if (gapStart < gapEnd) {
-        gaps.push({ start: gapStart, end: gapEnd });
+      const cur = sorted[i];
+      const next = sorted[i + 1];
+      if (cur && next) {
+        const gapStart = cur.end + gapMs;
+        const gapEnd = next.start;
+        if (gapStart < gapEnd) {
+          gaps.push({ start: gapStart, end: gapEnd });
+        }
       }
     }
 
-    // Gap at end of day
-    const lastEvent = sorted[sorted.length - 1];
-    const gapStart = lastEvent.end + gapMs;
-    if (gapStart < endOfDay) {
-      gaps.push({ start: gapStart, end: endOfDay });
+    if (lastEvent) {
+      const gapStart = lastEvent.end + gapMs;
+      if (gapStart < endOfDay) {
+        gaps.push({ start: gapStart, end: endOfDay });
+      }
     }
   }
 
-  // Find first gap that can fit our event
   for (const gap of gaps) {
-    // Skip gaps entirely before current time
     if (gap.end <= currentTime) continue;
 
     const gapStart = Math.max(gap.start, currentTime);
@@ -249,23 +246,12 @@ function getNextAvailableSlot(
       const slotStart = gapStart;
       const slotEnd = gapStart + durationMs;
 
-      // Final safety check: ensure no overlap
       if (!wouldOverlap(slotStart, slotEnd)) {
         return {
           task_id: taskId,
           start_time: new Date(slotStart),
           end_time: new Date(slotEnd),
         };
-      } else {
-        console.warn(
-          `[OVERLAP:safety] Proposed slot still overlaps after gap calculation!`,
-          {
-            gap,
-            slotStart: new Date(slotStart),
-            slotEnd: new Date(slotEnd),
-            taskId,
-          }
-        );
       }
     }
   }
@@ -273,10 +259,10 @@ function getNextAvailableSlot(
   return null;
 }
 
-/**
- * Schedule events consecutively starting from a given time
- * Events are placed back-to-back with a small gap, moving to next day if needed
- */
+// ---------------------------------------------------------------------------
+// distributeEvents
+// ---------------------------------------------------------------------------
+
 export function distributeEvents(
   task: Task,
   remainingMinutes: number,
@@ -288,7 +274,6 @@ export function distributeEvents(
     return [];
   }
 
-  // Start from provided time, or use working hours start if current time is before it
   let currentTime: Date;
   if (startFrom) {
     currentTime = new Date(startFrom);
@@ -303,12 +288,10 @@ export function distributeEvents(
     workingHoursStart.setHours(startHour, 0, 0, 0);
     workingHoursStart.setSeconds(0);
     workingHoursStart.setMilliseconds(0);
-    // Use the later of: working hours start or current time (rounded)
     currentTime =
       roundedNow > workingHoursStart ? roundedNow : workingHoursStart;
   }
 
-  // Respect start_date: don't schedule before the task's earliest allowed date
   if (task.start_date) {
     const startDateWorkingHours = new Date(task.start_date);
     startDateWorkingHours.setHours(config.workingHoursStart, 0, 0, 0);
@@ -317,7 +300,6 @@ export function distributeEvents(
     }
   }
 
-  // Determine end date
   let endDate: Date;
   const dueDate = task.due_date;
   const hasDueDate = !!dueDate;
@@ -325,7 +307,6 @@ export function distributeEvents(
     endDate = new Date(dueDate);
     endDate.setHours(23, 59, 59, 999);
   } else {
-    // Use default days from effective scheduling start (after start_date clamp)
     const horizonStart = new Date(currentTime);
     horizonStart.setHours(0, 0, 0, 0);
     endDate = new Date(horizonStart);
@@ -335,7 +316,6 @@ export function distributeEvents(
     endDate.setHours(23, 59, 59, 999);
   }
 
-  // Ensure end date is not before current time (due_date path only)
   if (hasDueDate && endDate < currentTime) {
     endDate = new Date(currentTime);
     endDate.setDate(endDate.getDate() + 1);
@@ -345,7 +325,6 @@ export function distributeEvents(
   const events: ScheduledEvent[] = [];
   const gapMs = (config.gapBetweenEventsMinutes ?? 5) * 60 * 1000;
 
-  // Pre-process and sort existing events for efficiency
   const sortedExistingEvents: TimeRange[] = allExistingEvents
     .map(e => ({
       start: new Date(e.start_time).getTime(),
@@ -353,13 +332,11 @@ export function distributeEvents(
     }))
     .sort((a, b) => a.start - b.start);
 
-  // Helper: check if a time range overlaps with ANY existing event
   const hasOverlap = (start: number, end: number): boolean => {
     return sortedExistingEvents.some(e => start < e.end && end > e.start);
   };
 
   while (remainingMinutes > 0) {
-    // Get next available slot starting from current time
     let slot = getNextAvailableSlot(
       currentTime.getTime(),
       config,
@@ -368,36 +345,18 @@ export function distributeEvents(
       remainingMinutes
     );
 
-    // Validate that slot doesn't overlap (belt-and-suspenders check)
     if (
       slot &&
       hasOverlap(slot.start_time.getTime(), slot.end_time.getTime())
     ) {
-      const slotStartMs = slot.start_time.getTime();
-      const slotEndMs = slot.end_time.getTime();
-      console.warn(
-        `[OVERLAP:detect] WARNING: slot ${slot.start_time.toISOString()}-${slot.end_time.toISOString()} overlaps!`,
-        {
-          taskId: task.id,
-          taskTitle: task.title,
-          slotStart: new Date(slotStartMs),
-          slotEnd: new Date(slotEndMs),
-          eventCount: sortedExistingEvents.length,
-          overlappingEvents: sortedExistingEvents.filter(
-            e => slotStartMs < e.end && slotEndMs > e.start
-          ),
-        }
-      );
-      // Skip this bad slot and move to end of day
       currentTime.setHours(currentTime.getHours() + 1, 0, 0, 0);
       if (currentTime.getHours() >= config.workingHoursEnd) {
         slot = null;
       }
     }
 
-    // If no slot available today, advance day-by-day until we find one or pass endDate
     let daysSearched = 0;
-    const MAX_DAYS = 365; // Don't search infinitely
+    const MAX_DAYS = 365;
 
     while (!slot && daysSearched < MAX_DAYS) {
       daysSearched++;
@@ -423,18 +382,10 @@ export function distributeEvents(
         remainingMinutes
       );
 
-      // Re-validate for new day too
       if (
         slot &&
         hasOverlap(slot.start_time.getTime(), slot.end_time.getTime())
       ) {
-        console.warn(
-          `[OVERLAP:detect] WARNING: day-advance slot overlaps too!`,
-          {
-            taskId: task.id,
-            date: currentTime.toDateString(),
-          }
-        );
         slot = null;
       }
     }
@@ -444,26 +395,12 @@ export function distributeEvents(
     }
 
     events.push(slot);
-    const slotStart = slot.start_time.toLocaleTimeString('it-IT', {
-      hour: '2-digit',
-      minute: '2-digit',
-      timeZone: 'UTC',
-    });
-    const slotEnd = slot.end_time.toLocaleTimeString('it-IT', {
-      hour: '2-digit',
-      minute: '2-digit',
-      timeZone: 'UTC',
-    });
-    console.log(
-      `[DISTRIBUTE:slot] task="${task.title}" event #${events.length} ${slotStart}-${slotEnd} (remaining=${remainingMinutes}min, accumulated=${sortedExistingEvents.length} events)`
-    );
 
     const slotDurationMinutes = Math.round(
       (slot.end_time.getTime() - slot.start_time.getTime()) / (1000 * 60)
     );
     remainingMinutes = Math.max(0, remainingMinutes - slotDurationMinutes);
 
-    // Add this event to sorted list for subsequent slots
     const newEventRange = {
       start: slot.start_time.getTime(),
       end: slot.end_time.getTime(),
@@ -471,121 +408,16 @@ export function distributeEvents(
     sortedExistingEvents.push(newEventRange);
     sortedExistingEvents.sort((a, b) => a.start - b.start);
 
-    // Move current time to end of this event + gap for next event
     currentTime = new Date(slot.end_time.getTime() + gapMs);
   }
 
   return events;
 }
 
-/**
- * Compare two tasks by due_date (nulls last), then by priority (high first).
- */
-function compareByDateAndPriority(a: Task, b: Task): number {
-  if (a.due_date && !b.due_date) return -1;
-  if (!a.due_date && b.due_date) return 1;
-  if (a.due_date && b.due_date) {
-    const dateDiff = a.due_date.getTime() - b.due_date.getTime();
-    if (dateDiff !== 0) return dateDiff;
-  }
+// ---------------------------------------------------------------------------
+// Deadline / overlap checks
+// ---------------------------------------------------------------------------
 
-  return (
-    (TASK_PRIORITY_RANK[b.priority] ?? 0) -
-    (TASK_PRIORITY_RANK[a.priority] ?? 0)
-  );
-}
-
-/**
- * Topological sort that respects blockedBy dependencies.
- *
- * Uses Kahn's algorithm: tasks whose blockers have all been placed are
- * emitted first. Within each "wave" of unblocked tasks, the existing
- * date/priority comparator decides the order.
- *
- * Handles cycles / missing refs gracefully — any tasks that can't be
- * resolved are appended at the end sorted by date/priority.
- */
-function topologicalSort(tasks: Task[]): Task[] {
-  const taskMap = new Map<string, Task>();
-  for (const task of tasks) {
-    taskMap.set(task.id, task);
-  }
-
-  // Build in-degree map (only count blockers that are in the current set)
-  const inDegree = new Map<string, number>();
-  // Map from blocker id → tasks it unblocks
-  const dependents = new Map<string, string[]>();
-
-  for (const task of tasks) {
-    const blockers = (task.blockedBy ?? []).filter(id => taskMap.has(id));
-    inDegree.set(task.id, blockers.length);
-    for (const blockerId of blockers) {
-      const list = dependents.get(blockerId) ?? [];
-      list.push(task.id);
-      dependents.set(blockerId, list);
-    }
-  }
-
-  // Seed the queue with tasks that have no blockers in the set
-  const queue: Task[] = tasks
-    .filter(t => (inDegree.get(t.id) ?? 0) === 0)
-    .sort(compareByDateAndPriority);
-
-  const result: Task[] = [];
-  const placed = new Set<string>();
-
-  while (queue.length > 0) {
-    const task = queue.shift()!;
-    if (placed.has(task.id)) continue;
-
-    result.push(task);
-    placed.add(task.id);
-
-    // Collect all newly unblocked tasks, then sort the batch
-    const newlyReady: Task[] = [];
-    for (const depId of dependents.get(task.id) ?? []) {
-      const newDeg = (inDegree.get(depId) ?? 1) - 1;
-      inDegree.set(depId, newDeg);
-      if (newDeg === 0 && !placed.has(depId)) {
-        const depTask = taskMap.get(depId);
-        if (depTask) newlyReady.push(depTask);
-      }
-    }
-
-    if (newlyReady.length > 0) {
-      newlyReady.sort(compareByDateAndPriority);
-      // Merge into queue maintaining sort order
-      queue.push(...newlyReady);
-      queue.sort(compareByDateAndPriority);
-    }
-  }
-
-  // Append any remaining tasks (cycles or orphaned refs) sorted normally
-  if (placed.size < tasks.length) {
-    const remaining = tasks
-      .filter(t => !placed.has(t.id))
-      .sort(compareByDateAndPriority);
-    result.push(...remaining);
-  }
-
-  return result;
-}
-
-/**
- * Sort tasks for scheduling: respects blockedBy dependencies first,
- * then by due_date (nulls last), then by priority.
- */
-export function sortTasksForScheduling(
-  tasks: Task[],
-  config: TaskSchedulingConfig = DEFAULT_CONFIG
-): Task[] {
-  const sortStrategy = config.sortStrategy || topologicalSort;
-  return sortStrategy([...tasks]);
-}
-
-/**
- * Check which events violate the task deadline
- */
 export function checkDeadlineViolations(
   events: ScheduledEvent[],
   task: Task
@@ -600,10 +432,6 @@ export function checkDeadlineViolations(
   return events.filter(event => event.start_time > deadline);
 }
 
-/**
- * Check if events overlap with each other or with provided existing events.
- * Returns the list of events that have overlaps.
- */
 export function checkEventOverlaps(
   events: ScheduledEvent[],
   existingEvents?: CalendarEventUnion[]
@@ -623,23 +451,21 @@ export function checkEventOverlaps(
 
   const overlappingProposed = new Set<number>();
 
-  // Check each proposed event against all others
   for (let i = 0; i < events.length; i++) {
+    const ev = events[i];
+    if (!ev) continue;
     const proposedMs = {
-      start: events[i].start_time.getTime(),
-      end: events[i].end_time.getTime(),
+      start: ev.start_time.getTime(),
+      end: ev.end_time.getTime(),
     };
 
     for (let j = 0; j < allEvents.length; j++) {
-      if (
-        i === j && // Don't compare with itself
-        allEvents[j].source === 'proposed'
-      ) {
+      const other = allEvents[j];
+      if (!other) continue;
+      if (i === j && other.source === 'proposed') {
         continue;
       }
 
-      const other = allEvents[j];
-      // Check if ranges overlap: start < other.end AND end > other.start
       if (proposedMs.start < other.end && proposedMs.end > other.start) {
         overlappingProposed.add(i);
         break;
@@ -650,20 +476,97 @@ export function checkEventOverlaps(
   return events.filter((_, i) => overlappingProposed.has(i));
 }
 
-/**
- * Schedule one event per occurrence for a recurring task over the 90-day horizon.
- * Each occurrence gets exactly `planned_duration_minutes` minutes.
- *
- * KEY INVARIANT: every occurrence date that already has a real (persisted)
- * calendar event is RE-INCLUDED in the return value with the SAME slot times.
- * This ensures the proposed schedule always has exactly N events (one per
- * occurrence), so `isSameSchedule` and `applySchedule` see a stable schedule
- * and never delete-all-then-recreate on every run.
- *
- * @param existingTaskEvents - Real (non-synthetic) events already in the DB
- *   for this task. Used for deduplication AND for re-claiming slots.
- * @param allExistingEvents - All events (for slot-overlap avoidance on new dates).
- */
+// ---------------------------------------------------------------------------
+// Sort helpers
+// ---------------------------------------------------------------------------
+
+function compareByDateAndPriority(a: Task, b: Task): number {
+  if (a.due_date && !b.due_date) return -1;
+  if (!a.due_date && b.due_date) return 1;
+  if (a.due_date && b.due_date) {
+    const dateDiff =
+      new Date(a.due_date).getTime() - new Date(b.due_date).getTime();
+    if (dateDiff !== 0) return dateDiff;
+  }
+
+  return (
+    (TASK_PRIORITY_RANK[b.priority] ?? 0) -
+    (TASK_PRIORITY_RANK[a.priority] ?? 0)
+  );
+}
+
+function topologicalSort(tasks: Task[]): Task[] {
+  const taskMap = new Map<string, Task>();
+  for (const task of tasks) {
+    taskMap.set(task.id, task);
+  }
+
+  const inDegree = new Map<string, number>();
+  const dependents = new Map<string, string[]>();
+
+  for (const task of tasks) {
+    const blockers = (task.blockedBy ?? []).filter(id => taskMap.has(id));
+    inDegree.set(task.id, blockers.length);
+    for (const blockerId of blockers) {
+      const list = dependents.get(blockerId) ?? [];
+      list.push(task.id);
+      dependents.set(blockerId, list);
+    }
+  }
+
+  const queue: Task[] = tasks
+    .filter(t => (inDegree.get(t.id) ?? 0) === 0)
+    .sort(compareByDateAndPriority);
+
+  const result: Task[] = [];
+  const placed = new Set<string>();
+
+  while (queue.length > 0) {
+    const task = queue.shift();
+    if (!task || placed.has(task.id)) continue;
+
+    result.push(task);
+    placed.add(task.id);
+
+    const newlyReady: Task[] = [];
+    for (const depId of dependents.get(task.id) ?? []) {
+      const newDeg = (inDegree.get(depId) ?? 1) - 1;
+      inDegree.set(depId, newDeg);
+      if (newDeg === 0 && !placed.has(depId)) {
+        const depTask = taskMap.get(depId);
+        if (depTask) newlyReady.push(depTask);
+      }
+    }
+
+    if (newlyReady.length > 0) {
+      newlyReady.sort(compareByDateAndPriority);
+      queue.push(...newlyReady);
+      queue.sort(compareByDateAndPriority);
+    }
+  }
+
+  if (placed.size < tasks.length) {
+    const remaining = tasks
+      .filter(t => !placed.has(t.id))
+      .sort(compareByDateAndPriority);
+    result.push(...remaining);
+  }
+
+  return result;
+}
+
+export function sortTasksForScheduling(
+  tasks: Task[],
+  config: TaskSchedulingConfig = DEFAULT_CONFIG
+): Task[] {
+  const sortStrategy = config.sortStrategy || topologicalSort;
+  return sortStrategy([...tasks]);
+}
+
+// ---------------------------------------------------------------------------
+// Recurring task event preparation
+// ---------------------------------------------------------------------------
+
 function prepareRecurringTaskEvents(
   task: Task,
   existingTaskEvents: CalendarEventTask[],
@@ -681,7 +584,6 @@ function prepareRecurringTaskEvents(
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
-  // Anchor: day-of-week / day-of-month is determined by recurrence_start_date
   const anchor = task.recurrence_start_date
     ? new Date(task.recurrence_start_date)
     : today;
@@ -695,7 +597,6 @@ function prepareRecurringTaskEvents(
   );
   const occurrenceDates = allOccurrenceDates.filter(d => d >= today);
 
-  // Build dateString → first existing event map (one per date, deduplicates).
   const existingByDate = new Map<string, CalendarEventTask>();
   for (const e of existingTaskEvents) {
     const ds = new Date(e.start_time).toDateString();
@@ -704,19 +605,6 @@ function prepareRecurringTaskEvents(
     }
   }
 
-  console.log(
-    `[AUTOSCHEDULE:recurring] prepareRecurringTaskEvents task="${task.title}"`,
-    {
-      anchor: anchor.toDateString(),
-      occurrenceCount: occurrenceDates.length,
-      occurrences: occurrenceDates.map(d => d.toDateString()),
-      existingEventsTotal: existingTaskEvents.length,
-      existingUniqueDates: existingByDate.size,
-      existingDates: Array.from(existingByDate.keys()),
-    }
-  );
-
-  // Pre-sort all events for slot-finding (used only for new slots)
   const sortedExisting = allExistingEvents
     .map(e => ({
       start: new Date(e.start_time).getTime(),
@@ -731,22 +619,15 @@ function prepareRecurringTaskEvents(
     const existing = existingByDate.get(ds);
 
     if (existing) {
-      // Already persisted → re-include the same slot so the proposed schedule
-      // is stable and `applySchedule` sees zero diff for this occurrence.
       const slot: ScheduledEvent = {
         task_id: task.id,
         start_time: new Date(existing.start_time),
         end_time: new Date(existing.end_time),
       };
       events.push(slot);
-      console.log(
-        `[AUTOSCHEDULE:recurring]   ${ds} → RECLAIMED existing`,
-        new Date(existing.start_time).toISOString()
-      );
       continue;
     }
 
-    // No persisted event yet → find a fresh slot on that day
     const dayConfig: TaskSchedulingConfig = {
       ...config,
       eventDurationMinutes: occurrenceDurationMinutes,
@@ -754,8 +635,6 @@ function prepareRecurringTaskEvents(
     const dayOfWeek = occurrenceDate.getDay();
     const dayHours = getDayWorkingHours(dayConfig, dayOfWeek);
     if (!dayHours) {
-      // This day is not a working day according to the schedule
-      console.warn(`[AUTOSCHEDULE:recurring]   ${ds} → NOT a working day`);
       continue;
     }
     const dayStart = new Date(occurrenceDate);
@@ -776,29 +655,16 @@ function prepareRecurringTaskEvents(
         end: slot.end_time.getTime(),
       });
       sortedExisting.sort((a, b) => a.start - b.start);
-      console.log(
-        `[AUTOSCHEDULE:recurring]   ${ds} → NEW slot`,
-        slot.start_time.toISOString()
-      );
-    } else {
-      console.warn(`[AUTOSCHEDULE:recurring]   ${ds} → NO slot available`);
     }
   }
 
-  console.log(
-    `[AUTOSCHEDULE:recurring] result: ${events.length} proposed for ${occurrenceDates.length} occurrences`
-  );
   return { events, violations: [] };
 }
 
-/**
- * Prepare events for a task, calculating required events and distributing them
- * @param task - The task to schedule
- * @param existingTaskEvents - Existing calendar events linked to this specific task
- * @param config - Scheduling configuration
- * @param allExistingEvents - All existing calendar events (to avoid overlaps)
- * @param startFrom - Time to start scheduling from (defaults to now rounded to next 15 minutes)
- */
+// ---------------------------------------------------------------------------
+// prepareTaskEvents — public API
+// ---------------------------------------------------------------------------
+
 export function prepareTaskEvents(
   task: Task,
   existingTaskEvents: CalendarEventTask[],
@@ -809,7 +675,6 @@ export function prepareTaskEvents(
   events: ScheduledEvent[];
   violations: ScheduledEvent[];
 } {
-  // Recurring tasks: one event per occurrence, not a duration-filling budget
   if (task.is_recurring && task.recurrence_pattern) {
     return prepareRecurringTaskEvents(
       task,
@@ -825,12 +690,6 @@ export function prepareTaskEvents(
     config
   );
 
-  if (remainingMinutes > 0) {
-    console.log(
-      `[SCHEDULE:task] "${task.title}" remaining=${remainingMinutes} existing=${allExistingEvents.length}`
-    );
-  }
-
   const events = distributeEvents(
     task,
     remainingMinutes,
@@ -839,11 +698,9 @@ export function prepareTaskEvents(
     startFrom
   );
 
-  // Check both deadline violations AND time overlaps
   const deadlineViolations = checkDeadlineViolations(events, task);
   const overlapViolations = checkEventOverlaps(events, allExistingEvents);
 
-  // Combine violations, avoiding duplicates
   const violationSet = new Set<number>();
 
   deadlineViolations.forEach(ev => {
@@ -856,7 +713,9 @@ export function prepareTaskEvents(
     if (idx >= 0) violationSet.add(idx);
   });
 
-  const violations = Array.from(violationSet).map(idx => events[idx]);
+  const violations: ScheduledEvent[] = Array.from(violationSet)
+    .map(idx => events[idx])
+    .filter((ev): ev is ScheduledEvent => ev !== undefined);
 
   return { events, violations };
 }
