@@ -6,12 +6,12 @@
  * key via the X-Motion-Api-Key request header (never in the body — body is
  * logged by access-log middleware).
  *
- * Response: 202 Accepted — migration runs asynchronously in the background.
- * Check server logs for the per-workspace result summary.
+ * The migration runs synchronously and returns the full MigrationResult.
  *
- * To prevent duplicate imports, a second call while a migration is already
- * running for the same user will be rejected with 409 Conflict.
- * Pass the header `X-Migration-Force: true` to skip this check.
+ * NOTE: This endpoint is not idempotent — re-running it will create duplicate
+ * records in the database. To make it truly idempotent in a multi-instance or
+ * serverless deployment, a shared distributed lock (e.g. Redis/DB row) or
+ * upsert-by-Motion-ID logic would be required.
  */
 import express, { type Request, type Response } from 'express';
 import { MotionMigrationService } from '../services/motionMigrationService.js';
@@ -19,12 +19,6 @@ import { ResponseHelper } from '../utils/responseHelpers.js';
 import { authMiddleware, type AuthRequest } from '../middleware/auth.js';
 
 const router = express.Router();
-
-/**
- * In-memory set of user IDs that currently have a migration in progress.
- * Guards against accidental double-submissions while the async job is running.
- */
-const migrationsInProgress = new Set<string>();
 
 // All endpoints require a valid Nexto JWT
 router.use(authMiddleware);
@@ -41,18 +35,6 @@ router.post('/', async (req: Request, res: Response) => {
       'X-Motion-Api-Key header is required'
     );
   }
-
-  // Concurrency guard: reject if a migration is already running for this user
-  const force = req.headers['x-migration-force'] === 'true';
-  if (!force && migrationsInProgress.has(userId)) {
-    return res.status(409).json({
-      success: false,
-      message: 'A migration is already in progress for this account. ' +
-        'Add the X-Migration-Force: true header to run a new one anyway.',
-    });
-  }
-
-  migrationsInProgress.add(userId);
 
   try {
     const migrationService = new MotionMigrationService(motionApiKey);
@@ -87,7 +69,8 @@ router.post('/', async (req: Request, res: Response) => {
       message: 'Migration failed due to an internal error.',
     });
   } finally {
-    migrationsInProgress.delete(userId);
+    // no-op: formerly tracked in-process lock (removed — not effective in
+    // serverless/multi-instance environments)
   }
 });
 

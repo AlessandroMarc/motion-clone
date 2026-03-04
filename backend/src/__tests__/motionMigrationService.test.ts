@@ -196,18 +196,26 @@ describe('MotionMigrationService', () => {
   });
 
   test('returns a MigrationResult with correct counts on success', async () => {
-    // Project creation
+    // Project insert  (1 single call)
     mockSupabaseClient.single
       .mockResolvedValueOnce({
         data: { id: 'nexto-proj-1', name: 'Motion Project', status: 'not-started', user_id: 'u-1', milestones: [], deadline: null, createdAt: new Date(), updatedAt: new Date() },
         error: null,
       })
-      // Regular task creation
+      // Regular task – schedule resolution: user_settings lookup (schedules direct-await returns null → falls through to schedule creation)
+      .mockResolvedValueOnce({ data: null, error: null })
+      // Regular task – schedule creation insert
+      .mockResolvedValueOnce({ data: { id: 'sched-1' }, error: null })
+      // Regular task insert
       .mockResolvedValueOnce({
         data: { id: 'nexto-task-1', title: 'Motion Task', status: 'not-started', user_id: 'u-1', priority: 'high', planned_duration_minutes: 60, actual_duration_minutes: 0, due_date: null, dependencies: [], created_at: new Date(), updated_at: new Date() },
         error: null,
       })
-      // Recurring task creation
+      // Recurring task – schedule resolution: user_settings lookup
+      .mockResolvedValueOnce({ data: null, error: null })
+      // Recurring task – schedule creation insert
+      .mockResolvedValueOnce({ data: { id: 'sched-2' }, error: null })
+      // Recurring task insert
       .mockResolvedValueOnce({
         data: { id: 'nexto-task-2', title: '[Recurring] Recurring Task', status: 'not-started', user_id: 'u-1', priority: 'medium', planned_duration_minutes: 30, actual_duration_minutes: 0, due_date: null, dependencies: [], created_at: new Date(), updated_at: new Date() },
         error: null,
