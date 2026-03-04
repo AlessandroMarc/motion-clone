@@ -17,7 +17,7 @@ import { taskService } from '@/services/taskService';
 import { calendarService } from '@/services/calendarService';
 import type { Task, CalendarEventTask } from '@/types';
 import { taskSchema, type TaskFormData } from '@/hooks/useTaskForm';
-import { normalizeToMidnight } from '@/utils/dateUtils';
+import { normalizeToMidnight, parseLocalDate } from '@/utils/dateUtils';
 import { TaskTitleField } from './TaskTitleField';
 import { TaskDescriptionField } from './TaskDescriptionField';
 import { TaskDueDateField } from './TaskDueDateField';
@@ -221,9 +221,11 @@ export function TaskEditDialogForm({
         recurrenceInterval: data.is_recurring ? data.recurrence_interval : null,
         recurrenceStartDate:
           data.is_recurring && data.recurrenceStartDate
-            ? new Date(data.recurrenceStartDate)
+            ? normalizeToMidnight(parseLocalDate(data.recurrenceStartDate))
             : null,
-        startDate: data.startDate ? new Date(data.startDate) : null,
+        startDate: data.startDate
+          ? normalizeToMidnight(parseLocalDate(data.startDate))
+          : null,
       });
 
       console.log(
@@ -312,9 +314,11 @@ export function TaskEditDialogForm({
           : undefined,
         recurrenceStartDate:
           data.is_recurring && data.recurrenceStartDate
-            ? new Date(data.recurrenceStartDate)
+            ? normalizeToMidnight(parseLocalDate(data.recurrenceStartDate))
             : null,
-        startDate: data.startDate ? new Date(data.startDate) : null,
+        startDate: data.startDate
+          ? normalizeToMidnight(parseLocalDate(data.startDate))
+          : null,
       });
 
       onTaskCloned?.(clonedTask);
