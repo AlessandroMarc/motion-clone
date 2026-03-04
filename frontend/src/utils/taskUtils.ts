@@ -24,10 +24,6 @@ export const TASK_COMPLETED_CLASS = 'line-through text-muted-foreground';
 /** Optional class for completed card opacity. */
 export const TASK_COMPLETED_OPACITY_CLASS = 'opacity-60';
 
-export function getTaskCompletedClassName(): string {
-  return TASK_COMPLETED_CLASS;
-}
-
 /** Priority rank for sorting (high first): higher number = higher priority. */
 export const TASK_PRIORITY_RANK: Record<Task['priority'], number> = {
   high: 3,
@@ -48,7 +44,7 @@ export function sortTasksByPriority(tasks: Task[]): Task[] {
   return [...tasks].sort(compareTaskPriority);
 }
 
-export interface GroupTasksByProjectResult {
+interface GroupTasksByProjectResult {
   unassigned: Task[];
   byProject: { project: Project; tasks: Task[] }[];
 }

@@ -12,9 +12,6 @@ import { PRIORITY_CONFIG } from './taskCardConfig';
 import { TaskCardHeader } from './TaskCardHeader';
 import { TaskMetadata } from './TaskMetadata';
 
-// Re-export config for backwards compatibility
-export { STATUS_CONFIG, PRIORITY_CONFIG } from './taskCardConfig';
-
 interface CompactTaskCardProps {
   task: Task;
   isPlanned?: boolean;

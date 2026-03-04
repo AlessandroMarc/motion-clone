@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { DateTimePicker } from '@/components/forms/shared/DateTimePicker';
 
-export interface CalendarEventFormFieldsProps {
+interface CalendarEventFormFieldsProps {
   title: string;
   setTitle: (v: string) => void;
   description: string;

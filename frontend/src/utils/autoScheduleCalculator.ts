@@ -19,7 +19,7 @@ function log(...args: unknown[]) {
   }
 }
 
-export type TaskEventBlock = {
+type TaskEventBlock = {
   task: Task;
   events: Array<{ start_time: Date; end_time: Date }>;
   violations: Array<{ start_time: Date; end_time: Date }>;

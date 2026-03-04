@@ -21,7 +21,7 @@ export interface MotionUser {
   noExternalCalendarsModeEnabled?: boolean;
 }
 
-export type MotionWorkspaceType = 'INDIVIDUAL' | 'TEAM';
+type MotionWorkspaceType = 'INDIVIDUAL' | 'TEAM';
 
 export interface MotionWorkspace {
   id: string;
@@ -33,7 +33,7 @@ export interface MotionWorkspace {
   members?: MotionUser[];
 }
 
-export interface MotionStatus {
+interface MotionStatus {
   id?: string;
   name: string;
   isDefaultStatus: boolean;
@@ -50,11 +50,11 @@ export interface MotionStatus {
   autoScheduleSetting?: string;
 }
 
-export interface MotionLabel {
+interface MotionLabel {
   name: string;
 }
 
-export interface MotionScheduleSlot {
+interface MotionScheduleSlot {
   start: string; // e.g. "09:00"
   end: string; // e.g. "17:00"
 }
@@ -74,7 +74,7 @@ export interface MotionSchedule {
   };
 }
 
-export type MotionProjectType = 'NORMAL' | string;
+type MotionProjectType = 'NORMAL' | string;
 
 export interface MotionProject {
   id: string;
@@ -118,9 +118,9 @@ export interface MotionProject {
 export type MotionPriority = 'ASAP' | 'HIGH' | 'MEDIUM' | 'LOW';
 
 /** Motion task deadline type values */
-export type MotionDeadlineType = 'HARD' | 'SOFT' | 'NONE';
+type MotionDeadlineType = 'HARD' | 'SOFT' | 'NONE';
 
-export interface MotionChunk {
+interface MotionChunk {
   id: string;
   duration: number;
   scheduledStart: string;
@@ -172,7 +172,7 @@ export interface MotionRecurringTask {
   duration?: number | 'NONE' | 'REMINDER';
 }
 
-export type MotionCustomFieldValue =
+type MotionCustomFieldValue =
   | { type: 'text'; value: string | null }
   | { type: 'number'; value: number | null }
   | { type: 'url'; value: string | null }

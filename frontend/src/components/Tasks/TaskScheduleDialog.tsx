@@ -215,5 +215,3 @@ export function TaskScheduleDialog({
     </Dialog>
   );
 }
-
-export default TaskScheduleDialog;

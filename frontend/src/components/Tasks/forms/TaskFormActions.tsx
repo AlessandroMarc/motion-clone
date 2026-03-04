@@ -1,7 +1,7 @@
 import { Plus } from 'lucide-react';
 import { FormActions, type FormActionsProps } from '@/components/forms/shared';
 
-export interface TaskFormActionsProps extends FormActionsProps {
+interface TaskFormActionsProps extends FormActionsProps {
   submitText?: string;
   cancelText?: string;
   submittingText?: string;

@@ -4,7 +4,7 @@ import React from 'react';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { DesktopNavContent } from './DesktopNavContent';
 
-export interface DesktopSidebarProps {
+interface DesktopSidebarProps {
   onLinkClick?: () => void;
 }
 

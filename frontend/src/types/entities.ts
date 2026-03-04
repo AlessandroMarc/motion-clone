@@ -5,7 +5,6 @@
 export type {
   Task,
   Project,
-  Milestone,
   CalendarEvent,
   CalendarEventTask,
   CalendarEventUnion,
