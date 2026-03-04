@@ -93,6 +93,8 @@ describe('TaskService - Recurrence integration', () => {
     expect(insertPayload.recurrence_pattern).toBe('weekly');
     expect(insertPayload.recurrence_interval).toBe(2);
     expect(insertPayload.next_generation_cutoff).toBeTruthy();
+    expect(insertPayload.due_date).toBeNull();
+    expect(insertPayload.actual_duration_minutes).toBe(0);
   });
 
   test('createTask clears recurrence fields when recurring is disabled', async () => {
@@ -141,6 +143,8 @@ describe('TaskService - Recurrence integration', () => {
     expect(updatePayload.recurrence_pattern).toBe('daily');
     expect(updatePayload.recurrence_interval).toBe(1);
     expect(updatePayload.next_generation_cutoff).toBeTruthy();
+    expect(updatePayload.due_date).toBeNull();
+    expect(updatePayload.actual_duration_minutes).toBe(0);
   });
 
   test('updateTask clears recurrence fields when disabling recurrence', async () => {

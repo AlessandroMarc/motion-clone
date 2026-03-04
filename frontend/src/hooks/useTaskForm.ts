@@ -37,6 +37,7 @@ export const taskSchema = z
       .number()
       .min(1, 'Interval must be at least 1')
       .optional(),
+    recurrenceStartDate: z.string().optional(), // 'YYYY-MM-DD'; anchors day-of-week / day-of-month
   })
   .superRefine((data, ctx) => {
     if (data.actual_duration_minutes > data.planned_duration_minutes) {
@@ -96,6 +97,7 @@ export function useTaskForm(onTaskCreate: TaskCreateFormProps['onTaskCreate']) {
       is_recurring: false,
       recurrence_pattern: undefined,
       recurrence_interval: 1,
+      recurrenceStartDate: undefined,
     },
   });
 

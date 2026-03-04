@@ -32,6 +32,19 @@ export function normalizeToMidnight(date: Date): Date {
   return normalized;
 }
 
+/**
+ * Format a Date as a local-timezone YYYY-MM-DD string.
+ * Use this instead of .toISOString().slice(0,10) when sending date-only
+ * values to the backend, to avoid UTC midnight rolling the date back one day
+ * for users in UTC+ timezones.
+ */
+export function toLocalDateString(date: Date): string {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+}
+
 /** Time only, e.g. "9:00 AM". */
 export function formatTime(date: Date): string {
   return date.toLocaleTimeString('en-US', {

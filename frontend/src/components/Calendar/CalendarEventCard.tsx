@@ -24,6 +24,7 @@ export function CalendarEventCard({
 }: CalendarEventCardProps) {
   const isTaskEvent = isCalendarEventTask(event);
   const isCompleted = isTaskEvent && !!event.completed_at;
+  const isRecurring = isTaskEvent && task?.is_recurring;
   const now = new Date();
   const eventEnd = new Date(event.end_time);
   const isPast = eventEnd < now;
@@ -49,9 +50,13 @@ export function CalendarEventCard({
         isTaskEvent
           ? isAfterDeadline
             ? 'bg-red-500/80 text-white shadow-sm'
-            : isCompleted
-              ? 'bg-primary/40 text-primary-foreground/70'
-              : 'bg-primary/70 text-primary-foreground shadow-sm hover:bg-primary/80'
+            : isRecurring
+              ? isCompleted
+                ? 'bg-chart-2/40 text-blue-700 dark:text-blue-300'
+                : 'bg-chart-2/70 text-white shadow-sm hover:bg-chart-2/80'
+              : isCompleted
+                ? 'bg-primary/40 text-primary-foreground/70'
+                : 'bg-primary/70 text-primary-foreground shadow-sm hover:bg-primary/80'
           : 'bg-muted text-muted-foreground hover:bg-muted/80',
         isCompleted && 'opacity-60',
         // Grey out past events

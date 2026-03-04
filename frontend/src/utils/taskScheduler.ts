@@ -5,6 +5,10 @@ import type {
   Schedule,
 } from '@/types';
 import { TASK_PRIORITY_RANK } from '@/utils/taskUtils';
+import {
+  generateOccurrenceDates,
+  get90DayHorizon,
+} from '@/utils/recurrenceCalculator';
 
 export interface TaskSchedulingConfig {
   eventDurationMinutes: number;
@@ -462,6 +466,128 @@ export function checkDeadlineViolations(
 }
 
 /**
+ * Schedule one event per occurrence for a recurring task over the 90-day horizon.
+ * Each occurrence gets exactly `planned_duration_minutes` minutes.
+ *
+ * KEY INVARIANT: every occurrence date that already has a real (persisted)
+ * calendar event is RE-INCLUDED in the return value with the SAME slot times.
+ * This ensures the proposed schedule always has exactly N events (one per
+ * occurrence), so `isSameSchedule` and `applySchedule` see a stable schedule
+ * and never delete-all-then-recreate on every run.
+ *
+ * @param existingTaskEvents - Real (non-synthetic) events already in the DB
+ *   for this task. Used for deduplication AND for re-claiming slots.
+ * @param allExistingEvents - All events (for slot-overlap avoidance on new dates).
+ */
+function prepareRecurringTaskEvents(
+  task: Task,
+  existingTaskEvents: CalendarEventTask[],
+  allExistingEvents: CalendarEventUnion[]
+): {
+  events: ScheduledEvent[];
+  violations: ScheduledEvent[];
+} {
+  const occurrenceDurationMinutes =
+    task.planned_duration_minutes && task.planned_duration_minutes > 0
+      ? task.planned_duration_minutes
+      : DEFAULT_CONFIG.eventDurationMinutes;
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  // Anchor: day-of-week / day-of-month is determined by recurrence_start_date
+  const anchor = task.recurrence_start_date
+    ? new Date(task.recurrence_start_date)
+    : today;
+  anchor.setHours(0, 0, 0, 0);
+
+  const allOccurrenceDates = generateOccurrenceDates(
+    anchor,
+    task.recurrence_pattern!,
+    task.recurrence_interval || 1,
+    get90DayHorizon()
+  );
+  const occurrenceDates = allOccurrenceDates.filter(d => d >= today);
+
+  // Build dateString → first existing event map (one per date, deduplicates).
+  const existingByDate = new Map<string, CalendarEventTask>();
+  for (const e of existingTaskEvents) {
+    const ds = new Date(e.start_time).toDateString();
+    if (!existingByDate.has(ds)) {
+      existingByDate.set(ds, e);
+    }
+  }
+
+  console.log(
+    `[RECURRING] prepareRecurringTaskEvents task="${task.title}"`,
+    {
+      anchor: anchor.toDateString(),
+      occurrenceCount: occurrenceDates.length,
+      occurrences: occurrenceDates.map(d => d.toDateString()),
+      existingEventsTotal: existingTaskEvents.length,
+      existingUniqueDates: existingByDate.size,
+      existingDates: Array.from(existingByDate.keys()),
+    }
+  );
+
+  // Pre-sort all events for slot-finding (used only for new slots)
+  const sortedExisting = allExistingEvents
+    .map(e => ({
+      start: new Date(e.start_time).getTime(),
+      end: new Date(e.end_time).getTime(),
+    }))
+    .sort((a, b) => a.start - b.start);
+
+  const events: ScheduledEvent[] = [];
+
+  for (const occurrenceDate of occurrenceDates) {
+    const ds = occurrenceDate.toDateString();
+    const existing = existingByDate.get(ds);
+
+    if (existing) {
+      // Already persisted → re-include the same slot so the proposed schedule
+      // is stable and `applySchedule` sees zero diff for this occurrence.
+      const slot: ScheduledEvent = {
+        task_id: task.id,
+        start_time: new Date(existing.start_time),
+        end_time: new Date(existing.end_time),
+      };
+      events.push(slot);
+      console.log(`[RECURRING]   ${ds} → RECLAIMED existing`, new Date(existing.start_time).toISOString());
+      continue;
+    }
+
+    // No persisted event yet → find a fresh slot on that day
+    const dayConfig: TaskSchedulingConfig = {
+      ...DEFAULT_CONFIG,
+      eventDurationMinutes: occurrenceDurationMinutes,
+    };
+    const dayStart = new Date(occurrenceDate);
+    dayStart.setHours(dayConfig.workingHoursStart, 0, 0, 0);
+
+    const slot = getNextAvailableSlot(
+      dayStart.getTime(),
+      dayConfig,
+      task.id,
+      sortedExisting,
+      occurrenceDurationMinutes
+    );
+
+    if (slot) {
+      events.push(slot);
+      sortedExisting.push({ start: slot.start_time.getTime(), end: slot.end_time.getTime() });
+      sortedExisting.sort((a, b) => a.start - b.start);
+      console.log(`[RECURRING]   ${ds} → NEW slot`, slot.start_time.toISOString());
+    } else {
+      console.warn(`[RECURRING]   ${ds} → NO slot available`);
+    }
+  }
+
+  console.log(`[RECURRING] result: ${events.length} proposed for ${occurrenceDates.length} occurrences`);
+  return { events, violations: [] };
+}
+
+/**
  * Prepare events for a task, calculating required events and distributing them
  * @param task - The task to schedule
  * @param existingTaskEvents - Existing calendar events linked to this specific task
@@ -479,6 +605,11 @@ export function prepareTaskEvents(
   events: ScheduledEvent[];
   violations: ScheduledEvent[];
 } {
+  // Recurring tasks: one event per occurrence, not a duration-filling budget
+  if (task.is_recurring && task.recurrence_pattern) {
+    return prepareRecurringTaskEvents(task, existingTaskEvents, allExistingEvents);
+  }
+
   const remainingMinutes = calculateRemainingDurationMinutes(
     task,
     existingTaskEvents,

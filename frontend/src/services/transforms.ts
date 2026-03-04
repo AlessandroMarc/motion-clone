@@ -32,6 +32,8 @@ export function toTask(raw: UnknownRecord): Task {
     planned_duration_minutes: raw.planned_duration_minutes,
     actual_duration_minutes: raw.actual_duration_minutes,
     blockedBy: raw.blocked_by || [],
+    recurrence_start_date: toOptionalDate(raw.recurrence_start_date),
+    next_generation_cutoff: toOptionalDate(raw.next_generation_cutoff),
   } as Task;
 }
 

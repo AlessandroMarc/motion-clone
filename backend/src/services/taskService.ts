@@ -44,9 +44,10 @@ export class TaskService {
 
   // Create a new task
   async createTask(input: CreateTaskInput, authToken?: string): Promise<Task> {
+    const isRecurring = input.is_recurring ?? false;
     const rawPlanned = input.planned_duration_minutes;
     const normalizedPlanned = rawPlanned < 0 ? 0 : rawPlanned;
-    const rawActual = input.actual_duration_minutes ?? 0;
+    const rawActual = isRecurring ? 0 : (input.actual_duration_minutes ?? 0);
     const normalizedActual = Math.min(
       Math.max(rawActual, 0),
       normalizedPlanned
@@ -57,7 +58,7 @@ export class TaskService {
     // Handle both Date objects and ISO strings (from JSON)
     // Normalize to midnight for date-only deadlines
     let dueDateString: string | null = null;
-    if (input.due_date !== null && input.due_date !== undefined) {
+    if (!isRecurring && input.due_date !== null && input.due_date !== undefined) {
       dueDateString = normalizeToMidnight(input.due_date);
     }
 
@@ -137,9 +138,6 @@ export class TaskService {
       }
     }
 
-    // Set up recurrence fields
-    const isRecurring = input.is_recurring ?? false;
-
     // Validate recurrence fields when is_recurring is true
     if (isRecurring) {
       if (!input.recurrence_pattern) {
@@ -158,7 +156,17 @@ export class TaskService {
       }
     }
 
-    const nextGenerationCutoff = isRecurring ? dueDateString : null;
+    const nextGenerationCutoff = isRecurring
+      ? normalizeToMidnight(new Date())
+      : null;
+
+    // Normalize recurrence_start_date (use today if not provided)
+    let recurrenceStartDateString: string | null = null;
+    if (isRecurring) {
+      recurrenceStartDateString = input.recurrence_start_date
+        ? normalizeToMidnight(input.recurrence_start_date)
+        : normalizeToMidnight(new Date());
+    }
 
     const client = authToken
       ? getAuthenticatedSupabase(authToken)
@@ -185,6 +193,7 @@ export class TaskService {
             ? (input.recurrence_interval ?? 1)
             : 1,
           next_generation_cutoff: nextGenerationCutoff,
+          recurrence_start_date: recurrenceStartDateString,
         },
       ])
       .select()
@@ -264,6 +273,7 @@ export class TaskService {
       recurrence_pattern?: string | null;
       recurrence_interval?: number;
       next_generation_cutoff?: string | null;
+      recurrence_start_date?: string | null;
     } = {
       updated_at: new Date().toISOString(),
     };
@@ -305,6 +315,16 @@ export class TaskService {
     if (input.project_id !== undefined)
       updateData.project_id = input.project_id;
 
+    const resultingIsRecurring =
+      input.is_recurring !== undefined
+        ? input.is_recurring
+        : existingTask.is_recurring;
+
+    if (resultingIsRecurring) {
+      updateData.due_date = null;
+      updateData.actual_duration_minutes = 0;
+    }
+
     // Handle recurrence fields
     if (input.is_recurring !== undefined) {
       updateData.is_recurring = input.is_recurring;
@@ -329,20 +349,12 @@ export class TaskService {
 
         updateData.recurrence_pattern = input.recurrence_pattern;
         updateData.recurrence_interval = interval;
-        // Set next_generation_cutoff to due_date for new recurring tasks
-        if (input.due_date !== undefined) {
-          updateData.next_generation_cutoff = input.due_date
-            ? normalizeToMidnight(input.due_date)
+        updateData.next_generation_cutoff = normalizeToMidnight(new Date());
+        // Update start date if provided; otherwise keep existing
+        if (input.recurrence_start_date !== undefined) {
+          updateData.recurrence_start_date = input.recurrence_start_date
+            ? normalizeToMidnight(input.recurrence_start_date)
             : null;
-        } else if (!existingTask.next_generation_cutoff) {
-          // If due_date wasn't updated, but next_generation_cutoff is null, set it
-          const dueDateToUse = updateData.due_date ?? existingTask.due_date;
-          if (dueDateToUse) {
-            updateData.next_generation_cutoff =
-              typeof dueDateToUse === 'string'
-                ? dueDateToUse
-                : normalizeToMidnight(dueDateToUse);
-          }
         }
       } else {
         // When turning off recurrence, clear all recurrence fields
@@ -360,10 +372,11 @@ export class TaskService {
       updateData.planned_duration_minutes = normalizedPlanned;
     }
 
-    const rawActual =
-      input.actual_duration_minutes ??
-      existingTask.actual_duration_minutes ??
-      0;
+    const rawActual = resultingIsRecurring
+      ? 0
+      : (input.actual_duration_minutes ??
+          existingTask.actual_duration_minutes ??
+          0);
     const normalizedActual = Math.min(
       Math.max(rawActual, 0),
       normalizedPlanned
@@ -411,6 +424,20 @@ export class TaskService {
     const client = authToken
       ? getAuthenticatedSupabase(authToken)
       : serviceRoleSupabase;
+
+    // First, delete all calendar events linked to this task
+    const { error: calendarError } = await client
+      .from('calendar_events')
+      .delete()
+      .eq('linked_task_id', id);
+
+    if (calendarError) {
+      throw new Error(
+        `Failed to delete related calendar events: ${calendarError.message}`
+      );
+    }
+
+    // Then delete the task itself
     const { error } = await client.from('tasks').delete().eq('id', id);
 
     if (error) {

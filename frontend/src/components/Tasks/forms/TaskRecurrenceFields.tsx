@@ -19,6 +19,8 @@ interface TaskRecurrenceFieldsProps {
   onPatternChange: (value: 'daily' | 'weekly' | 'monthly') => void;
   recurrenceInterval?: number;
   onIntervalChange: (value: number) => void;
+  recurrenceStartDate?: string; // 'YYYY-MM-DD'
+  onRecurrenceStartDateChange: (value: string) => void;
   errors: FieldErrors<TaskFormData>;
   className?: string;
 }
@@ -30,6 +32,8 @@ export function TaskRecurrenceFields({
   onPatternChange,
   recurrenceInterval = 1,
   onIntervalChange,
+  recurrenceStartDate,
+  onRecurrenceStartDateChange,
   errors,
   className = '',
 }: TaskRecurrenceFieldsProps) {
@@ -108,6 +112,24 @@ export function TaskRecurrenceFields({
             )}
             <p className="text-xs text-gray-500 dark:text-gray-400">
               Events will be generated up to 90 days ahead when scheduled
+            </p>
+          </div>
+
+          {/* Recurrence Start Date */}
+          <div className="space-y-2">
+            <Label htmlFor="recurrence_start_date">Starting on</Label>
+            <Input
+              id="recurrence_start_date"
+              type="date"
+              value={recurrenceStartDate || ''}
+              onChange={e => onRecurrenceStartDateChange(e.target.value)}
+              className="w-full"
+            />
+            <p className="text-xs text-gray-500 dark:text-gray-400">
+              {recurrencePattern === 'weekly' && 'Sets the day of the week the task repeats.'}
+              {recurrencePattern === 'monthly' && 'Sets the day of the month the task repeats.'}
+              {recurrencePattern === 'daily' && 'Sets the first day of the recurring series.'}
+              {!recurrencePattern && 'Sets the first occurrence of the recurring series.'}
             </p>
           </div>
         </div>

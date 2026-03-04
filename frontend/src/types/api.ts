@@ -15,6 +15,7 @@ export interface CreateTaskInput {
   isRecurring?: boolean;
   recurrencePattern?: 'daily' | 'weekly' | 'monthly';
   recurrenceInterval?: number;
+  recurrenceStartDate?: Date | null;
 }
 
 /** Task update payload (frontend API shape). */
@@ -32,6 +33,7 @@ export interface UpdateTaskInput {
   isRecurring?: boolean;
   recurrencePattern?: 'daily' | 'weekly' | 'monthly' | null;
   recurrenceInterval?: number | null;
+  recurrenceStartDate?: Date | null;
 }
 
 /** Project create payload (frontend API shape). */

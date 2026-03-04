@@ -44,6 +44,7 @@ export function TaskCreateDialogForm({ onTaskCreate }: TaskCreateFormProps) {
   const isRecurring = form.watch('is_recurring');
   const recurrencePattern = form.watch('recurrence_pattern');
   const recurrenceInterval = form.watch('recurrence_interval');
+  const recurrenceStartDate = form.watch('recurrenceStartDate');
 
   const handleFormSubmit = async (data: TaskFormData) => {
     const success = await onSubmit(data);
@@ -80,7 +81,9 @@ export function TaskCreateDialogForm({ onTaskCreate }: TaskCreateFormProps) {
             <div className="space-y-4">
               <TaskTitleField register={register} errors={errors} />
               <TaskDescriptionField register={register} errors={errors} />
-              <TaskDueDateField register={register} errors={errors} />
+              {!isRecurring && (
+                <TaskDueDateField register={register} errors={errors} />
+              )}
               <TaskPriorityField
                 value={priority}
                 onValueChange={setPriority}
@@ -89,12 +92,28 @@ export function TaskCreateDialogForm({ onTaskCreate }: TaskCreateFormProps) {
               <TaskProjectField errors={errors} />
               <TaskScheduleField errors={errors} />
               <TaskBlockedByField errors={errors} />
-              <TaskDurationFields register={register} errors={errors} />
+              <TaskDurationFields
+                register={register}
+                errors={errors}
+                hideActualDuration={isRecurring}
+              />
               <TaskRecurrenceFields
                 isRecurring={isRecurring}
-                onIsRecurringChange={checked =>
-                  form.setValue('is_recurring', checked)
-                }
+                onIsRecurringChange={checked => {
+                  form.setValue('is_recurring', checked);
+                  if (checked) {
+                    form.setValue('dueDate', '');
+                    form.setValue('actual_duration_minutes', 0);
+                    // Default start date to today if not already set
+                    if (!form.getValues('recurrenceStartDate')) {
+                      const today = new Date();
+                      const yyyy = today.getFullYear();
+                      const mm = String(today.getMonth() + 1).padStart(2, '0');
+                      const dd = String(today.getDate()).padStart(2, '0');
+                      form.setValue('recurrenceStartDate', `${yyyy}-${mm}-${dd}`);
+                    }
+                  }
+                }}
                 recurrencePattern={recurrencePattern}
                 onPatternChange={value =>
                   form.setValue('recurrence_pattern', value)
@@ -102,6 +121,10 @@ export function TaskCreateDialogForm({ onTaskCreate }: TaskCreateFormProps) {
                 recurrenceInterval={recurrenceInterval}
                 onIntervalChange={value =>
                   form.setValue('recurrence_interval', value)
+                }
+                recurrenceStartDate={recurrenceStartDate}
+                onRecurrenceStartDateChange={value =>
+                  form.setValue('recurrenceStartDate', value)
                 }
                 errors={errors}
               />

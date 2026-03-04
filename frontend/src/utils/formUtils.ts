@@ -10,14 +10,18 @@ export function transformFormDataToTask(
   userId: string
 ): Omit<Task, 'id' | 'created_at' | 'updated_at' | 'status' | 'dependencies'> {
   const planned = Math.max(data.planned_duration_minutes, 0);
+  const isRecurring = data.is_recurring ?? false;
   const actual = Math.min(
-    Math.max(data.actual_duration_minutes ?? 0, 0),
+    Math.max(isRecurring ? 0 : (data.actual_duration_minutes ?? 0), 0),
     planned
   );
   const transformed = {
     title: data.title,
     description: data.description || '',
-    due_date: data.dueDate ? normalizeToMidnight(new Date(data.dueDate)) : null,
+    due_date:
+      !isRecurring && data.dueDate
+        ? normalizeToMidnight(new Date(data.dueDate))
+        : null,
     priority: data.priority,
     project_id: data.project_id || undefined,
     user_id: userId,
@@ -25,11 +29,15 @@ export function transformFormDataToTask(
     actual_duration_minutes: actual,
     blockedBy: data.blockedBy || [],
     schedule_id: data.scheduleId,
-    is_recurring: data.is_recurring ?? false,
-    recurrence_pattern: data.is_recurring ? data.recurrence_pattern : undefined,
-    recurrence_interval: data.is_recurring
+    is_recurring: isRecurring,
+    recurrence_pattern: isRecurring ? data.recurrence_pattern : undefined,
+    recurrence_interval: isRecurring
       ? (data.recurrence_interval ?? 1)
       : undefined,
+    recurrence_start_date:
+      isRecurring && data.recurrenceStartDate
+        ? normalizeToMidnight(new Date(data.recurrenceStartDate))
+        : null,
   };
   return transformed;
 }

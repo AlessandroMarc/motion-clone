@@ -46,6 +46,7 @@ interface Task {
   is_recurring: boolean; // whether this task repeats
   recurrence_pattern?: 'daily' | 'weekly' | 'monthly'; // frequency (required if is_recurring)
   recurrence_interval?: number; // interval count, e.g., 2 for "every 2 weeks" (required if is_recurring, min: 1)
+  recurrence_start_date?: Date | null; // anchor date: sets the day-of-week / day-of-month for the pattern
   next_generation_cutoff?: Date | null; // tracks how far into the future calendar events have been generated
 }
 

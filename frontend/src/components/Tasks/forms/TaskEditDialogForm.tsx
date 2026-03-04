@@ -231,7 +231,7 @@ export function TaskEditDialogForm({
 
   return (
     <Dialog open={open && !!task} onOpenChange={handleDialogOpenChange}>
-      <DialogContent className="sm:max-w-[500px] overflow-y-auto">
+      <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Edit Task</DialogTitle>
           {task && (
@@ -283,7 +283,7 @@ export function TaskEditDialogForm({
               />
             </div>
 
-            <div className="space-y-3 max-h-[10vh] overflow-y-auto">
+            <div className="space-y-3">
               <div className="flex items-center justify-between">
                 <h3 className="text-sm font-medium">
                   {!areEventsLoading && !eventsError && linkedEvents.length > 0
@@ -308,7 +308,7 @@ export function TaskEditDialogForm({
                   </p>
                 )}
               {linkedEvents.length > 0 && (
-                <ul className="space-y-2 max-h-[300px] overflow-y-auto pr-2">
+                <ul className="space-y-2 max-h-[200px] overflow-y-auto pr-2">
                   {linkedEvents.map(event => (
                     <li
                       key={event.id}
