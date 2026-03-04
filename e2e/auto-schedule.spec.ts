@@ -88,6 +88,15 @@ async function setupMocks(
   // Track created events so we can assert on them
   const createdEvents: Record<string, unknown>[] = [];
 
+  // Catch-all for any other API calls (register first so specific handlers below can override it)
+  await page.route('http://localhost:3003/**', (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ success: true, message: 'OK', data: [] }),
+    })
+  );
+
   // GET /tasks
   await page.route('http://localhost:3003/api/tasks*', async (route: Route) => {
     if (route.request().method() === 'GET') {
@@ -135,11 +144,16 @@ async function setupMocks(
               status: 201,
               contentType: 'application/json',
               body: JSON.stringify(
-                createdEvents.map((e, i) => ({
-                  success: true,
-                  event: e,
-                  index: i,
-                }))
+                apiSuccess({
+                  results: body.map((_, i) => ({
+                    success: true,
+                    event: createdEvents[createdEvents.length - body.length + i],
+                    index: i,
+                  })),
+                  total: body.length,
+                  successful: body.length,
+                  failed: 0,
+                })
               ),
             });
           } else {
@@ -159,6 +173,25 @@ async function setupMocks(
           });
         }
       } else if (method === 'DELETE') {
+        const pathname = new URL(route.request().url()).pathname;
+        if (pathname.endsWith('/calendar-events/batch')) {
+          const payload = route.request().postDataJSON() as { ids?: string[] };
+          const ids = Array.isArray(payload?.ids) ? payload.ids : [];
+          await route.fulfill({
+            status: 200,
+            contentType: 'application/json',
+            body: JSON.stringify(
+              apiSuccess({
+                results: ids.map(id => ({ success: true, id })),
+                total: ids.length,
+                successful: ids.length,
+                failed: 0,
+              })
+            ),
+          });
+          return;
+        }
+
         await route.fulfill({
           status: 200,
           contentType: 'application/json',
@@ -205,15 +238,6 @@ async function setupMocks(
     })
   );
 
-  // Catch-all for any other API calls
-  await page.route('http://localhost:3003/**', (route) =>
-    route.fulfill({
-      status: 200,
-      contentType: 'application/json',
-      body: JSON.stringify({ success: true, message: 'OK', data: [] }),
-    })
-  );
-
   return { createdEvents };
 }
 
@@ -254,14 +278,18 @@ test.describe('Auto-Schedule – overlap prevention', () => {
 
     // Wait for the button and click
     const btn = page.getByRole('button', { name: /auto.schedule/i });
-    await expect(btn).toBeVisible({ timeout: 15_000 });
+    await expect(btn).toBeEnabled({ timeout: 8_000 });
     await btn.click();
 
     // Wait for scheduling to finish (button becomes enabled again)
-    await expect(btn).toBeEnabled({ timeout: 30_000 });
+    await expect(btn).toBeEnabled({ timeout: 8_000 });
+
+    await expect
+      .poll(() => createdEvents.length, { timeout: 8_000 })
+      .toBeGreaterThan(0);
 
     // Give a moment for any re-renders
-    await page.waitForTimeout(2000);
+    await page.waitForTimeout(200);
 
     // Verify: created events do not overlap
     const sorted = [...createdEvents]
@@ -318,10 +346,13 @@ test.describe('Auto-Schedule – overlap prevention', () => {
     await page.goto('/calendar');
 
     const btn = page.getByRole('button', { name: /auto.schedule/i });
-    await expect(btn).toBeVisible({ timeout: 15_000 });
+    await expect(btn).toBeEnabled({ timeout: 8_000 });
     await btn.click();
-    await expect(btn).toBeEnabled({ timeout: 30_000 });
-    await page.waitForTimeout(2000);
+    await expect(btn).toBeEnabled({ timeout: 8_000 });
+    await expect
+      .poll(() => createdEvents.length, { timeout: 8_000 })
+      .toBeGreaterThan(0);
+    await page.waitForTimeout(200);
 
     // The created events should not overlap the meeting
     const meetingStart = new Date(meeting.start_time).getTime();
@@ -386,10 +417,10 @@ test.describe('Auto-Schedule – overlap prevention', () => {
     await page.goto('/calendar');
 
     const btn = page.getByRole('button', { name: /auto.schedule/i });
-    await expect(btn).toBeVisible({ timeout: 15_000 });
+    await expect(btn).toBeEnabled({ timeout: 8_000 });
     await btn.click();
-    await expect(btn).toBeEnabled({ timeout: 30_000 });
-    await page.waitForTimeout(3000);
+    await expect(btn).toBeEnabled({ timeout: 8_000 });
+    await page.waitForTimeout(300);
 
     // After rescheduling, either the old events were deleted and new non-overlapping
     // events were created, or the schedule was updated. Either way, the
@@ -431,9 +462,9 @@ test.describe('Auto-Schedule – overlap prevention', () => {
     await page.goto('/calendar');
 
     const btn = page.getByRole('button', { name: /auto.schedule/i });
-    await expect(btn).toBeVisible({ timeout: 15_000 });
+    await expect(btn).toBeEnabled({ timeout: 8_000 });
     await btn.click();
-    await expect(btn).toBeEnabled({ timeout: 30_000 });
+    await expect(btn).toBeEnabled({ timeout: 8_000 });
 
     // After auto-schedule, core UI elements should still be visible
     await expect(page).toHaveURL(/\/calendar/);
