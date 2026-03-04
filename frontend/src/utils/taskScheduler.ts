@@ -319,22 +319,24 @@ export function distributeEvents(
 
   // Determine end date
   let endDate: Date;
-  if (task.due_date) {
-    endDate = new Date(task.due_date);
+  const dueDate = task.due_date;
+  const hasDueDate = !!dueDate;
+  if (dueDate) {
+    endDate = new Date(dueDate);
     endDate.setHours(23, 59, 59, 999);
   } else {
-    // Use default days for tasks without deadline
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    endDate = new Date(today);
+    // Use default days from effective scheduling start (after start_date clamp)
+    const horizonStart = new Date(currentTime);
+    horizonStart.setHours(0, 0, 0, 0);
+    endDate = new Date(horizonStart);
     endDate.setDate(
       endDate.getDate() + (config.defaultDaysWithoutDeadline || 14)
     );
     endDate.setHours(23, 59, 59, 999);
   }
 
-  // Ensure end date is not before current time
-  if (endDate < currentTime) {
+  // Ensure end date is not before current time (due_date path only)
+  if (hasDueDate && endDate < currentTime) {
     endDate = new Date(currentTime);
     endDate.setDate(endDate.getDate() + 1);
     endDate.setHours(23, 59, 59, 999);
