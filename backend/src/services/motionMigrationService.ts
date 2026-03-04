@@ -227,13 +227,17 @@ export class MotionMigrationService {
 
     for (const mp of motionProjects) {
       try {
+        const projectStatus: CreateProjectInput['status'] =
+          !mp.status
+            ? 'not-started'
+            : mp.status.isResolvedStatus
+              ? 'completed'
+              : mp.status.isDefaultStatus
+                ? 'not-started'
+                : 'in-progress';
         const input: CreateProjectInput = {
           name: mp.name,
-          status: mp.status?.isResolvedStatus
-            ? 'completed'
-            : mp.status?.isDefaultStatus
-              ? 'not-started'
-              : 'in-progress',
+          status: projectStatus,
           user_id: nextoUserId,
         };
         if (mp.description) input.description = mp.description;
