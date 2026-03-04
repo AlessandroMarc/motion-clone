@@ -28,7 +28,8 @@ export default function NeedHelpPage() {
                   Send an Email
                 </h2>
                 <p className="text-slate-400 mb-4">
-                  Have a question or need assistance? Send me an email and I'll get back to you as soon as possible.
+                  Have a question or need assistance? Send me an email and I'll
+                  get back to you as soon as possible.
                 </p>
                 <a
                   href="mailto:alessandromarchesin@gmail.com"
@@ -50,7 +51,8 @@ export default function NeedHelpPage() {
                   Response Time
                 </h2>
                 <p className="text-slate-300">
-                  I aim to respond to all inquiries within 24-48 hours. Thank you for your patience!
+                  I aim to respond to all inquiries within 24-48 hours. Thank
+                  you for your patience!
                 </p>
               </div>
             </div>

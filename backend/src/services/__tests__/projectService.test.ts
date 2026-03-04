@@ -11,6 +11,7 @@ interface MockClient {
   eq: jest.Mock<any>;
   single: jest.Mock<any>;
   order: jest.Mock<any>;
+  rpc: jest.Mock<any>;
   [key: string]: jest.Mock<any>;
 }
 
@@ -23,6 +24,7 @@ const mockClient: MockClient = {
   eq: jest.fn(),
   single: jest.fn(),
   order: jest.fn(),
+  rpc: jest.fn(),
 };
 
 // Mock supabase BEFORE importing anything that uses it
@@ -251,68 +253,64 @@ describe('ProjectService', () => {
 
   // ─── deleteProject ────────────────────────────────────────────────────────────
   describe('deleteProject', () => {
-    test('should delete a project and return true', async () => {
-      const eqMock = jest.fn() as any;
-      eqMock.mockResolvedValue({ error: null });
-      mockClient.delete.mockReturnValue({ eq: eqMock });
+    test('should delete project and all related data atomically via RPC', async () => {
+      const mockRpc = jest.fn().mockResolvedValue({
+        data: [
+          {
+            success: true,
+            message: 'Project and all related data deleted successfully',
+          },
+        ],
+        error: null,
+      });
+      mockClient.rpc = mockRpc;
 
       const result = await service.deleteProject('proj-1', mockClient as any);
 
-      expect(mockClient.from).toHaveBeenCalledWith('projects');
-      expect(eqMock).toHaveBeenCalledWith('id', 'proj-1');
+      expect(mockRpc).toHaveBeenCalledWith('delete_project_and_tasks', {
+        p_project_id: 'proj-1',
+      });
       expect(result).toBe(true);
     });
 
-    test('should throw on database error', async () => {
-      // Step 1: list tasks returns a DB error
-      mockClient.eq.mockResolvedValueOnce({
+    test('should throw an error if RPC call fails', async () => {
+      const mockRpc = jest.fn().mockResolvedValue({
         data: null,
-        error: { message: 'DB error' },
+        error: { message: 'RPC call failed' },
       });
+      mockClient.rpc = mockRpc;
+
+      // Suppress expected error log
+      const consoleErrorSpy = jest
+        .spyOn(console, 'error')
+        .mockImplementation(() => {});
 
       await expect(
         service.deleteProject('proj-1', mockClient as any)
-      ).rejects.toThrow('Failed to list tasks: DB error');
+      ).rejects.toThrow('Failed to delete project: RPC call failed');
+
+      consoleErrorSpy.mockRestore();
     });
 
-    test('should delete related tasks before project (transaction-like pattern)', async () => {
-      // Step 1: list tasks returns tasks
-      mockClient.eq.mockResolvedValueOnce({
-        data: [{ id: 'task-1' }],
+    test('should throw an error if RPC returns failure status', async () => {
+      const mockRpc = jest.fn().mockResolvedValue({
+        data: [{ success: false, message: 'Database constraint violation' }],
         error: null,
       });
-      // Step 2: delete tasks
-      mockClient.delete
-        .mockReturnValueOnce({
-          eq: jest.fn().mockResolvedValue({ error: null }),
-        })
-        // Step 3: delete project
-        .mockReturnValueOnce({
-          eq: jest.fn().mockResolvedValue({ error: null }),
-        });
+      mockClient.rpc = mockRpc;
 
-      const result = await service.deleteProject('proj-1', mockClient as any);
-
-      expect(mockClient.delete).toHaveBeenCalledTimes(2);
-      expect(result).toBe(true);
-    });
-
-    test('should fail if task deletion fails (prevents orphanage)', async () => {
-      // Step 1: list tasks returns tasks
-      mockClient.eq.mockResolvedValueOnce({
-        data: [{ id: 'task-1' }],
-        error: null,
-      });
-      // Step 2: delete tasks fails
-      mockClient.delete.mockReturnValueOnce({
-        eq: jest
-          .fn()
-          .mockResolvedValue({ error: { message: 'Task deletion failed' } }),
-      });
+      // Suppress expected error log
+      const consoleErrorSpy = jest
+        .spyOn(console, 'error')
+        .mockImplementation(() => {});
 
       await expect(
         service.deleteProject('proj-1', mockClient as any)
-      ).rejects.toThrow('Failed to delete project tasks: Task deletion failed');
+      ).rejects.toThrow(
+        'Project deletion failed: Database constraint violation'
+      );
+
+      consoleErrorSpy.mockRestore();
     });
   });
 

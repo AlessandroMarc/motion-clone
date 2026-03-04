@@ -1,5 +1,11 @@
 import type { LucideIcon } from 'lucide-react';
-import { Calendar, CheckSquare, FolderOpen, User, HelpCircle } from 'lucide-react';
+import {
+  Calendar,
+  CheckSquare,
+  FolderOpen,
+  User,
+  HelpCircle,
+} from 'lucide-react';
 
 export interface NavItem {
   name: string;
