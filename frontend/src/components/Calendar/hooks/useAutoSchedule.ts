@@ -18,7 +18,7 @@ import { expandRecurringTasks } from '@/utils/recurrenceCalculator';
 // Constants
 // ---------------------------------------------------------------------------
 const DEBOUNCE_MS = 1_000;
-const THROTTLE_MS = 3_000;
+const THROTTLE_MS = 30_000;
 const DEFAULT_EVENT_DURATION = 60;
 
 // ---------------------------------------------------------------------------
