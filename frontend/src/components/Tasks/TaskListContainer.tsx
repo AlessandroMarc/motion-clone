@@ -27,6 +27,7 @@ export function TaskListContainer({
   const [tasks, setTasks] = useState<Task[]>([]);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [detailsOpen, setDetailsOpen] = useState(false);
+  const [viewType, setViewType] = useState<'list' | 'kanban'>('list');
 
   useEffect(() => {
     setTasks(data?.tasks ?? []);
@@ -139,6 +140,8 @@ export function TaskListContainer({
       onDetailsOpenChange={handleDetailsOpenChange}
       onTaskUpdatedInDialog={handleTaskUpdatedInDialog}
       onTaskClonedInDialog={handleTaskClonedInDialog}
+      viewType={viewType}
+      onViewTypeChange={setViewType}
     />
   );
 }
