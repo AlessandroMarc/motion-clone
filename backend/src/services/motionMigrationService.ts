@@ -68,6 +68,46 @@ export function mapDuration(
   return 0;
 }
 
+function normalizeRecurrencePattern(
+  value: unknown
+): CreateTaskInput['recurrence_pattern'] | undefined {
+  if (typeof value !== 'string') {
+    return undefined;
+  }
+
+  const normalized = value.trim().toLowerCase();
+  if (normalized.includes('day')) return 'daily';
+  if (normalized.includes('week')) return 'weekly';
+  if (normalized.includes('month')) return 'monthly';
+  return undefined;
+}
+
+function getRecurrenceInterval(task: MotionRecurringTask): number | undefined {
+  const interval = (
+    task as MotionRecurringTask & { recurrenceInterval?: unknown }
+  ).recurrenceInterval;
+  if (
+    typeof interval === 'number' &&
+    Number.isInteger(interval) &&
+    interval > 0
+  ) {
+    return interval;
+  }
+  return undefined;
+}
+
+function getRecurrenceStartDate(
+  task: MotionRecurringTask
+): Date | null | undefined {
+  const recurrenceStartDate = (
+    task as MotionRecurringTask & { recurrenceStartDate?: unknown }
+  ).recurrenceStartDate;
+  if (typeof recurrenceStartDate === 'string' && recurrenceStartDate) {
+    return new Date(recurrenceStartDate);
+  }
+  return undefined;
+}
+
 /**
  * Maps a Motion task to a Nexto CreateTaskInput.
  * The `nextoProjectId` should already be the Nexto project id (not Motion's).
@@ -95,6 +135,23 @@ export function mapMotionTaskToCreateInput(
     planned_duration_minutes: plannedDuration,
     user_id: userId,
   };
+
+  if (isRecurring) {
+    const recurringTask = task as MotionRecurringTask;
+    const recurrencePattern =
+      normalizeRecurrencePattern(recurringTask.frequency) ?? 'weekly';
+
+    input.is_recurring = true;
+    input.recurrence_pattern = recurrencePattern;
+
+    const recurrenceInterval = getRecurrenceInterval(recurringTask);
+    input.recurrence_interval = recurrenceInterval ?? 1;
+
+    const recurrenceStartDate = getRecurrenceStartDate(recurringTask);
+    if (recurrenceStartDate !== undefined) {
+      input.recurrence_start_date = recurrenceStartDate;
+    }
+  }
 
   if (description !== undefined) input.description = description;
   if (nextoProjectId !== undefined) input.project_id = nextoProjectId;
@@ -146,7 +203,8 @@ export class MotionMigrationService {
     nextoUserId: string,
     nextoAuthToken: string
   ): Promise<MigrationResult> {
-    const supabaseClient: SupabaseClient = getAuthenticatedSupabase(nextoAuthToken);
+    const supabaseClient: SupabaseClient =
+      getAuthenticatedSupabase(nextoAuthToken);
 
     // ── Phase 1: Fetch data from Motion (no disk I/O) ────────────────────────
     const motionUser = await this.motionApi.getMe();
@@ -163,20 +221,32 @@ export class MotionMigrationService {
       try {
         projects = await this.motionApi.listProjects(workspace.id);
       } catch (err) {
-        fetchErrors.push(`Failed to fetch projects: ${err instanceof Error ? err.message : String(err)}`);
+        fetchErrors.push(
+          `Failed to fetch projects: ${err instanceof Error ? err.message : String(err)}`
+        );
       }
       try {
         tasks = await this.motionApi.listTasks(workspace.id);
       } catch (err) {
-        fetchErrors.push(`Failed to fetch tasks: ${err instanceof Error ? err.message : String(err)}`);
+        fetchErrors.push(
+          `Failed to fetch tasks: ${err instanceof Error ? err.message : String(err)}`
+        );
       }
       try {
         recurringTasks = await this.motionApi.listRecurringTasks(workspace.id);
       } catch (err) {
-        fetchErrors.push(`Failed to fetch recurring tasks: ${err instanceof Error ? err.message : String(err)}`);
+        fetchErrors.push(
+          `Failed to fetch recurring tasks: ${err instanceof Error ? err.message : String(err)}`
+        );
       }
 
-      workspaceSnapshots.push({ workspace, projects, tasks, recurringTasks, fetchErrors });
+      workspaceSnapshots.push({
+        workspace,
+        projects,
+        tasks,
+        recurringTasks,
+        fetchErrors,
+      });
     }
 
     // ── Phase 2: Persist into Nexto ──────────────────────────────────────────
@@ -206,7 +276,13 @@ export class MotionMigrationService {
   }
 
   private async importWorkspace(
-    { workspace, projects: motionProjects, tasks: motionTasks, recurringTasks: motionRecurring, fetchErrors }: MotionWorkspaceSnapshot,
+    {
+      workspace,
+      projects: motionProjects,
+      tasks: motionTasks,
+      recurringTasks: motionRecurring,
+      fetchErrors,
+    }: MotionWorkspaceSnapshot,
     nextoUserId: string,
     nextoAuthToken: string,
     supabaseClient: SupabaseClient
@@ -227,14 +303,13 @@ export class MotionMigrationService {
 
     for (const mp of motionProjects) {
       try {
-        const projectStatus: CreateProjectInput['status'] =
-          !mp.status
-            ? 'not-started'
-            : mp.status.isResolvedStatus
-              ? 'completed'
-              : mp.status.isDefaultStatus
-                ? 'not-started'
-                : 'in-progress';
+        const projectStatus: CreateProjectInput['status'] = !mp.status
+          ? 'not-started'
+          : mp.status.isResolvedStatus
+            ? 'completed'
+            : mp.status.isDefaultStatus
+              ? 'not-started'
+              : 'in-progress';
         const input: CreateProjectInput = {
           name: mp.name,
           status: projectStatus,

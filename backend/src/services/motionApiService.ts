@@ -76,7 +76,9 @@ export class MotionApiService {
     const prev = throttleQueue;
     let release!: () => void;
     // Register this call as the next in the queue before awaiting.
-    throttleQueue = new Promise<void>(resolve => { release = resolve; });
+    throttleQueue = new Promise<void>(resolve => {
+      release = resolve;
+    });
     try {
       await prev; // wait for the previous throttle slot to complete
       const elapsed = Date.now() - globalLastMotionRequestTime;
@@ -89,7 +91,10 @@ export class MotionApiService {
     }
   }
 
-  private async get<T>(path: string, params?: Record<string, string>): Promise<T> {
+  private async get<T>(
+    path: string,
+    params?: Record<string, string>
+  ): Promise<T> {
     await this.throttle();
 
     const url = new URL(`${MOTION_API_BASE}${path}`);
@@ -171,7 +176,9 @@ export class MotionApiService {
   }
 
   /** GET /recurring-tasks — returns all pages for a specific workspace */
-  async listRecurringTasks(workspaceId: string): Promise<MotionRecurringTask[]> {
+  async listRecurringTasks(
+    workspaceId: string
+  ): Promise<MotionRecurringTask[]> {
     return this.fetchAllPages<MotionRecurringTask>(
       '/recurring-tasks',
       'tasks',

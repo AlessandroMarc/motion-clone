@@ -10,6 +10,7 @@ import express, { type Request, type Response } from 'express';
 import { readFile } from 'fs/promises';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import type { MotionSnapshot } from '../../export-motion-data.js';
 import { ResponseHelper } from '../utils/responseHelpers.js';
 import { authMiddleware } from '../middleware/auth.js';
 
@@ -28,14 +29,20 @@ router.get('/', async (_req: Request, res: Response) => {
   try {
     raw = await readFile(snapshotPath, 'utf-8');
   } catch {
-    return ResponseHelper.notFound(res, 'motion-export.json (run the export first)');
+    return ResponseHelper.notFound(
+      res,
+      'motion-export.json (run the export first)'
+    );
   }
 
-  let snapshot: { workspaces?: Array<{ projects?: Array<{ id: string; name: string }>; tasks?: Array<{ id: string; name: string }> }> };
+  let snapshot: MotionSnapshot;
   try {
-    snapshot = JSON.parse(raw) as typeof snapshot;
+    snapshot = JSON.parse(raw) as MotionSnapshot;
   } catch {
-    return ResponseHelper.internalError(res, 'motion-export.json is not valid JSON');
+    return ResponseHelper.internalError(
+      res,
+      'motion-export.json is not valid JSON'
+    );
   }
 
   const projects: { id: string; name: string }[] = [];

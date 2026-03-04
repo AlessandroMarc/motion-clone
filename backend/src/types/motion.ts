@@ -56,7 +56,7 @@ export interface MotionLabel {
 
 export interface MotionScheduleSlot {
   start: string; // e.g. "09:00"
-  end: string;   // e.g. "17:00"
+  end: string; // e.g. "17:00"
 }
 
 export interface MotionSchedule {
@@ -75,7 +75,6 @@ export interface MotionSchedule {
 }
 
 export type MotionProjectType = 'NORMAL' | string;
-export type MotionPriorityLevel = 'ASAP' | 'HIGH' | 'MEDIUM' | 'LOW';
 
 export interface MotionProject {
   id: string;
@@ -85,7 +84,7 @@ export interface MotionProject {
   status?: MotionStatus;
   statusId?: string;
   type?: MotionProjectType;
-  priorityLevel?: MotionPriorityLevel;
+  priorityLevel?: MotionPriority;
   managerId?: string;
   createdByUserId?: string;
   manager?: MotionUser;

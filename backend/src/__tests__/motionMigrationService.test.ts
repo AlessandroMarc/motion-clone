@@ -17,23 +17,49 @@ jest.unstable_mockModule('../services/motionApiService.js', () => ({
 // ── Mock the Supabase config before importing services ────────────────────────
 const createMockSupabaseClient = () => {
   const builder: any = {};
+  const state: {
+    table?: string;
+    insertPayload?: unknown;
+    eqFilters: Record<string, unknown>;
+  } = { eqFilters: {} };
 
   // Chainable query-builder methods
-  builder.from = jest.fn(() => builder);
-  builder.insert = jest.fn(() => builder);
+  builder.from = jest.fn((table: string) => {
+    state.table = table;
+    state.insertPayload = undefined;
+    state.eqFilters = {};
+    return builder;
+  });
+  builder.insert = jest.fn((payload: unknown) => {
+    state.insertPayload = payload;
+    return builder;
+  });
   builder.update = jest.fn(() => builder);
   builder.select = jest.fn(() => builder);
-  builder.eq = jest.fn(() => builder);
+  builder.eq = jest.fn((column: string, value: unknown) => {
+    state.eqFilters[column] = value;
+    return builder;
+  });
   builder.order = jest.fn(() => builder);
 
   // Methods that are usually awaited
-  builder.single = jest.fn(() =>
-    Promise.resolve({ data: null, error: null }),
-  );
+  builder.single = jest.fn(() => Promise.resolve({ data: null, error: null }));
 
   // Make the builder thenable so `await builder` yields `{ data, error }`
-  builder.then = (onFulfilled: any, onRejected?: any) =>
-    Promise.resolve({ data: null, error: null }).then(onFulfilled, onRejected);
+  builder.then = jest
+    .fn()
+    .mockImplementation(
+      (
+        onFulfilled: (value: { data: null; error: null }) => unknown,
+        onRejected?: (reason: unknown) => unknown
+      ) =>
+        Promise.resolve({ data: null, error: null }).then(
+          onFulfilled,
+          onRejected
+        )
+    );
+
+  builder.__state = state;
 
   return builder;
 };
@@ -185,7 +211,12 @@ describe('MotionMigrationService', () => {
     // Default happy-path returns
     mockMotionApiService.getMe.mockResolvedValue(mockUser);
     mockMotionApiService.listSchedules.mockResolvedValue([
-      { name: 'Work Hours', isDefaultTimezone: true, timezone: 'UTC', schedule: {} },
+      {
+        name: 'Work Hours',
+        isDefaultTimezone: true,
+        timezone: 'UTC',
+        schedule: {},
+      },
     ]);
     mockMotionApiService.listWorkspaces.mockResolvedValue([mockWorkspace]);
     mockMotionApiService.listProjects.mockResolvedValue([mockProject]);
@@ -196,30 +227,71 @@ describe('MotionMigrationService', () => {
   });
 
   test('returns a MigrationResult with correct counts on success', async () => {
-    // Project insert  (1 single call)
-    mockSupabaseClient.single
-      .mockResolvedValueOnce({
-        data: { id: 'nexto-proj-1', name: 'Motion Project', status: 'not-started', user_id: 'u-1', milestones: [], deadline: null, createdAt: new Date(), updatedAt: new Date() },
-        error: null,
-      })
-      // Regular task – schedule resolution: user_settings lookup (schedules direct-await returns null → falls through to schedule creation)
-      .mockResolvedValueOnce({ data: null, error: null })
-      // Regular task – schedule creation insert
-      .mockResolvedValueOnce({ data: { id: 'sched-1' }, error: null })
-      // Regular task insert
-      .mockResolvedValueOnce({
-        data: { id: 'nexto-task-1', title: 'Motion Task', status: 'not-started', user_id: 'u-1', priority: 'high', planned_duration_minutes: 60, actual_duration_minutes: 0, due_date: null, dependencies: [], created_at: new Date(), updated_at: new Date() },
-        error: null,
-      })
-      // Recurring task – schedule resolution: user_settings lookup
-      .mockResolvedValueOnce({ data: null, error: null })
-      // Recurring task – schedule creation insert
-      .mockResolvedValueOnce({ data: { id: 'sched-2' }, error: null })
-      // Recurring task insert
-      .mockResolvedValueOnce({
-        data: { id: 'nexto-task-2', title: '[Recurring] Recurring Task', status: 'not-started', user_id: 'u-1', priority: 'medium', planned_duration_minutes: 30, actual_duration_minutes: 0, due_date: null, dependencies: [], created_at: new Date(), updated_at: new Date() },
-        error: null,
-      });
+    mockSupabaseClient.single.mockImplementation(async () => {
+      const state = mockSupabaseClient.__state as {
+        table?: string;
+        insertPayload?: unknown;
+      };
+
+      if (state.table === 'projects') {
+        return {
+          data: {
+            id: 'nexto-proj-1',
+            name: 'Motion Project',
+            status: 'not-started',
+            user_id: 'u-1',
+            milestones: [],
+            deadline: null,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          },
+          error: null,
+        };
+      }
+
+      if (state.table === 'user_settings') {
+        return { data: null, error: null };
+      }
+
+      if (state.table === 'schedules') {
+        return { data: { id: 'sched-1' }, error: null };
+      }
+
+      if (state.table === 'tasks') {
+        const taskInsert = Array.isArray(state.insertPayload)
+          ? state.insertPayload[0]
+          : null;
+        const title =
+          taskInsert && typeof taskInsert === 'object' && 'title' in taskInsert
+            ? String((taskInsert as { title: string }).title)
+            : 'Task';
+        const isRecurring = !!(
+          taskInsert &&
+          typeof taskInsert === 'object' &&
+          'is_recurring' in taskInsert &&
+          (taskInsert as { is_recurring?: boolean }).is_recurring
+        );
+
+        return {
+          data: {
+            id: isRecurring ? 'nexto-task-2' : 'nexto-task-1',
+            title,
+            status: 'not-started',
+            user_id: 'u-1',
+            priority: isRecurring ? 'medium' : 'high',
+            planned_duration_minutes: isRecurring ? 30 : 60,
+            actual_duration_minutes: 0,
+            due_date: null,
+            dependencies: [],
+            created_at: new Date(),
+            updated_at: new Date(),
+          },
+          error: null,
+        };
+      }
+
+      return { data: null, error: null };
+    });
 
     const service = new MotionMigrationService('test-api-key');
     const result = await service.migrate('u-1', MOCK_AUTH_TOKEN);
@@ -244,7 +316,9 @@ describe('MotionMigrationService', () => {
 
     expect(result.totalProjectsImported).toBe(0);
     expect(result.workspaces[0].errors.length).toBeGreaterThan(0);
-    expect(result.workspaces[0].errors[0]).toContain('Failed to import project');
+    expect(result.workspaces[0].errors[0]).toContain(
+      'Failed to import project'
+    );
   });
 
   test('records error and continues when listProjects API call fails', async () => {
@@ -258,9 +332,11 @@ describe('MotionMigrationService', () => {
     const service = new MotionMigrationService('test-api-key');
     const result = await service.migrate('u-1', MOCK_AUTH_TOKEN);
 
-    expect(result.workspaces[0].errors.some(e =>
-      e.includes('Failed to fetch projects')
-    )).toBe(true);
+    expect(
+      result.workspaces[0].errors.some(e =>
+        e.includes('Failed to fetch projects')
+      )
+    ).toBe(true);
     expect(result.totalProjectsImported).toBe(0);
   });
 });

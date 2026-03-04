@@ -42,13 +42,18 @@ router.post('/', async (req: Request, res: Response) => {
 
     console.log(
       `[motion-migration] user=${userId} ` +
-      `projects=${result.totalProjectsImported} ` +
-      `tasks=${result.totalTasksImported} ` +
-      `recurring=${result.totalRecurringTasksImported}`
+        `projects=${result.totalProjectsImported} ` +
+        `tasks=${result.totalTasksImported} ` +
+        `recurring=${result.totalRecurringTasksImported}`
     );
-    const totalErrors = result.workspaces.reduce((n, w) => n + w.errors.length, 0);
+    const totalErrors = result.workspaces.reduce(
+      (n, w) => n + w.errors.length,
+      0
+    );
     if (totalErrors > 0) {
-      console.warn(`[motion-migration] user=${userId} completed with ${totalErrors} error(s):`);
+      console.warn(
+        `[motion-migration] user=${userId} completed with ${totalErrors} error(s):`
+      );
       result.workspaces.forEach(w =>
         w.errors.forEach(e => console.warn(`  [${w.motionWorkspaceName}] ${e}`))
       );

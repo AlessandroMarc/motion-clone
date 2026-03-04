@@ -37,7 +37,9 @@ async function debugMigration() {
   // Validation
   if (!motionApiKey) {
     console.error('❌ MOTION_API_KEY environment variable is required');
-    console.error('   Get it from: https://app.usemotion.com/settings/integrations');
+    console.error(
+      '   Get it from: https://app.usemotion.com/settings/integrations'
+    );
     process.exit(1);
   }
 
@@ -50,18 +52,24 @@ async function debugMigration() {
   let nextoUserId: string;
   try {
     const decoded = verifyAuthToken(nextoAuthToken);
+    if (!decoded.userId) {
+      throw new Error('JWT payload missing userId');
+    }
     nextoUserId = decoded.userId;
   } catch (e) {
-    console.error('❌ Failed to decode NEXTO_JWT:', e instanceof Error ? e.message : String(e));
+    console.error(
+      '❌ Failed to decode NEXTO_JWT:',
+      e instanceof Error ? e.message : String(e)
+    );
     console.error('   Ensure NEXTO_JWT is a valid Supabase JWT token');
     process.exit(1);
   }
 
   console.log('🚀 Starting Motion → Nexto migration...\n');
   console.log('📋 Configuration:');
-  console.log(`   Motion API Key: ${motionApiKey.substring(0, 10)}...`);
+  console.log('   Motion API Key: [REDACTED]');
   console.log(`   Nexto User ID: ${nextoUserId} (from JWT)`);
-  console.log(`   Nexto JWT: ${nextoAuthToken.substring(0, 20)}...\n`);
+  console.log('   Nexto JWT: [REDACTED]\n');
 
   try {
     const service = new MotionMigrationService(motionApiKey);
@@ -76,7 +84,9 @@ async function debugMigration() {
     console.log(`   Workspaces Processed: ${result.workspaces.length}`);
     console.log(`   Total Projects Imported: ${result.totalProjectsImported}`);
     console.log(`   Total Tasks Imported: ${result.totalTasksImported}`);
-    console.log(`   Total Recurring Tasks Imported: ${result.totalRecurringTasksImported}\n`);
+    console.log(
+      `   Total Recurring Tasks Imported: ${result.totalRecurringTasksImported}\n`
+    );
 
     // Show per-workspace details
     for (const ws of result.workspaces) {

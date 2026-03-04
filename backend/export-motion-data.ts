@@ -45,11 +45,44 @@ export interface MotionSnapshot {
   workspaces: MotionWorkspaceSnapshot[];
 }
 
+function getErrorStatus(err: unknown): number | string | undefined {
+  if (!err || typeof err !== 'object') {
+    return undefined;
+  }
+
+  const maybeStatus = (err as { status?: number | string }).status;
+  if (maybeStatus !== undefined) {
+    return maybeStatus;
+  }
+
+  const maybeCode = (err as { code?: number | string }).code;
+  if (maybeCode !== undefined) {
+    return maybeCode;
+  }
+
+  if (err instanceof Error) {
+    const match = err.message.match(/\b(401|403|429)\b/);
+    if (match) {
+      return Number(match[1]);
+    }
+  }
+
+  return undefined;
+}
+
+function isFatalMotionStatus(status: number | string | undefined): boolean {
+  const normalized = Number(status);
+  return normalized === 401 || normalized === 403 || normalized === 429;
+}
+
 /**
  * Fetches all Motion data for a given API key and saves it to motion-export.json.
  * Returns the snapshot so the caller can use it without re-parsing the file.
  */
-export async function saveMotionSnapshot(motionApiKey: string, outputDir: string): Promise<MotionSnapshot> {
+export async function saveMotionSnapshot(
+  motionApiKey: string,
+  outputDir: string
+): Promise<MotionSnapshot> {
   const motionApi = new MotionApiService(motionApiKey);
 
   console.log('📥 Fetching Motion user...');
@@ -67,16 +100,55 @@ export async function saveMotionSnapshot(motionApiKey: string, outputDir: string
     let projects: MotionProject[] = [];
     let tasks: MotionTask[] = [];
     let recurringTasks: MotionRecurringTask[] = [];
-    try { projects = await motionApi.listProjects(ws.id); } catch (err) { console.error(`   ✗ projects: ${err instanceof Error ? err.message : String(err)}`); }
-    try { tasks = await motionApi.listTasks(ws.id); } catch (err) { console.error(`   ✗ tasks: ${err instanceof Error ? err.message : String(err)}`); }
-    try { recurringTasks = await motionApi.listRecurringTasks(ws.id); } catch (err) { console.error(`   ✗ recurring: ${err instanceof Error ? err.message : String(err)}`); }
+    try {
+      projects = await motionApi.listProjects(ws.id);
+    } catch (err) {
+      const status = getErrorStatus(err);
+      if (isFatalMotionStatus(status)) {
+        throw err;
+      }
+      console.error(
+        `   ✗ projects: ${err instanceof Error ? err.message : String(err)}`
+      );
+    }
+    try {
+      tasks = await motionApi.listTasks(ws.id);
+    } catch (err) {
+      const status = getErrorStatus(err);
+      if (isFatalMotionStatus(status)) {
+        throw err;
+      }
+      console.error(
+        `   ✗ tasks: ${err instanceof Error ? err.message : String(err)}`
+      );
+    }
+    try {
+      recurringTasks = await motionApi.listRecurringTasks(ws.id);
+    } catch (err) {
+      const status = getErrorStatus(err);
+      if (isFatalMotionStatus(status)) {
+        throw err;
+      }
+      console.error(
+        `   ✗ recurring: ${err instanceof Error ? err.message : String(err)}`
+      );
+    }
 
     // Filter: only active projects (not resolved/completed) and incomplete tasks
-    const activeProjects = projects.filter(p => p.status?.isResolvedStatus === false);
-    const activeTasks = tasks.filter(t =>  t.status.isResolvedStatus === false);
+    const activeProjects = projects.filter(
+      p => p.status?.isResolvedStatus === false
+    );
+    const activeTasks = tasks.filter(t => t.status.isResolvedStatus === false);
 
-    workspaceSnapshots.push({ workspace: ws, projects: activeProjects, tasks: activeTasks, recurringTasks });
-    console.log(`   ✓ Projects: ${activeProjects.length}/${projects.length} active, Tasks: ${activeTasks.length}/${tasks.length} active, Recurring: ${recurringTasks.length}`);
+    workspaceSnapshots.push({
+      workspace: ws,
+      projects: activeProjects,
+      tasks: activeTasks,
+      recurringTasks,
+    });
+    console.log(
+      `   ✓ Projects: ${activeProjects.length}/${projects.length} active, Tasks: ${activeTasks.length}/${tasks.length} active, Recurring: ${recurringTasks.length}`
+    );
   }
 
   const snapshot: MotionSnapshot = {
@@ -98,7 +170,9 @@ async function main() {
   const motionApiKey = process.env.MOTION_API_KEY;
   if (!motionApiKey) {
     console.error('❌ MOTION_API_KEY environment variable is required');
-    console.error('   Get it from: https://app.usemotion.com/settings/integrations');
+    console.error(
+      '   Get it from: https://app.usemotion.com/settings/integrations'
+    );
     process.exit(1);
   }
 
@@ -108,10 +182,18 @@ async function main() {
     console.log('\n✅ Export completed!');
     console.log(`   User: ${snapshot.user.email}`);
     console.log(`   Workspaces: ${snapshot.workspaces.length}`);
-    console.log(`   Projects: ${snapshot.workspaces.reduce((s, w) => s + w.projects.length, 0)}`);
-    console.log(`   Tasks: ${snapshot.workspaces.reduce((s, w) => s + w.tasks.length, 0)}`);
-    console.log(`   Recurring Tasks: ${snapshot.workspaces.reduce((s, w) => s + w.recurringTasks.length, 0)}\n`);
-    console.log('Review motion-export.json, then run debug-migration.ts to import into Nexto.');
+    console.log(
+      `   Projects: ${snapshot.workspaces.reduce((s, w) => s + w.projects.length, 0)}`
+    );
+    console.log(
+      `   Tasks: ${snapshot.workspaces.reduce((s, w) => s + w.tasks.length, 0)}`
+    );
+    console.log(
+      `   Recurring Tasks: ${snapshot.workspaces.reduce((s, w) => s + w.recurringTasks.length, 0)}\n`
+    );
+    console.log(
+      'Review motion-export.json, then run debug-migration.ts to import into Nexto.'
+    );
     process.exit(0);
   } catch (error) {
     console.error('\n❌ Export failed:');
