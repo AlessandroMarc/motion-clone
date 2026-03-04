@@ -7,7 +7,7 @@ import type { Task } from '@/types';
 import { transformFormDataToTask } from '@/utils/formUtils';
 import { useAuth } from '@/contexts/AuthContext';
 import { useOnboarding } from '@/hooks/useOnboarding';
-import posthog from 'posthog-js';
+import { captureEvent } from '@/lib/analytics';
 
 // Form validation schema
 export const taskSchema = z
@@ -41,6 +41,7 @@ export const taskSchema = z
       .min(1, 'Interval must be at least 1')
       .optional(),
     recurrenceStartDate: z.string().optional(), // 'YYYY-MM-DD'; anchors day-of-week / day-of-month
+    startDate: z.string().optional(), // 'YYYY-MM-DD'; earliest date the task may be scheduled
   })
   .superRefine((data, ctx) => {
     if (data.actual_duration_minutes > data.planned_duration_minutes) {
@@ -101,6 +102,7 @@ export function useTaskForm(onTaskCreate: TaskCreateFormProps['onTaskCreate']) {
       recurrence_pattern: undefined,
       recurrence_interval: 1,
       recurrenceStartDate: undefined,
+      startDate: undefined,
     },
   });
 
@@ -127,7 +129,7 @@ export function useTaskForm(onTaskCreate: TaskCreateFormProps['onTaskCreate']) {
       toast.success('Task created successfully!');
 
       // PostHog: Capture task created event
-      posthog.capture('task_created', {
+      captureEvent('task_created', {
         priority: data.priority,
         has_due_date: !!data.dueDate,
         has_project: !!data.project_id,

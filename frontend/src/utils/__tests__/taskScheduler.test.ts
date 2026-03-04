@@ -804,6 +804,47 @@ describe('taskScheduler', () => {
         expect(endHour * 60 + endMinute).toBeLessThanOrEqual(22 * 60);
       });
     });
+
+    it('should not schedule events before start_date', () => {
+      // start_date is two days from startFrom
+      const startFrom = new Date('2024-01-01T09:00:00');
+      const startDate = new Date('2024-01-03T00:00:00');
+      const task = createMockTask({ due_date: null, start_date: startDate });
+      const config = {
+        ...DEFAULT_CONFIG,
+        eventDurationMinutes: 60,
+        defaultDaysWithoutDeadline: 14,
+      };
+
+      const events = distributeEvents(task, 120, config, [], startFrom);
+
+      expect(events.length).toBeGreaterThan(0);
+      events.forEach(event => {
+        expect(event.start_time.getTime()).toBeGreaterThanOrEqual(
+          startDate.getTime()
+        );
+      });
+    });
+
+    it('should schedule normally when start_date is in the past', () => {
+      // start_date is yesterday, so scheduling should proceed from now
+      const startFrom = new Date('2024-01-05T09:00:00');
+      const startDate = new Date('2024-01-01T00:00:00'); // in the past
+      const task = createMockTask({ due_date: null, start_date: startDate });
+      const config = {
+        ...DEFAULT_CONFIG,
+        eventDurationMinutes: 60,
+        defaultDaysWithoutDeadline: 14,
+      };
+
+      const events = distributeEvents(task, 60, config, [], startFrom);
+
+      expect(events.length).toBeGreaterThan(0);
+      // First event should start at or after startFrom (not be delayed further)
+      expect(events[0].start_time.getTime()).toBeGreaterThanOrEqual(
+        startFrom.getTime()
+      );
+    });
   });
 
   describe('sortTasksForScheduling — blockedBy / topological sort', () => {

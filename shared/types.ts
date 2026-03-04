@@ -42,6 +42,8 @@ interface Task {
   actual_duration_minutes: number;
   // Schedule association for task scheduling
   schedule_id?: string;
+  // Scheduling constraints
+  start_date?: Date | null; // earliest date this task may be scheduled (optional)
   // Recurring task fields
   is_recurring: boolean; // whether this task repeats
   recurrence_pattern?: 'daily' | 'weekly' | 'monthly'; // frequency (required if is_recurring)

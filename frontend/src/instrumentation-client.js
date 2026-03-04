@@ -19,21 +19,19 @@ if (isProduction) {
   });
 }
 
-// Initialize PostHog for analytics
-if (process.env.NEXT_PUBLIC_POSTHOG_KEY) {
+// Initialize PostHog for analytics (only in production)
+if (isProduction && process.env.NEXT_PUBLIC_POSTHOG_KEY) {
   posthog.init(process.env.NEXT_PUBLIC_POSTHOG_KEY, {
     api_host: '/ingest',
     ui_host: 'https://eu.posthog.com',
     defaults: '2025-05-24',
     capture_exceptions: true,
-    debug: process.env.NODE_ENV === 'development',
+    debug: false,
   });
-} else if (process.env.NODE_ENV === 'production') {
+} else if (isProduction) {
   console.error(
     'PostHog key is missing in production! Analytics will not be captured.'
   );
-} else {
-  console.warn('PostHog key is missing. Analytics is disabled in development.');
 }
 
 // IMPORTANT: Never combine this approach with other client-side PostHog initialization approaches,

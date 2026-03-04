@@ -7,7 +7,7 @@ import type { Project, WorkItemStatus } from '@/types';
 import { useAuth } from '@/contexts/AuthContext';
 import { useOnboarding } from '@/hooks/useOnboarding';
 import { normalizeToMidnight } from '@/utils/dateUtils';
-import posthog from 'posthog-js';
+import { captureEvent } from '@/lib/analytics';
 
 // Project form schema
 export const projectSchema = z.object({
@@ -80,7 +80,7 @@ export function useProjectForm(
       toast.success('Project created successfully!');
 
       // PostHog: Capture project created event
-      posthog.capture('project_created', {
+      captureEvent('project_created', {
         has_description: !!data.description,
         has_deadline: !!data.deadline,
       });
