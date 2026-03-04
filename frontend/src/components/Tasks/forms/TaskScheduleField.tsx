@@ -99,7 +99,7 @@ export function TaskScheduleField({
           })
         }
       >
-        <SelectTrigger id={id}>
+        <SelectTrigger id={id} className="w-full">
           <SelectValue placeholder="Select schedule" />
         </SelectTrigger>
         <SelectContent>

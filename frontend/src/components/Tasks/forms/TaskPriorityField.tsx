@@ -39,7 +39,7 @@ export function TaskPriorityField({
       <Label htmlFor={id}>Priority</Label>
       <Select value={value} onValueChange={onValueChange}>
         <SelectTrigger
-          className={`${hasError ? 'border-red-500' : ''} ${className}`}
+          className={`w-full ${hasError ? 'border-red-500' : ''} ${className}`}
         >
           <SelectValue placeholder={placeholder} />
         </SelectTrigger>

@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { FormProvider, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Save } from 'lucide-react';
+import { Copy, Save } from 'lucide-react';
 import { toast } from 'sonner';
 
 import {
@@ -12,6 +12,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { taskService } from '@/services/taskService';
 import { calendarService } from '@/services/calendarService';
 import type { Task, CalendarEventTask } from '@/types';
@@ -35,6 +36,7 @@ interface TaskEditDialogFormProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onTaskUpdated: (updatedTask: Task) => void;
+  onTaskCloned?: (clonedTask: Task) => void;
 }
 
 const emptyFormValues: TaskFormData = {
@@ -83,6 +85,7 @@ export function TaskEditDialogForm({
   open,
   onOpenChange,
   onTaskUpdated,
+  onTaskCloned,
 }: TaskEditDialogFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [linkedEvents, setLinkedEvents] = useState<CalendarEventTask[]>([]);
@@ -256,6 +259,65 @@ export function TaskEditDialogForm({
     }
   };
 
+  const getValidationErrorMessage = () => {
+    const errorMessages = Object.entries(form.formState.errors)
+      .map(([field, error]: [string, any]) => {
+        const fieldName = field.replace(/_/g, ' ');
+        return error?.message || `${fieldName} is invalid`;
+      })
+      .join(', ');
+
+    return errorMessages || 'Please fix form errors before continuing.';
+  };
+
+  const handleCloneTask = async () => {
+    if (!task) {
+      return;
+    }
+
+    const isValidNow = await form.trigger();
+    if (!isValidNow) {
+      toast.error(`Validation failed: ${getValidationErrorMessage()}`);
+      return;
+    }
+
+    const data = form.getValues();
+
+    setIsSubmitting(true);
+    try {
+      const clonedTask = await taskService.createTask({
+        title: data.title,
+        description: data.description,
+        dueDate: data.dueDate ? normalizeToMidnight(new Date(data.dueDate)) : null,
+        priority: data.priority,
+        project_id: data.project_id ?? undefined,
+        scheduleId: data.scheduleId || undefined,
+        blockedBy: data.blockedBy || [],
+        plannedDurationMinutes: data.planned_duration_minutes,
+        actualDurationMinutes: data.actual_duration_minutes ?? 0,
+        isRecurring: data.is_recurring,
+        recurrencePattern: data.is_recurring ? data.recurrence_pattern : undefined,
+        recurrenceInterval: data.is_recurring ? data.recurrence_interval : undefined,
+        recurrenceStartDate:
+          data.is_recurring && data.recurrenceStartDate
+            ? new Date(data.recurrenceStartDate)
+            : null,
+      });
+
+      onTaskCloned?.(clonedTask);
+      toast.success('Task cloned successfully');
+      onOpenChange(false);
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : 'Failed to clone task. Please try again.';
+      toast.error(message);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   return (
     <Dialog open={open && !!task} onOpenChange={handleDialogOpenChange}>
       <DialogContent className="sm:max-w-[500px] max-h-[90vh] flex flex-col overflow-hidden">
@@ -279,23 +341,18 @@ export function TaskEditDialogForm({
               console.log('Form state:', { isDirty, isValid, errors });
               if (Object.keys(errors).length > 0) {
                 console.error('❌ Form validation errors:', errors);
-
-                // Show user-visible error notification for validation errors
-                const errorMessages = Object.entries(errors)
-                  .map(([field, error]: [string, any]) => {
-                    const fieldName = field.replace(/_/g, ' ');
-                    return error?.message || `${fieldName} is invalid`;
-                  })
-                  .join(', ');
-
-                toast.error(`Validation failed: ${errorMessages}`);
+                toast.error(`Validation failed: ${getValidationErrorMessage()}`);
               }
               handleSubmit(onSubmit)(e);
             }}
           >
-            <div className="space-y-4">
-              <TaskTitleField register={register} errors={errors} />
-              <TaskDescriptionField register={register} errors={errors} />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="md:col-span-2">
+                <TaskTitleField register={register} errors={errors} />
+              </div>
+              <div className="md:col-span-2">
+                <TaskDescriptionField register={register} errors={errors} />
+              </div>
               {!isRecurring && (
                 <TaskDueDateField register={register} errors={errors} />
               )}
@@ -307,53 +364,57 @@ export function TaskEditDialogForm({
               <TaskProjectField errors={errors} />
               <TaskScheduleField errors={errors} />
               <TaskBlockedByField errors={errors} currentTaskId={task?.id} />
-              <TaskDurationFields
-                register={register}
-                errors={errors}
-                hideActualDuration={isRecurring}
-              />
-              <TaskRecurrenceFields
-                isRecurring={isRecurring}
-                onIsRecurringChange={checked => {
-                  setValue('is_recurring', checked, {
-                    shouldDirty: true,
-                    shouldValidate: true,
-                  });
-                  if (checked) {
-                    // Clear conflicting fields when enabling recurrence
-                    setValue('dueDate', undefined, {
+              <div className="md:col-span-2">
+                <TaskDurationFields
+                  register={register}
+                  errors={errors}
+                  hideActualDuration={isRecurring}
+                />
+              </div>
+              <div className="md:col-span-2">
+                <TaskRecurrenceFields
+                  isRecurring={isRecurring}
+                  onIsRecurringChange={checked => {
+                    setValue('is_recurring', checked, {
                       shouldDirty: true,
                       shouldValidate: true,
                     });
-                    setValue('actual_duration_minutes', 0, {
+                    if (checked) {
+                      // Clear conflicting fields when enabling recurrence
+                      setValue('dueDate', undefined, {
+                        shouldDirty: true,
+                        shouldValidate: true,
+                      });
+                      setValue('actual_duration_minutes', 0, {
+                        shouldDirty: true,
+                        shouldValidate: true,
+                      });
+                    }
+                  }}
+                  recurrencePattern={recurrencePattern}
+                  onPatternChange={value =>
+                    setValue('recurrence_pattern', value, {
                       shouldDirty: true,
                       shouldValidate: true,
-                    });
+                    })
                   }
-                }}
-                recurrencePattern={recurrencePattern}
-                onPatternChange={value =>
-                  setValue('recurrence_pattern', value, {
-                    shouldDirty: true,
-                    shouldValidate: true,
-                  })
-                }
-                recurrenceInterval={recurrenceInterval}
-                onIntervalChange={value =>
-                  setValue('recurrence_interval', value, {
-                    shouldDirty: true,
-                    shouldValidate: true,
-                  })
-                }
-                recurrenceStartDate={recurrenceStartDate}
-                onRecurrenceStartDateChange={value =>
-                  setValue('recurrenceStartDate', value, {
-                    shouldDirty: true,
-                    shouldValidate: true,
-                  })
-                }
-                errors={errors}
-              />
+                  recurrenceInterval={recurrenceInterval}
+                  onIntervalChange={value =>
+                    setValue('recurrence_interval', value, {
+                      shouldDirty: true,
+                      shouldValidate: true,
+                    })
+                  }
+                  recurrenceStartDate={recurrenceStartDate}
+                  onRecurrenceStartDateChange={value =>
+                    setValue('recurrenceStartDate', value, {
+                      shouldDirty: true,
+                      shouldValidate: true,
+                    })
+                  }
+                  errors={errors}
+                />
+              </div>
             </div>
 
             <div className="space-y-3">
@@ -425,14 +486,26 @@ export function TaskEditDialogForm({
               )}
             </div>
 
-            <TaskFormActions
-              isSubmitting={isSubmitting}
-              onCancel={handleCancel}
-              submitText="Save Changes"
-              submittingText="Saving..."
-              submitIcon={<Save className="mr-2 h-4 w-4" />}
-              cancelText="Close"
-            />
+            <div className="flex items-center gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={handleCloneTask}
+                disabled={isSubmitting}
+              >
+                <Copy className="mr-2 h-4 w-4" />
+                Clone Task
+              </Button>
+              <TaskFormActions
+                isSubmitting={isSubmitting}
+                onCancel={handleCancel}
+                submitText="Save Changes"
+                submittingText="Saving..."
+                submitIcon={<Save className="mr-2 h-4 w-4" />}
+                cancelText="Close"
+                className="ml-auto"
+              />
+            </div>
           </form>
         </FormProvider>
       </DialogContent>

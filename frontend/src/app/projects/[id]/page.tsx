@@ -130,6 +130,10 @@ export default function ProjectDetailPage({ params }: ProjectDetailPageProps) {
     });
   };
 
+  const handleTaskClone = (clonedTask: Task) => {
+    setTasks(prev => [...prev, clonedTask]);
+  };
+
   const handleBack = () => {
     router.push('/projects');
   };
@@ -225,6 +229,7 @@ export default function ProjectDetailPage({ params }: ProjectDetailPageProps) {
               onTaskCreate={handleTaskCreate}
               onTaskUnlink={handleTaskUnlink}
               onTaskUpdate={handleTaskUpdate}
+              onTaskClone={handleTaskClone}
             />
           </div>
         </div>

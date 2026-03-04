@@ -85,6 +85,11 @@ export function TaskListContainer({
     setSelectedTask(updatedTask);
   };
 
+  const handleTaskClonedInDialog = (clonedTask: Task) => {
+    setTasks(prev => [...prev, clonedTask]);
+    onTaskUpdate?.();
+  };
+
   const handleTaskCreate = async (
     taskData: Omit<
       Task,
@@ -133,6 +138,7 @@ export function TaskListContainer({
       detailsOpen={detailsOpen}
       onDetailsOpenChange={handleDetailsOpenChange}
       onTaskUpdatedInDialog={handleTaskUpdatedInDialog}
+      onTaskClonedInDialog={handleTaskClonedInDialog}
     />
   );
 }

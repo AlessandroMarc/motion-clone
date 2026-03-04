@@ -30,6 +30,7 @@ interface TaskListViewProps {
   detailsOpen: boolean;
   onDetailsOpenChange: (open: boolean) => void;
   onTaskUpdatedInDialog: (updatedTask: Task) => void;
+  onTaskClonedInDialog: (clonedTask: Task) => void;
 }
 
 export function TaskListView({
@@ -46,6 +47,7 @@ export function TaskListView({
   detailsOpen,
   onDetailsOpenChange,
   onTaskUpdatedInDialog,
+  onTaskClonedInDialog,
 }: TaskListViewProps) {
   const isMobile = useIsMobile();
 
@@ -117,6 +119,7 @@ export function TaskListView({
         open={detailsOpen}
         onOpenChange={onDetailsOpenChange}
         onTaskUpdated={onTaskUpdatedInDialog}
+        onTaskCloned={onTaskClonedInDialog}
       />
     </>
   );

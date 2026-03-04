@@ -39,6 +39,7 @@ interface ProjectTasksSectionProps {
   ) => Promise<void>;
   onTaskUnlink: (taskId: string) => Promise<void>;
   onTaskUpdate?: (updatedTask: Task) => void;
+  onTaskClone?: (clonedTask: Task) => void;
 }
 
 export function ProjectTasksSection({
@@ -47,6 +48,7 @@ export function ProjectTasksSection({
   onTaskCreate,
   onTaskUnlink,
   onTaskUpdate,
+  onTaskClone,
 }: ProjectTasksSectionProps) {
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
@@ -238,6 +240,7 @@ export function ProjectTasksSection({
         open={isEditDialogOpen}
         onOpenChange={setIsEditDialogOpen}
         onTaskUpdated={handleTaskUpdated}
+        onTaskCloned={onTaskClone}
       />
     </Card>
   );
