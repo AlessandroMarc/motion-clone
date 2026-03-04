@@ -5,11 +5,7 @@ import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase';
 import type { Schedule } from '@/types';
 import { userSettingsService } from '@/services/userSettingsService';
-import {
-  identifyUser,
-  captureEvent,
-  resetAnalytics,
-} from '@/lib/analytics';
+import { identifyUser, captureEvent, resetAnalytics } from '@/lib/analytics';
 
 interface AuthContextType {
   user: User | null;

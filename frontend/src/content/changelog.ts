@@ -18,7 +18,8 @@ export const changelogEntries: ChangelogEntry[] = [
     version: '1.6.0',
     date: 'March 2026',
     title: 'Support for Start Date',
-    description: 'The auto-scheduler can now take into account a task\'s "start date" to ensure it only schedules tasks on or after that date.'
+    description:
+      'The auto-scheduler can now take into account a task\'s "start date" to ensure it only schedules tasks on or after that date.',
   },
   {
     version: '1.6.0',

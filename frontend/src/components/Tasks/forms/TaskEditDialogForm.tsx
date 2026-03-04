@@ -259,9 +259,7 @@ export function TaskEditDialogForm({
       toast.error(message);
 
       // PostHog: Capture task update error
-      captureException(
-        error instanceof Error ? error : new Error(message)
-      );
+      captureException(error instanceof Error ? error : new Error(message));
     } finally {
       setIsSubmitting(false);
     }
