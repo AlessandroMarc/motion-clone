@@ -26,6 +26,11 @@ describe('taskScheduler', () => {
     updated_at: new Date(),
     planned_duration_minutes: 120,
     actual_duration_minutes: 0,
+    is_recurring: false,
+    recurrence_pattern: null,
+    recurrence_interval: 1,
+    next_generation_cutoff: null,
+    recurrence_start_date: null,
     ...overrides,
   });
 
@@ -141,7 +146,7 @@ describe('taskScheduler', () => {
         );
       }, 0);
       expect(totalMinutes).toBeLessThanOrEqual(
-        240 + config.gapBetweenEventsMinutes * events.length
+        240 + (config.gapBetweenEventsMinutes ?? 0) * events.length
       );
 
       // All events should be within working hours
@@ -649,9 +654,7 @@ describe('taskScheduler', () => {
       const events = distributeEvents(task, 900, config, [], startFrom);
 
       // Should have events on multiple different days
-      const uniqueDays = new Set(
-        events.map(e => e.start_time.toDateString())
-      );
+      const uniqueDays = new Set(events.map(e => e.start_time.toDateString()));
       expect(uniqueDays.size).toBeGreaterThan(1);
     });
 
@@ -692,11 +695,8 @@ describe('taskScheduler', () => {
         const prev = events[i - 1];
         const curr = events[i];
         // Only check same-day consecutive events
-        if (
-          prev.end_time.toDateString() === curr.start_time.toDateString()
-        ) {
-          const gapMs =
-            curr.start_time.getTime() - prev.end_time.getTime();
+        if (prev.end_time.toDateString() === curr.start_time.toDateString()) {
+          const gapMs = curr.start_time.getTime() - prev.end_time.getTime();
           expect(gapMs).toBeGreaterThanOrEqual(gapMinutes * 60 * 1000);
         }
       }
@@ -1024,8 +1024,7 @@ describe('taskScheduler', () => {
         createMockTask({
           id: `task-${i}`,
           due_date: i % 5 === 0 ? null : new Date(2024, 0, (i % 28) + 1),
-          priority:
-            i % 3 === 0 ? 'high' : i % 3 === 1 ? 'medium' : 'low',
+          priority: i % 3 === 0 ? 'high' : i % 3 === 1 ? 'medium' : 'low',
         })
       );
 
