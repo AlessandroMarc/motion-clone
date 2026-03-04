@@ -66,6 +66,7 @@ export class TaskService {
 
   // Create a new task
   async createTask(input: CreateTaskInput, authToken?: string): Promise<Task> {
+    const startTime = Date.now();
     const isRecurring = input.is_recurring ?? false;
     const rawPlanned = input.planned_duration_minutes;
     const normalizedPlanned = rawPlanned < 0 ? 0 : rawPlanned;
@@ -89,7 +90,10 @@ export class TaskService {
     }
 
     // Resolve schedule_id: use provided value, then fall back to user's active/default schedule
+    // Uses a single optimized query instead of 4 sequential queries
+    const scheduleStart = Date.now();
     let scheduleId = input.schedule_id;
+
     if (scheduleId) {
       // Verify the provided schedule belongs to this user before using it
       const { data: ownedSchedule } = await serviceRoleSupabase
@@ -105,63 +109,76 @@ export class TaskService {
         );
       }
     } else {
-      // 1. Try user_settings.active_schedule_id
-      const { data: settings } = await serviceRoleSupabase
-        .from('user_settings')
-        .select('active_schedule_id')
-        .eq('user_id', input.user_id)
-        .single();
-
-      if (settings?.active_schedule_id) {
-        scheduleId = settings.active_schedule_id;
-      } else {
-        // 2. Fall back to the user's default schedule
-        const { data: defaultSchedule } = await serviceRoleSupabase
-          .from('schedules')
-          .select('id')
-          .eq('user_id', input.user_id)
-          .eq('is_default', true)
-          .single();
-
-        if (defaultSchedule?.id) {
-          scheduleId = defaultSchedule.id;
-        } else {
-          // 3. Fall back to any schedule belonging to the user
-          const { data: anySchedule } = await serviceRoleSupabase
-            .from('schedules')
-            .select('id')
+      // Fetch user's active schedule and all their schedules in parallel
+      const [{ data: userSettings }, { data: schedules, error: queryError }] =
+        await Promise.all([
+          serviceRoleSupabase
+            .from('user_settings')
+            .select('active_schedule_id')
             .eq('user_id', input.user_id)
-            .limit(1)
-            .single();
+            .single(),
+          serviceRoleSupabase
+            .from('schedules')
+            .select('id, is_default')
+            .eq('user_id', input.user_id)
+            .order('is_default', { ascending: false })
+            .order('created_at', { ascending: true }),
+        ]);
 
-          if (anySchedule?.id) {
-            scheduleId = anySchedule.id;
-          } else {
-            // 4. Create a default schedule for the user
-            const { data: newSchedule, error: scheduleError } =
-              await serviceRoleSupabase
-                .from('schedules')
-                .insert([
-                  {
-                    user_id: input.user_id,
-                    name: 'Default',
-                    working_hours_start: 9,
-                    working_hours_end: 22,
-                    is_default: true,
-                  },
-                ])
-                .select('id')
-                .single();
+      if (queryError) {
+        throw new Error(`Failed to fetch schedule: ${queryError.message}`);
+      }
 
-            if (scheduleError || !newSchedule?.id) {
-              throw new Error(
-                'No schedule found for user and could not create one'
-              );
-            }
-            scheduleId = newSchedule.id;
-          }
+      // Prefer the user's active schedule
+      if (userSettings?.active_schedule_id) {
+        const activeSchedule = schedules?.find(
+          s => s.id === userSettings.active_schedule_id
+        );
+        if (activeSchedule) {
+          scheduleId = activeSchedule.id;
         }
       }
+
+      // Fall back to default or oldest schedule
+      if (!scheduleId) {
+        const fallback = schedules?.find(s => s.is_default) ?? schedules?.[0];
+        if (fallback?.id) {
+          scheduleId = fallback.id;
+        }
+      }
+
+      if (!scheduleId) {
+        // Create a default schedule for the user if none exists
+        const { data: newSchedule, error: scheduleError } =
+          await serviceRoleSupabase
+            .from('schedules')
+            .insert([
+              {
+                user_id: input.user_id,
+                name: 'Default',
+                working_hours_start: 9,
+                working_hours_end: 22,
+                is_default: true,
+              },
+            ])
+            .select('id')
+            .single();
+
+        if (scheduleError || !newSchedule?.id) {
+          throw new Error(
+            `No schedule found for user and could not create one: ${
+              scheduleError?.message ?? 'unknown insert error'
+            }`
+          );
+        }
+        scheduleId = newSchedule.id;
+      }
+    }
+    const scheduleDuration = Date.now() - scheduleStart;
+    if (scheduleDuration > 100) {
+      console.warn(
+        `[TaskService] Schedule resolution took ${scheduleDuration}ms (should be <100ms)`
+      );
     }
 
     // Validate recurrence fields when is_recurring is true
@@ -229,11 +246,19 @@ export class TaskService {
       throw new Error(`Failed to create task: ${error.message}`);
     }
 
+    const totalDuration = Date.now() - startTime;
+    if (totalDuration > 200) {
+      console.warn(
+        `[TaskService] Task creation took ${totalDuration}ms (schedule: ${scheduleDuration}ms)`
+      );
+    }
+
     return data;
   }
 
   // Get all tasks
   async getAllTasks(authToken?: string): Promise<Task[]> {
+    const startTime = Date.now();
     const client = authToken
       ? getAuthenticatedSupabase(authToken)
       : serviceRoleSupabase;
@@ -244,6 +269,12 @@ export class TaskService {
 
     if (error) {
       throw new Error(`Failed to fetch tasks: ${error.message}`);
+    }
+
+    const duration = Date.now() - startTime;
+    const taskCount = data?.length || 0;
+    if (duration > 500 || taskCount > 100) {
+      console.log(`[TaskService] Fetched ${taskCount} tasks in ${duration}ms`);
     }
 
     return data || [];

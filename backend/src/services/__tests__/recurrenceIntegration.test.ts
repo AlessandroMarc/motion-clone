@@ -9,6 +9,7 @@ interface MockClient {
   eq: jest.Mock<any>;
   single: jest.Mock<any>;
   limit: jest.Mock<any>;
+  order: jest.Mock<any>;
   [key: string]: jest.Mock<any>;
 }
 
@@ -20,6 +21,7 @@ const mockClient: MockClient = {
   eq: jest.fn(),
   single: jest.fn(),
   limit: jest.fn(),
+  order: jest.fn(),
 };
 
 jest.unstable_mockModule('../../config/supabase.js', () => ({
@@ -55,19 +57,30 @@ describe('TaskService - Recurrence integration', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-    for (const key of ['from', 'select', 'insert', 'update', 'eq', 'limit']) {
+    for (const key of [
+      'from',
+      'select',
+      'insert',
+      'update',
+      'eq',
+      'order',
+      'limit',
+    ]) {
       mockClient[key].mockReturnValue(mockClient);
     }
     service = new TaskService();
   });
 
   test('createTask persists recurrence fields when recurring is enabled', async () => {
+    // Mock the Promise.all() that fetches user_settings and schedules
     mockClient.single
       .mockResolvedValueOnce({
+        // First .single() call in Promise.all() for user_settings
         data: { active_schedule_id: 'sched-1' },
         error: null,
       })
       .mockResolvedValueOnce({
+        // Second .single() call for insert result
         data: makeTask({
           is_recurring: true,
           recurrence_pattern: 'weekly',
@@ -76,6 +89,33 @@ describe('TaskService - Recurrence integration', () => {
         }),
         error: null,
       });
+
+    // Mock the schedules query to return an array (from Promise.all())
+    mockClient.from.mockImplementation((table: string) => {
+      if (table === 'schedules') {
+        return {
+          ...mockClient,
+          select: () => ({
+            ...mockClient,
+            eq: () => ({
+              ...mockClient,
+              order: () => ({
+                ...mockClient,
+                order: () =>
+                  Promise.resolve({
+                    data: [
+                      { id: 'sched-1', is_default: true },
+                      { id: 'sched-2', is_default: false },
+                    ],
+                    error: null,
+                  }),
+              }),
+            }),
+          }),
+        };
+      }
+      return mockClient;
+    });
 
     await service.createTask({
       title: 'Weekly standup',
@@ -100,10 +140,42 @@ describe('TaskService - Recurrence integration', () => {
   test('createTask clears recurrence fields when recurring is disabled', async () => {
     mockClient.single
       .mockResolvedValueOnce({
+        // First .single() call in Promise.all() for user_settings
         data: { active_schedule_id: 'sched-1' },
         error: null,
       })
-      .mockResolvedValueOnce({ data: makeTask(), error: null });
+      .mockResolvedValueOnce({
+        // Second .single() call for insert result
+        data: makeTask(),
+        error: null,
+      });
+
+    // Mock the schedules query to return an array
+    mockClient.from.mockImplementation((table: string) => {
+      if (table === 'schedules') {
+        return {
+          ...mockClient,
+          select: () => ({
+            ...mockClient,
+            eq: () => ({
+              ...mockClient,
+              order: () => ({
+                ...mockClient,
+                order: () =>
+                  Promise.resolve({
+                    data: [
+                      { id: 'sched-1', is_default: true },
+                      { id: 'sched-2', is_default: false },
+                    ],
+                    error: null,
+                  }),
+              }),
+            }),
+          }),
+        };
+      }
+      return mockClient;
+    });
 
     await service.createTask({
       title: 'One-off',

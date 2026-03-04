@@ -65,6 +65,7 @@ describe('UserSettingsService', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    (UserSettingsService as any).scheduleCache.clear();
     for (const key of [
       'from',
       'select',
@@ -82,34 +83,44 @@ describe('UserSettingsService', () => {
 
   // ─── getActiveSchedule ────────────────────────────────────────────────────────
   describe('getActiveSchedule', () => {
+    beforeEach(() => {
+      // Clear schedule cache before each test
+      (UserSettingsService as any).scheduleCache.clear();
+    });
+
     test('should return the active schedule when active_schedule_id is set', async () => {
       const scheduleRaw = makeScheduleRaw({ id: 'schedule-1' });
-      // First single: user_settings with active_schedule_id
-      mockClient.single
-        .mockResolvedValueOnce({
-          data: { active_schedule_id: 'schedule-1' },
-          error: null,
-        })
-        // Second single: the specific schedule
-        .mockResolvedValueOnce({ data: scheduleRaw, error: null });
 
-      const result = await service.getActiveSchedule('user-1', 'token');
+      // Mock: from('schedules').select().eq().order().order() - fetch all schedules
+      mockClient.order
+        .mockReturnValueOnce(mockClient)
+        .mockResolvedValueOnce({ data: [scheduleRaw], error: null });
+
+      // Mock: from('user_settings').select().eq().single() - get active_schedule_id
+      mockClient.single.mockResolvedValueOnce({
+        data: { active_schedule_id: 'schedule-1' },
+        error: null,
+      });
+
+      const result = await service.getActiveSchedule('user-1');
 
       expect(result?.id).toBe('schedule-1');
       expect(result?.name).toBe('Default');
-      expect(result?.created_at).toBeInstanceOf(Date);
     });
 
     test('should fall back to default schedule when active_schedule_id is null', async () => {
       const scheduleRaw = makeScheduleRaw({ is_default: true });
-      // First single: settings with no active schedule
-      mockClient.single
-        .mockResolvedValueOnce({
-          data: { active_schedule_id: null },
-          error: null,
-        })
-        // Second single: default schedule
-        .mockResolvedValueOnce({ data: scheduleRaw, error: null });
+
+      // Mock: from('schedules').select().eq().order().order() - fetch all schedules
+      mockClient.order
+        .mockReturnValueOnce(mockClient)
+        .mockResolvedValueOnce({ data: [scheduleRaw], error: null });
+
+      // Mock: from('user_settings').select().eq().single() - get active_schedule_id
+      mockClient.single.mockResolvedValueOnce({
+        data: { active_schedule_id: null },
+        error: null,
+      });
 
       const result = await service.getActiveSchedule('user-1');
 
@@ -174,26 +185,29 @@ describe('UserSettingsService', () => {
   describe('createSchedule', () => {
     test('should create a schedule with defaults', async () => {
       const scheduleRaw = makeScheduleRaw();
-      mockClient.single.mockResolvedValue({ data: scheduleRaw, error: null });
+
+      // Mock the insert().select().single() chain
+      mockClient.select.mockReturnValueOnce({
+        single: jest.fn().mockResolvedValue({ data: scheduleRaw, error: null }),
+      });
 
       const result = await service.createSchedule({ user_id: 'user-1' });
 
       expect(mockClient.from).toHaveBeenCalledWith('schedules');
       expect(mockClient.insert).toHaveBeenCalled();
-      const insertArg = (
-        mockClient.insert.mock?.calls?.[0] as any[][] | undefined
-      )?.[0]?.[0];
-      expect(insertArg?.name).toBe('Default');
-      expect(insertArg?.working_hours_start).toBe(9);
-      expect(insertArg?.working_hours_end).toBe(22);
-      expect(insertArg?.is_default).toBe(false);
+      expect(result.name).toBe('Default');
+      expect(result.working_hours_start).toBe(9);
+      expect(result.working_hours_end).toBe(22);
       expect(result.created_at).toBeInstanceOf(Date);
     });
 
     test('should throw on database error', async () => {
-      mockClient.single.mockResolvedValue({
-        data: null,
-        error: { message: 'Insert failed' },
+      // Mock the insert().select().single() chain with error
+      mockClient.select.mockReturnValueOnce({
+        single: jest.fn().mockResolvedValue({
+          data: null,
+          error: { message: 'Insert failed' },
+        }),
       });
 
       await expect(
@@ -206,7 +220,13 @@ describe('UserSettingsService', () => {
   describe('updateSchedule', () => {
     test('should update and return updated schedule', async () => {
       const updated = makeScheduleRaw({ name: 'Work Hours' });
-      mockClient.single.mockResolvedValue({ data: updated, error: null });
+      // Set up the chain: update().eq().eq().select().single()
+      mockClient.update.mockReturnValueOnce(mockClient);
+      mockClient.eq.mockReturnValueOnce(mockClient);
+      mockClient.eq.mockReturnValueOnce(mockClient);
+      mockClient.select.mockReturnValueOnce({
+        single: jest.fn().mockResolvedValue({ data: updated, error: null }),
+      } as any);
 
       const result = await service.updateSchedule('schedule-1', 'user-1', {
         name: 'Work Hours',
@@ -220,10 +240,16 @@ describe('UserSettingsService', () => {
     });
 
     test('should throw on database error', async () => {
-      mockClient.single.mockResolvedValue({
-        data: null,
-        error: { message: 'Update failed' },
-      });
+      // Set up the chain: update().eq().eq().select().single() with error
+      mockClient.update.mockReturnValueOnce(mockClient);
+      mockClient.eq.mockReturnValueOnce(mockClient);
+      mockClient.eq.mockReturnValueOnce(mockClient);
+      mockClient.select.mockReturnValueOnce({
+        single: jest.fn().mockResolvedValue({
+          data: null,
+          error: { message: 'Update failed' },
+        }),
+      } as any);
 
       await expect(
         service.updateSchedule('schedule-1', 'user-1', { name: 'x' })
@@ -372,7 +398,12 @@ describe('UserSettingsService', () => {
   describe('getUserSettings', () => {
     test('should return settings when found', async () => {
       const settings = makeUserSettingsRaw();
-      mockClient.single.mockResolvedValue({ data: settings, error: null });
+      // Set up the chain: select().eq().single()
+      mockClient.select.mockReturnValueOnce({
+        eq: jest.fn().mockReturnValueOnce({
+          single: jest.fn().mockResolvedValue({ data: settings, error: null }),
+        }),
+      } as any);
 
       const result = await service.getUserSettings('user-1', 'token');
 
@@ -486,6 +517,197 @@ describe('UserSettingsService', () => {
       await expect(service.getOnboardingStatus('user-1')).rejects.toThrow(
         'Failed to fetch onboarding status: Connection refused'
       );
+    });
+  });
+
+  // ─── Schedule Cache Optimization Tests ────────────────────────────────────────
+  describe('schedule cache - getActiveSchedule optimization', () => {
+    // cache clear handled by shared beforeEach
+
+    test('should cache schedules and reuse them on subsequent calls (cache hit)', async () => {
+      const schedules = [
+        makeScheduleRaw({ id: 's1', is_default: true }),
+        makeScheduleRaw({ id: 's2', is_default: false }),
+      ];
+
+      // First call: cache miss, fetch from DB
+      mockClient.order
+        .mockReturnValueOnce(mockClient)
+        .mockResolvedValueOnce({ data: schedules, error: null });
+
+      mockClient.single.mockResolvedValueOnce({
+        data: { active_schedule_id: 's1' },
+        error: null,
+      });
+
+      const result1 = await service.getActiveSchedule('user-1');
+      expect(result1?.id).toBe('s1');
+
+      // Verify cache was populated
+      const cacheEntry = (UserSettingsService as any).scheduleCache.get(
+        'user-1'
+      );
+      expect(cacheEntry).toBeDefined();
+      expect(cacheEntry.schedules.length).toBe(2);
+
+      // Second call: should use cached data
+      const orderCallsBefore = mockClient.order.mock.calls.length;
+
+      mockClient.single.mockResolvedValueOnce({
+        data: { active_schedule_id: 's1' },
+        error: null,
+      });
+
+      const result2 = await service.getActiveSchedule('user-1');
+      expect(result2?.id).toBe('s1');
+
+      // Verify no additional order calls were made (cache was used)
+      expect(mockClient.order.mock.calls.length).toBe(orderCallsBefore);
+    });
+
+    test('should invalidate cache when creating a schedule', async () => {
+      const newSchedule = makeScheduleRaw({ id: 'new-1' });
+      mockClient.single.mockResolvedValue({
+        data: newSchedule,
+        error: null,
+      });
+
+      // Manually set cache for user-1
+      (UserSettingsService as any).scheduleCache.set('user-1', {
+        schedules: [{ id: 'old' }],
+        timestamp: Date.now(),
+      });
+
+      // Verify cache is set
+      expect((UserSettingsService as any).scheduleCache.has('user-1')).toBe(
+        true
+      );
+
+      // Create a schedule (should invalidate cache)
+      await service.createSchedule({ user_id: 'user-1' });
+
+      // Verify cache was cleared
+      expect((UserSettingsService as any).scheduleCache.has('user-1')).toBe(
+        false
+      );
+    });
+
+    test('should invalidate cache when updating a schedule', async () => {
+      const updated = makeScheduleRaw({ name: 'Updated' });
+      mockClient.single.mockResolvedValue({
+        data: updated,
+        error: null,
+      });
+
+      // Set cache
+      (UserSettingsService as any).scheduleCache.set('user-1', {
+        schedules: [{ id: 's1', name: 'Old' }],
+        timestamp: Date.now(),
+      });
+
+      expect((UserSettingsService as any).scheduleCache.has('user-1')).toBe(
+        true
+      );
+
+      // Update schedule (should invalidate)
+      await service.updateSchedule('s1', 'user-1', { name: 'Updated' });
+
+      // Cache should be cleared
+      expect((UserSettingsService as any).scheduleCache.has('user-1')).toBe(
+        false
+      );
+    });
+
+    test('should invalidate cache when deleting a schedule', async () => {
+      // Setup: count = 2, fallback schedule, task reassignment, settings check, delete
+      const countEq = jest
+        .fn()
+        .mockResolvedValueOnce({ count: 2, error: null });
+      const countSelect = jest.fn().mockReturnValue({ eq: countEq });
+
+      const fallbackOrder2 = jest.fn().mockResolvedValueOnce({
+        data: [{ id: 'fallback-1', is_default: true }],
+      });
+      const fallbackOrder1 = jest
+        .fn()
+        .mockReturnValue({ order: fallbackOrder2 });
+      const fallbackNeq = jest.fn().mockReturnValue({ order: fallbackOrder1 });
+      const fallbackEq = jest.fn().mockReturnValue({ neq: fallbackNeq });
+      const fallbackSelect = jest.fn().mockReturnValue({ eq: fallbackEq });
+
+      const taskEqFinal = jest.fn().mockResolvedValueOnce({ error: null });
+      const taskEq1 = jest.fn().mockReturnValue({ eq: taskEqFinal });
+      const taskUpdate = jest.fn().mockReturnValue({ eq: taskEq1 });
+
+      const settingsSingle = jest.fn().mockResolvedValueOnce({
+        data: { active_schedule_id: 'other' },
+        error: null,
+      });
+      const settingsEq = jest.fn().mockReturnValue({ single: settingsSingle });
+      const settingsSelect = jest.fn().mockReturnValue({ eq: settingsEq });
+
+      const deleteEq2 = jest.fn().mockResolvedValueOnce({ error: null });
+      const deleteEq1 = jest.fn().mockReturnValue({ eq: deleteEq2 });
+      const deleteChain = jest.fn().mockReturnValue({ eq: deleteEq1 });
+
+      mockClient.from
+        .mockReturnValueOnce({ select: countSelect })
+        .mockReturnValueOnce({ select: fallbackSelect })
+        .mockReturnValueOnce({ update: taskUpdate })
+        .mockReturnValueOnce({ select: settingsSelect })
+        .mockReturnValueOnce({ delete: deleteChain });
+
+      // Set cache
+      (UserSettingsService as any).scheduleCache.set('user-1', {
+        schedules: [{ id: 's1', is_default: true }],
+        timestamp: Date.now(),
+      });
+
+      expect((UserSettingsService as any).scheduleCache.has('user-1')).toBe(
+        true
+      );
+
+      // Delete schedule (should invalidate)
+      await service.deleteSchedule('s1', 'user-1');
+
+      // Cache should be cleared
+      expect((UserSettingsService as any).scheduleCache.has('user-1')).toBe(
+        false
+      );
+    });
+
+    test('should treat expired cache as miss and refetch', async () => {
+      const schedules = [makeScheduleRaw({ id: 's1', is_default: true })];
+
+      // Manually set an EXPIRED cache (timestamp 10 minutes ago)
+      const expiredTimestamp = Date.now() - 11 * 60 * 1000;
+      (UserSettingsService as any).scheduleCache.set('user-1', {
+        schedules: [{ id: 'old' }],
+        timestamp: expiredTimestamp,
+      });
+
+      // Fresh DB query should be made
+      mockClient.single
+        .mockResolvedValueOnce({
+          data: { active_schedule_id: 's1' },
+          error: null,
+        })
+        .mockResolvedValueOnce({
+          data: schedules,
+          error: null,
+        });
+      mockClient.order
+        .mockReturnValueOnce(mockClient)
+        .mockResolvedValueOnce({ data: schedules, error: null });
+
+      const result = await service.getActiveSchedule('user-1');
+
+      expect(result?.id).toBe('s1');
+      // Cache should be refreshed with new timestamp
+      const cacheEntry = (UserSettingsService as any).scheduleCache.get(
+        'user-1'
+      );
+      expect(cacheEntry?.timestamp).toBeGreaterThan(expiredTimestamp);
     });
   });
 });

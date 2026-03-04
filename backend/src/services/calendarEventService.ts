@@ -51,14 +51,17 @@ export class CalendarEventService {
   private async updateTaskDurationFromEvent(
     taskId: string,
     eventDurationMinutes: number,
-    isCompleting: boolean
+    isCompleting: boolean,
+    skipLogging = false
   ): Promise<void> {
     try {
       const task = await this.taskService.getTaskById(taskId);
       if (!task) {
-        console.warn(
-          `[CalendarEventService] Task ${taskId} not found, skipping duration update`
-        );
+        if (!skipLogging) {
+          console.warn(
+            `[CalendarEventService] Task ${taskId} not found, skipping duration update`
+          );
+        }
         return;
       }
 
@@ -76,14 +79,18 @@ export class CalendarEventService {
         actual_duration_minutes: newActual,
       });
 
-      console.log(
-        `[CalendarEventService] Updated task ${taskId} actual duration: ${currentActual} -> ${newActual} (${isCompleting ? '+' : '-'}${eventDurationMinutes}min)`
-      );
+      if (!skipLogging) {
+        console.log(
+          `[CalendarEventService] Updated task ${taskId} actual duration: ${currentActual} -> ${newActual} (${isCompleting ? '+' : '-'}${eventDurationMinutes}min)`
+        );
+      }
     } catch (error) {
-      console.error(
-        `[CalendarEventService] Failed to update task duration:`,
-        error
-      );
+      if (!skipLogging) {
+        console.error(
+          `[CalendarEventService] Failed to update task duration:`,
+          error
+        );
+      }
     }
   }
 
@@ -418,12 +425,15 @@ export class CalendarEventService {
   async createCalendarEvent(
     input: CreateCalendarEventInput,
     excludeEventIds?: string[],
-    authToken?: string
+    authToken?: string,
+    skipLogging = false
   ): Promise<CalendarEventUnion> {
-    console.log(
-      '[CalendarEventService] createCalendarEvent called with input:',
-      input
-    );
+    if (!skipLogging) {
+      console.log(
+        '[CalendarEventService] createCalendarEvent called with input:',
+        input
+      );
+    }
 
     // #region agent log
     try {
@@ -498,7 +508,12 @@ export class CalendarEventService {
       insertData.synced_from_google = input.synced_from_google;
     }
 
-    console.log('[CalendarEventService] Inserting calendar event:', insertData);
+    if (!skipLogging) {
+      console.log(
+        '[CalendarEventService] Inserting calendar event:',
+        insertData
+      );
+    }
 
     const client = authToken
       ? getAuthenticatedSupabase(authToken)
@@ -520,10 +535,12 @@ export class CalendarEventService {
       throw new Error(`Failed to create calendar event: ${error.message}`);
     }
 
-    console.log(
-      '[CalendarEventService] Calendar event created successfully:',
-      data
-    );
+    if (!skipLogging) {
+      console.log(
+        '[CalendarEventService] Calendar event created successfully:',
+        data
+      );
+    }
 
     if (input.linked_task_id && insertData.completed_at) {
       const eventDurationMinutes = this.calculateEventDurationMinutes(
@@ -590,14 +607,17 @@ export class CalendarEventService {
   async updateCalendarEvent(
     id: string,
     input: UpdateCalendarEventInput,
-    authToken?: string
+    authToken?: string,
+    skipLogging = false
   ): Promise<CalendarEventUnion> {
-    console.log('[CalendarEventService] updateCalendarEvent called:', {
-      id,
-      input,
-      completed_at: input.completed_at,
-      completed_at_type: typeof input.completed_at,
-    });
+    if (!skipLogging) {
+      console.log('[CalendarEventService] updateCalendarEvent called:', {
+        id,
+        input,
+        completed_at: input.completed_at,
+        completed_at_type: typeof input.completed_at,
+      });
+    }
     const existing = await this.getCalendarEventById(id, authToken);
     if (!existing) {
       throw new Error('Calendar event not found');
@@ -672,24 +692,30 @@ export class CalendarEventService {
     } else if (input.completed_at !== undefined) {
       // Explicitly provided: normalize it (could be null, string, or Date)
       completedAt = normalizeNullableDate(input.completed_at);
-      console.log('[CalendarEventService] Setting completed_at:', {
-        input_completed_at: input.completed_at,
-        normalized: completedAt,
-      });
+      if (!skipLogging) {
+        console.log('[CalendarEventService] Setting completed_at:', {
+          input_completed_at: input.completed_at,
+          normalized: completedAt,
+        });
+      }
     } else {
       // Not provided: keep existing value
       completedAt = existingCompletedAt;
-      console.log(
-        '[CalendarEventService] Keeping existing completed_at:',
-        completedAt
-      );
+      if (!skipLogging) {
+        console.log(
+          '[CalendarEventService] Keeping existing completed_at:',
+          completedAt
+        );
+      }
     }
 
     updateData.completed_at = completedAt;
-    console.log(
-      '[CalendarEventService] Final updateData.completed_at:',
-      updateData.completed_at
-    );
+    if (!skipLogging) {
+      console.log(
+        '[CalendarEventService] Final updateData.completed_at:',
+        updateData.completed_at
+      );
+    }
 
     const wasCompleted = !!existingCompletedAt;
     const willBeCompleted = !!completedAt;
@@ -724,7 +750,8 @@ export class CalendarEventService {
         await this.updateTaskDurationFromEvent(
           nextLinkedTaskId,
           eventDurationMinutes,
-          isCompleting
+          isCompleting,
+          skipLogging
         );
       }
     }
@@ -1044,5 +1071,30 @@ export class CalendarEventService {
     }
 
     return data;
+  }
+
+  // Get all calendar events synced from Google for a user (batch fetch)
+  async getAllGoogleCalendarEventsByUserId(
+    userId: string,
+    authToken?: string
+  ): Promise<CalendarEventUnion[]> {
+    const client = authToken
+      ? getAuthenticatedSupabase(authToken)
+      : serviceRoleSupabase;
+    const { data, error } = await client
+      .from('calendar_events')
+      .select(
+        'id, google_event_id, title, start_time, end_time, description, synced_from_google'
+      )
+      .eq('user_id', userId)
+      .eq('synced_from_google', true);
+
+    if (error) {
+      throw new Error(
+        `Failed to fetch Google calendar events: ${error.message}`
+      );
+    }
+
+    return (data || []) as unknown as CalendarEventUnion[];
   }
 }

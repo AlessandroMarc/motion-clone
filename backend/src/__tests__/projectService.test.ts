@@ -41,42 +41,25 @@ describe('ProjectService', () => {
       eq: jest.fn().mockReturnThis(),
       single: jest.fn(),
       order: jest.fn().mockReturnThis(),
+      rpc: jest.fn(),
     };
   });
 
   describe('deleteProject', () => {
-    test('should delete all related tasks before deleting the project', async () => {
-      // Arrange: tasks deletion succeeds, then project deletion succeeds
-      let callCount = 0;
-      let taskDeleteCallCount = 0;
-      let projectDeleteCallCount = 0;
-
-      mockClient.from.mockImplementation((_table: string) => {
-        callCount++;
-        if (callCount === 1) {
-          // First from('tasks').delete().eq() - tasks delete succeeds
-          return {
-            delete: jest.fn().mockImplementation(() => {
-              taskDeleteCallCount++;
-              return {
-                // @ts-expect-error - jest mock typing limitation
-                eq: jest.fn().mockResolvedValue({ error: null } as any),
-              };
-            }),
-          } as any;
-        } else {
-          // Second from('projects').delete().eq() - project delete succeeds
-          return {
-            delete: jest.fn().mockImplementation(() => {
-              projectDeleteCallCount++;
-              return {
-                // @ts-expect-error - jest mock typing limitation
-                eq: jest.fn().mockResolvedValue({ error: null } as any),
-              };
-            }),
-          } as any;
-        }
-      });
+    test('should delete project and all related data atomically via RPC', async () => {
+      // Arrange: RPC succeeds and returns success
+      const mockRpc = jest.fn().mockImplementation(() =>
+        Promise.resolve({
+          data: [
+            {
+              success: true,
+              message: 'Project and all related data deleted successfully',
+            },
+          ],
+          error: null,
+        })
+      );
+      mockClient.rpc = mockRpc;
 
       // Act
       const result = await projectService.deleteProject(
@@ -84,29 +67,27 @@ describe('ProjectService', () => {
         mockClient as unknown as SupabaseClient
       );
 
-      // Assert: tasks were deleted first using project_id filter
-      expect(mockClient.from).toHaveBeenCalledWith('tasks');
-      expect(mockClient.from).toHaveBeenCalledWith('projects');
-      expect(taskDeleteCallCount).toBe(1);
-      expect(projectDeleteCallCount).toBe(1);
-      expect(result).toBe(true);
-
+      // Assert: RPC was called with correct parameters
+      expect(mockRpc).toHaveBeenCalledWith('delete_project_and_tasks', {
+        p_project_id: 'project-123',
+      });
       expect(result).toBe(true);
     });
 
-    test('should throw an error if deleting tasks fails', async () => {
-      // Arrange: tasks deletion fails
-      mockClient.from.mockImplementation(() => {
-        // First (and only) from('tasks').delete().eq() - tasks delete fails
-        return {
-          delete: jest.fn().mockReturnValue({
-            // @ts-expect-error - jest mock typing limitation
-            eq: jest.fn().mockResolvedValue({
-              error: { message: 'Task deletion failed' },
-            } as any),
-          }),
-        } as any;
-      });
+    test('should throw an error if RPC call fails', async () => {
+      // Arrange: RPC fails
+      const mockRpc = jest.fn().mockImplementation(() =>
+        Promise.resolve({
+          data: null,
+          error: { message: 'RPC call failed' },
+        })
+      );
+      mockClient.rpc = mockRpc;
+
+      // Suppress expected error log
+      const consoleErrorSpy = jest
+        .spyOn(console, 'error')
+        .mockImplementation(() => {});
 
       // Act & Assert
       await expect(
@@ -114,34 +95,26 @@ describe('ProjectService', () => {
           'project-123',
           mockClient as unknown as SupabaseClient
         )
-      ).rejects.toThrow('Failed to delete project tasks: Task deletion failed');
+      ).rejects.toThrow('Failed to delete project: RPC call failed');
+
+      // Cleanup
+      consoleErrorSpy.mockRestore();
     });
 
-    test('should throw an error if deleting the project fails', async () => {
-      // Arrange: tasks deletion succeeds, project deletion fails
-      let callCount = 0;
-      mockClient.from.mockImplementation((_table: string) => {
-        callCount++;
-        if (callCount === 1) {
-          // First from('tasks').delete().eq() - tasks delete succeeds
-          return {
-            delete: jest.fn().mockReturnValue({
-              // @ts-expect-error - jest mock typing limitation
-              eq: jest.fn().mockResolvedValue({ error: null } as any),
-            }),
-          } as any;
-        } else {
-          // Second from('projects').delete().eq() - project delete fails
-          return {
-            delete: jest.fn().mockReturnValue({
-              // @ts-expect-error - jest mock typing limitation
-              eq: jest.fn().mockResolvedValue({
-                error: { message: 'Project deletion failed' },
-              } as any),
-            }),
-          } as any;
-        }
-      });
+    test('should throw an error if RPC returns failure status', async () => {
+      // Arrange: RPC returns success flag as false
+      const mockRpc = jest.fn().mockImplementation(() =>
+        Promise.resolve({
+          data: [{ success: false, message: 'Database constraint violation' }],
+          error: null,
+        })
+      );
+      mockClient.rpc = mockRpc;
+
+      // Suppress expected error log
+      const consoleErrorSpy = jest
+        .spyOn(console, 'error')
+        .mockImplementation(() => {});
 
       // Act & Assert
       await expect(
@@ -149,7 +122,12 @@ describe('ProjectService', () => {
           'project-123',
           mockClient as unknown as SupabaseClient
         )
-      ).rejects.toThrow('Failed to delete project: Project deletion failed');
+      ).rejects.toThrow(
+        'Project deletion failed: Database constraint violation'
+      );
+
+      // Cleanup
+      consoleErrorSpy.mockRestore();
     });
   });
 });
