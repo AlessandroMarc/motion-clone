@@ -11,6 +11,11 @@ export interface CreateTaskInput {
   blockedBy?: string[];
   plannedDurationMinutes: number;
   actualDurationMinutes?: number;
+  // Recurring task fields
+  isRecurring?: boolean;
+  recurrencePattern?: 'daily' | 'weekly' | 'monthly';
+  recurrenceInterval?: number;
+  recurrenceStartDate?: Date | null;
 }
 
 /** Task update payload (frontend API shape). */
@@ -24,6 +29,11 @@ export interface UpdateTaskInput {
   blockedBy?: string[];
   plannedDurationMinutes?: number;
   actualDurationMinutes?: number;
+  // Recurring task fields
+  isRecurring?: boolean;
+  recurrencePattern?: 'daily' | 'weekly' | 'monthly' | null;
+  recurrenceInterval?: number | null;
+  recurrenceStartDate?: Date | null;
 }
 
 /** Project create payload (frontend API shape). */

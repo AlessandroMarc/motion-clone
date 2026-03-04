@@ -15,6 +15,43 @@ export interface ChangelogEntry {
 
 export const changelogEntries: ChangelogEntry[] = [
   {
+    version: '1.5.0',
+    date: 'March 2026',
+    title: 'Recurring Tasks',
+    description:
+      'Set up daily, weekly, or monthly recurring tasks and watch the auto-scheduler handle them intelligently.',
+    items: [
+      {
+        type: 'new',
+        text: 'Recurring tasks: create tasks that repeat daily, weekly, or monthly with customizable intervals.',
+      },
+      {
+        type: 'new',
+        text: 'Choose a start date to control which day of the week or month your tasks repeat on.',
+      },
+      {
+        type: 'new',
+        text: 'Recurring tasks appear in blue on the calendar to distinguish them from one-time tasks.',
+      },
+      {
+        type: 'improved',
+        text: 'Auto-scheduler now plans recurring tasks up to 90 days ahead automatically.',
+      },
+      {
+        type: 'improved',
+        text: 'Task creation form adapts when recurring mode is enabled for a streamlined experience.',
+      },
+      {
+        type: 'fixed',
+        text: 'Fixed an issue where rapidly clicking the schedule button could create duplicate events.',
+      },
+      {
+        type: 'fixed',
+        text: 'Deleting a task now properly removes all its calendar events.',
+      },
+    ],
+  },
+  {
     version: '1.4.0',
     date: 'March 2026',
     title: 'Multiple Schedules',
@@ -26,20 +63,16 @@ export const changelogEntries: ChangelogEntry[] = [
         text: 'Schedule selector in the task form — assign any task to a specific schedule at creation or edit time.',
       },
       {
-        type: 'new',
-        text: 'Auto-scheduling now respects per-task schedules and prefetches schedule data to reduce API round-trips.',
+        type: 'improved',
+        text: "Auto-scheduling now respects each task's individual schedule and working hours.",
       },
       {
         type: 'improved',
-        text: 'Deleting a schedule automatically reassigns its tasks to a fallback schedule and updates the active schedule.',
+        text: 'Deleting a schedule automatically reassigns its tasks to a fallback schedule.',
       },
       {
         type: 'improved',
-        text: 'Rate-limit (429) errors now display a human-readable "retry after N seconds" message.',
-      },
-      {
-        type: 'improved',
-        text: 'API rate limit raised to accommodate schedule-aware scheduling requests.',
+        text: 'Error messages are now clearer when the system is busy, showing exactly how long to wait.',
       },
     ],
   },
@@ -101,7 +134,7 @@ export const changelogEntries: ChangelogEntry[] = [
       },
       {
         type: 'fixed',
-        text: 'Fixed timezone offset issue that caused scheduled tasks to appear one hour early for users in UTC+1.',
+        text: 'Fixed timezone issue that caused scheduled tasks to appear at the wrong time for some users.',
       },
     ],
   },
@@ -134,7 +167,7 @@ export const changelogEntries: ChangelogEntry[] = [
       },
       {
         type: 'fixed',
-        text: 'Auto-schedule no longer creates duplicate calendar blocks when triggered multiple times rapidly.',
+        text: 'Fixed an issue where clicking schedule multiple times could create duplicate events.',
       },
     ],
   },
@@ -159,7 +192,7 @@ export const changelogEntries: ChangelogEntry[] = [
       },
       {
         type: 'new',
-        text: 'Authentication: sign up and log in with email/password via Supabase.',
+        text: 'Authentication: sign up and log in with email and password.',
       },
       {
         type: 'new',

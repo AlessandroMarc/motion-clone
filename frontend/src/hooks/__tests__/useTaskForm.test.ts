@@ -29,6 +29,8 @@ const validData = {
   actual_duration_minutes: 0,
   blockedBy: [],
   project_id: null,
+  is_recurring: false,
+  recurrence_interval: 1,
 };
 
 describe('taskSchema', () => {

@@ -10,6 +10,7 @@ interface TaskDurationFieldsProps {
   errors: FieldErrors<TaskFormData>;
   plannedId?: string;
   actualId?: string;
+  hideActualDuration?: boolean;
 }
 
 export function TaskDurationFields({
@@ -17,6 +18,7 @@ export function TaskDurationFields({
   errors,
   plannedId = 'planned_duration_minutes',
   actualId = 'actual_duration_minutes',
+  hideActualDuration = false,
 }: TaskDurationFieldsProps) {
   const { setValue, watch } = useFormContext();
   const plannedValue = watch('planned_duration_minutes');
@@ -44,7 +46,9 @@ export function TaskDurationFields({
   };
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <div
+      className={`grid grid-cols-1 ${hideActualDuration ? '' : 'md:grid-cols-2'} gap-4`}
+    >
       <div className="space-y-2">
         <Label htmlFor={plannedId}>
           Planned Duration (minutes) <span className="text-red-500">*</span>
@@ -63,43 +67,45 @@ export function TaskDurationFields({
         )}
       </div>
 
-      <div className="space-y-2">
-        <Label htmlFor={actualId}>Actual Duration (minutes)</Label>
-        <Input
-          id={actualId}
-          type="number"
-          min={0}
-          step={1}
-          max={
-            typeof plannedValue === 'number' && plannedValue >= 0
-              ? plannedValue
-              : undefined
-          }
-          {...register('actual_duration_minutes', {
-            valueAsNumber: true,
-            onChange: (event: React.ChangeEvent<HTMLInputElement>) => {
-              const numericValue = Number(event.target.value);
-              if (Number.isNaN(numericValue)) {
-                return;
-              }
+      {!hideActualDuration && (
+        <div className="space-y-2">
+          <Label htmlFor={actualId}>Actual Duration (minutes)</Label>
+          <Input
+            id={actualId}
+            type="number"
+            min={0}
+            step={1}
+            max={
+              typeof plannedValue === 'number' && plannedValue >= 0
+                ? plannedValue
+                : undefined
+            }
+            {...register('actual_duration_minutes', {
+              valueAsNumber: true,
+              onChange: (event: React.ChangeEvent<HTMLInputElement>) => {
+                const numericValue = Number(event.target.value);
+                if (Number.isNaN(numericValue)) {
+                  return;
+                }
 
-              const clampedValue = clampActualDuration(numericValue);
+                const clampedValue = clampActualDuration(numericValue);
 
-              if (clampedValue !== numericValue) {
-                setValue('actual_duration_minutes', clampedValue, {
-                  shouldValidate: true,
-                  shouldDirty: true,
-                });
-              }
-            },
-          })}
-          className={actualHasError ? 'border-red-500' : ''}
-          placeholder="e.g. 45"
-        />
-        {actualHasError && (
-          <p className="text-sm text-red-500">{actualError}</p>
-        )}
-      </div>
+                if (clampedValue !== numericValue) {
+                  setValue('actual_duration_minutes', clampedValue, {
+                    shouldValidate: true,
+                    shouldDirty: true,
+                  });
+                }
+              },
+            })}
+            className={actualHasError ? 'border-red-500' : ''}
+            placeholder="e.g. 45"
+          />
+          {actualHasError && (
+            <p className="text-sm text-red-500">{actualError}</p>
+          )}
+        </div>
+      )}
     </div>
   );
 }

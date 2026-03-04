@@ -425,7 +425,7 @@ describe('taskScheduler', () => {
         [],
         startFrom
       );
-      
+
       expect(result.events.length).toBe(2);
       // Check if any violations exist (depends on distribution logic)
       expect(Array.isArray(result.violations)).toBe(true);

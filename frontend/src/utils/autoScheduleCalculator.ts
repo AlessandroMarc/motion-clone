@@ -10,7 +10,6 @@ import {
   createConfigFromSchedule,
   prepareTaskEvents,
   sortTasksForScheduling,
-  type TaskSchedulingConfig,
 } from '@/utils/taskScheduler';
 
 const DEBUG = process.env.NODE_ENV === 'development';
@@ -103,9 +102,26 @@ export function calculateAutoSchedule(params: {
     event => !isCalendarEventTask(event)
   );
 
+  // Synthetic recurring-task placeholder events (id starts with "synthetic-").
+  // Add them to accumulatedScheduledEvents so slot-avoidance respects the
+  // time blocks that will be occupied by recurring tasks.
+  const syntheticEvents = existingEvents.filter(e =>
+    e.id.startsWith('synthetic-')
+  );
+
+  // All real (non-synthetic, non-completed) pending task events from OTHER
+  // tasks that are already persisted in the DB. Including these from the start
+  // ensures that recurring-task new-slot finding (and any task's slot search)
+  // never lands on a time block already occupied by another task's event.
+  const pendingTaskEvents = existingEvents.filter(
+    e => !e.id.startsWith('synthetic-') && e.completed_at === null
+  );
+
   const accumulatedScheduledEvents: CalendarEventUnion[] = [
     ...regularEvents,
     ...completedTaskEvents,
+    ...syntheticEvents,
+    ...pendingTaskEvents,
   ];
 
   const taskEvents: TaskEventBlock[] = [];
@@ -121,7 +137,9 @@ export function calculateAutoSchedule(params: {
     const task = sortedTasks[i];
 
     // Use the schedule assigned to this task; fall back to the active schedule
-    const taskSchedule = scheduleMap.get(task.schedule_id) ?? activeSchedule;
+    const taskSchedule =
+      (task.schedule_id ? scheduleMap.get(task.schedule_id) : undefined) ??
+      activeSchedule;
     const taskConfig = createConfigFromSchedule(taskSchedule, eventDuration);
     const gapMs = (taskConfig.gapBetweenEventsMinutes ?? 5) * 60 * 1000;
 
@@ -133,9 +151,28 @@ export function calculateAutoSchedule(params: {
     const taskBaseStartTime =
       roundedNow > taskWorkingHoursStart ? roundedNow : taskWorkingHoursStart;
 
+    // Real (non-synthetic) existing events for this task:
+    // - For recurring tasks: used for deduplication (which occurrence dates are
+    //   already persisted in the DB and must not be re-created).
+    // - For regular tasks: used to subtract already-done work from remaining minutes.
+    // Exclude synthetic placeholder events (id starts with "synthetic-") so we
+    // never mistake a placeholder for a persisted calendar event.
     const taskExistingEvents = existingEvents.filter(
-      event => event.linked_task_id === task.id && event.completed_at !== null
+      event =>
+        event.linked_task_id === task.id && !event.id.startsWith('synthetic-')
     );
+    if (task.is_recurring) {
+      console.log(
+        `[AUTOSCHEDULE:calc] task "${task.title}" is_recurring=true`,
+        {
+          totalExistingEvents: existingEvents.length,
+          taskExistingEvents: taskExistingEvents.length,
+          taskExistingDates: taskExistingEvents.map(e =>
+            new Date(e.start_time).toDateString()
+          ),
+        }
+      );
+    }
 
     // Determine the earliest this task can start:
     // - at least taskBaseStartTime (from its own schedule)

@@ -28,6 +28,11 @@ export interface CreateTaskInput {
   planned_duration_minutes: number;
   actual_duration_minutes?: number;
   schedule_id?: string; // optional: auto-resolved from user's active schedule if omitted
+  // Recurring task fields
+  is_recurring?: boolean;
+  recurrence_pattern?: 'daily' | 'weekly' | 'monthly';
+  recurrence_interval?: number;
+  recurrence_start_date?: Date | null;
 }
 
 export interface UpdateTaskInput {
@@ -42,6 +47,11 @@ export interface UpdateTaskInput {
   user_id?: string;
   planned_duration_minutes?: number;
   actual_duration_minutes?: number;
+  // Recurring task fields
+  is_recurring?: boolean;
+  recurrence_pattern?: 'daily' | 'weekly' | 'monthly' | null;
+  recurrence_interval?: number | null;
+  recurrence_start_date?: Date | null;
 }
 
 export interface CreateProjectInput {
