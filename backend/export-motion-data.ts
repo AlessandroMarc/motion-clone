@@ -4,8 +4,9 @@
  * This script fetches all Motion data and saves it to motion-export.json
  * without writing anything to Nexto. Useful for inspection and debugging.
  *
- * The saveMotionSnapshot() function is also called automatically by the
- * migration service before importing data into Nexto.
+ * The saveMotionSnapshot() function can also be imported and called
+ * programmatically (for example, from a migration service) before importing
+ * data into Nexto.
  *
  * Standalone usage (export only, no import):
  *   cd backend && npx tsx export-motion-data.ts
