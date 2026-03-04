@@ -30,7 +30,7 @@ import { TaskDurationFields } from './TaskDurationFields';
 import { TaskRecurrenceFields } from './TaskRecurrenceFields';
 import { TaskFormActions } from './TaskFormActions';
 import { formatEventTime } from '@/utils/calendarUtils';
-import posthog from 'posthog-js';
+import { captureEvent, captureException } from '@/lib/analytics';
 
 interface TaskEditDialogFormProps {
   task: Task | null;
@@ -236,7 +236,7 @@ export function TaskEditDialogForm({
       toast.success('Task updated successfully');
 
       // PostHog: Capture task updated event
-      posthog.capture('task_updated', {
+      captureEvent('task_updated', {
         priority: data.priority,
         has_due_date: !!data.dueDate,
         has_project: !!data.project_id,
@@ -259,7 +259,7 @@ export function TaskEditDialogForm({
       toast.error(message);
 
       // PostHog: Capture task update error
-      posthog.captureException(
+      captureException(
         error instanceof Error ? error : new Error(message)
       );
     } finally {

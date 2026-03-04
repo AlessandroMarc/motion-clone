@@ -7,7 +7,7 @@ import type { Task } from '@/types';
 import { transformFormDataToTask } from '@/utils/formUtils';
 import { useAuth } from '@/contexts/AuthContext';
 import { useOnboarding } from '@/hooks/useOnboarding';
-import posthog from 'posthog-js';
+import { captureEvent } from '@/lib/analytics';
 
 // Form validation schema
 export const taskSchema = z
@@ -129,7 +129,7 @@ export function useTaskForm(onTaskCreate: TaskCreateFormProps['onTaskCreate']) {
       toast.success('Task created successfully!');
 
       // PostHog: Capture task created event
-      posthog.capture('task_created', {
+      captureEvent('task_created', {
         priority: data.priority,
         has_due_date: !!data.dueDate,
         has_project: !!data.project_id,
