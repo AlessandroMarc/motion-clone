@@ -68,9 +68,6 @@ router.post('/', async (req: Request, res: Response) => {
       success: false,
       message: 'Migration failed due to an internal error.',
     });
-  } finally {
-    // no-op: formerly tracked in-process lock (removed — not effective in
-    // serverless/multi-instance environments)
   }
 });
 

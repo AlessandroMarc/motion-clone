@@ -11,11 +11,15 @@ import { readFile } from 'fs/promises';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { ResponseHelper } from '../utils/responseHelpers.js';
+import { authMiddleware } from '../middleware/auth.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const router = express.Router();
+
+// All endpoints require a valid Nexto JWT
+router.use(authMiddleware);
 
 router.get('/', async (_req: Request, res: Response) => {
   const snapshotPath = path.join(__dirname, '../../motion-export.json');

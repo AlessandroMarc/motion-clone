@@ -21,9 +21,7 @@
 import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import fs from 'fs/promises';
 import { MotionMigrationService } from './src/services/motionMigrationService.js';
-import { MotionApiService } from './src/services/motionApiService.js';
 import { verifyAuthToken } from './src/config/supabase.js';
 
 // Load .env.debug from current directory (backend/)
@@ -49,12 +47,14 @@ async function debugMigration() {
     process.exit(1);
   }
 
-  let nextoUserId = 'unknown';
+  let nextoUserId: string;
   try {
     const decoded = verifyAuthToken(nextoAuthToken);
     nextoUserId = decoded.userId;
   } catch (e) {
-    console.warn('⚠️  Could not decode JWT, proceeding with anonymous user ID');
+    console.error('❌ Failed to decode NEXTO_JWT:', e instanceof Error ? e.message : String(e));
+    console.error('   Ensure NEXTO_JWT is a valid Supabase JWT token');
+    process.exit(1);
   }
 
   console.log('🚀 Starting Motion → Nexto migration...\n');

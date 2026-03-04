@@ -42,6 +42,13 @@ function sleep(ms: number): Promise<void> {
  */
 let globalLastMotionRequestTime = 0;
 
+/**
+ * Serial promise queue that makes throttle() concurrency-safe.
+ * Each caller chains onto this queue so that the timestamp check, sleep, and
+ * update happen atomically with respect to other concurrent callers.
+ */
+let throttleQueue: Promise<void> = Promise.resolve();
+
 export class MotionApiService {
   private readonly headers: Record<string, string>;
 
@@ -60,14 +67,26 @@ export class MotionApiService {
   /**
    * Enforces the 12 req/min Motion API rate limit by waiting until at least
    * MOTION_REQUEST_INTERVAL_MS have elapsed since the previous request.
+   *
+   * Concurrency-safe: each call chains onto a shared promise queue so the
+   * timestamp check → sleep → update sequence is serialised across concurrent
+   * callers, preventing bursts when multiple requests arrive simultaneously.
    */
   private async throttle(): Promise<void> {
-    const now = Date.now();
-    const elapsed = now - globalLastMotionRequestTime;
-    if (elapsed < MOTION_REQUEST_INTERVAL_MS) {
-      await sleep(MOTION_REQUEST_INTERVAL_MS - elapsed);
+    const prev = throttleQueue;
+    let release!: () => void;
+    // Register this call as the next in the queue before awaiting.
+    throttleQueue = new Promise<void>(resolve => { release = resolve; });
+    try {
+      await prev; // wait for the previous throttle slot to complete
+      const elapsed = Date.now() - globalLastMotionRequestTime;
+      if (elapsed < MOTION_REQUEST_INTERVAL_MS) {
+        await sleep(MOTION_REQUEST_INTERVAL_MS - elapsed);
+      }
+      globalLastMotionRequestTime = Date.now();
+    } finally {
+      release(); // unblock the next queued caller
     }
-    globalLastMotionRequestTime = Date.now();
   }
 
   private async get<T>(path: string, params?: Record<string, string>): Promise<T> {
