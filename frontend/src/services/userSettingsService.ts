@@ -3,6 +3,7 @@ import type {
   UserSettings,
   OnboardingStatus,
   OnboardingStep,
+  DaySchedule,
 } from '@/types';
 import { request } from './apiClient';
 
@@ -74,7 +75,8 @@ class UserSettingsService {
     name: string,
     workingHoursStart: number,
     workingHoursEnd: number,
-    isDefault = false
+    isDefault = false,
+    workingDays?: Record<number, DaySchedule | null>
   ): Promise<Schedule> {
     const response = await request<Schedule>('/user-settings/schedules', {
       method: 'POST',
@@ -83,6 +85,7 @@ class UserSettingsService {
         name,
         working_hours_start: workingHoursStart,
         working_hours_end: workingHoursEnd,
+        working_days: workingDays,
         is_default: isDefault,
       }),
     });
@@ -104,7 +107,8 @@ class UserSettingsService {
     userId: string,
     name: string,
     workingHoursStart: number,
-    workingHoursEnd: number
+    workingHoursEnd: number,
+    workingDays?: Record<number, DaySchedule | null>
   ): Promise<Schedule> {
     const response = await request<Schedule>(
       `/user-settings/schedules/${scheduleId}?user_id=${userId}`,
@@ -114,6 +118,7 @@ class UserSettingsService {
           name,
           working_hours_start: workingHoursStart,
           working_hours_end: workingHoursEnd,
+          working_days: workingDays,
         }),
       }
     );

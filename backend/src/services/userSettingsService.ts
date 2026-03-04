@@ -205,6 +205,7 @@ export class UserSettingsService {
           name: input.name || 'Default',
           working_hours_start: input.working_hours_start ?? 9,
           working_hours_end: input.working_hours_end ?? 22,
+          working_days: input.working_days ?? null,
           is_default: input.is_default ?? false,
         },
       ])
@@ -239,6 +240,7 @@ export class UserSettingsService {
         name: input.name,
         working_hours_start: input.working_hours_start,
         working_hours_end: input.working_hours_end,
+        working_days: input.working_days !== undefined ? input.working_days : undefined,
         is_default: input.is_default,
       })
       .eq('id', scheduleId)

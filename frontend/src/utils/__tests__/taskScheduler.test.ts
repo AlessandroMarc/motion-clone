@@ -6,6 +6,7 @@ import {
   checkDeadlineViolations,
   prepareTaskEvents,
   createConfigFromSchedule,
+  getDayWorkingHours,
   DEFAULT_CONFIG,
   TaskSchedulingConfig,
 } from '../taskScheduler';
@@ -1096,6 +1097,209 @@ describe('taskScheduler', () => {
           new Date(curr.start_time).getTime()
         );
       }
+    });
+  });
+
+  describe('getDayWorkingHours', () => {
+    it('should return global hours for all days when workingDays is not set', () => {
+      const config: TaskSchedulingConfig = {
+        ...DEFAULT_CONFIG,
+        workingHoursStart: 8,
+        workingHoursEnd: 17,
+      };
+
+      // All days including weekends should return global hours
+      for (let day = 0; day < 7; day++) {
+        const hours = getDayWorkingHours(config, day);
+        expect(hours).toEqual({ start: 8, end: 17 });
+      }
+    });
+
+    it('should return null for weekends when skipWeekends is true and workingDays is not set', () => {
+      const config: TaskSchedulingConfig = {
+        ...DEFAULT_CONFIG,
+        skipWeekends: true,
+        workingHoursStart: 9,
+        workingHoursEnd: 22,
+      };
+
+      expect(getDayWorkingHours(config, 0)).toBeNull(); // Sunday
+      expect(getDayWorkingHours(config, 6)).toBeNull(); // Saturday
+      expect(getDayWorkingHours(config, 1)).toEqual({ start: 9, end: 22 }); // Monday
+    });
+
+    it('should return per-day hours from workingDays when set', () => {
+      const config: TaskSchedulingConfig = {
+        ...DEFAULT_CONFIG,
+        workingDays: {
+          0: null,    // Sunday: off
+          1: { start: 9, end: 18 }, // Monday
+          2: { start: 9, end: 18 }, // Tuesday
+          3: { start: 9, end: 18 }, // Wednesday
+          4: { start: 9, end: 18 }, // Thursday
+          5: { start: 9, end: 18 }, // Friday
+          6: null,    // Saturday: off
+        },
+      };
+
+      expect(getDayWorkingHours(config, 0)).toBeNull(); // Sunday off
+      expect(getDayWorkingHours(config, 1)).toEqual({ start: 9, end: 18 });
+      expect(getDayWorkingHours(config, 5)).toEqual({ start: 9, end: 18 });
+      expect(getDayWorkingHours(config, 6)).toBeNull(); // Saturday off
+    });
+
+    it('should support different hours per day', () => {
+      const config: TaskSchedulingConfig = {
+        ...DEFAULT_CONFIG,
+        workingDays: {
+          1: { start: 9, end: 17 },  // Mon
+          2: { start: 10, end: 18 }, // Tue
+          3: { start: 8, end: 16 },  // Wed
+        },
+      };
+
+      expect(getDayWorkingHours(config, 1)).toEqual({ start: 9, end: 17 });
+      expect(getDayWorkingHours(config, 2)).toEqual({ start: 10, end: 18 });
+      expect(getDayWorkingHours(config, 3)).toEqual({ start: 8, end: 16 });
+      expect(getDayWorkingHours(config, 4)).toBeNull(); // Not configured
+    });
+  });
+
+  describe('distributeEvents with workingDays', () => {
+    it('should skip non-working days defined in workingDays', () => {
+      // Monday 2024-01-08 → only Mon-Fri enabled
+      const startFrom = new Date('2024-01-08T09:00:00'); // Monday
+      const task = createMockTask({ due_date: null });
+      const config: TaskSchedulingConfig = {
+        ...DEFAULT_CONFIG,
+        eventDurationMinutes: 60,
+        defaultDaysWithoutDeadline: 14,
+        workingDays: {
+          0: null,                   // Sunday off
+          1: { start: 9, end: 18 }, // Mon
+          2: { start: 9, end: 18 }, // Tue
+          3: { start: 9, end: 18 }, // Wed
+          4: { start: 9, end: 18 }, // Thu
+          5: { start: 9, end: 18 }, // Fri
+          6: null,                   // Saturday off
+        },
+      };
+
+      const events = distributeEvents(task, 600, config, [], startFrom);
+
+      events.forEach(event => {
+        const day = event.start_time.getDay();
+        expect(day).not.toBe(0); // No Sunday events
+        expect(day).not.toBe(6); // No Saturday events
+      });
+    });
+
+    it('should use per-day start/end hours for each working day', () => {
+      // Only Wednesday with hours 10-12
+      const startFrom = new Date('2024-01-10T10:00:00'); // Wednesday
+      const task = createMockTask({ due_date: null });
+      const config: TaskSchedulingConfig = {
+        ...DEFAULT_CONFIG,
+        eventDurationMinutes: 60,
+        defaultDaysWithoutDeadline: 7,
+        workingDays: {
+          3: { start: 10, end: 12 }, // Only Wednesday, 10-12
+        },
+      };
+
+      const events = distributeEvents(task, 60, config, [], startFrom);
+
+      expect(events.length).toBe(1);
+      expect(events[0]!.start_time.getHours()).toBeGreaterThanOrEqual(10);
+      expect(events[0]!.end_time.getHours()).toBeLessThanOrEqual(12);
+    });
+
+    it('should return no events when workingDays has no working days', () => {
+      const startFrom = new Date('2024-01-08T09:00:00'); // Monday
+      const task = createMockTask({ due_date: null });
+      const config: TaskSchedulingConfig = {
+        ...DEFAULT_CONFIG,
+        eventDurationMinutes: 60,
+        defaultDaysWithoutDeadline: 7,
+        workingDays: {
+          0: null, 1: null, 2: null, 3: null, 4: null, 5: null, 6: null,
+        },
+      };
+
+      const events = distributeEvents(task, 60, config, [], startFrom);
+
+      expect(events).toEqual([]);
+    });
+
+    it('should schedule Mon-Fri only across a week boundary', () => {
+      // Friday 2024-01-05 → next day is Saturday (skipped), then Monday
+      const startFrom = new Date('2024-01-05T17:30:00'); // Late Friday
+      const task = createMockTask({ due_date: null });
+      const config: TaskSchedulingConfig = {
+        ...DEFAULT_CONFIG,
+        eventDurationMinutes: 60,
+        defaultDaysWithoutDeadline: 14,
+        workingDays: {
+          0: null,
+          1: { start: 9, end: 18 },
+          2: { start: 9, end: 18 },
+          3: { start: 9, end: 18 },
+          4: { start: 9, end: 18 },
+          5: { start: 9, end: 18 },
+          6: null,
+        },
+      };
+
+      const events = distributeEvents(task, 120, config, [], startFrom);
+
+      events.forEach(event => {
+        const day = event.start_time.getDay();
+        expect(day).not.toBe(0);
+        expect(day).not.toBe(6);
+      });
+    });
+  });
+
+  describe('createConfigFromSchedule with workingDays', () => {
+    it('should pass working_days from schedule to config', () => {
+      const schedule: Schedule = {
+        id: 'sched-1',
+        user_id: 'user-1',
+        name: 'Weekdays',
+        working_hours_start: 9,
+        working_hours_end: 22,
+        working_days: {
+          1: { start: 9, end: 18 },
+          2: { start: 9, end: 18 },
+          3: { start: 9, end: 18 },
+          4: { start: 9, end: 18 },
+          5: { start: 9, end: 18 },
+        },
+        is_default: true,
+        created_at: new Date(),
+        updated_at: new Date(),
+      };
+
+      const config = createConfigFromSchedule(schedule, 60);
+
+      expect(config.workingDays).toEqual(schedule.working_days);
+    });
+
+    it('should have undefined workingDays when schedule has no working_days', () => {
+      const schedule: Schedule = {
+        id: 'sched-1',
+        user_id: 'user-1',
+        name: 'Default',
+        working_hours_start: 9,
+        working_hours_end: 22,
+        is_default: true,
+        created_at: new Date(),
+        updated_at: new Date(),
+      };
+
+      const config = createConfigFromSchedule(schedule, 60);
+
+      expect(config.workingDays).toBeUndefined();
     });
   });
 });

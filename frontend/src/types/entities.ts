@@ -11,6 +11,7 @@ export type {
   CalendarEventUnion,
   CreateCalendarEventInput,
   UpdateCalendarEventInput,
+  DaySchedule,
   Schedule,
   UserSettings,
   OnboardingStatus,

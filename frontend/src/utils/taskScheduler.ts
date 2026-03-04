@@ -3,6 +3,7 @@ import type {
   CalendarEventTask,
   CalendarEventUnion,
   Schedule,
+  DaySchedule,
 } from '@/types';
 import { TASK_PRIORITY_RANK } from '@/utils/taskUtils';
 import {
@@ -14,6 +15,7 @@ export interface TaskSchedulingConfig {
   eventDurationMinutes: number;
   workingHoursStart: number; // 9
   workingHoursEnd: number; // 22
+  workingDays?: Record<number, DaySchedule | null>; // per-day overrides; when set, takes precedence over workingHoursStart/End and skipWeekends
   skipWeekends?: boolean;
   sortStrategy?: (tasks: Task[]) => Task[];
   defaultDaysWithoutDeadline?: number;
@@ -45,6 +47,7 @@ export function createConfigFromSchedule(
       schedule?.working_hours_start ?? DEFAULT_CONFIG.workingHoursStart,
     workingHoursEnd:
       schedule?.working_hours_end ?? DEFAULT_CONFIG.workingHoursEnd,
+    workingDays: schedule?.working_days ?? undefined,
   };
 }
 
@@ -91,6 +94,26 @@ export function calculateRemainingDurationMinutes(
  */
 
 /**
+ * Return the working hours for a given day-of-week according to the config.
+ * Returns null when the day is not a working day.
+ * Falls back to global workingHoursStart/End (respecting skipWeekends) when
+ * workingDays is not configured.
+ */
+export function getDayWorkingHours(
+  config: TaskSchedulingConfig,
+  dayOfWeek: number
+): DaySchedule | null {
+  if (config.workingDays) {
+    return config.workingDays[dayOfWeek] ?? null;
+  }
+  // Legacy: use global hours, optionally skipping weekends
+  if (config.skipWeekends && (dayOfWeek === 0 || dayOfWeek === 6)) {
+    return null;
+  }
+  return { start: config.workingHoursStart, end: config.workingHoursEnd };
+}
+
+/**
  * Round time to next 15-minute interval
  */
 function roundToNext15Minutes(date: Date): Date {
@@ -129,12 +152,18 @@ function getNextAvailableSlot(
 ): ScheduledEvent | null {
   let currentTime = startFrom;
   const dateObj = new Date(startFrom);
-  dateObj.setHours(config.workingHoursEnd, 0, 0, 0);
+  const dayOfWeek = dateObj.getDay();
+  const dayHours = getDayWorkingHours(config, dayOfWeek);
+
+  // No working hours on this day
+  if (!dayHours) return null;
+
+  dateObj.setHours(dayHours.end, 0, 0, 0);
   const endOfDay = dateObj.getTime();
 
   // Ensure we're within working hours
   const workingStartObj = new Date(startFrom);
-  workingStartObj.setHours(config.workingHoursStart, 0, 0, 0);
+  workingStartObj.setHours(dayHours.start, 0, 0, 0);
   const workingStart = workingStartObj.getTime();
 
   if (currentTime < workingStart) {
@@ -231,8 +260,10 @@ export function distributeEvents(
   } else {
     const now = new Date();
     const roundedNow = roundToNext15Minutes(now);
+    const todayDayHours = getDayWorkingHours(config, now.getDay());
+    const startHour = todayDayHours ? todayDayHours.start : config.workingHoursStart;
     const workingHoursStart = new Date(now);
-    workingHoursStart.setHours(config.workingHoursStart, 0, 0, 0);
+    workingHoursStart.setHours(startHour, 0, 0, 0);
     workingHoursStart.setSeconds(0);
     workingHoursStart.setMilliseconds(0);
     // Use the later of: working hours start or current time (rounded)
@@ -274,8 +305,6 @@ export function distributeEvents(
     }))
     .sort((a, b) => a.start - b.start);
 
-  const skipWeekends = config.skipWeekends ?? false;
-
   while (remainingMinutes > 0) {
     // Get next available slot starting from current time
     let slot = getNextAvailableSlot(
@@ -293,16 +322,12 @@ export function distributeEvents(
     while (!slot && daysSearched < MAX_DAYS) {
       daysSearched++;
       currentTime.setDate(currentTime.getDate() + 1);
-      currentTime.setHours(config.workingHoursStart, 0, 0, 0);
+      const nextDayHours = getDayWorkingHours(config, currentTime.getDay());
+      const startHour = nextDayHours ? nextDayHours.start : config.workingHoursStart;
+      currentTime.setHours(startHour, 0, 0, 0);
       currentTime.setMinutes(0);
       currentTime.setSeconds(0);
       currentTime.setMilliseconds(0);
-
-      if (skipWeekends) {
-        while (currentTime.getDay() === 0 || currentTime.getDay() === 6) {
-          currentTime.setDate(currentTime.getDate() + 1);
-        }
-      }
 
       if (currentTime > endDate) {
         break;
@@ -482,7 +507,8 @@ export function checkDeadlineViolations(
 function prepareRecurringTaskEvents(
   task: Task,
   existingTaskEvents: CalendarEventTask[],
-  allExistingEvents: CalendarEventUnion[]
+  allExistingEvents: CalendarEventUnion[],
+  config: TaskSchedulingConfig = DEFAULT_CONFIG
 ): {
   events: ScheduledEvent[];
   violations: ScheduledEvent[];
@@ -562,11 +588,18 @@ function prepareRecurringTaskEvents(
 
     // No persisted event yet → find a fresh slot on that day
     const dayConfig: TaskSchedulingConfig = {
-      ...DEFAULT_CONFIG,
+      ...config,
       eventDurationMinutes: occurrenceDurationMinutes,
     };
+    const dayOfWeek = occurrenceDate.getDay();
+    const dayHours = getDayWorkingHours(dayConfig, dayOfWeek);
+    if (!dayHours) {
+      // This day is not a working day according to the schedule
+      console.warn(`[AUTOSCHEDULE:recurring]   ${ds} → NOT a working day`);
+      continue;
+    }
     const dayStart = new Date(occurrenceDate);
-    dayStart.setHours(dayConfig.workingHoursStart, 0, 0, 0);
+    dayStart.setHours(dayHours.start, 0, 0, 0);
 
     const slot = getNextAvailableSlot(
       dayStart.getTime(),
@@ -621,7 +654,8 @@ export function prepareTaskEvents(
     return prepareRecurringTaskEvents(
       task,
       existingTaskEvents,
-      allExistingEvents
+      allExistingEvents,
+      config
     );
   }
 

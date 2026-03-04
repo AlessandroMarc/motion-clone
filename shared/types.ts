@@ -112,12 +112,18 @@ function isCalendarEventTask(
   );
 }
 
+interface DaySchedule {
+  start: number; // 0-23
+  end: number; // 0-23
+}
+
 interface Schedule {
   id: string;
   user_id: string;
   name: string;
-  working_hours_start: number; // 0-23
-  working_hours_end: number; // 0-23
+  working_hours_start: number; // 0-23 (legacy fallback, used when working_days is absent)
+  working_hours_end: number; // 0-23 (legacy fallback, used when working_days is absent)
+  working_days?: Record<number, DaySchedule | null>; // per-day overrides: key = day-of-week (0=Sun…6=Sat), null = not a working day
   is_default: boolean;
   created_at: Date;
   updated_at: Date;
@@ -158,6 +164,7 @@ export type {
   CalendarEventUnion,
   CreateCalendarEventInput,
   UpdateCalendarEventInput,
+  DaySchedule,
   Schedule,
   UserSettings,
   OnboardingStatus,
