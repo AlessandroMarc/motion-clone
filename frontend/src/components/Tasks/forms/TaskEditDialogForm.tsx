@@ -17,10 +17,11 @@ import { taskService } from '@/services/taskService';
 import { calendarService } from '@/services/calendarService';
 import type { Task, CalendarEventTask } from '@/types';
 import { taskSchema, type TaskFormData } from '@/hooks/useTaskForm';
-import { normalizeToMidnight } from '@/utils/dateUtils';
+import { normalizeToMidnight, parseLocalDate } from '@/utils/dateUtils';
 import { TaskTitleField } from './TaskTitleField';
 import { TaskDescriptionField } from './TaskDescriptionField';
 import { TaskDueDateField } from './TaskDueDateField';
+import { TaskStartDateField } from './TaskStartDateField';
 import { TaskPriorityField } from './TaskPriorityField';
 import { TaskProjectField } from './TaskProjectField';
 import { TaskScheduleField } from './TaskScheduleField';
@@ -29,7 +30,7 @@ import { TaskDurationFields } from './TaskDurationFields';
 import { TaskRecurrenceFields } from './TaskRecurrenceFields';
 import { TaskFormActions } from './TaskFormActions';
 import { formatEventTime } from '@/utils/calendarUtils';
-import posthog from 'posthog-js';
+import { captureEvent, captureException } from '@/lib/analytics';
 
 interface TaskEditDialogFormProps {
   task: Task | null;
@@ -53,6 +54,7 @@ const emptyFormValues: TaskFormData = {
   recurrence_pattern: undefined,
   recurrence_interval: 1,
   recurrenceStartDate: undefined,
+  startDate: undefined,
 };
 
 const formatDateOnly = (date: Date): string => {
@@ -77,6 +79,9 @@ const mapTaskToFormValues = (task: Task): TaskFormData => ({
   recurrence_interval: task.recurrence_interval ?? 1,
   recurrenceStartDate: task.recurrence_start_date
     ? formatDateOnly(new Date(task.recurrence_start_date))
+    : undefined,
+  startDate: task.start_date
+    ? formatDateOnly(new Date(task.start_date))
     : undefined,
 });
 
@@ -216,8 +221,11 @@ export function TaskEditDialogForm({
         recurrenceInterval: data.is_recurring ? data.recurrence_interval : null,
         recurrenceStartDate:
           data.is_recurring && data.recurrenceStartDate
-            ? new Date(data.recurrenceStartDate)
+            ? normalizeToMidnight(parseLocalDate(data.recurrenceStartDate))
             : null,
+        startDate: data.startDate
+          ? normalizeToMidnight(parseLocalDate(data.startDate))
+          : null,
       });
 
       console.log(
@@ -228,7 +236,7 @@ export function TaskEditDialogForm({
       toast.success('Task updated successfully');
 
       // PostHog: Capture task updated event
-      posthog.capture('task_updated', {
+      captureEvent('task_updated', {
         priority: data.priority,
         has_due_date: !!data.dueDate,
         has_project: !!data.project_id,
@@ -251,9 +259,7 @@ export function TaskEditDialogForm({
       toast.error(message);
 
       // PostHog: Capture task update error
-      posthog.captureException(
-        error instanceof Error ? error : new Error(message)
-      );
+      captureException(error instanceof Error ? error : new Error(message));
     } finally {
       setIsSubmitting(false);
     }
@@ -306,8 +312,11 @@ export function TaskEditDialogForm({
           : undefined,
         recurrenceStartDate:
           data.is_recurring && data.recurrenceStartDate
-            ? new Date(data.recurrenceStartDate)
+            ? normalizeToMidnight(parseLocalDate(data.recurrenceStartDate))
             : null,
+        startDate: data.startDate
+          ? normalizeToMidnight(parseLocalDate(data.startDate))
+          : null,
       });
 
       onTaskCloned?.(clonedTask);
@@ -364,6 +373,7 @@ export function TaskEditDialogForm({
               {!isRecurring && (
                 <TaskDueDateField register={register} errors={errors} />
               )}
+              <TaskStartDateField register={register} errors={errors} />
               <TaskPriorityField
                 value={priority}
                 onValueChange={handlePriorityChange}

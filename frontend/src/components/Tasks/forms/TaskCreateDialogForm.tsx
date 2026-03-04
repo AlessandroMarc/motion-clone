@@ -18,6 +18,7 @@ import {
 import { TaskTitleField } from './TaskTitleField';
 import { TaskDescriptionField } from './TaskDescriptionField';
 import { TaskDueDateField } from './TaskDueDateField';
+import { TaskStartDateField } from './TaskStartDateField';
 import { TaskPriorityField } from './TaskPriorityField';
 import { TaskProjectField } from './TaskProjectField';
 import { TaskScheduleField } from './TaskScheduleField';
@@ -105,6 +106,7 @@ export function TaskCreateDialogForm({
               {!isRecurring && (
                 <TaskDueDateField register={register} errors={errors} />
               )}
+              <TaskStartDateField register={register} errors={errors} />
               <TaskPriorityField
                 value={priority}
                 onValueChange={setPriority}

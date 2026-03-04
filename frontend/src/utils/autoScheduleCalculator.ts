@@ -248,20 +248,27 @@ export function calculateAutoSchedule(params: {
       taskStartTime
     );
 
-    // CRITICAL FIX: For tasks with 0 new events (fully scheduled), include
-    // existing events in the proposed schedule so applySchedule doesn't delete them.
-    // This prevents the toggling behavior where scheduled tasks get deleted when
-    // rescheduling runs.
+    // CRITICAL FIX: Always include existing events in the proposed schedule
+    // alongside any new events. Previously, existing events were dropped when
+    // events.length > 0, causing the scheduler to delete valid persisted events
+    // on the next cycle and creating an infinite oscillation loop.
     // NOTE: Use effectiveExistingEvents (overlapping events excluded) so we never
     // reclaim events that overlap with other events.
-    const finalEvents =
-      events.length === 0 && effectiveExistingEvents.length > 0
-        ? effectiveExistingEvents.map(e => ({
-            task_id: task.id,
-            start_time: new Date(e.start_time),
-            end_time: new Date(e.end_time),
-          }))
-        : events;
+    const existingMapped = effectiveExistingEvents.map(e => ({
+      task_id: task.id,
+      start_time: new Date(e.start_time),
+      end_time: new Date(e.end_time),
+    }));
+
+    // Merge existing + new, then deduplicate by (start_time, end_time) key
+    const mergedEvents = [...existingMapped, ...events];
+    const seenEventKeys = new Set<string>();
+    const finalEvents = mergedEvents.filter(e => {
+      const key = `${e.start_time.getTime()}|${e.end_time.getTime()}`;
+      if (seenEventKeys.has(key)) return false;
+      seenEventKeys.add(key);
+      return true;
+    });
 
     // Always include the task so the user sees it. Tasks with 0 events
     // (e.g. already fully scheduled or planned duration 0) still appear.

@@ -29,6 +29,9 @@ class TaskService {
         isRecurring && input.recurrenceStartDate
           ? toLocalDateString(normalizeToMidnight(input.recurrenceStartDate))
           : null,
+      start_date: input.startDate
+        ? toLocalDateString(normalizeToMidnight(input.startDate))
+        : null,
     };
 
     const response = await request<UnknownRecord>('/tasks', {
@@ -77,6 +80,7 @@ class TaskService {
       isRecurring,
       recurrencePattern,
       recurrenceInterval,
+      startDate,
       ...rest
     } = input;
 
@@ -94,6 +98,12 @@ class TaskService {
       recurrence_start_date: input.recurrenceStartDate
         ? toLocalDateString(normalizeToMidnight(input.recurrenceStartDate))
         : undefined,
+      start_date:
+        startDate !== undefined
+          ? startDate
+            ? toLocalDateString(normalizeToMidnight(startDate))
+            : null
+          : undefined,
     };
 
     console.log('📤 [taskService.updateTask] Sending payload:', payload);

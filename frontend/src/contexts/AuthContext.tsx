@@ -5,7 +5,7 @@ import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase';
 import type { Schedule } from '@/types';
 import { userSettingsService } from '@/services/userSettingsService';
-import posthog from 'posthog-js';
+import { identifyUser, captureEvent, resetAnalytics } from '@/lib/analytics';
 
 interface AuthContextType {
   user: User | null;
@@ -92,13 +92,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       // PostHog: Identify user on sign-in
       if (event === 'SIGNED_IN' && session?.user) {
-        posthog.identify(session.user.id, {
+        identifyUser(session.user.id, {
           email: session.user.email,
           name:
             session.user.user_metadata?.full_name ||
             session.user.user_metadata?.name,
         });
-        posthog.capture('user_signed_in', {
+        captureEvent('user_signed_in', {
           auth_provider: 'google',
         });
       }
@@ -134,8 +134,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const signOut = async () => {
     try {
       // PostHog: Capture sign-out event before resetting
-      posthog.capture('user_signed_out');
-      posthog.reset();
+      captureEvent('user_signed_out');
+      resetAnalytics();
 
       const { error } = await supabase.auth.signOut();
       if (error) {

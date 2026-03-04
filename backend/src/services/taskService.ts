@@ -38,6 +38,18 @@ function toDateOnly(value: Date | string): string {
   return `${y}-${m}-${day}`;
 }
 
+/**
+ * Normalize optional date values to YYYY-MM-DD format.
+ * Returns null for null/undefined inputs, otherwise delegates to toDateOnly.
+ * Used to deduplicate null-handling logic for date fields.
+ */
+function toOptionalDateOnly(
+  value: Date | string | null | undefined
+): string | null {
+  if (value === null || value === undefined) return null;
+  return toDateOnly(value);
+}
+
 export class TaskService {
   private determineStatus(
     plannedDuration: number | null | undefined,
@@ -80,14 +92,12 @@ export class TaskService {
 
     // Handle both Date objects and ISO strings (from JSON)
     // Normalize to midnight for date-only deadlines
-    let dueDateString: string | null = null;
-    if (
-      !isRecurring &&
-      input.due_date !== null &&
-      input.due_date !== undefined
-    ) {
-      dueDateString = toDateOnly(input.due_date);
-    }
+    const dueDateString = !isRecurring
+      ? toOptionalDateOnly(input.due_date)
+      : null;
+
+    // Normalize start_date (earliest scheduling date)
+    const startDateString = toOptionalDateOnly(input.start_date);
 
     // Resolve schedule_id: use provided value, then fall back to user's active/default schedule
     // Uses a single optimized query instead of 4 sequential queries
@@ -204,12 +214,10 @@ export class TaskService {
       : null;
 
     // Normalize recurrence_start_date (use today if not provided)
-    let recurrenceStartDateString: string | null = null;
-    if (isRecurring) {
-      recurrenceStartDateString = input.recurrence_start_date
-        ? toDateOnly(input.recurrence_start_date)
-        : toDateOnly(new Date());
-    }
+    const recurrenceStartDateString = isRecurring
+      ? (toOptionalDateOnly(input.recurrence_start_date) ??
+        toDateOnly(new Date()))
+      : null;
 
     const client = authToken
       ? getAuthenticatedSupabase(authToken)
@@ -230,6 +238,7 @@ export class TaskService {
           actual_duration_minutes: normalizedActual,
           user_id: input.user_id,
           schedule_id: scheduleId,
+          start_date: startDateString,
           is_recurring: isRecurring,
           recurrence_pattern: isRecurring ? input.recurrence_pattern : null,
           recurrence_interval: isRecurring
@@ -331,6 +340,7 @@ export class TaskService {
       recurrence_interval?: number;
       next_generation_cutoff?: string | null;
       recurrence_start_date?: string | null;
+      start_date?: string | null;
     } = {
       updated_at: new Date().toISOString(),
     };
@@ -339,12 +349,10 @@ export class TaskService {
     if (input.description !== undefined)
       updateData.description = input.description;
     if (input.due_date !== undefined) {
-      // Normalize to midnight for date-only deadlines
-      if (input.due_date === null) {
-        updateData.due_date = null;
-      } else {
-        updateData.due_date = toDateOnly(input.due_date);
-      }
+      updateData.due_date = toOptionalDateOnly(input.due_date);
+    }
+    if (input.start_date !== undefined) {
+      updateData.start_date = toOptionalDateOnly(input.start_date);
     }
     if (input.priority !== undefined) updateData.priority = input.priority;
     if (input.dependencies !== undefined)
@@ -409,9 +417,9 @@ export class TaskService {
         updateData.next_generation_cutoff = normalizeToMidnight(new Date());
         // Update start date if provided; otherwise keep existing
         if (input.recurrence_start_date !== undefined) {
-          updateData.recurrence_start_date = input.recurrence_start_date
-            ? toDateOnly(input.recurrence_start_date)
-            : null;
+          updateData.recurrence_start_date = toOptionalDateOnly(
+            input.recurrence_start_date
+          );
         }
       } else {
         // When turning off recurrence, clear all recurrence fields
