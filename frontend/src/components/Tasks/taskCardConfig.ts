@@ -52,5 +52,3 @@ export const PRIORITY_CONFIG: Record<
     bgClass: 'bg-slate-500/10 text-slate-600 dark:text-slate-400',
   },
 };
-
-

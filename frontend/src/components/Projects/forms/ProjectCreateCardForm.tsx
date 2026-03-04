@@ -19,9 +19,7 @@ import { ProjectDescriptionField } from './ProjectDescriptionField';
 import { ProjectDeadlineField } from './ProjectDeadlineField';
 import { ProjectFormActions } from './ProjectFormActions';
 
-function ProjectCreateCardForm({
-  onProjectCreate,
-}: ProjectCreateFormProps) {
+function ProjectCreateCardForm({ onProjectCreate }: ProjectCreateFormProps) {
   const [isExpanded, setIsExpanded] = useState(false);
 
   const { methods, handleSubmit, isSubmitting, onSubmit, handleCancel } =
