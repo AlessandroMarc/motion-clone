@@ -137,17 +137,17 @@ export class ProjectService {
   ): Promise<boolean> {
     const startTime = Date.now();
 
-    // Step 1: Get all related tasks (verification checkpoint)
-    const { data: relatedTasks, error: tasksListError } = await client
-      .from('tasks')
-      .select('id')
-      .eq('project_id', id);
-
-    if (tasksListError) {
-      throw new Error(`Failed to list tasks: ${tasksListError.message}`);
-    }
-
     try {
+      // Step 1: Get all related tasks (verification checkpoint)
+      const { data: relatedTasks, error: tasksListError } = await client
+        .from('tasks')
+        .select('id')
+        .eq('project_id', id);
+
+      if (tasksListError) {
+        throw new Error(`Failed to list tasks: ${tasksListError.message}`);
+      }
+
       // Step 2: Delete all related tasks first (before project)
       if (relatedTasks && relatedTasks.length > 0) {
         const { error: tasksError } = await client

@@ -264,36 +264,93 @@ describe('ProjectService', () => {
     });
 
     test('should throw on database error', async () => {
-      // Skip complex mocking - the optimization works in integration
-      expect(true).toBe(true);
+      // Step 1: list tasks returns a DB error
+      mockClient.eq.mockResolvedValueOnce({
+        data: null,
+        error: { message: 'DB error' },
+      });
+
+      await expect(
+        service.deleteProject('proj-1', mockClient as any)
+      ).rejects.toThrow('Failed to list tasks: DB error');
     });
 
     test('should delete related tasks before project (transaction-like pattern)', async () => {
-      // Skip complex mocking - the optimization works in integration
-      expect(true).toBe(true);
+      // Step 1: list tasks returns tasks
+      mockClient.eq.mockResolvedValueOnce({
+        data: [{ id: 'task-1' }],
+        error: null,
+      });
+      // Step 2: delete tasks
+      mockClient.delete
+        .mockReturnValueOnce({
+          eq: jest.fn().mockResolvedValue({ error: null }),
+        })
+        // Step 3: delete project
+        .mockReturnValueOnce({
+          eq: jest.fn().mockResolvedValue({ error: null }),
+        });
+
+      const result = await service.deleteProject('proj-1', mockClient as any);
+
+      expect(mockClient.delete).toHaveBeenCalledTimes(2);
+      expect(result).toBe(true);
     });
 
     test('should fail if task deletion fails (prevents orphanage)', async () => {
-      // Skip complex mocking - the optimization works in integration
-      expect(true).toBe(true);
+      // Step 1: list tasks returns tasks
+      mockClient.eq.mockResolvedValueOnce({
+        data: [{ id: 'task-1' }],
+        error: null,
+      });
+      // Step 2: delete tasks fails
+      mockClient.delete.mockReturnValueOnce({
+        eq: jest
+          .fn()
+          .mockResolvedValue({ error: { message: 'Task deletion failed' } }),
+      });
+
+      await expect(
+        service.deleteProject('proj-1', mockClient as any)
+      ).rejects.toThrow('Failed to delete project tasks: Task deletion failed');
     });
   });
 
   // ─── getProjectsByStatus ──────────────────────────────────────────────────────
   describe('getProjectsByStatus', () => {
     test('should return projects filtered by status', async () => {
-      // Skip complex mocking - the implementation works in integration
-      expect(true).toBe(true);
+      const projects = [makeProject({ status: 'in-progress' })];
+      mockClient.order.mockResolvedValueOnce({ data: projects, error: null });
+
+      const result = await service.getProjectsByStatus(
+        'in-progress',
+        mockClient as any
+      );
+
+      expect(mockClient.eq).toHaveBeenCalledWith('status', 'in-progress');
+      expect(result).toEqual(projects);
     });
 
     test('should return empty array when none match', async () => {
-      // Skip complex mocking - the implementation works in integration
-      expect(true).toBe(true);
+      mockClient.order.mockResolvedValueOnce({ data: [], error: null });
+
+      const result = await service.getProjectsByStatus(
+        'completed',
+        mockClient as any
+      );
+
+      expect(result).toEqual([]);
     });
 
     test('should throw on database error', async () => {
-      // Skip complex mocking - the implementation works in integration
-      expect(true).toBe(true);
+      mockClient.order.mockResolvedValueOnce({
+        data: null,
+        error: { message: 'DB error' },
+      });
+
+      await expect(
+        service.getProjectsByStatus('not-started', mockClient as any)
+      ).rejects.toThrow('Failed to fetch projects by status: DB error');
     });
   });
 });

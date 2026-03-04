@@ -19,9 +19,22 @@ export class UserSettingsService {
     { schedules: Schedule[]; timestamp: number }
   >();
   private static readonly CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
+  private static readonly MAX_CACHE_ENTRIES = 10_000;
 
   private static isCacheValid(timestamp: number): boolean {
     return Date.now() - timestamp < this.CACHE_TTL_MS;
+  }
+
+  private static enforceCacheBound(): void {
+    if (this.scheduleCache.size < this.MAX_CACHE_ENTRIES) return;
+    // Evict the oldest 10% of entries to reduce frequent iteration
+    const evictCount = Math.max(1, Math.floor(this.MAX_CACHE_ENTRIES * 0.1));
+    const entries = Array.from(this.scheduleCache.entries()).sort(
+      (a, b) => a[1].timestamp - b[1].timestamp
+    );
+    for (let i = 0; i < evictCount && i < entries.length; i++) {
+      this.scheduleCache.delete(entries[i]![0]);
+    }
   }
 
   // Clear schedule cache for a specific user (call on any schedule change)
@@ -42,11 +55,17 @@ export class UserSettingsService {
     if (cached && UserSettingsService.isCacheValid(cached.timestamp)) {
       // Find the active schedule from cached list
       const client = token ? getAuthenticatedSupabase(token) : supabase;
-      const { data: settings } = await client
+      const { data: settings, error: settingsError } = await client
         .from('user_settings')
         .select('active_schedule_id')
         .eq('user_id', userId)
         .single();
+
+      if (settingsError && settingsError.code !== 'PGRST116') {
+        throw new Error(
+          `Failed to fetch user settings: ${settingsError.message}`
+        );
+      }
 
       let schedule = cached.schedules.find(
         s => s.id === settings?.active_schedule_id
@@ -76,28 +95,21 @@ export class UserSettingsService {
       .order('created_at', { ascending: true });
 
     if (schedulesError) {
-      console.error(
-        `[UserSettingsService] Failed to fetch schedules: ${schedulesError.message}`
-      );
-      // Return default if fetch fails
-      return {
-        id: '',
-        user_id: userId,
-        name: 'Default',
-        working_hours_start: 9,
-        working_hours_end: 22,
-        is_default: true,
-        created_at: new Date(),
-        updated_at: new Date(),
-      };
+      throw new Error(`Failed to fetch schedules: ${schedulesError.message}`);
     }
 
     // Get user settings to find active schedule
-    const { data: settings } = await client
+    const { data: settings, error: settingsError } = await client
       .from('user_settings')
       .select('active_schedule_id')
       .eq('user_id', userId)
       .single();
+
+    if (settingsError && settingsError.code !== 'PGRST116') {
+      throw new Error(
+        `Failed to fetch user settings: ${settingsError.message}`
+      );
+    }
 
     const schedules = (allSchedules || []).map(s => ({
       ...s,
@@ -106,6 +118,7 @@ export class UserSettingsService {
     }));
 
     // Cache all schedules for this user
+    UserSettingsService.enforceCacheBound();
     UserSettingsService.scheduleCache.set(userId, {
       schedules,
       timestamp: Date.now(),

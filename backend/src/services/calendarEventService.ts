@@ -685,24 +685,30 @@ export class CalendarEventService {
     } else if (input.completed_at !== undefined) {
       // Explicitly provided: normalize it (could be null, string, or Date)
       completedAt = normalizeNullableDate(input.completed_at);
-      console.log('[CalendarEventService] Setting completed_at:', {
-        input_completed_at: input.completed_at,
-        normalized: completedAt,
-      });
+      if (!skipLogging) {
+        console.log('[CalendarEventService] Setting completed_at:', {
+          input_completed_at: input.completed_at,
+          normalized: completedAt,
+        });
+      }
     } else {
       // Not provided: keep existing value
       completedAt = existingCompletedAt;
-      console.log(
-        '[CalendarEventService] Keeping existing completed_at:',
-        completedAt
-      );
+      if (!skipLogging) {
+        console.log(
+          '[CalendarEventService] Keeping existing completed_at:',
+          completedAt
+        );
+      }
     }
 
     updateData.completed_at = completedAt;
-    console.log(
-      '[CalendarEventService] Final updateData.completed_at:',
-      updateData.completed_at
-    );
+    if (!skipLogging) {
+      console.log(
+        '[CalendarEventService] Final updateData.completed_at:',
+        updateData.completed_at
+      );
+    }
 
     const wasCompleted = !!existingCompletedAt;
     const willBeCompleted = !!completedAt;
@@ -1069,7 +1075,9 @@ export class CalendarEventService {
       : serviceRoleSupabase;
     const { data, error } = await client
       .from('calendar_events')
-      .select('*')
+      .select(
+        'id, google_event_id, title, start_time, end_time, description, synced_from_google'
+      )
       .eq('user_id', userId)
       .eq('synced_from_google', true);
 
@@ -1079,6 +1087,6 @@ export class CalendarEventService {
       );
     }
 
-    return data || [];
+    return (data || []) as unknown as CalendarEventUnion[];
   }
 }

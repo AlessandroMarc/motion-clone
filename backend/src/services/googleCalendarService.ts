@@ -442,7 +442,8 @@ export class GoogleCalendarService {
               existingTitle === eventData.title &&
               existingStart === normalizeDate(eventData.start_time) &&
               existingEnd === normalizeDate(eventData.end_time) &&
-              existingDescription === eventData.description &&
+              (eventData.description === undefined ||
+                existingDescription === eventData.description) &&
               existingSyncedFromGoogle === true;
 
             if (isUnchanged) {
@@ -521,22 +522,40 @@ export class GoogleCalendarService {
         }
       }
 
-      // Third pass: batch update events (update individually with reduced logging)
+      // Third pass: batch update events with bounded concurrency
       if (eventsToUpdate.length > 0) {
         console.log(
           `[GoogleCalendarService] Updating ${eventsToUpdate.length} existing events`
         );
+        const CONCURRENCY = 5;
         let updateSuccessCount = 0;
-        for (const { id, data } of eventsToUpdate) {
-          try {
-            await this.calendarEventService.updateCalendarEvent(id, data);
-            updateSuccessCount++;
-          } catch (error) {
-            errors.push(
-              `Failed to update event ${id}: ${
-                error instanceof Error ? error.message : 'Unknown error'
-              }`
-            );
+        for (let i = 0; i < eventsToUpdate.length; i += CONCURRENCY) {
+          const batch = eventsToUpdate.slice(i, i + CONCURRENCY);
+          const results = await Promise.allSettled(
+            batch.map(({ id, data }) =>
+              this.calendarEventService.updateCalendarEvent(
+                id,
+                data,
+                undefined,
+                true
+              )
+            )
+          );
+          for (const result of results) {
+            if (result.status === 'fulfilled') {
+              updateSuccessCount++;
+            } else {
+              const rejected = result as PromiseRejectedResult;
+              const idx = results.indexOf(result);
+              const item = batch[idx];
+              errors.push(
+                `Failed to update event ${item?.id ?? 'unknown'}: ${
+                  rejected.reason instanceof Error
+                    ? rejected.reason.message
+                    : 'Unknown error'
+                }`
+              );
+            }
           }
         }
         synced += updateSuccessCount;
