@@ -7,6 +7,8 @@ import calendarEventRoutes from './routes/calendarEvents.js';
 import userSettingsRoutes from './routes/userSettings.js';
 import googleCalendarRoutes from './routes/googleCalendar.js';
 import subscriptionRoutes from './routes/subscriptions.js';
+import motionMigrationRoutes from './routes/motionMigration.js';
+import motionSnapshotRoutes from './routes/motionSnapshot.js';
 import { ResponseHelper } from './utils/responseHelpers.js';
 import { SyncScheduler } from './services/syncScheduler.js';
 import { loadEnv } from './config/loadEnv.js';
@@ -84,6 +86,8 @@ app.use('/api/calendar-events', calendarEventRoutes);
 app.use('/api/user-settings', userSettingsRoutes);
 app.use('/api/google-calendar', googleCalendarRoutes);
 app.use('/api/subscriptions', subscriptionRoutes);
+app.use('/api/motion-migration', motionMigrationRoutes);
+app.use('/api/motion-snapshot', motionSnapshotRoutes);
 
 // Start sync scheduler
 // NOTE: Vercel deploys this backend as a serverless function. In-process schedulers

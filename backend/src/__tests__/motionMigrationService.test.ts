@@ -1,0 +1,342 @@
+import { jest, describe, test, expect, beforeEach } from '@jest/globals';
+
+// ── Mock the Motion API service before importing the migration service ────────
+const mockMotionApiService = {
+  getMe: jest.fn(),
+  listSchedules: jest.fn(),
+  listWorkspaces: jest.fn(),
+  listProjects: jest.fn(),
+  listTasks: jest.fn(),
+  listRecurringTasks: jest.fn(),
+};
+
+jest.unstable_mockModule('../services/motionApiService.js', () => ({
+  MotionApiService: jest.fn().mockImplementation(() => mockMotionApiService),
+}));
+
+// ── Mock the Supabase config before importing services ────────────────────────
+const createMockSupabaseClient = () => {
+  const builder: any = {};
+  const state: {
+    table?: string;
+    insertPayload?: unknown;
+    eqFilters: Record<string, unknown>;
+  } = { eqFilters: {} };
+
+  // Chainable query-builder methods
+  builder.from = jest.fn((table: string) => {
+    state.table = table;
+    state.insertPayload = undefined;
+    state.eqFilters = {};
+    return builder;
+  });
+  builder.insert = jest.fn((payload: unknown) => {
+    state.insertPayload = payload;
+    return builder;
+  });
+  builder.update = jest.fn(() => builder);
+  builder.select = jest.fn(() => builder);
+  builder.eq = jest.fn((column: string, value: unknown) => {
+    state.eqFilters[column] = value;
+    return builder;
+  });
+  builder.order = jest.fn(() => builder);
+
+  // Methods that are usually awaited
+  builder.single = jest.fn(() => Promise.resolve({ data: null, error: null }));
+
+  // Make the builder thenable so `await builder` yields `{ data, error }`
+  builder.then = jest
+    .fn()
+    .mockImplementation(
+      (
+        onFulfilled: (value: { data: null; error: null }) => unknown,
+        onRejected?: (reason: unknown) => unknown
+      ) =>
+        Promise.resolve({ data: null, error: null }).then(
+          onFulfilled,
+          onRejected
+        )
+    );
+
+  builder.__state = state;
+
+  return builder;
+};
+
+const mockSupabaseClient = createMockSupabaseClient();
+jest.unstable_mockModule('../config/supabase.js', () => ({
+  serviceRoleSupabase: mockSupabaseClient,
+  getAuthenticatedSupabase: jest.fn().mockReturnValue(mockSupabaseClient),
+  verifyAuthToken: jest.fn(),
+}));
+
+// ── Import module under test after mocking deps ───────────────────────────────
+const {
+  mapPriority,
+  mapDuration,
+  mapMotionTaskToCreateInput,
+  MotionMigrationService,
+} = await import('../services/motionMigrationService.js');
+
+// ── Fixtures ──────────────────────────────────────────────────────────────────
+const mockUser = { id: 'motion-user-1', email: 'test@example.com' };
+const mockWorkspace = { id: 'ws-1', name: 'My Workspace' };
+const mockProject = {
+  id: 'mp-1',
+  name: 'Motion Project',
+  description: 'A project',
+  workspaceId: 'ws-1',
+  status: { name: 'Active', isDefaultStatus: true, isResolvedStatus: false },
+};
+const mockTask = {
+  id: 'mt-1',
+  name: 'Motion Task',
+  description: 'A task',
+  duration: 60,
+  dueDate: '2024-12-31T00:00:00.000Z',
+  deadlineType: 'SOFT' as const,
+  parentRecurringTaskId: undefined,
+  completed: false,
+  creator: mockUser,
+  workspace: mockWorkspace,
+  status: { name: 'Todo', isDefaultStatus: true, isResolvedStatus: false },
+  priority: 'HIGH' as const,
+  labels: [],
+  assignees: [mockUser],
+  createdTime: '2024-01-01T00:00:00.000Z',
+  schedulingIssue: false,
+  project: { id: 'mp-1', name: 'Motion Project', workspaceId: 'ws-1' },
+};
+const mockRecurringTask = {
+  id: 'mrt-1',
+  name: 'Recurring Task',
+  creator: mockUser,
+  assignee: mockUser,
+  workspace: mockWorkspace,
+  status: { name: 'Todo', isDefaultStatus: true, isResolvedStatus: false },
+  priority: 'MEDIUM' as const,
+  labels: [],
+  project: { id: 'mp-1', name: 'Motion Project', workspaceId: 'ws-1' },
+  duration: 30,
+};
+
+// ── Unit tests for pure mapping helpers ───────────────────────────────────────
+describe('mapPriority', () => {
+  test('maps ASAP to high', () => {
+    expect(mapPriority('ASAP')).toBe('high');
+  });
+
+  test('maps HIGH to high', () => {
+    expect(mapPriority('HIGH')).toBe('high');
+  });
+
+  test('maps MEDIUM to medium', () => {
+    expect(mapPriority('MEDIUM')).toBe('medium');
+  });
+
+  test('maps LOW to low', () => {
+    expect(mapPriority('LOW')).toBe('low');
+  });
+});
+
+describe('mapDuration', () => {
+  test('returns duration in minutes for a numeric value', () => {
+    expect(mapDuration(90)).toBe(90);
+  });
+
+  test('returns 0 for "NONE"', () => {
+    expect(mapDuration('NONE')).toBe(0);
+  });
+
+  test('returns 0 for "REMINDER"', () => {
+    expect(mapDuration('REMINDER')).toBe(0);
+  });
+
+  test('returns 0 for undefined', () => {
+    expect(mapDuration(undefined)).toBe(0);
+  });
+
+  test('returns 0 for a non-positive numeric value', () => {
+    expect(mapDuration(0)).toBe(0);
+  });
+});
+
+describe('mapMotionTaskToCreateInput', () => {
+  test('maps a regular MotionTask correctly', () => {
+    const input = mapMotionTaskToCreateInput(mockTask, 'user-123', 'proj-456');
+    expect(input.title).toBe('Motion Task');
+    expect(input.priority).toBe('high');
+    expect(input.planned_duration_minutes).toBe(60);
+    expect(input.project_id).toBe('proj-456');
+    expect(input.user_id).toBe('user-123');
+    expect(input.due_date).toEqual(new Date('2024-12-31T00:00:00.000Z'));
+  });
+
+  test('prefixes title with [Recurring] for recurring tasks', () => {
+    const input = mapMotionTaskToCreateInput(
+      mockRecurringTask,
+      'user-123',
+      'proj-456',
+      true
+    );
+    expect(input.title).toBe('[Recurring] Recurring Task');
+  });
+
+  test('maps MEDIUM priority correctly', () => {
+    const input = mapMotionTaskToCreateInput(
+      mockRecurringTask,
+      'user-123',
+      undefined,
+      true
+    );
+    expect(input.priority).toBe('medium');
+    expect(input.project_id).toBeUndefined();
+  });
+
+  test('handles task with no dueDate', () => {
+    const taskNoDue = { ...mockTask, dueDate: undefined };
+    const input = mapMotionTaskToCreateInput(taskNoDue, 'user-123');
+    expect(input.due_date).toBeNull();
+  });
+});
+
+// ── Integration-style tests for MotionMigrationService ───────────────────────
+describe('MotionMigrationService', () => {
+  const MOCK_AUTH_TOKEN = 'mock-nexto-jwt-token';
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+
+    // Default happy-path returns
+    mockMotionApiService.getMe.mockResolvedValue(mockUser);
+    mockMotionApiService.listSchedules.mockResolvedValue([
+      {
+        name: 'Work Hours',
+        isDefaultTimezone: true,
+        timezone: 'UTC',
+        schedule: {},
+      },
+    ]);
+    mockMotionApiService.listWorkspaces.mockResolvedValue([mockWorkspace]);
+    mockMotionApiService.listProjects.mockResolvedValue([mockProject]);
+    mockMotionApiService.listTasks.mockResolvedValue([mockTask]);
+    mockMotionApiService.listRecurringTasks.mockResolvedValue([
+      mockRecurringTask,
+    ]);
+  });
+
+  test('returns a MigrationResult with correct counts on success', async () => {
+    mockSupabaseClient.single.mockImplementation(async () => {
+      const state = mockSupabaseClient.__state as {
+        table?: string;
+        insertPayload?: unknown;
+      };
+
+      if (state.table === 'projects') {
+        return {
+          data: {
+            id: 'nexto-proj-1',
+            name: 'Motion Project',
+            status: 'not-started',
+            user_id: 'u-1',
+            milestones: [],
+            deadline: null,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          },
+          error: null,
+        };
+      }
+
+      if (state.table === 'user_settings') {
+        return { data: null, error: null };
+      }
+
+      if (state.table === 'schedules') {
+        return { data: { id: 'sched-1' }, error: null };
+      }
+
+      if (state.table === 'tasks') {
+        const taskInsert = Array.isArray(state.insertPayload)
+          ? state.insertPayload[0]
+          : null;
+        const title =
+          taskInsert && typeof taskInsert === 'object' && 'title' in taskInsert
+            ? String((taskInsert as { title: string }).title)
+            : 'Task';
+        const isRecurring = !!(
+          taskInsert &&
+          typeof taskInsert === 'object' &&
+          'is_recurring' in taskInsert &&
+          (taskInsert as { is_recurring?: boolean }).is_recurring
+        );
+
+        return {
+          data: {
+            id: isRecurring ? 'nexto-task-2' : 'nexto-task-1',
+            title,
+            status: 'not-started',
+            user_id: 'u-1',
+            priority: isRecurring ? 'medium' : 'high',
+            planned_duration_minutes: isRecurring ? 30 : 60,
+            actual_duration_minutes: 0,
+            due_date: null,
+            dependencies: [],
+            created_at: new Date(),
+            updated_at: new Date(),
+          },
+          error: null,
+        };
+      }
+
+      return { data: null, error: null };
+    });
+
+    const service = new MotionMigrationService('test-api-key');
+    const result = await service.migrate('u-1', MOCK_AUTH_TOKEN);
+
+    expect(result.userId).toBe('motion-user-1');
+    expect(result.schedulesFound).toBe(1);
+    expect(result.totalProjectsImported).toBe(1);
+    expect(result.totalTasksImported).toBe(1);
+    expect(result.totalRecurringTasksImported).toBe(1);
+    expect(result.workspaces).toHaveLength(1);
+    expect(result.workspaces[0].errors).toHaveLength(0);
+  });
+
+  test('records errors per workspace when project creation fails', async () => {
+    mockSupabaseClient.single.mockResolvedValue({
+      data: null,
+      error: { message: 'DB error' },
+    });
+
+    const service = new MotionMigrationService('test-api-key');
+    const result = await service.migrate('u-1', MOCK_AUTH_TOKEN);
+
+    expect(result.totalProjectsImported).toBe(0);
+    expect(result.workspaces[0].errors.length).toBeGreaterThan(0);
+    expect(result.workspaces[0].errors[0]).toContain(
+      'Failed to import project'
+    );
+  });
+
+  test('records error and continues when listProjects API call fails', async () => {
+    mockMotionApiService.listProjects.mockRejectedValue(
+      new Error('Rate limit exceeded')
+    );
+    // tasks / recurring can still succeed (but they need a project entry)
+    mockMotionApiService.listTasks.mockResolvedValue([]);
+    mockMotionApiService.listRecurringTasks.mockResolvedValue([]);
+
+    const service = new MotionMigrationService('test-api-key');
+    const result = await service.migrate('u-1', MOCK_AUTH_TOKEN);
+
+    expect(
+      result.workspaces[0].errors.some(e =>
+        e.includes('Failed to fetch projects')
+      )
+    ).toBe(true);
+    expect(result.totalProjectsImported).toBe(0);
+  });
+});

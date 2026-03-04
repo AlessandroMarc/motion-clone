@@ -27,7 +27,6 @@ describe('taskScheduler', () => {
     planned_duration_minutes: 120,
     actual_duration_minutes: 0,
     is_recurring: false,
-    recurrence_pattern: null,
     recurrence_interval: 1,
     next_generation_cutoff: null,
     recurrence_start_date: null,

@@ -4,8 +4,12 @@ import type { Request, Response } from 'express';
 /**
  * General API rate limiter applied globally to all /api/* routes.
  *
- * Limits: up to RATE_LIMIT (env) requests per 15-minute window per IP address,
- * defaulting to 1000.
+ * Limit: configurable via the RATE_LIMIT environment variable (requests per
+ * 15-minute window per IP address); defaults to 1000 when not set.
+ *
+ * Note: when deployed behind a proxy (e.g. Vercel), set `trust proxy` on the
+ * Express app so that `express-rate-limit` sees the real client IP from
+ * X-Forwarded-For rather than the proxy IP.
  */
 const rawRateLimit = process.env.RATE_LIMIT
   ? parseInt(process.env.RATE_LIMIT, 10)
