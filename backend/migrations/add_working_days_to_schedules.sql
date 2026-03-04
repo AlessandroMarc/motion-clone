@@ -6,3 +6,29 @@
 -- A null value for a key means that day is not a working day.
 
 ALTER TABLE schedules ADD COLUMN IF NOT EXISTS working_days JSONB DEFAULT NULL;
+
+-- Add CHECK constraint to validate working_days structure:
+-- - Keys must be valid day-of-week numbers (0-6)
+-- - Values must be null or objects with numeric start/end fields
+-- - Range constraints: 0 <= start < end <= 24
+ALTER TABLE schedules ADD CONSTRAINT working_days_valid CHECK (
+  working_days IS NULL OR (
+    jsonb_typeof(working_days) = 'object' AND
+    (
+      SELECT bool_and(
+        (key::int >= 0 AND key::int <= 6) AND
+        (
+          value IS NULL OR (
+            jsonb_typeof(value) = 'object' AND
+            (value->>'start')::int IS NOT NULL AND
+            (value->>'end')::int IS NOT NULL AND
+            (value->>'start')::int >= 0 AND
+            (value->>'end')::int <= 24 AND
+            (value->>'start')::int < (value->>'end')::int
+          )
+        )
+      )
+      FROM jsonb_each(working_days)
+    )
+  )
+);

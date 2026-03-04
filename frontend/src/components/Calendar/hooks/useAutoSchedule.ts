@@ -18,7 +18,7 @@ import { expandRecurringTasks } from '@/utils/recurrenceCalculator';
 // Constants
 // ---------------------------------------------------------------------------
 const DEBOUNCE_MS = 1_000;
-const THROTTLE_MS = 30_000;
+const THROTTLE_MS = 3_000;
 const DEFAULT_EVENT_DURATION = 60;
 
 // ---------------------------------------------------------------------------
@@ -99,11 +99,12 @@ export function useAutoSchedule(
   refreshEvents: () => Promise<CalendarEventUnion[]>,
   onTaskDropped?: () => void,
   activeSchedule?: Schedule | null,
-  isInitialSyncComplete: boolean = true
+  isInitialSyncComplete: boolean = true,
+  schedules: Schedule[] = []
 ) {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [tasksMap, setTasksMap] = useState<Map<string, Task>>(new Map());
-  const [schedules, setSchedules] = useState<Schedule[]>([]);
+  const [schedulesState, setSchedulesState] = useState<Schedule[]>(schedules);
   const [isRefreshing, setIsRefreshing] = useState(false);
 
   // Single guard: prevents concurrent scheduling runs
@@ -162,7 +163,7 @@ export function useAutoSchedule(
     if (!user?.id) return [];
     try {
       const allSchedules = await userSettingsService.getUserSchedules(user.id);
-      setSchedules(allSchedules);
+      setSchedulesState(allSchedules);
       return allSchedules;
     } catch (err) {
       logger.error('Failed to fetch schedules for auto-scheduling:', err);
@@ -170,10 +171,20 @@ export function useAutoSchedule(
     }
   }, [user?.id]);
 
+  // Sync schedules prop to state
+  useEffect(() => {
+    if (schedules.length > 0) {
+      setSchedulesState(schedules);
+    }
+  }, [schedules]);
+
   useEffect(() => {
     loadTasks();
-    loadSchedules();
-  }, [loadTasks, loadSchedules]);
+    // Only load schedules from API if not provided as prop
+    if (schedules.length === 0) {
+      loadSchedules();
+    }
+  }, [loadTasks, loadSchedules, schedules.length]);
 
   // -----------------------------------------------------------------------
   // applySchedule — mutates the backend (create / delete events)
@@ -387,7 +398,7 @@ export function useAutoSchedule(
         allCalendarEvents: eventsToUse,
         activeSchedule: activeSchedule || null,
         eventDuration: DEFAULT_EVENT_DURATION,
-        schedules,
+        schedules: schedulesState,
       });
 
       const eventsToCreate = taskEvents.flatMap(({ task, events: evts }) =>
@@ -414,7 +425,7 @@ export function useAutoSchedule(
 
       return { existingTaskEvents, eventsToCreate, allTasks: tasksToUse };
     },
-    [user, activeSchedule, schedules]
+    [user, activeSchedule, schedulesState]
   );
 
   // -----------------------------------------------------------------------
@@ -677,7 +688,7 @@ export function useAutoSchedule(
     isInitialSyncComplete,
     tasksFingerprint,
     events.length,
-    schedules.length,
+    schedulesState.length,
   ]);
 
   return {

@@ -20,7 +20,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import type { DaySchedule, Schedule } from '@/types';
+import type { DayOfWeek, DaySchedule, Schedule } from '@/types';
+import { toast } from 'sonner';
 
 const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
@@ -37,7 +38,7 @@ function buildInitialDays(
 ): DayState[] {
   return DAY_NAMES.map((_, dayIndex) => {
     if (schedule?.working_days) {
-      const dayHours = schedule.working_days[dayIndex];
+      const dayHours = schedule.working_days[dayIndex as DayOfWeek];
       if (dayHours === null || dayHours === undefined) {
         return { enabled: false, start: defaultStart, end: defaultEnd };
       }
@@ -116,10 +117,20 @@ export function ScheduleFormDialog({
   const handleSubmit = async () => {
     setIsSubmitting(true);
     try {
+      // Validate that all enabled days have start < end
+      const invalidDays = days.filter(d => d.enabled && d.start >= d.end);
+      if (invalidDays.length > 0) {
+        toast.error('Start time must be before end time for all working days');
+        return;
+      }
+
       // Build working_days map
-      const workingDays: Record<number, DaySchedule | null> = {};
+      const workingDays: Record<DayOfWeek, DaySchedule | null> = {} as Record<
+        DayOfWeek,
+        DaySchedule | null
+      >;
       days.forEach((d, i) => {
-        workingDays[i] = d.enabled ? { start: d.start, end: d.end } : null;
+        workingDays[i as DayOfWeek] = d.enabled ? { start: d.start, end: d.end } : null;
       });
 
       // Derive legacy fields from the first enabled day (for backward compat)
@@ -216,9 +227,11 @@ export function ScheduleFormDialog({
                           </SelectTrigger>
                           <SelectContent>
                             {Array.from({ length: 24 }, (_, i) => (
-                              <SelectItem key={i} value={i.toString()}>
-                                {i.toString().padStart(2, '0')}:00
-                              </SelectItem>
+                              i > day.start && (
+                                <SelectItem key={i} value={i.toString()}>
+                                  {i.toString().padStart(2, '0')}:00
+                                </SelectItem>
+                              )
                             ))}
                           </SelectContent>
                         </Select>

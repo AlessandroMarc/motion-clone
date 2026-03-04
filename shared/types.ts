@@ -112,6 +112,11 @@ function isCalendarEventTask(
   );
 }
 
+/**
+ * Valid day-of-week indices: 0 (Sunday) through 6 (Saturday)
+ */
+type DayOfWeek = 0 | 1 | 2 | 3 | 4 | 5 | 6;
+
 interface DaySchedule {
   start: number; // 0-23
   end: number; // 0-23
@@ -123,7 +128,7 @@ interface Schedule {
   name: string;
   working_hours_start: number; // 0-23 (legacy fallback, used when working_days is absent)
   working_hours_end: number; // 0-23 (legacy fallback, used when working_days is absent)
-  working_days?: Record<number, DaySchedule | null>; // per-day overrides: key = day-of-week (0=Sun…6=Sat), null = not a working day
+  working_days?: Record<DayOfWeek, DaySchedule | null>; // per-day overrides: key = day-of-week (0=Sun…6=Sat), null = not a working day
   is_default: boolean;
   created_at: Date;
   updated_at: Date;
@@ -164,6 +169,7 @@ export type {
   CalendarEventUnion,
   CreateCalendarEventInput,
   UpdateCalendarEventInput,
+  DayOfWeek,
   DaySchedule,
   Schedule,
   UserSettings,

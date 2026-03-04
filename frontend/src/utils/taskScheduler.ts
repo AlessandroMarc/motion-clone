@@ -3,6 +3,7 @@ import type {
   CalendarEventTask,
   CalendarEventUnion,
   Schedule,
+  DayOfWeek,
   DaySchedule,
 } from '@/types';
 import { TASK_PRIORITY_RANK } from '@/utils/taskUtils';
@@ -15,7 +16,7 @@ export interface TaskSchedulingConfig {
   eventDurationMinutes: number;
   workingHoursStart: number; // 9
   workingHoursEnd: number; // 22
-  workingDays?: Record<number, DaySchedule | null>; // per-day overrides; when set, takes precedence over workingHoursStart/End and skipWeekends
+  workingDays?: Record<DayOfWeek, DaySchedule | null>; // per-day overrides; when set, takes precedence over workingHoursStart/End and skipWeekends
   skipWeekends?: boolean;
   sortStrategy?: (tasks: Task[]) => Task[];
   defaultDaysWithoutDeadline?: number;
@@ -97,14 +98,20 @@ export function calculateRemainingDurationMinutes(
  * Return the working hours for a given day-of-week according to the config.
  * Returns null when the day is not a working day.
  * Falls back to global workingHoursStart/End (respecting skipWeekends) when
- * workingDays is not configured.
+ * workingDays is not configured or when a specific day key is missing.
  */
 export function getDayWorkingHours(
   config: TaskSchedulingConfig,
   dayOfWeek: number
 ): DaySchedule | null {
   if (config.workingDays) {
-    return config.workingDays[dayOfWeek] ?? null;
+    // Check if this specific day is configured in workingDays
+    const day = dayOfWeek as DayOfWeek;
+    if (day in config.workingDays) {
+      // Return the value (could be null for non-working days or a DaySchedule)
+      return config.workingDays[day];
+    }
+    // Day key is missing in workingDays - fall back to legacy behavior
   }
   // Legacy: use global hours, optionally skipping weekends
   if (config.skipWeekends && (dayOfWeek === 0 || dayOfWeek === 6)) {
@@ -178,6 +185,8 @@ function getNextAvailableSlot(
   const minBlockMs = (config.minBlockMinutes ?? 15) * 60 * 1000;
   let iterations = 0;
   const MAX_ITERATIONS = 100; // Guard against infinite loops
+
+  const dayStr = new Date(startFrom).toISOString().split('T')[0];
 
   while (currentTime < endOfDay && iterations < MAX_ITERATIONS) {
     iterations++;
@@ -664,6 +673,11 @@ export function prepareTaskEvents(
     existingTaskEvents,
     config
   );
+
+  if (remainingMinutes > 0) {
+    console.log(`[SCHEDULE:task] "${task.title}" remaining=${remainingMinutes} existing=${allExistingEvents.length}`);
+  }
+
   const events = distributeEvents(
     task,
     remainingMinutes,
