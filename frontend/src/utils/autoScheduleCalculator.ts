@@ -161,13 +161,57 @@ export function calculateAutoSchedule(params: {
       event =>
         event.linked_task_id === task.id && !event.id.startsWith('synthetic-')
     );
+
+    // ── Overlap detection: check if existing events overlap OTHER events ──
+    // If a task's persisted events overlap with another task's events or
+    // regular calendar events, exclude the overlapping events so the task
+    // gets rescheduled into a conflict-free slot.
+    const overlappingEventIds = new Set<string>();
+    for (const taskEvent of taskExistingEvents) {
+      const teStart = new Date(taskEvent.start_time).getTime();
+      const teEnd = new Date(taskEvent.end_time).getTime();
+      const overlapsOther = accumulatedScheduledEvents.some(other => {
+        // Skip events from the same task
+        if (isCalendarEventTask(other) && other.linked_task_id === task.id) {
+          return false;
+        }
+        const oStart = new Date(other.start_time).getTime();
+        const oEnd = new Date(other.end_time).getTime();
+        return teStart < oEnd && teEnd > oStart;
+      });
+      if (overlapsOther) {
+        overlappingEventIds.add(taskEvent.id);
+      }
+    }
+
+    let effectiveExistingEvents = taskExistingEvents;
+    if (overlappingEventIds.size > 0) {
+      effectiveExistingEvents = taskExistingEvents.filter(
+        e => !overlappingEventIds.has(e.id)
+      );
+      // Remove overlapping events from accumulated so fresh scheduling has room
+      for (let ai = accumulatedScheduledEvents.length - 1; ai >= 0; ai--) {
+        const acc = accumulatedScheduledEvents[ai];
+        if (
+          isCalendarEventTask(acc) &&
+          acc.linked_task_id === task.id &&
+          overlappingEventIds.has(acc.id)
+        ) {
+          accumulatedScheduledEvents.splice(ai, 1);
+        }
+      }
+      log(
+        `  task "${task.title}" has ${overlappingEventIds.size} overlapping event(s) — forcing reschedule`
+      );
+    }
+
     if (task.is_recurring) {
       console.log(
         `[AUTOSCHEDULE:calc] task "${task.title}" is_recurring=true`,
         {
           totalExistingEvents: existingEvents.length,
-          taskExistingEvents: taskExistingEvents.length,
-          taskExistingDates: taskExistingEvents.map(e =>
+          taskExistingEvents: effectiveExistingEvents.length,
+          taskExistingDates: effectiveExistingEvents.map(e =>
             new Date(e.start_time).toDateString()
           ),
         }
@@ -198,7 +242,7 @@ export function calculateAutoSchedule(params: {
 
     const { events, violations } = prepareTaskEvents(
       task,
-      taskExistingEvents,
+      effectiveExistingEvents,
       taskConfig,
       accumulatedScheduledEvents,
       taskStartTime
@@ -208,9 +252,11 @@ export function calculateAutoSchedule(params: {
     // existing events in the proposed schedule so applySchedule doesn't delete them.
     // This prevents the toggling behavior where scheduled tasks get deleted when
     // rescheduling runs.
+    // NOTE: Use effectiveExistingEvents (overlapping events excluded) so we never
+    // reclaim events that overlap with other events.
     const finalEvents =
-      events.length === 0 && taskExistingEvents.length > 0
-        ? taskExistingEvents.map(e => ({
+      events.length === 0 && effectiveExistingEvents.length > 0
+        ? effectiveExistingEvents.map(e => ({
             task_id: task.id,
             start_time: new Date(e.start_time),
             end_time: new Date(e.end_time),
@@ -230,6 +276,8 @@ export function calculateAutoSchedule(params: {
       due_date: task.due_date ? new Date(task.due_date).toISOString() : null,
       blockedBy: task.blockedBy ?? [],
       taskExistingEventsCount: taskExistingEvents.length,
+      overlappingEventsRemoved: overlappingEventIds.size,
+      effectiveExistingCount: effectiveExistingEvents.length,
       eventsCount: finalEvents.length,
       violationsCount: violations.length,
       taskStartTime: taskStartTime.toISOString(),

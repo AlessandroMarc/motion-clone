@@ -183,65 +183,82 @@ function getNextAvailableSlot(
 
   const gapMs = (config.gapBetweenEventsMinutes ?? 5) * 60 * 1000;
   const minBlockMs = (config.minBlockMinutes ?? 15) * 60 * 1000;
-  let iterations = 0;
-  const MAX_ITERATIONS = 100; // Guard against infinite loops
+  const duration60min = config.eventDurationMinutes * 60 * 1000;
 
-  const dayStr = new Date(startFrom).toISOString().split('T')[0];
+  // Helper: check if a proposed slot overlaps with any existing event
+  const wouldOverlap = (slotStart: number, slotEnd: number): boolean => {
+    return sortedExistingEvents.some(e => slotStart < e.end && slotEnd > e.start);
+  };
 
-  while (currentTime < endOfDay && iterations < MAX_ITERATIONS) {
-    iterations++;
+  // Filter events that might affect today's schedule
+  const relevantEvents = sortedExistingEvents.filter(
+    e => e.start < endOfDay && e.end > workingStart
+  );
 
-    // Find first event that might overlap or be after currentTime
-    const overlappingIndex = sortedExistingEvents.findIndex(
-      e => e.end > currentTime
-    );
+  // Build gaps explicitly
+  const gaps: Array<{ start: number; end: number }> = [];
 
-    if (overlappingIndex === -1) {
-      // No more events today, the rest of the day is free
-      const availableMs = endOfDay - currentTime;
-      if (availableMs < minBlockMs) return null;
+  if (relevantEvents.length === 0) {
+    // Whole day is free
+    gaps.push({ start: currentTime, end: endOfDay });
+  } else {
+    // Sort events by start time
+    const sorted = [...relevantEvents].sort((a, b) => a.start - b.start);
 
-      const durationMs = Math.min(
-        config.eventDurationMinutes * 60 * 1000,
-        remainingMinutes * 60 * 1000,
-        availableMs
-      );
-
-      return {
-        task_id: taskId,
-        start_time: new Date(currentTime),
-        end_time: new Date(currentTime + durationMs),
-      };
+    // Gap at beginning of day
+    if (sorted[0].start > currentTime) {
+      gaps.push({ start: Math.max(currentTime, workingStart), end: sorted[0].start });
     }
 
-    const event = sortedExistingEvents[overlappingIndex];
-
-    // If currentTime is inside an event, skip to the end of it
-    if (currentTime < event.end && currentTime + minBlockMs > event.start) {
-      currentTime = event.end + gapMs;
-      continue;
+    // Gaps between events
+    for (let i = 0; i < sorted.length - 1; i++) {
+      const gapStart = sorted[i].end + gapMs;
+      const gapEnd = sorted[i + 1].start;
+      if (gapStart < gapEnd) {
+        gaps.push({ start: gapStart, end: gapEnd });
+      }
     }
 
-    // There is a gap before the next event
-    const nextBoundary = Math.min(endOfDay, event.start);
-    const availableMs = nextBoundary - currentTime;
+    // Gap at end of day
+    const lastEvent = sorted[sorted.length - 1];
+    const gapStart = lastEvent.end + gapMs;
+    if (gapStart < endOfDay) {
+      gaps.push({ start: gapStart, end: endOfDay });
+    }
+  }
+
+  // Find first gap that can fit our event
+  for (const gap of gaps) {
+    // Skip gaps entirely before current time
+    if (gap.end <= currentTime) continue;
+
+    const gapStart = Math.max(gap.start, currentTime);
+    const availableMs = gap.end - gapStart;
 
     if (availableMs >= minBlockMs) {
-      const durationMs = Math.min(
-        config.eventDurationMinutes * 60 * 1000,
-        remainingMinutes * 60 * 1000,
-        availableMs
-      );
+      const durationMs = Math.min(duration60min, remainingMinutes * 60 * 1000, availableMs);
+      const slotStart = gapStart;
+      const slotEnd = gapStart + durationMs;
 
-      return {
-        task_id: taskId,
-        start_time: new Date(currentTime),
-        end_time: new Date(currentTime + durationMs),
-      };
+      // Final safety check: ensure no overlap
+      if (!wouldOverlap(slotStart, slotEnd)) {
+        return {
+          task_id: taskId,
+          start_time: new Date(slotStart),
+          end_time: new Date(slotEnd),
+        };
+      } else {
+        console.warn(
+          `[OVERLAP:safety] Proposed slot still overlaps after gap calculation!`,
+          {
+            gap,
+            slotStart: new Date(slotStart),
+            slotEnd: new Date(slotEnd),
+            taskId,
+          }
+        );
+      }
     }
-
-    // Gap too small, skip past this event
-    currentTime = event.end + gapMs;
   }
 
   return null;
@@ -314,6 +331,11 @@ export function distributeEvents(
     }))
     .sort((a, b) => a.start - b.start);
 
+  // Helper: check if a time range overlaps with ANY existing event
+  const hasOverlap = (start: number, end: number): boolean => {
+    return sortedExistingEvents.some(e => start < e.end && end > e.start);
+  };
+
   while (remainingMinutes > 0) {
     // Get next available slot starting from current time
     let slot = getNextAvailableSlot(
@@ -323,6 +345,35 @@ export function distributeEvents(
       sortedExistingEvents,
       remainingMinutes
     );
+
+    // Validate that slot doesn't overlap (belt-and-suspenders check)
+    if (slot && hasOverlap(slot.start_time.getTime(), slot.end_time.getTime())) {
+      const slotStartMs = slot.start_time.getTime();
+      const slotEndMs = slot.end_time.getTime();
+      console.warn(
+        `[OVERLAP:detect] WARNING: slot ${slot.start_time.toISOString()}-${slot.end_time.toISOString()} overlaps!`,
+        {
+          taskId: task.id,
+          taskTitle: task.title,
+          slotStart: new Date(slotStartMs),
+          slotEnd: new Date(slotEndMs),
+          eventCount: sortedExistingEvents.length,
+          overlappingEvents: sortedExistingEvents.filter(
+            e => slotStartMs < e.end && slotEndMs > e.start
+          ),
+        }
+      );
+      // Skip this bad slot and move to end of day
+      currentTime.setHours(
+        currentTime.getHours() + 1,
+        0,
+        0,
+        0
+      );
+      if (currentTime.getHours() >= config.workingHoursEnd) {
+        slot = null;
+      }
+    }
 
     // If no slot available today, advance day-by-day until we find one or pass endDate
     let daysSearched = 0;
@@ -349,6 +400,18 @@ export function distributeEvents(
         sortedExistingEvents,
         remainingMinutes
       );
+
+      // Re-validate for new day too
+      if (slot && hasOverlap(slot.start_time.getTime(), slot.end_time.getTime())) {
+        console.warn(
+          `[OVERLAP:detect] WARNING: day-advance slot overlaps too!`,
+          {
+            taskId: task.id,
+            date: currentTime.toDateString(),
+          }
+        );
+        slot = null;
+      }
     }
 
     if (!slot) {
@@ -356,6 +419,19 @@ export function distributeEvents(
     }
 
     events.push(slot);
+    const slotStart = slot.start_time.toLocaleTimeString('it-IT', {
+      hour: '2-digit',
+      minute: '2-digit',
+      timeZone: 'UTC',
+    });
+    const slotEnd = slot.end_time.toLocaleTimeString('it-IT', {
+      hour: '2-digit',
+      minute: '2-digit',
+      timeZone: 'UTC',
+    });
+    console.log(
+      `[DISTRIBUTE:slot] task="${task.title}" event #${events.length} ${slotStart}-${slotEnd} (remaining=${remainingMinutes}min, accumulated=${sortedExistingEvents.length} events)`
+    );
 
     const slotDurationMinutes = Math.round(
       (slot.end_time.getTime() - slot.start_time.getTime()) / (1000 * 60)
@@ -497,6 +573,56 @@ export function checkDeadlineViolations(
   deadline.setHours(23, 59, 59, 999);
 
   return events.filter(event => event.start_time > deadline);
+}
+
+/**
+ * Check if events overlap with each other or with provided existing events.
+ * Returns the list of events that have overlaps.
+ */
+export function checkEventOverlaps(
+  events: ScheduledEvent[],
+  existingEvents?: CalendarEventUnion[]
+): ScheduledEvent[] {
+  const allEvents = [
+    ...events.map(e => ({
+      start: e.start_time.getTime(),
+      end: e.end_time.getTime(),
+      source: 'proposed' as const,
+    })),
+    ...(existingEvents ?? []).map(e => ({
+      start: new Date(e.start_time).getTime(),
+      end: new Date(e.end_time).getTime(),
+      source: 'existing' as const,
+    })),
+  ];
+
+  const overlappingProposed = new Set<number>();
+
+  // Check each proposed event against all others
+  for (let i = 0; i < events.length; i++) {
+    const proposedMs = {
+      start: events[i].start_time.getTime(),
+      end: events[i].end_time.getTime(),
+    };
+
+    for (let j = 0; j < allEvents.length; j++) {
+      if (
+        i === j && // Don't compare with itself
+        allEvents[j].source === 'proposed'
+      ) {
+        continue;
+      }
+
+      const other = allEvents[j];
+      // Check if ranges overlap: start < other.end AND end > other.start
+      if (proposedMs.start < other.end && proposedMs.end > other.start) {
+        overlappingProposed.add(i);
+        break;
+      }
+    }
+  }
+
+  return events.filter((_, i) => overlappingProposed.has(i));
 }
 
 /**
@@ -685,7 +811,26 @@ export function prepareTaskEvents(
     allExistingEvents,
     startFrom
   );
-  const violations = checkDeadlineViolations(events, task);
+  
+  // Check both deadline violations AND time overlaps
+  const deadlineViolations = checkDeadlineViolations(events, task);
+  const overlapViolations = checkEventOverlaps(events, allExistingEvents);
+  
+  // Combine violations, avoiding duplicates
+  const violationSet = new Set<number>();
+
+  
+  deadlineViolations.forEach(ev => {
+    const idx = events.indexOf(ev);
+    if (idx >= 0) violationSet.add(idx);
+  });
+  
+  overlapViolations.forEach(ev => {
+    const idx = events.indexOf(ev);
+    if (idx >= 0) violationSet.add(idx);
+  });
+  
+  const violations = Array.from(violationSet).map(idx => events[idx]);
 
   return { events, violations };
 }
