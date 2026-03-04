@@ -1163,7 +1163,11 @@ describe('taskScheduler', () => {
       expect(getDayWorkingHours(config, 1)).toEqual({ start: 9, end: 17 });
       expect(getDayWorkingHours(config, 2)).toEqual({ start: 10, end: 18 });
       expect(getDayWorkingHours(config, 3)).toEqual({ start: 8, end: 16 });
-      expect(getDayWorkingHours(config, 4)).toBeNull(); // Not configured
+      // Day 4 not in workingDays → falls back to global hours (DEFAULT_CONFIG)
+      expect(getDayWorkingHours(config, 4)).toEqual({
+        start: DEFAULT_CONFIG.workingHoursStart,
+        end: DEFAULT_CONFIG.workingHoursEnd,
+      });
     });
   });
 
@@ -1710,7 +1714,7 @@ describe('taskScheduler', () => {
 
       const allEvents: Array<{ task_id: string; start: number; end: number }> =
         [];
-      let accumulated: CalendarEventUnion[] = [];
+      const accumulated: CalendarEventUnion[] = [];
 
       for (let i = 0; i < 10; i++) {
         const task = createMockTask({

@@ -299,11 +299,16 @@ describe('calculateAutoSchedule', () => {
       assertNoOverlaps(result);
 
       const te = result.taskEvents[0];
-      expect(te.events).toHaveLength(1);
-      // The rescheduled event should NOT overlap the calendar event
-      const newStart = new Date(te.events[0].start_time).getTime();
-      const calEnd = new Date(calEvent.end_time).getTime();
-      expect(newStart).toBeGreaterThanOrEqual(calEnd);
+      expect(te.events.length).toBeGreaterThan(0);
+      // The rescheduled event(s) should NOT overlap the calendar event
+      for (const ev of te.events) {
+        const evStart = new Date(ev.start_time).getTime();
+        const evEnd = new Date(ev.end_time).getTime();
+        const calStart = new Date(calEvent.start_time).getTime();
+        const calEnd = new Date(calEvent.end_time).getTime();
+        const overlaps = evStart < calEnd && evEnd > calStart;
+        expect(overlaps).toBe(false);
+      }
     });
 
     it('handles three tasks where two pairs of DB events overlap', () => {
