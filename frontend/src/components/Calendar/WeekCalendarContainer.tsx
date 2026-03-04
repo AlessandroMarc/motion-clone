@@ -1,7 +1,11 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { type CalendarEventUnion, isCalendarEventTask, type Schedule } from '@/types';
+import {
+  type CalendarEventUnion,
+  isCalendarEventTask,
+  type Schedule,
+} from '@/types';
 import { getWeekDates, getDateRange } from '@/utils/calendarUtils';
 import { CalendarSkeleton } from './CalendarSkeleton';
 import { ErrorState } from '@/components/shared/ErrorState';
@@ -135,7 +139,9 @@ export function WeekCalendarContainer({
     if (!user?.id) return;
     const loadSchedules = async () => {
       try {
-        const allSchedules = await userSettingsService.getUserSchedules(user.id);
+        const allSchedules = await userSettingsService.getUserSchedules(
+          user.id
+        );
         setSchedules(allSchedules);
       } catch (error) {
         logger.error('Failed to fetch schedules:', error);

@@ -187,7 +187,9 @@ function getNextAvailableSlot(
 
   // Helper: check if a proposed slot overlaps with any existing event
   const wouldOverlap = (slotStart: number, slotEnd: number): boolean => {
-    return sortedExistingEvents.some(e => slotStart < e.end && slotEnd > e.start);
+    return sortedExistingEvents.some(
+      e => slotStart < e.end && slotEnd > e.start
+    );
   };
 
   // Filter events that might affect today's schedule
@@ -207,7 +209,10 @@ function getNextAvailableSlot(
 
     // Gap at beginning of day
     if (sorted[0].start > currentTime) {
-      gaps.push({ start: Math.max(currentTime, workingStart), end: sorted[0].start });
+      gaps.push({
+        start: Math.max(currentTime, workingStart),
+        end: sorted[0].start,
+      });
     }
 
     // Gaps between events
@@ -236,7 +241,11 @@ function getNextAvailableSlot(
     const availableMs = gap.end - gapStart;
 
     if (availableMs >= minBlockMs) {
-      const durationMs = Math.min(duration60min, remainingMinutes * 60 * 1000, availableMs);
+      const durationMs = Math.min(
+        duration60min,
+        remainingMinutes * 60 * 1000,
+        availableMs
+      );
       const slotStart = gapStart;
       const slotEnd = gapStart + durationMs;
 
@@ -287,7 +296,9 @@ export function distributeEvents(
     const now = new Date();
     const roundedNow = roundToNext15Minutes(now);
     const todayDayHours = getDayWorkingHours(config, now.getDay());
-    const startHour = todayDayHours ? todayDayHours.start : config.workingHoursStart;
+    const startHour = todayDayHours
+      ? todayDayHours.start
+      : config.workingHoursStart;
     const workingHoursStart = new Date(now);
     workingHoursStart.setHours(startHour, 0, 0, 0);
     workingHoursStart.setSeconds(0);
@@ -347,7 +358,10 @@ export function distributeEvents(
     );
 
     // Validate that slot doesn't overlap (belt-and-suspenders check)
-    if (slot && hasOverlap(slot.start_time.getTime(), slot.end_time.getTime())) {
+    if (
+      slot &&
+      hasOverlap(slot.start_time.getTime(), slot.end_time.getTime())
+    ) {
       const slotStartMs = slot.start_time.getTime();
       const slotEndMs = slot.end_time.getTime();
       console.warn(
@@ -364,12 +378,7 @@ export function distributeEvents(
         }
       );
       // Skip this bad slot and move to end of day
-      currentTime.setHours(
-        currentTime.getHours() + 1,
-        0,
-        0,
-        0
-      );
+      currentTime.setHours(currentTime.getHours() + 1, 0, 0, 0);
       if (currentTime.getHours() >= config.workingHoursEnd) {
         slot = null;
       }
@@ -383,7 +392,9 @@ export function distributeEvents(
       daysSearched++;
       currentTime.setDate(currentTime.getDate() + 1);
       const nextDayHours = getDayWorkingHours(config, currentTime.getDay());
-      const startHour = nextDayHours ? nextDayHours.start : config.workingHoursStart;
+      const startHour = nextDayHours
+        ? nextDayHours.start
+        : config.workingHoursStart;
       currentTime.setHours(startHour, 0, 0, 0);
       currentTime.setMinutes(0);
       currentTime.setSeconds(0);
@@ -402,7 +413,10 @@ export function distributeEvents(
       );
 
       // Re-validate for new day too
-      if (slot && hasOverlap(slot.start_time.getTime(), slot.end_time.getTime())) {
+      if (
+        slot &&
+        hasOverlap(slot.start_time.getTime(), slot.end_time.getTime())
+      ) {
         console.warn(
           `[OVERLAP:detect] WARNING: day-advance slot overlaps too!`,
           {
@@ -801,7 +815,9 @@ export function prepareTaskEvents(
   );
 
   if (remainingMinutes > 0) {
-    console.log(`[SCHEDULE:task] "${task.title}" remaining=${remainingMinutes} existing=${allExistingEvents.length}`);
+    console.log(
+      `[SCHEDULE:task] "${task.title}" remaining=${remainingMinutes} existing=${allExistingEvents.length}`
+    );
   }
 
   const events = distributeEvents(
@@ -811,25 +827,24 @@ export function prepareTaskEvents(
     allExistingEvents,
     startFrom
   );
-  
+
   // Check both deadline violations AND time overlaps
   const deadlineViolations = checkDeadlineViolations(events, task);
   const overlapViolations = checkEventOverlaps(events, allExistingEvents);
-  
+
   // Combine violations, avoiding duplicates
   const violationSet = new Set<number>();
 
-  
   deadlineViolations.forEach(ev => {
     const idx = events.indexOf(ev);
     if (idx >= 0) violationSet.add(idx);
   });
-  
+
   overlapViolations.forEach(ev => {
     const idx = events.indexOf(ev);
     if (idx >= 0) violationSet.add(idx);
   });
-  
+
   const violations = Array.from(violationSet).map(idx => events[idx]);
 
   return { events, violations };

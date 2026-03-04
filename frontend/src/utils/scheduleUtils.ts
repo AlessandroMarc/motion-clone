@@ -20,12 +20,12 @@ export function formatWorkingHoursSummary(schedule: Schedule): string {
     // Skip only if explicitly marked as non-working (null)
     // If undefined (key missing), fall back to legacy hours
     if (dayHours === null) continue;
-    
+
     const { start, end } = dayHours ?? {
       start: schedule.working_hours_start,
       end: schedule.working_hours_end,
     };
-    
+
     const existing = groups.find(g => g.start === start && g.end === end);
     if (existing) {
       existing.days.push(DAY_SHORT[i] as string);

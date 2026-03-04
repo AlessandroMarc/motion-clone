@@ -1,14 +1,16 @@
-import { Task, CalendarEventTask, Schedule } from '@/types';
+import { Task, CalendarEventTask, CalendarEventUnion, Schedule } from '@/types';
 import {
   calculateRemainingDurationMinutes,
   distributeEvents,
   sortTasksForScheduling,
   checkDeadlineViolations,
+  checkEventOverlaps,
   prepareTaskEvents,
   createConfigFromSchedule,
   getDayWorkingHours,
   DEFAULT_CONFIG,
   TaskSchedulingConfig,
+  ScheduledEvent,
 } from '../taskScheduler';
 
 describe('taskScheduler', () => {
@@ -1132,13 +1134,13 @@ describe('taskScheduler', () => {
       const config: TaskSchedulingConfig = {
         ...DEFAULT_CONFIG,
         workingDays: {
-          0: null,    // Sunday: off
+          0: null, // Sunday: off
           1: { start: 9, end: 18 }, // Monday
           2: { start: 9, end: 18 }, // Tuesday
           3: { start: 9, end: 18 }, // Wednesday
           4: { start: 9, end: 18 }, // Thursday
           5: { start: 9, end: 18 }, // Friday
-          6: null,    // Saturday: off
+          6: null, // Saturday: off
         },
       };
 
@@ -1152,9 +1154,9 @@ describe('taskScheduler', () => {
       const config: TaskSchedulingConfig = {
         ...DEFAULT_CONFIG,
         workingDays: {
-          1: { start: 9, end: 17 },  // Mon
+          1: { start: 9, end: 17 }, // Mon
           2: { start: 10, end: 18 }, // Tue
-          3: { start: 8, end: 16 },  // Wed
+          3: { start: 8, end: 16 }, // Wed
         },
       };
 
@@ -1175,13 +1177,13 @@ describe('taskScheduler', () => {
         eventDurationMinutes: 60,
         defaultDaysWithoutDeadline: 14,
         workingDays: {
-          0: null,                   // Sunday off
+          0: null, // Sunday off
           1: { start: 9, end: 18 }, // Mon
           2: { start: 9, end: 18 }, // Tue
           3: { start: 9, end: 18 }, // Wed
           4: { start: 9, end: 18 }, // Thu
           5: { start: 9, end: 18 }, // Fri
-          6: null,                   // Saturday off
+          6: null, // Saturday off
         },
       };
 
@@ -1222,7 +1224,13 @@ describe('taskScheduler', () => {
         eventDurationMinutes: 60,
         defaultDaysWithoutDeadline: 7,
         workingDays: {
-          0: null, 1: null, 2: null, 3: null, 4: null, 5: null, 6: null,
+          0: null,
+          1: null,
+          2: null,
+          3: null,
+          4: null,
+          5: null,
+          6: null,
         },
       };
 
@@ -1300,6 +1308,462 @@ describe('taskScheduler', () => {
       const config = createConfigFromSchedule(schedule, 60);
 
       expect(config.workingDays).toBeUndefined();
+    });
+  });
+
+  // =========================================================================
+  // checkEventOverlaps
+  // =========================================================================
+  describe('checkEventOverlaps', () => {
+    const mkEvent = (
+      taskId: string,
+      start: string,
+      end: string
+    ): ScheduledEvent => ({
+      task_id: taskId,
+      start_time: new Date(start),
+      end_time: new Date(end),
+    });
+
+    const mkCalendarEvent = (
+      id: string,
+      start: string,
+      end: string,
+      taskId?: string
+    ): CalendarEventUnion =>
+      ({
+        id,
+        title: `Event ${id}`,
+        start_time: new Date(start),
+        end_time: new Date(end),
+        description: '',
+        user_id: 'user-1',
+        created_at: new Date(),
+        updated_at: new Date(),
+        ...(taskId ? { linked_task_id: taskId, completed_at: null } : {}),
+      }) as CalendarEventUnion;
+
+    it('should return empty array when no events overlap', () => {
+      const events = [
+        mkEvent('t1', '2024-01-10T09:00:00', '2024-01-10T10:00:00'),
+        mkEvent('t1', '2024-01-10T10:05:00', '2024-01-10T11:05:00'),
+      ];
+      const existing = [
+        mkCalendarEvent('c1', '2024-01-10T11:10:00', '2024-01-10T12:00:00'),
+      ];
+
+      const overlaps = checkEventOverlaps(events, existing);
+      expect(overlaps).toEqual([]);
+    });
+
+    it('should detect when a proposed event overlaps an existing event', () => {
+      const events = [
+        mkEvent('t1', '2024-01-10T09:00:00', '2024-01-10T10:00:00'),
+      ];
+      const existing = [
+        mkCalendarEvent('c1', '2024-01-10T09:30:00', '2024-01-10T10:30:00'),
+      ];
+
+      const overlaps = checkEventOverlaps(events, existing);
+      expect(overlaps).toHaveLength(1);
+      expect(overlaps[0].task_id).toBe('t1');
+    });
+
+    it('should detect when proposed events overlap each other', () => {
+      const events = [
+        mkEvent('t1', '2024-01-10T09:00:00', '2024-01-10T10:00:00'),
+        mkEvent('t2', '2024-01-10T09:30:00', '2024-01-10T10:30:00'),
+      ];
+
+      const overlaps = checkEventOverlaps(events);
+      expect(overlaps).toHaveLength(2); // Both overlap each other
+    });
+
+    it('should not flag events that are exactly adjacent (no overlap)', () => {
+      const events = [
+        mkEvent('t1', '2024-01-10T09:00:00', '2024-01-10T10:00:00'),
+        mkEvent('t2', '2024-01-10T10:00:00', '2024-01-10T11:00:00'),
+      ];
+
+      // Touching but not overlapping: end === start
+      const overlaps = checkEventOverlaps(events);
+      expect(overlaps).toEqual([]);
+    });
+
+    it('should detect full containment (one event inside another)', () => {
+      const events = [
+        mkEvent('t1', '2024-01-10T09:00:00', '2024-01-10T12:00:00'),
+      ];
+      const existing = [
+        mkCalendarEvent('c1', '2024-01-10T10:00:00', '2024-01-10T11:00:00'),
+      ];
+
+      const overlaps = checkEventOverlaps(events, existing);
+      expect(overlaps).toHaveLength(1);
+    });
+
+    it('should handle empty proposed events', () => {
+      const events: ScheduledEvent[] = [];
+      const existing = [
+        mkCalendarEvent('c1', '2024-01-10T09:00:00', '2024-01-10T10:00:00'),
+      ];
+
+      const overlaps = checkEventOverlaps(events, existing);
+      expect(overlaps).toEqual([]);
+    });
+
+    it('should handle empty existing events', () => {
+      const events = [
+        mkEvent('t1', '2024-01-10T09:00:00', '2024-01-10T10:00:00'),
+      ];
+
+      const overlaps = checkEventOverlaps(events, []);
+      expect(overlaps).toEqual([]);
+    });
+
+    it('should detect multiple overlapping proposed events', () => {
+      const events = [
+        mkEvent('t1', '2024-01-10T09:00:00', '2024-01-10T10:00:00'),
+        mkEvent('t2', '2024-01-10T11:00:00', '2024-01-10T12:00:00'),
+        mkEvent('t3', '2024-01-10T11:30:00', '2024-01-10T12:30:00'),
+      ];
+      const existing = [
+        mkCalendarEvent('c1', '2024-01-10T09:30:00', '2024-01-10T09:45:00'),
+      ];
+
+      const overlaps = checkEventOverlaps(events, existing);
+      // t1 overlaps c1, t3 overlaps t2
+      expect(overlaps.length).toBeGreaterThanOrEqual(2);
+      const ids = overlaps.map(o => o.task_id);
+      expect(ids).toContain('t1');
+      expect(ids).toContain('t3');
+    });
+  });
+
+  // =========================================================================
+  // distributeEvents – overlap prevention
+  // =========================================================================
+  describe('distributeEvents – overlap prevention', () => {
+    const mkCalendarEvent = (
+      id: string,
+      start: string,
+      end: string,
+      taskId?: string
+    ): CalendarEventUnion =>
+      ({
+        id,
+        title: `Event ${id}`,
+        start_time: new Date(start),
+        end_time: new Date(end),
+        description: '',
+        user_id: 'user-1',
+        created_at: new Date(),
+        updated_at: new Date(),
+        ...(taskId ? { linked_task_id: taskId, completed_at: null } : {}),
+      }) as CalendarEventUnion;
+
+    it('should never produce overlapping events for a single task', () => {
+      const startFrom = new Date('2024-01-08T09:00:00'); // Monday
+      const task = createMockTask({
+        id: 'task-overlap-check',
+        planned_duration_minutes: 480,
+        due_date: null,
+      });
+      const config: TaskSchedulingConfig = {
+        ...DEFAULT_CONFIG,
+        eventDurationMinutes: 60,
+        defaultDaysWithoutDeadline: 3,
+      };
+
+      const events = distributeEvents(task, 480, config, [], startFrom);
+
+      // Verify no pair of events overlaps
+      for (let i = 0; i < events.length; i++) {
+        for (let j = i + 1; j < events.length; j++) {
+          const a = events[i];
+          const b = events[j];
+          const overlaps =
+            a.start_time < b.end_time && a.end_time > b.start_time;
+          expect(overlaps).toBe(false);
+        }
+      }
+    });
+
+    it('should not overlap with existing calendar events', () => {
+      const startFrom = new Date('2024-01-08T09:00:00');
+      const task = createMockTask({
+        id: 'task-gap',
+        planned_duration_minutes: 240,
+        due_date: null,
+      });
+      const config: TaskSchedulingConfig = {
+        ...DEFAULT_CONFIG,
+        eventDurationMinutes: 60,
+        defaultDaysWithoutDeadline: 7,
+      };
+
+      // Dense schedule: 4 existing events back-to-back with small gaps
+      const existingEvents: CalendarEventUnion[] = [
+        mkCalendarEvent('e1', '2024-01-08T10:00:00', '2024-01-08T11:00:00'),
+        mkCalendarEvent('e2', '2024-01-08T11:05:00', '2024-01-08T12:05:00'),
+        mkCalendarEvent('e3', '2024-01-08T13:00:00', '2024-01-08T14:00:00'),
+        mkCalendarEvent('e4', '2024-01-08T15:00:00', '2024-01-08T16:00:00'),
+      ];
+
+      const events = distributeEvents(
+        task,
+        240,
+        config,
+        existingEvents,
+        startFrom
+      );
+
+      // Verify none overlap with existing
+      for (const newEvent of events) {
+        for (const existing of existingEvents) {
+          const eStart = new Date(existing.start_time).getTime();
+          const eEnd = new Date(existing.end_time).getTime();
+          const overlaps =
+            newEvent.start_time.getTime() < eEnd &&
+            newEvent.end_time.getTime() > eStart;
+          expect(overlaps).toBe(false);
+        }
+      }
+    });
+
+    it('should schedule around a fully-booked morning', () => {
+      const startFrom = new Date('2024-01-08T09:00:00');
+      const task = createMockTask({
+        planned_duration_minutes: 60,
+        due_date: null,
+      });
+      const config: TaskSchedulingConfig = {
+        ...DEFAULT_CONFIG,
+        eventDurationMinutes: 60,
+        defaultDaysWithoutDeadline: 7,
+        gapBetweenEventsMinutes: 5,
+      };
+
+      // Morning is fully booked 9:00-13:00
+      const existingEvents: CalendarEventUnion[] = [
+        mkCalendarEvent('e1', '2024-01-08T09:00:00', '2024-01-08T10:00:00'),
+        mkCalendarEvent('e2', '2024-01-08T10:00:00', '2024-01-08T11:00:00'),
+        mkCalendarEvent('e3', '2024-01-08T11:00:00', '2024-01-08T12:00:00'),
+        mkCalendarEvent('e4', '2024-01-08T12:00:00', '2024-01-08T13:00:00'),
+      ];
+
+      const events = distributeEvents(
+        task,
+        60,
+        config,
+        existingEvents,
+        startFrom
+      );
+
+      expect(events).toHaveLength(1);
+      // Should start after 13:00 + gap
+      expect(events[0].start_time.getHours()).toBeGreaterThanOrEqual(13);
+    });
+
+    it('should handle multiple tasks not overlapping each other (simulated accumulation)', () => {
+      const startFrom = new Date('2024-01-08T09:00:00');
+      const config: TaskSchedulingConfig = {
+        ...DEFAULT_CONFIG,
+        eventDurationMinutes: 60,
+        defaultDaysWithoutDeadline: 7,
+      };
+
+      // Schedule task A
+      const taskA = createMockTask({
+        id: 'task-a',
+        planned_duration_minutes: 60,
+      });
+      const eventsA = distributeEvents(taskA, 60, config, [], startFrom);
+      expect(eventsA).toHaveLength(1);
+
+      // Convert task A's events to CalendarEventUnion for accumulation
+      const accumulated: CalendarEventUnion[] = eventsA.map(e => ({
+        id: `temp-a-${e.start_time.getTime()}`,
+        title: 'Task A',
+        start_time: e.start_time,
+        end_time: e.end_time,
+        description: '',
+        user_id: 'user-1',
+        created_at: new Date(),
+        updated_at: new Date(),
+      }));
+
+      // Schedule task B with A's events as existing
+      const taskB = createMockTask({
+        id: 'task-b',
+        planned_duration_minutes: 60,
+      });
+      const eventsB = distributeEvents(
+        taskB,
+        60,
+        config,
+        accumulated,
+        startFrom
+      );
+      expect(eventsB).toHaveLength(1);
+
+      // A and B should not overlap
+      const aStart = eventsA[0].start_time.getTime();
+      const aEnd = eventsA[0].end_time.getTime();
+      const bStart = eventsB[0].start_time.getTime();
+      const bEnd = eventsB[0].end_time.getTime();
+      expect(bStart < aEnd && bEnd > aStart).toBe(false);
+    });
+  });
+
+  // =========================================================================
+  // prepareTaskEvents – overlap violations
+  // =========================================================================
+  describe('prepareTaskEvents – overlap violations', () => {
+    const mkCalendarEvent = (
+      id: string,
+      start: string,
+      end: string,
+      taskId?: string
+    ): CalendarEventUnion =>
+      ({
+        id,
+        title: `Event ${id}`,
+        start_time: new Date(start),
+        end_time: new Date(end),
+        description: '',
+        user_id: 'user-1',
+        created_at: new Date(),
+        updated_at: new Date(),
+        ...(taskId ? { linked_task_id: taskId, completed_at: null } : {}),
+      }) as CalendarEventUnion;
+
+    it('should detect overlap violations when existing events conflict', () => {
+      const task = createMockTask({
+        planned_duration_minutes: 60,
+        due_date: new Date('2024-01-10T23:59:59'),
+      });
+      const config = { ...DEFAULT_CONFIG, eventDurationMinutes: 60 };
+      const startFrom = new Date('2024-01-08T09:00:00');
+
+      // Schedule the task first
+      const result = prepareTaskEvents(task, [], config, [], startFrom);
+
+      expect(result.events.length).toBeGreaterThan(0);
+      // The scheduled events should have 0 overlap violations (no conflicts)
+      expect(result.violations.length).toBe(0);
+    });
+
+    it('should produce no overlaps when scheduling around dense existing events', () => {
+      const task = createMockTask({
+        planned_duration_minutes: 120,
+        due_date: null,
+      });
+      const config: TaskSchedulingConfig = {
+        ...DEFAULT_CONFIG,
+        eventDurationMinutes: 60,
+        defaultDaysWithoutDeadline: 7,
+      };
+      const startFrom = new Date('2024-01-08T09:00:00');
+
+      // Dense existing schedule
+      const existingEvents: CalendarEventUnion[] = [
+        mkCalendarEvent('e1', '2024-01-08T09:00:00', '2024-01-08T10:00:00'),
+        mkCalendarEvent('e2', '2024-01-08T10:05:00', '2024-01-08T11:05:00'),
+        mkCalendarEvent('e3', '2024-01-08T11:10:00', '2024-01-08T12:10:00'),
+        mkCalendarEvent('e4', '2024-01-08T14:00:00', '2024-01-08T15:00:00'),
+      ];
+
+      const result = prepareTaskEvents(
+        task,
+        [],
+        config,
+        existingEvents,
+        startFrom
+      );
+
+      // Verify no event overlaps existing
+      for (const event of result.events) {
+        for (const existing of existingEvents) {
+          const eStart = new Date(existing.start_time).getTime();
+          const eEnd = new Date(existing.end_time).getTime();
+          const overlaps =
+            event.start_time.getTime() < eEnd &&
+            event.end_time.getTime() > eStart;
+          expect(overlaps).toBe(false);
+        }
+      }
+    });
+  });
+
+  // =========================================================================
+  // Stress test: many tasks produce zero mutual overlaps
+  // =========================================================================
+  describe('stress: no overlaps among many tasks', () => {
+    it('should schedule 10 tasks sequentially with zero overlaps', () => {
+      const startFrom = new Date('2024-01-08T09:00:00');
+      const config: TaskSchedulingConfig = {
+        ...DEFAULT_CONFIG,
+        eventDurationMinutes: 60,
+        defaultDaysWithoutDeadline: 14,
+      };
+
+      const allEvents: Array<{ task_id: string; start: number; end: number }> =
+        [];
+      let accumulated: CalendarEventUnion[] = [];
+
+      for (let i = 0; i < 10; i++) {
+        const task = createMockTask({
+          id: `stress-task-${i}`,
+          title: `Stress Task ${i}`,
+          planned_duration_minutes: 60,
+          due_date: null,
+        });
+
+        const events = distributeEvents(
+          task,
+          60,
+          config,
+          accumulated,
+          startFrom
+        );
+
+        for (const event of events) {
+          allEvents.push({
+            task_id: task.id,
+            start: event.start_time.getTime(),
+            end: event.end_time.getTime(),
+          });
+
+          accumulated.push({
+            id: `temp-${task.id}-${event.start_time.getTime()}`,
+            title: task.title,
+            start_time: event.start_time,
+            end_time: event.end_time,
+            description: '',
+            user_id: 'user-1',
+            created_at: new Date(),
+            updated_at: new Date(),
+          });
+        }
+      }
+
+      expect(allEvents.length).toBe(10);
+
+      // Check: no two events overlap
+      for (let i = 0; i < allEvents.length; i++) {
+        for (let j = i + 1; j < allEvents.length; j++) {
+          const a = allEvents[i];
+          const b = allEvents[j];
+          const overlaps = a.start < b.end && a.end > b.start;
+          if (overlaps) {
+            fail(
+              `Overlap detected: ${a.task_id} (${new Date(a.start).toISOString()}-${new Date(a.end).toISOString()}) ` +
+                `overlaps ${b.task_id} (${new Date(b.start).toISOString()}-${new Date(b.end).toISOString()})`
+            );
+          }
+        }
+      }
     });
   });
 });

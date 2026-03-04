@@ -130,7 +130,9 @@ export function ScheduleFormDialog({
         DaySchedule | null
       >;
       days.forEach((d, i) => {
-        workingDays[i as DayOfWeek] = d.enabled ? { start: d.start, end: d.end } : null;
+        workingDays[i as DayOfWeek] = d.enabled
+          ? { start: d.start, end: d.end }
+          : null;
       });
 
       // Derive legacy fields from the first enabled day (for backward compat)
@@ -226,13 +228,15 @@ export function ScheduleFormDialog({
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
-                            {Array.from({ length: 24 }, (_, i) => (
-                              i > day.start && (
-                                <SelectItem key={i} value={i.toString()}>
-                                  {i.toString().padStart(2, '0')}:00
-                                </SelectItem>
-                              )
-                            ))}
+                            {Array.from(
+                              { length: 24 },
+                              (_, i) =>
+                                i > day.start && (
+                                  <SelectItem key={i} value={i.toString()}>
+                                    {i.toString().padStart(2, '0')}:00
+                                  </SelectItem>
+                                )
+                            )}
                           </SelectContent>
                         </Select>
                       </div>
