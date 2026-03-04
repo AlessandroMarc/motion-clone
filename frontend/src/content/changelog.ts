@@ -15,6 +15,22 @@ export interface ChangelogEntry {
 
 export const changelogEntries: ChangelogEntry[] = [
   {
+    version: '1.6.0',
+    date: 'March 2026',
+    title: "Support for day by day scheduling",
+    description:
+      "The auto-scheduler can now plan tasks on a day-by-day basis, respecting your configured working hours and skipping non-working days.",
+    items: [
+      {
+        type: 'new',
+        text: 'Day-by-day scheduling: the scheduler now fills each day according to its specific working hours and availability.',
+      },
+      {
+        type: 'new',
+        text: 'Non-working days are automatically skipped during scheduling, so your calendar only shows realistic time blocks.',
+      }]
+  },
+  {    
     version: '1.5.0',
     date: 'March 2026',
     title: 'Recurring Tasks',
