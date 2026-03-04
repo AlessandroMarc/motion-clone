@@ -11,15 +11,17 @@ This specification outlines the endpoints, data types, and limitations for integ
 All requests require authorization using an API key passed in the request header.
 
 ### Authentication Header
-| Header | Type | Required | Description |
-| :--- | :--- | :--- | :--- |
-| `X-API-Key` | string | Yes | Your unique API key generated from the Motion Settings tab. |
+
+| Header      | Type   | Required | Description                                                 |
+| :---------- | :----- | :------- | :---------------------------------------------------------- |
+| `X-API-Key` | string | Yes      | Your unique API key generated from the Motion Settings tab. |
 
 ### Rate Limits
-| Tier | Limit |
-| :--- | :--- |
-| **Individual** | 12 requests per minute |
-| **Team** | 120 requests per minute |
+
+| Tier           | Limit                    |
+| :------------- | :----------------------- |
+| **Individual** | 12 requests per minute   |
+| **Team**       | 120 requests per minute  |
 | **Enterprise** | Custom (Contact Support) |
 
 ---
@@ -29,13 +31,14 @@ All requests require authorization using an API key passed in the request header
 When scheduling recurring tasks, days must be defined using the specific codes: `MO`, `TU`, `WE`, `TH`, `FR`, `SA`, `SU`. An array of days (e.g., `[MO, FR, SU]`) must always be appended to a frequency type prefix.
 
 ### Frequency Types
-| Frequency | Valid Formats |
-| :--- | :--- |
-| **Daily** | `daily_every_day`, `daily_every_week_day`, `daily_specific_days_DAYS_ARRAY` |
-| **Weekly** | `weekly_any_day`, `weekly_any_week_day`, `weekly_specific_days_DAYS_ARRAY` |
-| **Bi-Weekly** | `biweekly_first_week_specific_days_DAYS_ARRAY`, `biweekly_first_week_any_day`, `biweekly_first_week_any_week_day`, `biweekly_second_week_any_day`, `biweekly_second_week_any_week_day` |
-| **Monthly** | `monthly_first_DAY`, `monthly_second_DAY`, `monthly_third_DAY`, `monthly_fourth_DAY`, `monthly_last_DAY`, `monthly_1` through `monthly_31` (defaults to last day if month is shorter), `monthly_any_day_first_week`, `monthly_any_week_day_last_week`, `monthly_last_day_of_month`, `monthly_any_week_day_of_month`, `monthly_any_day_of_month` |
-| **Quarterly** | `quarterly_first_day`, `quarterly_first_week_day`, `quarterly_first_DAY`, `quarterly_last_day`, `quarterly_last_week_day`, `quarterly_last_DAY`, `quarterly_any_day_first_week`, `quarterly_any_day_second_week`, `quarterly_any_day_last_week`, `quarterly_any_day_first_month`, `quarterly_any_day_second_month` |
+
+| Frequency     | Valid Formats                                                                                                                                                                                                                                                                                                                                   |
+| :------------ | :---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Daily**     | `daily_every_day`, `daily_every_week_day`, `daily_specific_days_DAYS_ARRAY`                                                                                                                                                                                                                                                                     |
+| **Weekly**    | `weekly_any_day`, `weekly_any_week_day`, `weekly_specific_days_DAYS_ARRAY`                                                                                                                                                                                                                                                                      |
+| **Bi-Weekly** | `biweekly_first_week_specific_days_DAYS_ARRAY`, `biweekly_first_week_any_day`, `biweekly_first_week_any_week_day`, `biweekly_second_week_any_day`, `biweekly_second_week_any_week_day`                                                                                                                                                          |
+| **Monthly**   | `monthly_first_DAY`, `monthly_second_DAY`, `monthly_third_DAY`, `monthly_fourth_DAY`, `monthly_last_DAY`, `monthly_1` through `monthly_31` (defaults to last day if month is shorter), `monthly_any_day_first_week`, `monthly_any_week_day_last_week`, `monthly_last_day_of_month`, `monthly_any_week_day_of_month`, `monthly_any_day_of_month` |
+| **Quarterly** | `quarterly_first_day`, `quarterly_first_week_day`, `quarterly_first_DAY`, `quarterly_last_day`, `quarterly_last_week_day`, `quarterly_last_DAY`, `quarterly_any_day_first_week`, `quarterly_any_day_second_week`, `quarterly_any_day_last_week`, `quarterly_any_day_first_month`, `quarterly_any_day_second_month`                              |
 
 ---
 
@@ -44,9 +47,11 @@ When scheduling recurring tasks, days must be defined using the specific codes: 
 ### Users
 
 #### Get My User
+
 Retrieves information on the owner of the API key.
-* **Method:** `GET`
-* **Route:** `/users/me`
+
+- **Method:** `GET`
+- **Route:** `/users/me`
 
 **Response (200 - application/json - object)**
 | Field | Type | Required | Description |
@@ -60,9 +65,11 @@ Retrieves information on the owner of the API key.
 ### Workspaces
 
 #### List Workspaces
+
 Get a list of workspaces a user is a part of.
-* **Method:** `GET`
-* **Route:** `/workspaces`
+
+- **Method:** `GET`
+- **Route:** `/workspaces`
 
 **Query Parameters**
 | Parameter | Type | Required | Description |
@@ -81,9 +88,11 @@ Get a list of workspaces a user is a part of.
 ### Projects
 
 #### Get Project
+
 Get a single project by ID.
-* **Method:** `GET`
-* **Route:** `/projects/{id}`
+
+- **Method:** `GET`
+- **Route:** `/projects/{id}`
 
 **Path Parameters**
 | Parameter | Type | Required | Description |
@@ -103,9 +112,11 @@ Get a single project by ID.
 | `customFieldValues` | record<object> | No | Record of custom field values (text, number, url, date, select, multiSelect, person, multiPerson, email, phone, checkbox, relatedTo). |
 
 #### List Projects
+
 Get all projects for a workspace.
-* **Method:** `GET`
-* **Route:** `/projects`
+
+- **Method:** `GET`
+- **Route:** `/projects`
 
 **Query Parameters**
 | Parameter | Type | Required | Description |
@@ -124,9 +135,11 @@ Get all projects for a workspace.
 ### Tasks
 
 #### Get Task
+
 Get a specific task by ID.
-* **Method:** `GET`
-* **Route:** `/tasks/{id}`
+
+- **Method:** `GET`
+- **Route:** `/tasks/{id}`
 
 **Response (200 - application/json - object)**
 | Field | Type | Required | Description |
@@ -158,9 +171,11 @@ Get a specific task by ID.
 | `chunks` | array<object> | No | Scheduling chunks. |
 
 #### List Tasks
+
 Get all tasks for a given query.
-* **Method:** `GET`
-* **Route:** `/tasks`
+
+- **Method:** `GET`
+- **Route:** `/tasks`
 
 **Query Parameters**
 | Parameter | Type | Required | Description |
@@ -185,9 +200,11 @@ Get all tasks for a given query.
 ### Recurring Tasks
 
 #### List Recurring Tasks
+
 Get all recurring tasks for a workspace.
-* **Method:** `GET`
-* **Route:** `/recurring-tasks`
+
+- **Method:** `GET`
+- **Route:** `/recurring-tasks`
 
 **Query Parameters**
 | Parameter | Type | Required | Description |
@@ -206,9 +223,11 @@ Get all recurring tasks for a workspace.
 ### Schedules & Statuses
 
 #### Get Schedules
+
 Get a list of schedules for your user.
-* **Method:** `GET`
-* **Route:** `/schedules`
+
+- **Method:** `GET`
+- **Route:** `/schedules`
 
 **Response (200 - application/json - array of objects)**
 | Field | Type | Required | Description |
@@ -219,9 +238,11 @@ Get a list of schedules for your user.
 | `schedule` | object | Yes | Details start/end times per day (`monday` through `sunday` arrays). |
 
 #### Get Statuses
+
 Get a list of statuses for a particular workspace.
-* **Method:** `GET`
-* **Route:** `/statuses`
+
+- **Method:** `GET`
+- **Route:** `/statuses`
 
 **Query Parameters**
 | Parameter | Type | Required | Description |

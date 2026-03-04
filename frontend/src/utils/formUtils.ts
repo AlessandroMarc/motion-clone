@@ -1,6 +1,6 @@
 import type { TaskFormData } from '@/hooks/useTaskForm';
 import type { Task } from '@/types';
-import { normalizeToMidnight } from './dateUtils';
+import { normalizeToMidnight, parseLocalDate } from './dateUtils';
 
 /**
  * Transforms form data to task creation data
@@ -10,20 +10,34 @@ export function transformFormDataToTask(
   userId: string
 ): Omit<Task, 'id' | 'created_at' | 'updated_at' | 'status' | 'dependencies'> {
   const planned = Math.max(data.planned_duration_minutes, 0);
+  const isRecurring = data.is_recurring ?? false;
   const actual = Math.min(
-    Math.max(data.actual_duration_minutes ?? 0, 0),
+    Math.max(isRecurring ? 0 : (data.actual_duration_minutes ?? 0), 0),
     planned
   );
   const transformed = {
     title: data.title,
     description: data.description || '',
-    due_date: data.dueDate ? normalizeToMidnight(new Date(data.dueDate)) : null,
+    due_date:
+      !isRecurring && data.dueDate
+        ? normalizeToMidnight(parseLocalDate(data.dueDate))
+        : null,
     priority: data.priority,
     project_id: data.project_id || undefined,
     user_id: userId,
     planned_duration_minutes: planned,
     actual_duration_minutes: actual,
     blockedBy: data.blockedBy || [],
+    schedule_id: data.scheduleId,
+    is_recurring: isRecurring,
+    recurrence_pattern: isRecurring ? data.recurrence_pattern : undefined,
+    recurrence_interval: isRecurring
+      ? (data.recurrence_interval ?? 1)
+      : undefined,
+    recurrence_start_date:
+      isRecurring && data.recurrenceStartDate
+        ? normalizeToMidnight(parseLocalDate(data.recurrenceStartDate))
+        : null,
   };
   return transformed;
 }

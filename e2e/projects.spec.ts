@@ -45,7 +45,11 @@ test.describe('Projects page', () => {
         status: 200,
         contentType: 'application/json',
         body: JSON.stringify(
-          apiSuccess(mockTasks, 'Tasks retrieved successfully', mockTasks.length)
+          apiSuccess(
+            mockTasks,
+            'Tasks retrieved successfully',
+            mockTasks.length
+          )
         ),
       })
     );

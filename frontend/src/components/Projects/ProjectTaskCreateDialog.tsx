@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { FormProvider } from 'react-hook-form';
+import { FormProvider, type SubmitHandler } from 'react-hook-form';
 import {
   Dialog,
   DialogContent,
@@ -56,14 +56,12 @@ export function ProjectTaskCreateDialog({
     setIsDialogOpen(false);
   });
 
-  const handleFormSubmit = async (data: TaskFormData) => {
-    await originalOnSubmit(data);
-  };
-
   const handleFormCancel = () => {
     handleCancel();
     setIsDialogOpen(false);
   };
+
+  const onSubmit: SubmitHandler<TaskFormData> = originalOnSubmit;
 
   return (
     <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
@@ -73,7 +71,7 @@ export function ProjectTaskCreateDialog({
           {triggerText}
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[500px]">
+      <DialogContent className="sm:max-w-[500px] max-h-[90vh] flex flex-col overflow-hidden">
         <DialogHeader>
           <DialogTitle>Create New Task</DialogTitle>
           <DialogDescription>
@@ -83,7 +81,10 @@ export function ProjectTaskCreateDialog({
         </DialogHeader>
 
         <FormProvider {...form}>
-          <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-6">
+          <form
+            onSubmit={handleSubmit(onSubmit)}
+            className="space-y-6 overflow-y-auto flex-1 pr-1"
+          >
             <div className="space-y-4">
               <TaskTitleField register={register} errors={errors} />
               <TaskDescriptionField register={register} errors={errors} />

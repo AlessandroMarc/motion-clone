@@ -19,6 +19,7 @@ import { TaskDescriptionField } from './TaskDescriptionField';
 import { TaskDueDateField } from './TaskDueDateField';
 import { TaskPriorityField } from './TaskPriorityField';
 import { TaskProjectField } from './TaskProjectField';
+import { TaskScheduleField } from './TaskScheduleField';
 import { TaskBlockedByField } from './TaskBlockedByField';
 import { TaskDurationFields } from './TaskDurationFields';
 import { TaskFormActions } from './TaskFormActions';
@@ -75,6 +76,7 @@ export function TaskCreateCardForm({ onTaskCreate }: TaskCreateFormProps) {
       </CardHeader>
       <CardContent>
         <FormProvider {...form}>
+          {/* @ts-ignore - react-hook-form type inference issue with complex form data */}
           <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-4">
             <div className="space-y-4">
               <TaskTitleField
@@ -106,6 +108,7 @@ export function TaskCreateCardForm({ onTaskCreate }: TaskCreateFormProps) {
               </div>
 
               <TaskProjectField errors={errors} />
+              <TaskScheduleField errors={errors} id="quick-scheduleId" />
               <TaskBlockedByField errors={errors} />
               <TaskDurationFields
                 register={register}

@@ -8,6 +8,7 @@ export interface GoogleCalendarStatus {
 export interface SyncResult {
   synced: number;
   errors: string[];
+  durationMs: number;
 }
 
 class GoogleCalendarService {

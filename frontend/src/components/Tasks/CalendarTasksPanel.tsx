@@ -66,12 +66,12 @@ export function CalendarTasksPanel({
         );
         setWeekEvents(events);
       } catch (e) {
-        const errorMessage =
-          e instanceof Error
-            ? e.message.includes('Unable to connect')
-              ? e.message
-              : 'Failed to load tasks. Please ensure the backend server is running.'
-            : 'Failed to load tasks';
+        const msg = e instanceof Error ? e.message : '';
+        const errorMessage = msg.startsWith('429:')
+          ? msg
+          : msg.includes('Unable to connect')
+            ? msg
+            : 'Failed to load tasks. Please ensure the backend server is running.';
         // Error is handled via error state and displayed in UI - no need to log to console
         setError(errorMessage);
       } finally {
@@ -159,7 +159,16 @@ export function CalendarTasksPanel({
   }
 
   if (error) {
-    return (
+    const isRateLimit = error.startsWith('429:');
+    return isRateLimit ? (
+      <div className="flex items-start gap-2 p-3 rounded-md bg-yellow-50 border border-yellow-300 text-yellow-800 dark:bg-yellow-900/20 dark:border-yellow-700 dark:text-yellow-300">
+        <span className="text-base leading-none mt-0.5">⚠️</span>
+        <div>
+          <p className="text-xs font-semibold">Rate limit reached (429)</p>
+          <p className="text-xs">{error.replace(/^429:\s*/, '')}</p>
+        </div>
+      </div>
+    ) : (
       <div className="text-xs text-destructive p-3 bg-destructive/10 rounded-md">
         {error}
       </div>

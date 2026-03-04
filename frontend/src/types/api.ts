@@ -6,10 +6,16 @@ export interface CreateTaskInput {
   description?: string;
   dueDate?: Date | null;
   priority: 'low' | 'medium' | 'high';
+  scheduleId?: string;
   project_id?: string;
   blockedBy?: string[];
   plannedDurationMinutes: number;
   actualDurationMinutes?: number;
+  // Recurring task fields
+  isRecurring?: boolean;
+  recurrencePattern?: 'daily' | 'weekly' | 'monthly';
+  recurrenceInterval?: number;
+  recurrenceStartDate?: Date | null;
 }
 
 /** Task update payload (frontend API shape). */
@@ -18,10 +24,16 @@ export interface UpdateTaskInput {
   description?: string;
   dueDate?: Date | null;
   priority?: 'low' | 'medium' | 'high';
+  scheduleId?: string | null;
   project_id?: string | null;
   blockedBy?: string[];
   plannedDurationMinutes?: number;
   actualDurationMinutes?: number;
+  // Recurring task fields
+  isRecurring?: boolean;
+  recurrencePattern?: 'daily' | 'weekly' | 'monthly' | null;
+  recurrenceInterval?: number | null;
+  recurrenceStartDate?: Date | null;
 }
 
 /** Project create payload (frontend API shape). */

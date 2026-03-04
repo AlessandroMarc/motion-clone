@@ -4,10 +4,11 @@ import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
-import { sidebarNavigation } from './navigation';
+import { sidebarNavigation, supportNavigation } from './navigation';
 
 export function MobileBottomNav(): React.ReactElement {
   const pathname = usePathname();
+  const allNavItems = [...sidebarNavigation, ...supportNavigation];
 
   return (
     <nav
@@ -16,18 +17,18 @@ export function MobileBottomNav(): React.ReactElement {
     >
       <div
         className={cn(
-          'pointer-events-auto flex w-full max-w-md items-center justify-between rounded-xl border bg-background/95 shadow-lg backdrop-blur supports-backdrop-filter:bg-background/80',
+          'pointer-events-auto flex w-full max-w-2xl items-center justify-between rounded-xl border bg-background/95 shadow-lg backdrop-blur supports-backdrop-filter:bg-background/80 overflow-x-auto',
           'p-2'
         )}
       >
-        {sidebarNavigation.map(item => {
+        {allNavItems.map(item => {
           const isActive = pathname === item.href;
           return (
             <Link
               key={item.name}
               href={item.href}
               className={cn(
-                'flex min-h-[44px] min-w-[44px] flex-col items-center justify-between gap-0.5 rounded-lg p-2.5 transition-colors touch-manipulation',
+                'flex min-h-[44px] min-w-[44px] flex-col items-center justify-between gap-0.5 rounded-lg p-2.5 transition-colors touch-manipulation flex-shrink-0',
                 isActive
                   ? 'bg-primary text-primary-foreground'
                   : 'text-muted-foreground hover:bg-muted hover:text-foreground'

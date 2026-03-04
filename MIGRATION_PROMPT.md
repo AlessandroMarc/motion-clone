@@ -1,40 +1,22 @@
 Help me build an md file to support my repo that has to integrate with the following API
 
-
-
 1Create API Key
-
-
 
 Log into Motion and under the Settings tab, create an API key. Be sure to copy the key, as it will only be shown once for security reasons.
 
 2Set Authorization Headers
 
-
-
 Pass in your API key as a X-API-Key header.
 
 3Test the API
 
-
-
 Try sending a GET request to https://api.usemotion.com/v1/workspaces with your api key as a header!
-
-
 
 API Docs
 
-
-
-
-
 Frequency
 
-
-
 Days
-
-
 
 Defining days should always be used along with a specific frequency type as defined below. An array of days should never be used on its own. See examples below.
 
@@ -56,8 +38,6 @@ SU - Sunday
 
 For example, [MO, FR, SU] would mean Monday, Friday, and Sunday.
 
-
-
 Defining a Daily Frequency
 
 daily_every_day
@@ -66,9 +46,7 @@ daily_every_week_day
 
 daily_specific_days_DAYS_ARRAY
 
-For example, daily_specific_days_[MO, TU, FR] means every Monday, Tuesday, and Friday.
-
-
+For example, daily*specific_days*[MO, TU, FR] means every Monday, Tuesday, and Friday.
 
 Defining a Weekly Frequency
 
@@ -78,9 +56,7 @@ weekly_any_week_day
 
 weekly_specific_days_DAYS_ARRAY
 
-For example, weekly_specific_days_[MO, TU, FR] means once a week, on Monday, Tuesday or Friday.
-
-
+For example, weekly*specific_days*[MO, TU, FR] means once a week, on Monday, Tuesday or Friday.
 
 Defining a Bi-Weekly Frequency
 
@@ -94,15 +70,11 @@ biweekly_second_week_any_day
 
 biweekly_second_week_any_week_day
 
-For example, biweekly_first_week_specific_days_[MO, TU, FR] means biweekly on the first week, on Mondays, Tuesdays or Fridays.
-
-
+For example, biweekly*first_week_specific_days*[MO, TU, FR] means biweekly on the first week, on Mondays, Tuesdays or Fridays.
 
 Defining a Monthly Frequency
 
 Specific Week Day Options
-
-
 
 When choosing the 1st, 2nd, 3rd, 4th or last day of the week for the month, it takes the form of any of the following where DAY can be substituted for the day code mentioned above.
 
@@ -119,8 +91,6 @@ monthly_last_DAY
 For example, monthly_first_MO means the first Monday of the month.
 
 Specific Day Options
-
-
 
 In the case you choose a numeric value for a month that does not have that many days, we will default to the last day of the month.
 
@@ -200,27 +170,15 @@ quarterly_any_day_first_month
 
 quarterly_any_day_second_month
 
-
-
 Rate limits
 
 The base tier for individuals is 12 requests per minute.
 
-
-
 Teams can request up to 120 requests per minute.
-
-
 
 For even higher rate limits, please sign up for our enterprise tier.
 
-
-
 API Docs
-
-
-
-
 
 Get project
 
@@ -302,10 +260,6 @@ object
 
 The status of the project.
 
-
-
-
-
 Show child attributes
 
 createdTime
@@ -326,10 +280,6 @@ record<object>
 
 Record of custom field values for the entity, where each key is the name of the custom field (not the ID). Each object contains a "type" discriminator and a "value" property that varies based on the field type.
 
-
-
-
-
 Hide child attributes
 
 text
@@ -337,10 +287,6 @@ text
 object
 
 Text custom field value.
-
-
-
-
 
 Show child attributes
 
@@ -350,10 +296,6 @@ object
 
 Number custom field value.
 
-
-
-
-
 Show child attributes
 
 url
@@ -361,10 +303,6 @@ url
 object
 
 URL custom field value.
-
-
-
-
 
 Show child attributes
 
@@ -374,10 +312,6 @@ object
 
 Date custom field value.
 
-
-
-
-
 Show child attributes
 
 select
@@ -385,10 +319,6 @@ select
 object
 
 Select custom field value.
-
-
-
-
 
 Show child attributes
 
@@ -398,10 +328,6 @@ object
 
 Multi-select custom field value.
 
-
-
-
-
 Show child attributes
 
 person
@@ -409,10 +335,6 @@ person
 object
 
 Person custom field value.
-
-
-
-
 
 Show child attributes
 
@@ -422,10 +344,6 @@ object
 
 Multi-person custom field value.
 
-
-
-
-
 Show child attributes
 
 email
@@ -433,10 +351,6 @@ email
 object
 
 Email custom field value.
-
-
-
-
 
 Show child attributes
 
@@ -446,10 +360,6 @@ object
 
 Phone custom field value.
 
-
-
-
-
 Show child attributes
 
 checkbox
@@ -457,10 +367,6 @@ checkbox
 object
 
 Checkbox custom field value.
-
-
-
-
 
 Show child attributes
 
@@ -470,19 +376,9 @@ object
 
 Related task custom field value.
 
-
-
-
-
 Show child attributes
 
-
-
 vAPI Docs
-
-
-
-
 
 List projects
 
@@ -534,10 +430,6 @@ required
 
 Contains the nextCursor, if one exists, along with the pageSize.
 
-
-
-
-
 Show child attributes
 
 projects
@@ -545,10 +437,6 @@ projects
 array<object>
 
 The projects returned.
-
-
-
-
 
 Hide child attributes
 
@@ -590,10 +478,6 @@ object
 
 The status of the project.
 
-
-
-
-
 Show child attributes
 
 createdTime
@@ -614,27 +498,13 @@ record<object>
 
 Record of custom field values for the entity, where each key is the name of the custom field (not the ID). Each object contains a "type" discriminator and a "value" property that varies based on the field type.
 
-
-
-
-
 Show child attributes
 
-
-
 API Docs
-
-
-
-
-
-
 
 List recurring tasks
 
 Get all recurring tasks for a workspace.
-
-
 
 GET
 
@@ -656,8 +526,6 @@ required
 
 Header with the name X-API-Key where the value is your API key.
 
-
-
 Query parameters
 
 cursor
@@ -665,8 +533,6 @@ cursor
 string
 
 Use if a previous request returned a cursor. Will page through results.
-
-
 
 workspaceId
 
@@ -676,13 +542,9 @@ required
 
 The workspace for which all recurring tasks should be returned.
 
-
-
 Response
 
 200 - application/json - object
-
-
 
 meta
 
@@ -691,10 +553,6 @@ object
 required
 
 Contains the nextCursor, if one exists, along with the pageSize.
-
-
-
-
 
 Show child attributes
 
@@ -706,10 +564,6 @@ required
 
 Recurring tasks for the workspace.
 
-
-
-
-
 Hide child attributes
 
 id
@@ -720,8 +574,6 @@ required
 
 The ID of the recurring task.
 
-
-
 name
 
 string
@@ -730,8 +582,6 @@ required
 
 The name of the recurring task.
 
-
-
 creator
 
 object
@@ -739,10 +589,6 @@ object
 required
 
 The user who created the recurring task.
-
-
-
-
 
 Show child attributes
 
@@ -754,10 +600,6 @@ required
 
 The user assigned to the recurring task.
 
-
-
-
-
 Show child attributes
 
 project
@@ -765,10 +607,6 @@ project
 object
 
 The project data.
-
-
-
-
 
 Show child attributes
 
@@ -780,10 +618,6 @@ required
 
 The status of the recurring task.
 
-
-
-
-
 Show child attributes
 
 priority
@@ -794,8 +628,6 @@ required
 
 Valid options are ASAP, HIGH, MEDIUM, or LOW.
 
-
-
 labels
 
 array<object>
@@ -803,10 +635,6 @@ array<object>
 required
 
 An array of labels.
-
-
-
-
 
 Show child attributes
 
@@ -818,27 +646,13 @@ required
 
 The workspace data.
 
-
-
-
-
 Show child attributes
 
-
-
 API Docs
-
-
-
-
-
-
 
 List recurring tasks
 
 Get all recurring tasks for a workspace.
-
-
 
 GET
 
@@ -860,8 +674,6 @@ required
 
 Header with the name X-API-Key where the value is your API key.
 
-
-
 Query parameters
 
 cursor
@@ -869,8 +681,6 @@ cursor
 string
 
 Use if a previous request returned a cursor. Will page through results.
-
-
 
 workspaceId
 
@@ -880,13 +690,9 @@ required
 
 The workspace for which all recurring tasks should be returned.
 
-
-
 Response
 
 200 - application/json - object
-
-
 
 meta
 
@@ -895,10 +701,6 @@ object
 required
 
 Contains the nextCursor, if one exists, along with the pageSize.
-
-
-
-
 
 Show child attributes
 
@@ -910,10 +712,6 @@ required
 
 Recurring tasks for the workspace.
 
-
-
-
-
 Hide child attributes
 
 id
@@ -924,8 +722,6 @@ required
 
 The ID of the recurring task.
 
-
-
 name
 
 string
@@ -934,8 +730,6 @@ required
 
 The name of the recurring task.
 
-
-
 creator
 
 object
@@ -943,10 +737,6 @@ object
 required
 
 The user who created the recurring task.
-
-
-
-
 
 Show child attributes
 
@@ -958,10 +748,6 @@ required
 
 The user assigned to the recurring task.
 
-
-
-
-
 Show child attributes
 
 project
@@ -969,10 +755,6 @@ project
 object
 
 The project data.
-
-
-
-
 
 Show child attributes
 
@@ -984,10 +766,6 @@ required
 
 The status of the recurring task.
 
-
-
-
-
 Show child attributes
 
 priority
@@ -998,8 +776,6 @@ required
 
 Valid options are ASAP, HIGH, MEDIUM, or LOW.
 
-
-
 labels
 
 array<object>
@@ -1007,10 +783,6 @@ array<object>
 required
 
 An array of labels.
-
-
-
-
 
 Show child attributes
 
@@ -1022,27 +794,13 @@ required
 
 The workspace data.
 
-
-
-
-
 Show child attributes
 
-
-
 API Docs
-
-
-
-
-
-
 
 Get schedules
 
 Get a list of schedules for your user.
-
-
 
 GET
 
@@ -1064,13 +822,9 @@ required
 
 Header with the name X-API-Key where the value is your API key.
 
-
-
 Response
 
 200 - application/json - array
-
-
 
 name
 
@@ -1080,8 +834,6 @@ required
 
 The name of the schedule.
 
-
-
 isDefaultTimezone
 
 boolean
@@ -1089,8 +841,6 @@ boolean
 required
 
 Whether the schedule is the default timezone.
-
-
 
 timezone
 
@@ -1100,8 +850,6 @@ required
 
 The timezone of the schedule.
 
-
-
 schedule
 
 object
@@ -1109,10 +857,6 @@ object
 required
 
 The schedule details.
-
-
-
-
 
 Hide child attributes
 
@@ -1122,10 +866,6 @@ array<object>
 
 An array of objects detailing start and end times.
 
-
-
-
-
 Show child attributes
 
 tuesday
@@ -1133,10 +873,6 @@ tuesday
 array<object>
 
 An array of objects detailing start and end times.
-
-
-
-
 
 Show child attributes
 
@@ -1146,10 +882,6 @@ array<object>
 
 An array of objects detailing start and end times.
 
-
-
-
-
 Show child attributes
 
 thursday
@@ -1157,10 +889,6 @@ thursday
 array<object>
 
 An array of objects detailing start and end times.
-
-
-
-
 
 Show child attributes
 
@@ -1170,10 +898,6 @@ array<object>
 
 An array of objects detailing start and end times.
 
-
-
-
-
 Show child attributes
 
 saturday
@@ -1181,10 +905,6 @@ saturday
 array<object>
 
 An array of objects detailing start and end times.
-
-
-
-
 
 Show child attributes
 
@@ -1194,19 +914,9 @@ array<object>
 
 An array of objects detailing start and end times.
 
-
-
-
-
 Show child attributes
 
-
-
 API Docs
-
-
-
-
 
 Get statuses
 
@@ -1252,10 +962,6 @@ required
 
 The status of the item.
 
-
-
-
-
 Hide child attributes
 
 name
@@ -1276,13 +982,7 @@ boolean
 
 Whether this is a resolved (terminated) status for the workspace.
 
-
-
 API Docs
-
-
-
-
 
 Get task
 
@@ -1410,10 +1110,6 @@ required
 
 The user who created the task.
 
-
-
-
-
 Show child attributes
 
 project
@@ -1421,10 +1117,6 @@ project
 object
 
 The project data.
-
-
-
-
 
 Show child attributes
 
@@ -1436,10 +1128,6 @@ required
 
 The workspace data.
 
-
-
-
-
 Show child attributes
 
 status
@@ -1449,10 +1137,6 @@ object
 required
 
 The status of the The status of the task.
-
-
-
-
 
 Show child attributes
 
@@ -1472,10 +1156,6 @@ required
 
 An array of labels.
 
-
-
-
-
 Show child attributes
 
 assignees
@@ -1485,10 +1165,6 @@ array<object>
 required
 
 An array of assignees.
-
-
-
-
 
 Show child attributes
 
@@ -1532,10 +1208,6 @@ record<object>
 
 Record of custom field values for the entity, where each key is the name of the custom field (not the ID). Each object contains a "type" discriminator and a "value" property that varies based on the field type.
 
-
-
-
-
 Show child attributes
 
 chunks
@@ -1544,27 +1216,13 @@ array<object>
 
 Array of scheduling chunks for the task.
 
-
-
-
-
 Show child attributes
 
-
-
 API Docs
-
-
-
-
-
-
 
 List tasks
 
 Get all tasks for a given query.
-
-
 
 GET
 
@@ -1586,8 +1244,6 @@ required
 
 Header with the name X-API-Key where the value is your API key.
 
-
-
 Query parameters
 
 assigneeId
@@ -1596,15 +1252,11 @@ string
 
 Limit tasks returned to a specific assignee.
 
-
-
 cursor
 
 string
 
 Use if a previous request returned a cursor. Will page through results.
-
-
 
 includeAllStatuses
 
@@ -1612,15 +1264,11 @@ boolean
 
 Limit tasks returned by statuses that exist on tasks, cannot specify this ('includeAllStatuses') AND status in the same request.
 
-
-
 label
 
 string
 
 Limit tasks returned by label on the task.
-
-
 
 name
 
@@ -1628,15 +1276,11 @@ string
 
 Limit tasks returned to those that contain this string. Case in-sensitive.
 
-
-
 projectId
 
 string
 
 Limit tasks returned to a given project.
-
-
 
 status
 
@@ -1644,21 +1288,15 @@ array<string>
 
 Limit tasks returned by statuses that exist on tasks, cannot specify this ('status') AND includeAllStatuses in the same request
 
-
-
 workspaceId
 
 string
 
 The id of the workspace you want tasks from. If not provided, will return tasks from all workspaces the user is a member of.
 
-
-
 Response
 
 200 - application/json - object
-
-
 
 meta
 
@@ -1667,10 +1305,6 @@ object
 required
 
 Contains the nextCursor, if one exists, along with the pageSize.
-
-
-
-
 
 Show child attributes
 
@@ -1682,19 +1316,9 @@ required
 
 The tasks returned.
 
-
-
-
-
 Show child attributes
 
-
-
 API Docs
-
-
-
-
 
 List workspaces
 
@@ -1746,10 +1370,6 @@ required
 
 Contains the nextCursor, if one exists, along with the pageSize.
 
-
-
-
-
 Show child attributes
 
 workspaces
@@ -1760,17 +1380,9 @@ required
 
 An array of workspace objects.
 
-
-
-
-
 Show child attributes
 
 API Docs
-
-
-
-
 
 Get my user
 
@@ -1825,18 +1437,3 @@ string
 required
 
 The email of the user.
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
