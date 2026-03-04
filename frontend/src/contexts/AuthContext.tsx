@@ -23,6 +23,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeSchedule, setActiveSchedule] = useState<Schedule | null>(null);
+  const bypassAuth = process.env.NEXT_PUBLIC_AUTH_BYPASS === '1';
 
   // Load active schedule when user changes
   useEffect(() => {
@@ -54,6 +55,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [user]);
 
   useEffect(() => {
+    if (bypassAuth) {
+      const bypassUser = {
+        id: 'auth-bypass-user',
+        app_metadata: { provider: 'auth-bypass' },
+        user_metadata: { full_name: 'Auth Bypass User' },
+        aud: 'authenticated',
+        created_at: '1970-01-01T00:00:00.000Z',
+      } as User;
+
+      setSession(null);
+      setUser(bypassUser);
+      setLoading(false);
+      return;
+    }
+
     // Get initial session
     const getInitialSession = async () => {
       const {
@@ -89,7 +105,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     });
 
     return () => subscription.unsubscribe();
-  }, []);
+  }, [bypassAuth]);
 
   const signInWithGoogle = async () => {
     try {

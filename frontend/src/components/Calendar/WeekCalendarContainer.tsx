@@ -1,7 +1,11 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { type CalendarEventUnion, isCalendarEventTask } from '@/types';
+import {
+  type CalendarEventUnion,
+  isCalendarEventTask,
+  type Schedule,
+} from '@/types';
 import { getWeekDates, getDateRange } from '@/utils/calendarUtils';
 import { CalendarSkeleton } from './CalendarSkeleton';
 import { ErrorState } from '@/components/shared/ErrorState';
@@ -24,6 +28,7 @@ import CalendarEditDialog from './CalendarEditDialog';
 import { HOUR_PX } from './dayColumnLayout';
 import { logger } from '@/lib/logger';
 import { googleCalendarService } from '@/services/googleCalendarService';
+import { userSettingsService } from '@/services/userSettingsService';
 
 interface WeekCalendarContainerProps {
   onTaskDropped?: () => void;
@@ -76,7 +81,6 @@ export function WeekCalendarContainer({
     };
 
     performInitialSync();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.id]); // Run once when user ID is available
 
   const weekDates = useMemo(() => {
@@ -129,13 +133,31 @@ export function WeekCalendarContainer({
       draggingEventId
     );
 
+  const [schedules, setSchedules] = useState<Schedule[]>([]);
+
+  useEffect(() => {
+    if (!user?.id) return;
+    const loadSchedules = async () => {
+      try {
+        const allSchedules = await userSettingsService.getUserSchedules(
+          user.id
+        );
+        setSchedules(allSchedules);
+      } catch (error) {
+        logger.error('Failed to fetch schedules:', error);
+      }
+    };
+    loadSchedules();
+  }, [user?.id]);
+
   const { tasksMap, handleAutoScheduleClick, isRefreshing } = useAutoSchedule(
     user,
     events,
     refreshEvents,
     onTaskDropped,
     activeSchedule,
-    initialSyncComplete
+    initialSyncComplete,
+    schedules
   );
 
   const displayDates = isMobile ? [navigation.currentDay] : weekDates;
