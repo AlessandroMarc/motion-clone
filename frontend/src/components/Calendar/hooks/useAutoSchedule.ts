@@ -18,9 +18,10 @@ import { expandRecurringTasks } from '@/utils/recurrenceCalculator';
 // Constants
 // ---------------------------------------------------------------------------
 const DEBOUNCE_MS = 1_000;
-const THROTTLE_MS = 30_000;
-const DEFAULT_EVENT_DURATION = 60;
-
+const THROTTLE_MS = 3_000;
+const DEFAULT_EVENT_DURATION = 60;/** After applying changes, suppress auto-checks for this period so the
+ *  self-caused events.length change does not re-trigger the scheduler. */
+const APPLY_COOLDOWN_MS = 15_000;
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
@@ -115,6 +116,16 @@ export function useAutoSchedule(
   // set synchronously before refreshEvents() so a second click arriving
   // before the first enters runFullSchedule is still blocked.
   const isClickInFlightRef = useRef(false);
+  // Timestamp of the last successful apply.  Used to suppress the
+  // automatic checkAndMaybeApply that would immediately re-trigger
+  // because applySchedule mutates events (changing events.length),
+  // which the useEffect depends on.
+  const lastAppliedAtRef = useRef<number>(0);
+  // Safety net: count of consecutive auto-schedule runs without user
+  // interaction.  Capped to prevent run-away loops when the scheduler
+  // oscillates between two non-converging states.
+  const consecutiveAutoRunsRef = useRef<number>(0);
+  const MAX_CONSECUTIVE_AUTO_RUNS = 2;
 
   // Refs that always point at the latest value without affecting dep arrays
   const refreshEventsRef = useRef(refreshEvents);
@@ -538,6 +549,7 @@ export function useAutoSchedule(
       console.log('[AUTOSCHEDULE:run] schedule differs — applying...');
       logger.info('Auto-schedule: Applying new schedule...');
       await applySchedule(eventsToCreate, allTasks, existingTaskEvents);
+      lastAppliedAtRef.current = Date.now();
       console.log('[AUTOSCHEDULE:run] done');
     } catch (err) {
       logger.error('Auto-schedule run failed:', err);
@@ -575,6 +587,10 @@ export function useAutoSchedule(
     isClickInFlightRef.current = true;
 
     try {
+      // User-initiated — reset cooldown & consecutive counter so the
+      // manual click always goes through.
+      lastAppliedAtRef.current = 0;
+      consecutiveAutoRunsRef.current = 0;
       await runFullSchedule();
     } catch (err) {
       logger.error('Failed to fetch events for auto-scheduling:', err);
@@ -595,6 +611,24 @@ export function useAutoSchedule(
   // -----------------------------------------------------------------------
   const checkAndMaybeApply = useCallback(async () => {
     if (!user || !isInitialSyncComplete || isSchedulingRef.current) return;
+
+    // Don't auto-check right after we just applied — the event mutations
+    // from applySchedule change events.length, which re-triggers the
+    // useEffect, which calls us again, creating an infinite loop.
+    if (Date.now() - lastAppliedAtRef.current < APPLY_COOLDOWN_MS) {
+      console.log('[AUTOSCHEDULE:check] cooling down after recent apply — skipping');
+      return;
+    }
+
+    // Safety net: prevent run-away loops when the scheduler oscillates
+    // between two non-converging states.
+    if (consecutiveAutoRunsRef.current >= MAX_CONSECUTIVE_AUTO_RUNS) {
+      console.log(
+        `[AUTOSCHEDULE:check] max consecutive auto-runs (${MAX_CONSECUTIVE_AUTO_RUNS}) reached — skipping`
+      );
+      return;
+    }
+    consecutiveAutoRunsRef.current += 1;
 
     try {
       // Ensure we have tasks — fetch if empty (e.g. first mount)
@@ -667,6 +701,12 @@ export function useAutoSchedule(
       }, DEBOUNCE_MS);
     };
 
+    // Reset guards when schedule-relevant deps change (new tasks,
+    // schedule config etc.) — these are meaningful triggers, not
+    // self-caused event mutations.
+    consecutiveAutoRunsRef.current = 0;
+    lastAppliedAtRef.current = 0;
+
     // Run on mount / when deps change
     scheduleRun();
 
@@ -687,7 +727,6 @@ export function useAutoSchedule(
     user,
     isInitialSyncComplete,
     tasksFingerprint,
-    events.length,
     schedulesState.length,
   ]);
 
