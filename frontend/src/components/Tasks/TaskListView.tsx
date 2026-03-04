@@ -2,10 +2,11 @@
 
 import { toast } from 'sonner';
 import { Card, CardContent } from '@/components/ui/card';
-import { Circle } from 'lucide-react';
+import { Circle, LayoutList, Columns3 } from 'lucide-react';
 import type { Project, Task } from '@/types';
 import { ErrorState, LoadingState } from '@/components/shared';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { Button } from '@/components/ui/button';
 import { MobileTaskList } from './MobileTaskList';
 import { ProjectKanbanBoard } from './ProjectKanbanBoard';
 import { TaskEditDialogForm } from './forms';
@@ -31,6 +32,8 @@ interface TaskListViewProps {
   onDetailsOpenChange: (open: boolean) => void;
   onTaskUpdatedInDialog: (updatedTask: Task) => void;
   onTaskClonedInDialog: (clonedTask: Task) => void;
+  viewType: 'list' | 'kanban';
+  onViewTypeChange: (viewType: 'list' | 'kanban') => void;
 }
 
 export function TaskListView({
@@ -48,6 +51,8 @@ export function TaskListView({
   onDetailsOpenChange,
   onTaskUpdatedInDialog,
   onTaskClonedInDialog,
+  viewType,
+  onViewTypeChange,
 }: TaskListViewProps) {
   const isMobile = useIsMobile();
 
@@ -84,7 +89,30 @@ export function TaskListView({
 
   return (
     <>
-      {isMobile ? (
+      {!isMobile && (
+        <div className="flex gap-2 mb-4">
+          <Button
+            variant={viewType === 'list' ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => onViewTypeChange('list')}
+            className="gap-2"
+          >
+            <LayoutList className="h-4 w-4" />
+            List
+          </Button>
+          <Button
+            variant={viewType === 'kanban' ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => onViewTypeChange('kanban')}
+            className="gap-2"
+          >
+            <Columns3 className="h-4 w-4" />
+            Kanban
+          </Button>
+        </div>
+      )}
+
+      {isMobile || viewType === 'list' ? (
         <MobileTaskList
           tasks={tasks}
           projects={projects}
@@ -96,6 +124,7 @@ export function TaskListView({
               );
             });
           }}
+          isDesktop={!isMobile}
         />
       ) : (
         <ProjectKanbanBoard
