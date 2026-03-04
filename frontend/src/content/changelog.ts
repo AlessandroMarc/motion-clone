@@ -10,7 +10,7 @@ export interface ChangelogEntry {
   date: string;
   title: string;
   description?: string;
-  items?: ChangeItem[];
+  items: ChangeItem[];
 }
 
 export const changelogEntries: ChangelogEntry[] = [
@@ -20,6 +20,7 @@ export const changelogEntries: ChangelogEntry[] = [
     title: 'Support for Start Date',
     description:
       'The auto-scheduler can now take into account a task\'s "start date" to ensure it only schedules tasks on or after that date.',
+      items: []
   },
   {
     version: '1.6.0',
