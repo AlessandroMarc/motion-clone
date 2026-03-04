@@ -64,7 +64,7 @@ export const changelogEntries: ChangelogEntry[] = [
       },
       {
         type: 'improved',
-        text: 'Auto-scheduling now respects each task\'s individual schedule and working hours.',
+        text: "Auto-scheduling now respects each task's individual schedule and working hours.",
       },
       {
         type: 'improved',

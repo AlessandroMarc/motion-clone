@@ -241,7 +241,7 @@ export function WeekCalendarContainer({
           tasksMap={tasksMap}
           onToday={navigation.goCurrentWeek}
           onAutoSchedule={handleAutoScheduleClick}
-          isAutoScheduleRefreshing={isRefreshing}
+          isAutoScheduleRefreshing={isRefreshing || !initialSyncComplete}
           onZenMode={onZenMode}
         />
         <CalendarCreateDialog
@@ -317,7 +317,7 @@ export function WeekCalendarContainer({
       onZenMode={onZenMode}
       dialogs={dialogs}
       handleAutoScheduleClick={handleAutoScheduleClick}
-      isAutoScheduleRefreshing={isRefreshing}
+      isAutoScheduleRefreshing={isRefreshing || !initialSyncComplete}
       workingHoursStart={activeSchedule?.working_hours_start}
       workingHoursEnd={activeSchedule?.working_hours_end}
     />

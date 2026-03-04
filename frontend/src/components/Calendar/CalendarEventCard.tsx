@@ -46,18 +46,19 @@ export function CalendarEventCard({
       className={cn(
         'calendar-event-card h-full overflow-hidden rounded-md cursor-pointer transition-all',
         'text-[10px] leading-tight',
-        // Base styles - using primary color like the landing page demo
+        // Color per event type for easy visual distinction
         isTaskEvent
           ? isAfterDeadline
-            ? 'bg-red-500/80 text-white shadow-sm'
+            ? 'bg-red-500/80 text-white shadow-sm hover:bg-red-500/90'
             : isRecurring
               ? isCompleted
-                ? 'bg-chart-2/40 text-blue-700 dark:text-blue-300'
-                : 'bg-chart-2/70 text-white shadow-sm hover:bg-chart-2/80'
+                ? 'bg-emerald-500/30 text-emerald-800 dark:text-emerald-200'
+                : 'bg-emerald-500/75 text-white shadow-sm hover:bg-emerald-500/85'
               : isCompleted
-                ? 'bg-primary/40 text-primary-foreground/70'
-                : 'bg-primary/70 text-primary-foreground shadow-sm hover:bg-primary/80'
-          : 'bg-muted text-muted-foreground hover:bg-muted/80',
+                ? 'bg-sky-500/30 text-sky-800 dark:text-sky-200'
+                : 'bg-sky-500/75 text-white shadow-sm hover:bg-sky-500/85'
+          : // External (Google Calendar) events
+            'bg-violet-500/70 text-white shadow-sm hover:bg-violet-500/80',
         isCompleted && 'opacity-60',
         // Grey out past events
         isPast &&

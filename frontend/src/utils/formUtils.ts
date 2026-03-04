@@ -1,6 +1,6 @@
 import type { TaskFormData } from '@/hooks/useTaskForm';
 import type { Task } from '@/types';
-import { normalizeToMidnight } from './dateUtils';
+import { normalizeToMidnight, parseLocalDate } from './dateUtils';
 
 /**
  * Transforms form data to task creation data
@@ -20,7 +20,7 @@ export function transformFormDataToTask(
     description: data.description || '',
     due_date:
       !isRecurring && data.dueDate
-        ? normalizeToMidnight(new Date(data.dueDate))
+        ? normalizeToMidnight(parseLocalDate(data.dueDate))
         : null,
     priority: data.priority,
     project_id: data.project_id || undefined,
@@ -36,7 +36,7 @@ export function transformFormDataToTask(
       : undefined,
     recurrence_start_date:
       isRecurring && data.recurrenceStartDate
-        ? normalizeToMidnight(new Date(data.recurrenceStartDate))
+        ? normalizeToMidnight(parseLocalDate(data.recurrenceStartDate))
         : null,
   };
   return transformed;

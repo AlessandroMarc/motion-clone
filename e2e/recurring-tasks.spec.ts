@@ -62,7 +62,9 @@ test.describe('Recurring tasks', () => {
 
     await page.getByRole('checkbox', { name: /repeating task/i }).click();
 
-    await expect(page.getByRole('combobox', { name: /pattern/i })).toBeVisible();
+    await expect(
+      page.getByRole('combobox', { name: /pattern/i })
+    ).toBeVisible();
     await expect(page.locator('input#recurrence_interval')).toBeVisible();
     await expect(
       page.getByText(/events will be generated up to 90 days ahead/i)
@@ -80,11 +82,15 @@ test.describe('Recurring tasks', () => {
     const repeating = page.getByRole('checkbox', { name: /repeating task/i });
     await repeating.click();
 
-    await expect(page.getByRole('combobox', { name: /pattern/i })).toBeVisible();
+    await expect(
+      page.getByRole('combobox', { name: /pattern/i })
+    ).toBeVisible();
 
     await repeating.click();
 
-    await expect(page.getByRole('combobox', { name: /pattern/i })).not.toBeVisible();
+    await expect(
+      page.getByRole('combobox', { name: /pattern/i })
+    ).not.toBeVisible();
     await expect(page.locator('input#recurrence_interval')).not.toBeVisible();
   });
 });

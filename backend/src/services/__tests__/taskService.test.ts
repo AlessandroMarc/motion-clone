@@ -393,7 +393,9 @@ describe('TaskService', () => {
 
       // Set up task deletion mock (fails)
       const taskEqMock = jest.fn() as any;
-      taskEqMock.mockResolvedValue({ error: { message: 'Task delete failed' } });
+      taskEqMock.mockResolvedValue({
+        error: { message: 'Task delete failed' },
+      });
       const taskDeleteMock = jest.fn().mockReturnValue({ eq: taskEqMock });
 
       mockClient.from.mockImplementation((tableName: string) => {

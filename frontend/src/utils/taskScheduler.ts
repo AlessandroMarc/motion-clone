@@ -519,7 +519,7 @@ function prepareRecurringTaskEvents(
   }
 
   console.log(
-    `[RECURRING] prepareRecurringTaskEvents task="${task.title}"`,
+    `[AUTOSCHEDULE:recurring] prepareRecurringTaskEvents task="${task.title}"`,
     {
       anchor: anchor.toDateString(),
       occurrenceCount: occurrenceDates.length,
@@ -553,7 +553,10 @@ function prepareRecurringTaskEvents(
         end_time: new Date(existing.end_time),
       };
       events.push(slot);
-      console.log(`[RECURRING]   ${ds} → RECLAIMED existing`, new Date(existing.start_time).toISOString());
+      console.log(
+        `[AUTOSCHEDULE:recurring]   ${ds} → RECLAIMED existing`,
+        new Date(existing.start_time).toISOString()
+      );
       continue;
     }
 
@@ -575,15 +578,23 @@ function prepareRecurringTaskEvents(
 
     if (slot) {
       events.push(slot);
-      sortedExisting.push({ start: slot.start_time.getTime(), end: slot.end_time.getTime() });
+      sortedExisting.push({
+        start: slot.start_time.getTime(),
+        end: slot.end_time.getTime(),
+      });
       sortedExisting.sort((a, b) => a.start - b.start);
-      console.log(`[RECURRING]   ${ds} → NEW slot`, slot.start_time.toISOString());
+      console.log(
+        `[AUTOSCHEDULE:recurring]   ${ds} → NEW slot`,
+        slot.start_time.toISOString()
+      );
     } else {
-      console.warn(`[RECURRING]   ${ds} → NO slot available`);
+      console.warn(`[AUTOSCHEDULE:recurring]   ${ds} → NO slot available`);
     }
   }
 
-  console.log(`[RECURRING] result: ${events.length} proposed for ${occurrenceDates.length} occurrences`);
+  console.log(
+    `[AUTOSCHEDULE:recurring] result: ${events.length} proposed for ${occurrenceDates.length} occurrences`
+  );
   return { events, violations: [] };
 }
 
@@ -607,7 +618,11 @@ export function prepareTaskEvents(
 } {
   // Recurring tasks: one event per occurrence, not a duration-filling budget
   if (task.is_recurring && task.recurrence_pattern) {
-    return prepareRecurringTaskEvents(task, existingTaskEvents, allExistingEvents);
+    return prepareRecurringTaskEvents(
+      task,
+      existingTaskEvents,
+      allExistingEvents
+    );
   }
 
   const remainingMinutes = calculateRemainingDurationMinutes(

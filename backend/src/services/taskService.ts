@@ -16,6 +16,28 @@ function normalizeToMidnight(date: Date | string): string {
   return normalized.toISOString();
 }
 
+/**
+ * Extract a plain YYYY-MM-DD string from a Date or string value.
+ * Used for Supabase DATE columns (due_date, recurrence_start_date) so the
+ * stored value matches the user's local calendar date regardless of timezone.
+ *
+ * If the input is already "YYYY-MM-DD" it is returned as-is.
+ * If the input is a full ISO timestamp or Date object, it extracts the local date parts.
+ */
+function toDateOnly(value: Date | string): string {
+  if (typeof value === 'string') {
+    // Already a plain date string — pass through
+    const dateOnlyMatch = /^\d{4}-\d{2}-\d{2}$/.exec(value);
+    if (dateOnlyMatch) return value;
+  }
+  // Full ISO timestamp or Date object — extract local date parts
+  const d = typeof value === 'string' ? new Date(value) : value;
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+
 export class TaskService {
   private determineStatus(
     plannedDuration: number | null | undefined,
@@ -58,8 +80,12 @@ export class TaskService {
     // Handle both Date objects and ISO strings (from JSON)
     // Normalize to midnight for date-only deadlines
     let dueDateString: string | null = null;
-    if (!isRecurring && input.due_date !== null && input.due_date !== undefined) {
-      dueDateString = normalizeToMidnight(input.due_date);
+    if (
+      !isRecurring &&
+      input.due_date !== null &&
+      input.due_date !== undefined
+    ) {
+      dueDateString = toDateOnly(input.due_date);
     }
 
     // Resolve schedule_id: use provided value, then fall back to user's active/default schedule
@@ -164,8 +190,8 @@ export class TaskService {
     let recurrenceStartDateString: string | null = null;
     if (isRecurring) {
       recurrenceStartDateString = input.recurrence_start_date
-        ? normalizeToMidnight(input.recurrence_start_date)
-        : normalizeToMidnight(new Date());
+        ? toDateOnly(input.recurrence_start_date)
+        : toDateOnly(new Date());
     }
 
     const client = authToken
@@ -286,7 +312,7 @@ export class TaskService {
       if (input.due_date === null) {
         updateData.due_date = null;
       } else {
-        updateData.due_date = normalizeToMidnight(input.due_date);
+        updateData.due_date = toDateOnly(input.due_date);
       }
     }
     if (input.priority !== undefined) updateData.priority = input.priority;
@@ -353,7 +379,7 @@ export class TaskService {
         // Update start date if provided; otherwise keep existing
         if (input.recurrence_start_date !== undefined) {
           updateData.recurrence_start_date = input.recurrence_start_date
-            ? normalizeToMidnight(input.recurrence_start_date)
+            ? toDateOnly(input.recurrence_start_date)
             : null;
         }
       } else {
@@ -375,8 +401,8 @@ export class TaskService {
     const rawActual = resultingIsRecurring
       ? 0
       : (input.actual_duration_minutes ??
-          existingTask.actual_duration_minutes ??
-          0);
+        existingTask.actual_duration_minutes ??
+        0);
     const normalizedActual = Math.min(
       Math.max(rawActual, 0),
       normalizedPlanned

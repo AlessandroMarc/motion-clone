@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { FormProvider } from 'react-hook-form';
+import { FormProvider, type SubmitHandler } from 'react-hook-form';
 import {
   Dialog,
   DialogContent,
@@ -46,7 +46,7 @@ export function TaskCreateDialogForm({ onTaskCreate }: TaskCreateFormProps) {
   const recurrenceInterval = form.watch('recurrence_interval');
   const recurrenceStartDate = form.watch('recurrenceStartDate');
 
-  const handleFormSubmit = async (data: TaskFormData) => {
+  const handleFormSubmit: SubmitHandler<TaskFormData> = async data => {
     const success = await onSubmit(data);
     if (success) {
       setIsDialogOpen(false);
@@ -76,8 +76,10 @@ export function TaskCreateDialogForm({ onTaskCreate }: TaskCreateFormProps) {
         </DialogHeader>
 
         <FormProvider {...form}>
-          {/* @ts-ignore - react-hook-form type inference issue with complex form data */}
-          <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-6 overflow-y-auto flex-1 pr-1">
+          <form
+            onSubmit={handleSubmit(handleFormSubmit)}
+            className="space-y-6 overflow-y-auto flex-1 pr-1"
+          >
             <div className="space-y-4">
               <TaskTitleField register={register} errors={errors} />
               <TaskDescriptionField register={register} errors={errors} />
@@ -110,7 +112,10 @@ export function TaskCreateDialogForm({ onTaskCreate }: TaskCreateFormProps) {
                       const yyyy = today.getFullYear();
                       const mm = String(today.getMonth() + 1).padStart(2, '0');
                       const dd = String(today.getDate()).padStart(2, '0');
-                      form.setValue('recurrenceStartDate', `${yyyy}-${mm}-${dd}`);
+                      form.setValue(
+                        'recurrenceStartDate',
+                        `${yyyy}-${mm}-${dd}`
+                      );
                     }
                   }
                 }}

@@ -11,7 +11,7 @@ export function toDate(value: unknown): Date {
   if (value instanceof Date) return value;
   if (typeof value === 'string') {
     // Parse date-only strings in local timezone to avoid UTC-midnight day shift
-    // for users in UTC+ timezones (e.g. new Date("2026-03-04") → March 3 in UTC+1).
+    // for users in negative-offset timezones (e.g. new Date("2026-03-04") → March 3 in UTC-5).
     if (ISO_DATE_ONLY.test(value)) return parseLocalDate(value);
     return new Date(value);
   }

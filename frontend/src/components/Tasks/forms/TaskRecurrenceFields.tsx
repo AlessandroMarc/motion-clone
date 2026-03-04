@@ -126,10 +126,14 @@ export function TaskRecurrenceFields({
               className="w-full"
             />
             <p className="text-xs text-gray-500 dark:text-gray-400">
-              {recurrencePattern === 'weekly' && 'Sets the day of the week the task repeats.'}
-              {recurrencePattern === 'monthly' && 'Sets the day of the month the task repeats.'}
-              {recurrencePattern === 'daily' && 'Sets the first day of the recurring series.'}
-              {!recurrencePattern && 'Sets the first occurrence of the recurring series.'}
+              {recurrencePattern === 'weekly' &&
+                'Sets the day of the week the task repeats.'}
+              {recurrencePattern === 'monthly' &&
+                'Sets the day of the month the task repeats.'}
+              {recurrencePattern === 'daily' &&
+                'Sets the first day of the recurring series.'}
+              {!recurrencePattern &&
+                'Sets the first occurrence of the recurring series.'}
             </p>
           </div>
         </div>

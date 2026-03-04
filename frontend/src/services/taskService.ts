@@ -9,21 +9,22 @@ class TaskService {
     const payload = {
       title: input.title,
       description: input.description,
-      due_date: !isRecurring && input.dueDate
-        ? normalizeToMidnight(input.dueDate).toISOString()
-        : null,
+      due_date:
+        !isRecurring && input.dueDate
+          ? normalizeToMidnight(input.dueDate).toISOString()
+          : null,
       priority: input.priority,
       schedule_id: input.scheduleId,
       dependencies: [],
       blocked_by: input.blockedBy || [],
       project_id: input.project_id,
       planned_duration_minutes: input.plannedDurationMinutes,
-      actual_duration_minutes: isRecurring ? 0 : (input.actualDurationMinutes ?? 0),
+      actual_duration_minutes: isRecurring
+        ? 0
+        : (input.actualDurationMinutes ?? 0),
       is_recurring: isRecurring,
       recurrence_pattern: isRecurring ? input.recurrencePattern : null,
-      recurrence_interval: isRecurring
-        ? (input.recurrenceInterval ?? 1)
-        : 1,
+      recurrence_interval: isRecurring ? (input.recurrenceInterval ?? 1) : 1,
       recurrence_start_date:
         isRecurring && input.recurrenceStartDate
           ? toLocalDateString(normalizeToMidnight(input.recurrenceStartDate))
@@ -89,10 +90,9 @@ class TaskService {
         is_recurring: isRecurring,
         recurrence_pattern: recurrencePattern,
         recurrence_interval: recurrenceInterval,
-        recurrence_start_date:
-          input.recurrenceStartDate
-            ? toLocalDateString(normalizeToMidnight(input.recurrenceStartDate))
-            : undefined,
+        recurrence_start_date: input.recurrenceStartDate
+          ? toLocalDateString(normalizeToMidnight(input.recurrenceStartDate))
+          : undefined,
       }),
     });
 

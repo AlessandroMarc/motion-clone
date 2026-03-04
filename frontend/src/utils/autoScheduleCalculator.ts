@@ -163,7 +163,7 @@ export function calculateAutoSchedule(params: {
     );
     if (task.is_recurring) {
       console.log(
-        `[AUTO-SCHEDULE] task "${task.title}" is_recurring=true` ,
+        `[AUTOSCHEDULE:calc] task "${task.title}" is_recurring=true`,
         {
           totalExistingEvents: existingEvents.length,
           taskExistingEvents: taskExistingEvents.length,

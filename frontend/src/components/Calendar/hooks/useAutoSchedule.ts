@@ -54,7 +54,7 @@ function isSameSchedule(
 ): boolean {
   if (existingEvents.length !== proposedEvents.length) {
     console.log(
-      `[IS-SAME-SCHEDULE] count mismatch: existing=${existingEvents.length} proposed=${proposedEvents.length} → false`
+      `[AUTOSCHEDULE:compare] count mismatch: existing=${existingEvents.length} proposed=${proposedEvents.length} → false`
     );
     logger.debug(
       `Auto-schedule: Count mismatch (Existing: ${existingEvents.length}, Proposed: ${proposedEvents.length})`
@@ -75,9 +75,7 @@ function isSameSchedule(
       event.end_time
     );
     if (!existingSet.has(key)) {
-      console.log(
-        `[IS-SAME-SCHEDULE] mismatch on key ${key} → false`
-      );
+      console.log(`[AUTOSCHEDULE:compare] mismatch on key ${key} → false`);
       logger.debug(
         `Auto-schedule: Event mismatch for task ${event.linked_task_id} at ${event.start_time}`
       );
@@ -85,7 +83,9 @@ function isSameSchedule(
     }
   }
 
-  console.log(`[IS-SAME-SCHEDULE] schedules match (${existingEvents.length} events) → true`);
+  console.log(
+    `[AUTOSCHEDULE:compare] schedules match (${existingEvents.length} events) → true`
+  );
   return true;
 }
 
@@ -121,6 +121,12 @@ export function useAutoSchedule(
 
   const onTaskDroppedRef = useRef(onTaskDropped);
   onTaskDroppedRef.current = onTaskDropped;
+
+  // Always-fresh ref for isInitialSyncComplete so runFullSchedule (a stable
+  // useCallback) can guard against running before GCal sync finishes without
+  // needing isInitialSyncComplete in its dependency array.
+  const isInitialSyncCompleteRef = useRef(isInitialSyncComplete);
+  isInitialSyncCompleteRef.current = isInitialSyncComplete;
 
   // -----------------------------------------------------------------------
   // Helpers to manage isRefreshing safely via isSchedulingRef
@@ -190,7 +196,7 @@ export function useAutoSchedule(
     ) => {
       if (!user) return;
 
-      console.log('[APPLY-SCHEDULE] start', {
+      console.log('[AUTOSCHEDULE:apply] start', {
         proposed: eventsToCreate.length,
         prefetched: prefetchedTaskEvents.length,
         proposedByTask: Object.fromEntries(
@@ -231,26 +237,32 @@ export function useAutoSchedule(
       // representative per key; iterate the full list to catch extras.
       const seenKeys = new Set<string>();
       const eventsToDelete = prefetchedTaskEvents.filter(event => {
-        const key = eventKey(event.linked_task_id, event.start_time, event.end_time);
-        if (!desiredByKey.has(key)) return true;        // not in desired → delete
-        if (seenKeys.has(key)) return true;             // duplicate → delete
+        const key = eventKey(
+          event.linked_task_id,
+          event.start_time,
+          event.end_time
+        );
+        if (!desiredByKey.has(key)) return true; // not in desired → delete
+        if (seenKeys.has(key)) return true; // duplicate → delete
         seenKeys.add(key);
         return false;
       });
 
-      console.log('[APPLY-SCHEDULE] diff', {
+      console.log('[AUTOSCHEDULE:apply] diff', {
         toCreate: missingEvents.length,
         toDelete: eventsToDelete.length,
-        toCreateKeys: missingEvents.map(e =>
-          `${e.linked_task_id}|${new Date(e.start_time).toLocaleDateString()}`
+        toCreateKeys: missingEvents.map(
+          e =>
+            `${e.linked_task_id}|${new Date(e.start_time).toLocaleDateString()}`
         ),
-        toDeleteKeys: eventsToDelete.map(e =>
-          `${e.linked_task_id}|${new Date(e.start_time).toLocaleDateString()}|id=${e.id}`
+        toDeleteKeys: eventsToDelete.map(
+          e =>
+            `${e.linked_task_id}|${new Date(e.start_time).toLocaleDateString()}|id=${e.id}`
         ),
       });
 
       if (missingEvents.length === 0 && eventsToDelete.length === 0) {
-        console.log('[APPLY-SCHEDULE] no changes — skipping');
+        console.log('[AUTOSCHEDULE:apply] no changes — skipping');
         logger.info('Auto-schedule: No changes detected. Skipping update.');
         return;
       }
@@ -345,7 +357,7 @@ export function useAutoSchedule(
         e => isCalendarEventTask(e) && !e.completed_at
       ) as CalendarEventTask[];
 
-      console.log('[COMPUTE-PROPOSED] start', {
+      console.log('[AUTOSCHEDULE:propose] start', {
         tasks: tasksToUse.length,
         totalEvents: eventsToUse.length,
         existingTaskEvents: existingTaskEvents.length,
@@ -389,7 +401,7 @@ export function useAutoSchedule(
         }))
       );
 
-      console.log('[COMPUTE-PROPOSED] result', {
+      console.log('[AUTOSCHEDULE:propose] result', {
         proposedTotal: eventsToCreate.length,
         proposedByTask: Object.fromEntries(
           eventsToCreate.reduce((m, e) => {
@@ -422,9 +434,7 @@ export function useAutoSchedule(
 
       const existingIds = new Set(weekEvents.map(e => e.id));
       const extraEventArrays = await Promise.all(
-        recurringTasks.map(t =>
-          calendarService.getCalendarEventsByTaskId(t.id)
-        )
+        recurringTasks.map(t => calendarService.getCalendarEventsByTaskId(t.id))
       );
 
       const enriched = [...weekEvents];
@@ -437,10 +447,11 @@ export function useAutoSchedule(
         }
       }
 
-      console.log(
-        '[FETCH-FULL-HORIZON] enriched events',
-        { weekCount: weekEvents.length, enrichedCount: enriched.length, recurringTaskCount: recurringTasks.length }
-      );
+      console.log('[AUTOSCHEDULE:horizon] enriched events', {
+        weekCount: weekEvents.length,
+        enrichedCount: enriched.length,
+        recurringTaskCount: recurringTasks.length,
+      });
       return enriched;
     },
     []
@@ -450,75 +461,87 @@ export function useAutoSchedule(
   // runFullSchedule — fetch fresh data, compute, compare, apply if needed
   // Manages isSchedulingRef + isRefreshing lifecycle fully.
   // -----------------------------------------------------------------------
-  const runFullSchedule = useCallback(
-    async (eventsOverride?: CalendarEventUnion[]) => {
-      if (!user || isSchedulingRef.current) return;
+  const runFullSchedule = useCallback(async () => {
+    if (!user || isSchedulingRef.current) return;
 
-      if (Date.now() - lastRunTimeRef.current < THROTTLE_MS) {
-        console.log('[RUN-FULL-SCHEDULE] throttled — skipping');
-        logger.debug('Auto-schedule: Throttled (ran less than 5s ago)');
+    // Block until Google Calendar initial sync has finished so we don't
+    // place task events on top of GCal events that haven't been loaded yet.
+    if (!isInitialSyncCompleteRef.current) {
+      console.log('[AUTOSCHEDULE:run] waiting for GCal sync — skipping');
+      logger.debug(
+        'Auto-schedule: Waiting for Google Calendar sync to complete'
+      );
+      return;
+    }
+
+    if (Date.now() - lastRunTimeRef.current < THROTTLE_MS) {
+      console.log('[AUTOSCHEDULE:run] throttled — skipping');
+      logger.debug('Auto-schedule: Throttled (ran less than 5s ago)');
+      return;
+    }
+
+    console.log('[AUTOSCHEDULE:run] starting...');
+    startScheduling();
+    try {
+      lastRunTimeRef.current = Date.now();
+
+      // 1. Fetch fresh tasks
+      const allTasks = await taskService.getAllTasks();
+      setTasks(allTasks);
+      const map = new Map<string, Task>();
+      allTasks.forEach(task => map.set(task.id, task));
+      setTasksMap(map);
+      console.log('[AUTOSCHEDULE:run] fetched tasks:', allTasks.length);
+
+      // 2. Always fetch fresh events from the API so we have the latest
+      //    state (including any Google Calendar events synced moments ago).
+      //    An eventsOverride is only used as a hint — we still re-fetch to
+      //    guarantee we never schedule on top of newly-synced GCal events.
+      const weekEvents = await refreshEventsRef.current();
+      console.log('[AUTOSCHEDULE:run] week events:', weekEvents.length);
+
+      // 2b. Enrich with full-horizon recurring task events so we see
+      //     persisted events outside the visible week.
+      const eventsToUse = await fetchFullHorizonEvents(allTasks, weekEvents);
+      console.log(
+        '[AUTOSCHEDULE:run] events after enrichment:',
+        eventsToUse.length
+      );
+
+      // 3. Compute & compare
+      const result = computeProposedSchedule(allTasks, eventsToUse);
+      if (!result) return;
+
+      const { existingTaskEvents, eventsToCreate } = result;
+
+      if (isSameSchedule(existingTaskEvents, eventsToCreate)) {
+        console.log('[AUTOSCHEDULE:run] schedule already optimal — done');
+        logger.info(
+          'Auto-schedule: Schedule is already optimal. Skipping update.'
+        );
         return;
       }
 
-      console.log('[RUN-FULL-SCHEDULE] starting...');
-      startScheduling();
-      try {
-        lastRunTimeRef.current = Date.now();
-
-        // 1. Fetch fresh tasks
-        const allTasks = await taskService.getAllTasks();
-        setTasks(allTasks);
-        const map = new Map<string, Task>();
-        allTasks.forEach(task => map.set(task.id, task));
-        setTasksMap(map);
-        console.log('[RUN-FULL-SCHEDULE] fetched tasks:', allTasks.length);
-
-        // 2. Use override events or fetch fresh
-        const weekEvents =
-          eventsOverride ?? (await refreshEventsRef.current());
-        console.log('[RUN-FULL-SCHEDULE] week events:', weekEvents.length);
-
-        // 2b. Enrich with full-horizon recurring task events so we see
-        //     persisted events outside the visible week.
-        const eventsToUse = await fetchFullHorizonEvents(allTasks, weekEvents);
-        console.log('[RUN-FULL-SCHEDULE] events after enrichment:', eventsToUse.length);
-
-        // 3. Compute & compare
-        const result = computeProposedSchedule(allTasks, eventsToUse);
-        if (!result) return;
-
-        const { existingTaskEvents, eventsToCreate } = result;
-
-        if (isSameSchedule(existingTaskEvents, eventsToCreate)) {
-          console.log('[RUN-FULL-SCHEDULE] schedule already optimal — done');
-          logger.info(
-            'Auto-schedule: Schedule is already optimal. Skipping update.'
-          );
-          return;
-        }
-
-        // 4. Apply — pass in already-fetched existingTaskEvents to avoid a
-        //    redundant GET /calendar-events inside applySchedule.
-        console.log('[RUN-FULL-SCHEDULE] schedule differs — applying...');
-        logger.info('Auto-schedule: Applying new schedule...');
-        await applySchedule(eventsToCreate, allTasks, existingTaskEvents);
-        console.log('[RUN-FULL-SCHEDULE] done');
-      } catch (err) {
-        logger.error('Auto-schedule run failed:', err);
-        toast.error('Failed to schedule tasks');
-      } finally {
-        stopScheduling();
-      }
-    },
-    [
-      user,
-      fetchFullHorizonEvents,
-      computeProposedSchedule,
-      applySchedule,
-      startScheduling,
-      stopScheduling,
-    ]
-  );
+      // 4. Apply — pass in already-fetched existingTaskEvents to avoid a
+      //    redundant GET /calendar-events inside applySchedule.
+      console.log('[AUTOSCHEDULE:run] schedule differs — applying...');
+      logger.info('Auto-schedule: Applying new schedule...');
+      await applySchedule(eventsToCreate, allTasks, existingTaskEvents);
+      console.log('[AUTOSCHEDULE:run] done');
+    } catch (err) {
+      logger.error('Auto-schedule run failed:', err);
+      toast.error('Failed to schedule tasks');
+    } finally {
+      stopScheduling();
+    }
+  }, [
+    user,
+    fetchFullHorizonEvents,
+    computeProposedSchedule,
+    applySchedule,
+    startScheduling,
+    stopScheduling,
+  ]);
 
   // -----------------------------------------------------------------------
   // handleAutoScheduleClick — explicit user action (always runs full flow)
@@ -541,8 +564,7 @@ export function useAutoSchedule(
     isClickInFlightRef.current = true;
 
     try {
-      const latestEvents = await refreshEventsRef.current();
-      await runFullSchedule(latestEvents);
+      await runFullSchedule();
     } catch (err) {
       logger.error('Failed to fetch events for auto-scheduling:', err);
       const errorMessage =

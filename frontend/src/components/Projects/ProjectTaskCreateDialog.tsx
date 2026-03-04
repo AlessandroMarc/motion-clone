@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { FormProvider } from 'react-hook-form';
+import { FormProvider, type SubmitHandler } from 'react-hook-form';
 import {
   Dialog,
   DialogContent,
@@ -61,6 +61,8 @@ export function ProjectTaskCreateDialog({
     setIsDialogOpen(false);
   };
 
+  const onSubmit: SubmitHandler<TaskFormData> = originalOnSubmit;
+
   return (
     <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
       <DialogTrigger asChild>
@@ -79,11 +81,8 @@ export function ProjectTaskCreateDialog({
         </DialogHeader>
 
         <FormProvider {...form}>
-          {/* @ts-ignore - react-hook-form type inference issue with complex form data */}
           <form
-            onSubmit={handleSubmit((data: TaskFormData) =>
-              originalOnSubmit(data)
-            )}
+            onSubmit={handleSubmit(onSubmit)}
             className="space-y-6 overflow-y-auto flex-1 pr-1"
           >
             <div className="space-y-4">
