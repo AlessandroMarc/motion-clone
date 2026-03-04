@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import {
   Card,
   CardContent,
@@ -22,7 +23,10 @@ import {
   STATUS_CONFIG,
   PRIORITY_CONFIG,
 } from '@/components/Tasks/taskCardConfig';
-import { ProjectTaskCreateDialog } from './ProjectTaskCreateDialog';
+import {
+  TaskCreateDialogForm,
+  TaskEditDialogForm,
+} from '@/components/Tasks/forms';
 
 interface ProjectTasksSectionProps {
   projectId: string;
@@ -34,6 +38,7 @@ interface ProjectTasksSectionProps {
     >
   ) => Promise<void>;
   onTaskUnlink: (taskId: string) => Promise<void>;
+  onTaskUpdate?: (updatedTask: Task) => void;
 }
 
 export function ProjectTasksSection({
@@ -41,7 +46,11 @@ export function ProjectTasksSection({
   tasks,
   onTaskCreate,
   onTaskUnlink,
+  onTaskUpdate,
 }: ProjectTasksSectionProps) {
+  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+
   const handleTaskCreate = async (
     taskData: Omit<
       Task,
@@ -55,27 +64,55 @@ export function ProjectTasksSection({
     await onTaskUnlink(taskId);
   };
 
+  const handleTaskClick = (task: Task) => {
+    console.log('🖱️ [ProjectTasksSection] Task clicked:', task.id, task.title);
+    setSelectedTask(task);
+    setIsEditDialogOpen(true);
+  };
+
+  const handleTaskUpdated = (updatedTask: Task) => {
+    console.log(
+      '✅ [ProjectTasksSection] Task updated callback received:',
+      updatedTask.id,
+      updatedTask.title
+    );
+    onTaskUpdate?.(updatedTask);
+    console.log('🔄 [ProjectTasksSection] Called onTaskUpdate callback');
+    setIsEditDialogOpen(false);
+    setSelectedTask(null);
+    console.log('🔌 [ProjectTasksSection] Dialog and selection cleared');
+  };
+
   return (
     <Card>
-      <CardHeader>
+      <CardHeader className="pt-4">
         <CardTitle className="text-xl font-semibold">Project Tasks</CardTitle>
         <CardAction>
-          <ProjectTaskCreateDialog
-            projectId={projectId}
+          <TaskCreateDialogForm
             onTaskCreate={handleTaskCreate}
+            initialProjectId={projectId}
+            trigger={
+              <Button size="lg" className="gap-2">
+                Add Task
+              </Button>
+            }
           />
         </CardAction>
       </CardHeader>
-      <CardContent>
+      <CardContent className='pb-4'>
         {tasks.length === 0 ? (
           <div className="text-center py-12 bg-muted/30 rounded-lg">
             <p className="text-muted-foreground mb-4">
               No tasks linked to this project yet.
             </p>
-            <ProjectTaskCreateDialog
-              projectId={projectId}
+            <TaskCreateDialogForm
               onTaskCreate={handleTaskCreate}
-              triggerText="Create First Task"
+              initialProjectId={projectId}
+              trigger={
+                <Button size="lg" className="gap-2">
+                  Create First Task
+                </Button>
+              }
             />
           </div>
         ) : (
@@ -94,9 +131,10 @@ export function ProjectTasksSection({
                   key={task.id}
                   className={cn(
                     'group flex items-start gap-3 p-3 rounded-lg border transition-all',
-                    'hover:bg-accent/30 hover:border-accent',
+                    'hover:bg-accent/30 hover:border-accent cursor-pointer',
                     isCompleted && TASK_COMPLETED_OPACITY_CLASS
                   )}
+                  onClick={() => handleTaskClick(task)}
                 >
                   {/* Status Icon */}
                   <div className={cn('mt-0.5', statusConfig.className)}>
@@ -180,7 +218,10 @@ export function ProjectTasksSection({
                     variant="ghost"
                     size="icon"
                     className="opacity-0 group-hover:opacity-100 transition-opacity h-7 w-7 text-muted-foreground hover:text-destructive hover:bg-destructive/10 shrink-0"
-                    onClick={() => handleUnlinkTask(task.id)}
+                    onClick={e => {
+                      e.stopPropagation();
+                      handleUnlinkTask(task.id);
+                    }}
                     title="Unlink from project"
                   >
                     <X className="h-3.5 w-3.5" />
@@ -191,6 +232,13 @@ export function ProjectTasksSection({
           </div>
         )}
       </CardContent>
+
+      <TaskEditDialogForm
+        task={selectedTask}
+        open={isEditDialogOpen}
+        onOpenChange={setIsEditDialogOpen}
+        onTaskUpdated={handleTaskUpdated}
+      />
     </Card>
   );
 }

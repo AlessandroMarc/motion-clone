@@ -1,13 +1,12 @@
 'use client';
 
-import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Plus, X } from 'lucide-react';
+import { Plus } from 'lucide-react';
 import type { Task } from '@/types';
 import { cn } from '@/lib/utils';
 import { KanbanTaskCard } from './KanbanTaskCard';
+import { TaskCreateDialogForm } from './forms';
 import Link from 'next/link';
 
 export interface KanbanColumnProps {
@@ -18,7 +17,12 @@ export interface KanbanColumnProps {
   projectId: string | null;
   onDeleteTask: (taskId: string) => void;
   onSelectTask: (task: Task) => void;
-  onQuickCreateTask: (title: string, projectId: string | null) => Promise<void>;
+  onTaskCreate: (
+    taskData: Omit<
+      Task,
+      'id' | 'created_at' | 'updated_at' | 'status' | 'dependencies'
+    >
+  ) => Promise<void>;
   color?: string;
 }
 
@@ -30,32 +34,9 @@ export function KanbanColumn({
   projectId,
   onDeleteTask,
   onSelectTask,
-  onQuickCreateTask,
+  onTaskCreate,
   color,
 }: KanbanColumnProps) {
-  const [isAdding, setIsAdding] = useState(false);
-  const [newTaskTitle, setNewTaskTitle] = useState('');
-  const [isSubmitting, setIsSubmitting] = useState(false);
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newTaskTitle.trim()) return;
-
-    setIsSubmitting(true);
-    try {
-      await onQuickCreateTask(newTaskTitle.trim(), projectId);
-      setNewTaskTitle('');
-      setIsAdding(false);
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  const handleCancel = () => {
-    setNewTaskTitle('');
-    setIsAdding(false);
-  };
-
   return (
     <div className="flex flex-col w-64 shrink-0">
       <Card className="flex flex-col h-full bg-muted/30">
@@ -101,51 +82,22 @@ export function KanbanColumn({
               />
             ))}
 
-            {/* Add Task - right after tasks */}
-            {isAdding ? (
-              <form onSubmit={handleSubmit} className="space-y-1.5 pt-1">
-                <Input
-                  autoFocus
-                  placeholder="Task title..."
-                  value={newTaskTitle}
-                  onChange={e => setNewTaskTitle(e.target.value)}
-                  className="h-7 text-[11px]"
-                  disabled={isSubmitting}
-                />
-                <div className="flex gap-1">
-                  <Button
-                    type="submit"
-                    size="sm"
-                    className="flex-1 h-6 text-[10px]"
-                    disabled={!newTaskTitle.trim() || isSubmitting}
-                  >
-                    {isSubmitting ? 'Adding...' : 'Add'}
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    className="h-6 w-6 p-0"
-                    onClick={handleCancel}
-                    disabled={isSubmitting}
-                  >
-                    <X className="h-3 w-3" />
-                  </Button>
-                </div>
-              </form>
-            ) : (
-              <Button
-                variant="ghost"
-                size="sm"
-                className="w-full h-7 text-[10px] text-muted-foreground hover:text-foreground justify-start gap-1"
-                onClick={() => setIsAdding(true)}
-              >
-                <Plus className="h-3 w-3" />
-                Add task
-              </Button>
-            )}
+            <TaskCreateDialogForm
+              onTaskCreate={onTaskCreate}
+              initialProjectId={projectId}
+              trigger={
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="w-full h-7 text-[10px] text-muted-foreground hover:text-foreground justify-start gap-1"
+                >
+                  <Plus className="h-3 w-3" />
+                  Add task
+                </Button>
+              }
+            />
 
-            {tasks.length === 0 && !isAdding && (
+            {tasks.length === 0 && (
               <div className="py-4 text-center">
                 <p className="text-[10px] text-muted-foreground">No tasks</p>
               </div>

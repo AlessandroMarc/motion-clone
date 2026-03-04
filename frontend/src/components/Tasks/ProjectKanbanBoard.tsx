@@ -13,7 +13,12 @@ interface ProjectKanbanBoardProps {
   linkedTaskIds: Set<string>;
   onDeleteTask: (taskId: string) => void;
   onSelectTask: (task: Task) => void;
-  onQuickCreateTask: (title: string, projectId: string | null) => Promise<void>;
+  onTaskCreate: (
+    taskData: Omit<
+      Task,
+      'id' | 'created_at' | 'updated_at' | 'status' | 'dependencies'
+    >
+  ) => Promise<void>;
 }
 
 // Generate a color for project based on index
@@ -34,7 +39,7 @@ export function ProjectKanbanBoard({
   linkedTaskIds,
   onDeleteTask,
   onSelectTask,
-  onQuickCreateTask,
+  onTaskCreate,
 }: ProjectKanbanBoardProps) {
   const tasksByProject = useMemo((): { unassigned: Task[] } & Record<
     string,
@@ -70,7 +75,7 @@ export function ProjectKanbanBoard({
         projectId={null}
         onDeleteTask={onDeleteTask}
         onSelectTask={onSelectTask}
-        onQuickCreateTask={onQuickCreateTask}
+        onTaskCreate={onTaskCreate}
         color="bg-muted"
       />
 
@@ -85,7 +90,7 @@ export function ProjectKanbanBoard({
           projectId={project.id}
           onDeleteTask={onDeleteTask}
           onSelectTask={onSelectTask}
-          onQuickCreateTask={onQuickCreateTask}
+          onTaskCreate={onTaskCreate}
           color={PROJECT_COLORS[index % PROJECT_COLORS.length]}
         />
       ))}

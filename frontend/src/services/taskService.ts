@@ -64,6 +64,9 @@ class TaskService {
   }
 
   async updateTask(id: string, input: UpdateTaskInput): Promise<Task> {
+    console.log('🔧 [taskService.updateTask] Called with id:', id);
+    console.log('Input:', input);
+
     // Build payload without dueDate (we use due_date instead)
     const {
       dueDate,
@@ -77,30 +80,42 @@ class TaskService {
       ...rest
     } = input;
 
+    const payload = {
+      ...rest,
+      due_date: dueDate ? normalizeToMidnight(dueDate).toISOString() : null,
+      project_id: input.project_id,
+      schedule_id: scheduleId,
+      blocked_by: blockedBy,
+      planned_duration_minutes: plannedDurationMinutes,
+      actual_duration_minutes: actualDurationMinutes,
+      is_recurring: isRecurring,
+      recurrence_pattern: recurrencePattern,
+      recurrence_interval: recurrenceInterval,
+      recurrence_start_date: input.recurrenceStartDate
+        ? toLocalDateString(normalizeToMidnight(input.recurrenceStartDate))
+        : undefined,
+    };
+
+    console.log('📤 [taskService.updateTask] Sending payload:', payload);
+
     const response = await request<UnknownRecord>(`/tasks/${id}`, {
       method: 'PUT',
-      body: JSON.stringify({
-        ...rest,
-        due_date: dueDate ? normalizeToMidnight(dueDate).toISOString() : null,
-        project_id: input.project_id,
-        schedule_id: scheduleId,
-        blocked_by: blockedBy,
-        planned_duration_minutes: plannedDurationMinutes,
-        actual_duration_minutes: actualDurationMinutes,
-        is_recurring: isRecurring,
-        recurrence_pattern: recurrencePattern,
-        recurrence_interval: recurrenceInterval,
-        recurrence_start_date: input.recurrenceStartDate
-          ? toLocalDateString(normalizeToMidnight(input.recurrenceStartDate))
-          : undefined,
-      }),
+      body: JSON.stringify(payload),
     });
 
+    console.log('📬 [taskService.updateTask] Response received:', response);
+
     if (!response.success || !response.data) {
+      console.error('❌ [taskService.updateTask] API Error:', response.error);
       throw new Error(response.error || 'Failed to update task');
     }
 
-    return toTask(response.data);
+    const updatedTask = toTask(response.data);
+    console.log(
+      '✅ [taskService.updateTask] Task updated successfully:',
+      updatedTask
+    );
+    return updatedTask;
   }
 
   async deleteTask(id: string): Promise<void> {

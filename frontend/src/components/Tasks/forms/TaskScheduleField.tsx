@@ -86,11 +86,7 @@ export function TaskScheduleField({
     }
   }, [activeSchedule?.id, schedules, selectedScheduleId, setValue]);
 
-  // Auto-select silently when there's only one schedule (or still loading)
-  if (!isLoading && schedules.length <= 1 && selectedScheduleId) {
-    return null;
-  }
-
+  // Always render the select to ensure the form value is properly maintained
   return (
     <div className="space-y-2">
       <Label htmlFor={id}>Schedule</Label>

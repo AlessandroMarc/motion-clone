@@ -69,9 +69,9 @@ const mapTaskToFormValues = (task: Task): TaskFormData => ({
   planned_duration_minutes: task.planned_duration_minutes ?? 60,
   actual_duration_minutes: task.actual_duration_minutes ?? 0,
   blockedBy: task.blockedBy || [],
-  scheduleId: task.schedule_id ?? '',
+  scheduleId: task.schedule_id || '',
   is_recurring: task.is_recurring ?? false,
-  recurrence_pattern: task.recurrence_pattern,
+  recurrence_pattern: task.recurrence_pattern ?? undefined, // Normalize null to undefined
   recurrence_interval: task.recurrence_interval ?? 1,
   recurrenceStartDate: task.recurrence_start_date
     ? formatDateOnly(new Date(task.recurrence_start_date))
@@ -102,7 +102,7 @@ export function TaskEditDialogForm({
   const {
     register,
     handleSubmit,
-    formState: { errors },
+    formState: { errors, isDirty, isValid },
     reset,
     setValue,
     watch,
@@ -164,6 +164,10 @@ export function TaskEditDialogForm({
   }, [task, open]);
 
   const handleDialogOpenChange = (isOpen: boolean) => {
+    console.log(
+      `📂 [TaskEditDialogForm] Dialog ${isOpen ? 'opened' : 'closed'}`,
+      task?.id
+    );
     if (!isOpen && task) {
       reset(mapTaskToFormValues(task));
     }
@@ -181,11 +185,17 @@ export function TaskEditDialogForm({
 
   const onSubmit = async (data: TaskFormData) => {
     if (!task) {
+      console.log('❌ [TaskEditDialogForm] No task found, skipping submission');
       return;
     }
 
+    console.log('📝 [TaskEditDialogForm] Form submitted with data:', data);
     setIsSubmitting(true);
     try {
+      console.log(
+        '🚀 [TaskEditDialogForm] Calling taskService.updateTask for task:',
+        task.id
+      );
       const updatedTask = await taskService.updateTask(task.id, {
         title: data.title,
         description: data.description,
@@ -207,6 +217,10 @@ export function TaskEditDialogForm({
             : null,
       });
 
+      console.log(
+        '✅ [TaskEditDialogForm] Task updated successfully:',
+        updatedTask
+      );
       onTaskUpdated(updatedTask);
       toast.success('Task updated successfully');
 
@@ -222,7 +236,11 @@ export function TaskEditDialogForm({
 
       onOpenChange(false);
     } catch (error) {
-      console.error('Failed to update task:', error);
+      console.error('❌ [TaskEditDialogForm] Failed to update task:', error);
+      console.error('Error details:', {
+        message: error instanceof Error ? error.message : 'Unknown error',
+        stack: error instanceof Error ? error.stack : 'No stack trace',
+      });
       const message =
         error instanceof Error
           ? error.message
@@ -253,8 +271,27 @@ export function TaskEditDialogForm({
 
         <FormProvider {...form}>
           <form
-            onSubmit={handleSubmit(onSubmit)}
             className="space-y-6 overflow-y-auto flex-1 pr-1"
+            onSubmit={e => {
+              console.log(
+                '📋 [TaskEditDialogForm] Form submit event triggered'
+              );
+              console.log('Form state:', { isDirty, isValid, errors });
+              if (Object.keys(errors).length > 0) {
+                console.error('❌ Form validation errors:', errors);
+
+                // Show user-visible error notification for validation errors
+                const errorMessages = Object.entries(errors)
+                  .map(([field, error]: [string, any]) => {
+                    const fieldName = field.replace(/_/g, ' ');
+                    return error?.message || `${fieldName} is invalid`;
+                  })
+                  .join(', ');
+
+                toast.error(`Validation failed: ${errorMessages}`);
+              }
+              handleSubmit(onSubmit)(e);
+            }}
           >
             <div className="space-y-4">
               <TaskTitleField register={register} errors={errors} />

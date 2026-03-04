@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { type ReactNode, useEffect, useState } from 'react';
 import { FormProvider, type SubmitHandler } from 'react-hook-form';
 import {
   Dialog,
@@ -26,7 +26,16 @@ import { TaskFormActions } from './TaskFormActions';
 import { TaskDurationFields } from './TaskDurationFields';
 import { TaskRecurrenceFields } from './TaskRecurrenceFields';
 
-export function TaskCreateDialogForm({ onTaskCreate }: TaskCreateFormProps) {
+interface TaskCreateDialogFormProps extends TaskCreateFormProps {
+  trigger?: ReactNode;
+  initialProjectId?: string | null;
+}
+
+export function TaskCreateDialogForm({
+  onTaskCreate,
+  trigger,
+  initialProjectId,
+}: TaskCreateDialogFormProps) {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
 
   const {
@@ -46,6 +55,14 @@ export function TaskCreateDialogForm({ onTaskCreate }: TaskCreateFormProps) {
   const recurrenceInterval = form.watch('recurrence_interval');
   const recurrenceStartDate = form.watch('recurrenceStartDate');
 
+  useEffect(() => {
+    if (!isDialogOpen) {
+      return;
+    }
+
+    form.setValue('project_id', initialProjectId ?? null);
+  }, [form, initialProjectId, isDialogOpen]);
+
   const handleFormSubmit: SubmitHandler<TaskFormData> = async data => {
     const success = await onSubmit(data);
     if (success) {
@@ -61,10 +78,12 @@ export function TaskCreateDialogForm({ onTaskCreate }: TaskCreateFormProps) {
   return (
     <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
       <DialogTrigger asChild>
-        <Button className="gap-2" data-onboarding-step="create-task">
-          <Plus className="h-4 w-4" />
-          Create Task
-        </Button>
+        {trigger ?? (
+          <Button className="gap-2" data-onboarding-step="create-task">
+            <Plus className="h-4 w-4" />
+            Create Task
+          </Button>
+        )}
       </DialogTrigger>
       <DialogContent className="sm:max-w-[500px] max-h-[90vh] flex flex-col overflow-hidden">
         <DialogHeader>

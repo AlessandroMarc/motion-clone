@@ -20,7 +20,12 @@ interface TaskListViewProps {
   onDeleteTask: (taskId: string) => Promise<void>;
   onTaskUpdate: (updatedTask: Task, options?: { showToast?: boolean }) => void;
   onSelectTask: (task: Task) => void;
-  onQuickCreateTask: (title: string, projectId: string | null) => Promise<void>;
+  onTaskCreate: (
+    taskData: Omit<
+      Task,
+      'id' | 'created_at' | 'updated_at' | 'status' | 'dependencies'
+    >
+  ) => Promise<void>;
   selectedTask: Task | null;
   detailsOpen: boolean;
   onDetailsOpenChange: (open: boolean) => void;
@@ -36,7 +41,7 @@ export function TaskListView({
   onRetry,
   onDeleteTask,
   onSelectTask,
-  onQuickCreateTask,
+  onTaskCreate,
   selectedTask,
   detailsOpen,
   onDetailsOpenChange,
@@ -103,7 +108,7 @@ export function TaskListView({
             });
           }}
           onSelectTask={onSelectTask}
-          onQuickCreateTask={onQuickCreateTask}
+          onTaskCreate={onTaskCreate}
         />
       )}
 

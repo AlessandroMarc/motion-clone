@@ -107,6 +107,29 @@ export default function ProjectDetailPage({ params }: ProjectDetailPageProps) {
     }
   };
 
+  const handleTaskUpdate = (updatedTask: Task) => {
+    console.log(
+      '🌄 [ProjectDetailPage] handleTaskUpdate called with task:',
+      updatedTask.id,
+      updatedTask.title
+    );
+    setTasks(prev => {
+      const updated = prev.map(task =>
+        task.id === updatedTask.id ? updatedTask : task
+      );
+      console.log(
+        '📄 [ProjectDetailPage] Tasks state updated. New count:',
+        updated.length
+      );
+      console.log('Updated task:', {
+        id: updatedTask.id,
+        title: updatedTask.title,
+        found: updated.some(t => t.id === updatedTask.id),
+      });
+      return updated;
+    });
+  };
+
   const handleBack = () => {
     router.push('/projects');
   };
@@ -201,6 +224,7 @@ export default function ProjectDetailPage({ params }: ProjectDetailPageProps) {
               tasks={tasks}
               onTaskCreate={handleTaskCreate}
               onTaskUnlink={handleTaskUnlink}
+              onTaskUpdate={handleTaskUpdate}
             />
           </div>
         </div>

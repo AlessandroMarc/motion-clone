@@ -28,7 +28,7 @@ export function transformFormDataToTask(
     planned_duration_minutes: planned,
     actual_duration_minutes: actual,
     blockedBy: data.blockedBy || [],
-    schedule_id: data.scheduleId,
+    schedule_id: data.scheduleId || undefined,
     is_recurring: isRecurring,
     recurrence_pattern: isRecurring ? data.recurrence_pattern : undefined,
     recurrence_interval: isRecurring

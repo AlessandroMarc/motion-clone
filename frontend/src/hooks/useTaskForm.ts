@@ -29,10 +29,13 @@ export const taskSchema = z
       .number()
       .min(0, 'Actual duration cannot be negative'),
     blockedBy: z.array(z.string()).optional(),
-    scheduleId: z.string().min(1, 'Schedule is required').optional(),
+    scheduleId: z.string().optional(),
     // Recurring task fields
     is_recurring: z.boolean(),
-    recurrence_pattern: z.enum(['daily', 'weekly', 'monthly']).optional(),
+    recurrence_pattern: z.union([
+      z.enum(['daily', 'weekly', 'monthly']),
+      z.undefined(),
+    ]),
     recurrence_interval: z
       .number()
       .min(1, 'Interval must be at least 1')

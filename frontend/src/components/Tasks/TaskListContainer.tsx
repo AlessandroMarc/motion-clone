@@ -85,21 +85,31 @@ export function TaskListContainer({
     setSelectedTask(updatedTask);
   };
 
-  const handleQuickCreateTask = async (
-    title: string,
-    projectId: string | null
+  const handleTaskCreate = async (
+    taskData: Omit<
+      Task,
+      'id' | 'created_at' | 'updated_at' | 'status' | 'dependencies'
+    >
   ) => {
     try {
       await taskService.createTask({
-        title,
-        project_id: projectId ?? undefined,
-        priority: 'medium',
-        plannedDurationMinutes: 30,
-        actualDurationMinutes: 0,
+        title: taskData.title,
+        description: taskData.description,
+        dueDate: taskData.due_date,
+        priority: taskData.priority,
+        scheduleId: taskData.schedule_id,
+        project_id: taskData.project_id,
+        blockedBy: taskData.blockedBy,
+        plannedDurationMinutes: taskData.planned_duration_minutes,
+        actualDurationMinutes: taskData.actual_duration_minutes,
+        isRecurring: taskData.is_recurring,
+        recurrencePattern: taskData.recurrence_pattern,
+        recurrenceInterval: taskData.recurrence_interval,
+        recurrenceStartDate: taskData.recurrence_start_date,
       });
       await reload();
       onTaskUpdate?.();
-      toast.success('Task created');
+      toast.success('Task created successfully');
     } catch (e) {
       logger.error('[TaskList] Failed to create task', e);
       toast.error('Failed to create task');
@@ -118,7 +128,7 @@ export function TaskListContainer({
       onDeleteTask={handleDeleteTask}
       onTaskUpdate={handleTaskUpdate}
       onSelectTask={handleSelectTask}
-      onQuickCreateTask={handleQuickCreateTask}
+      onTaskCreate={handleTaskCreate}
       selectedTask={selectedTask}
       detailsOpen={detailsOpen}
       onDetailsOpenChange={handleDetailsOpenChange}

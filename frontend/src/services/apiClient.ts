@@ -36,6 +36,8 @@ export async function request<T>(
   const baseUrl = resolveApiBaseUrl();
   const url = `${baseUrl}${endpoint}`;
 
+  console.log(`📡 [apiClient] ${options.method || 'GET'} ${endpoint}`);
+
   try {
     const headers = new Headers(options.headers);
 
@@ -48,10 +50,13 @@ export async function request<T>(
       headers.set('Authorization', `Bearer ${token}`);
     }
 
+    console.log(`Sending request to: ${url}`);
     const response = await fetch(url, {
       ...options,
       headers,
     });
+
+    console.log(`Response status: ${response.status}`);
 
     if (!response.ok) {
       if (response.status === 429) {
@@ -73,7 +78,9 @@ export async function request<T>(
     // Backend always returns JSON ApiResponse, but keep it resilient.
     const contentType = response.headers.get('content-type') || '';
     if (contentType.includes('application/json')) {
-      return (await response.json()) as ApiResponse<T>;
+      const data = (await response.json()) as ApiResponse<T>;
+      console.log(`✅ [apiClient] Success:`, data);
+      return data;
     }
 
     const text = await response.text();
@@ -95,6 +102,7 @@ export async function request<T>(
       }
     }
 
+    console.error(`❌ [apiClient] Error:`, errorMessage);
     return {
       success: false,
       message: 'Failed to connect to the server',

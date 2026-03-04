@@ -204,9 +204,22 @@ export function calculateAutoSchedule(params: {
       taskStartTime
     );
 
+    // CRITICAL FIX: For tasks with 0 new events (fully scheduled), include
+    // existing events in the proposed schedule so applySchedule doesn't delete them.
+    // This prevents the toggling behavior where scheduled tasks get deleted when
+    // rescheduling runs.
+    const finalEvents =
+      events.length === 0 && taskExistingEvents.length > 0
+        ? taskExistingEvents.map(e => ({
+            task_id: task.id,
+            start_time: new Date(e.start_time),
+            end_time: new Date(e.end_time),
+          }))
+        : events;
+
     // Always include the task so the user sees it. Tasks with 0 events
     // (e.g. already fully scheduled or planned duration 0) still appear.
-    taskEvents.push({ task, events, violations });
+    taskEvents.push({ task, events: finalEvents, violations });
 
     log(`task[${i + 1}/${sortedTasks.length}]`, {
       id: task.id,
@@ -217,12 +230,12 @@ export function calculateAutoSchedule(params: {
       due_date: task.due_date ? new Date(task.due_date).toISOString() : null,
       blockedBy: task.blockedBy ?? [],
       taskExistingEventsCount: taskExistingEvents.length,
-      eventsCount: events.length,
+      eventsCount: finalEvents.length,
       violationsCount: violations.length,
       taskStartTime: taskStartTime.toISOString(),
     });
 
-    for (const event of events) {
+    for (const event of finalEvents) {
       const tempEvent: CalendarEvent = {
         id: `temp-${task.id}-${event.start_time.getTime()}`,
         title: task.title,
@@ -237,8 +250,8 @@ export function calculateAutoSchedule(params: {
     }
 
     // Record the latest end time for this task (used by dependents)
-    if (events.length > 0) {
-      const lastEvent = events[events.length - 1];
+    if (finalEvents.length > 0) {
+      const lastEvent = finalEvents[finalEvents.length - 1];
       taskLatestEndTime.set(task.id, lastEvent.end_time);
       log(
         `  -> task "${task.title}" latest end`,
