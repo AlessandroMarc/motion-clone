@@ -91,10 +91,8 @@ describe('TaskService - Recurrence integration', () => {
       });
 
     // Mock the schedules query to return an array (from Promise.all())
-    let isSchedulesQuery = false;
     mockClient.from.mockImplementation((table: string) => {
       if (table === 'schedules') {
-        isSchedulesQuery = true;
         return {
           ...mockClient,
           select: () => ({
@@ -116,7 +114,6 @@ describe('TaskService - Recurrence integration', () => {
           }),
         };
       }
-      isSchedulesQuery = false;
       return mockClient;
     });
 
