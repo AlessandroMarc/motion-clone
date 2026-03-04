@@ -7,7 +7,7 @@ import {
   HelpCircle,
 } from 'lucide-react';
 
-export interface NavItem {
+interface NavItem {
   name: string;
   href: string;
   icon: LucideIcon;

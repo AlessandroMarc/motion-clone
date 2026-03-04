@@ -20,6 +20,3 @@ export function Sidebar(): React.ReactElement {
 
   return <DesktopSidebar />;
 }
-
-export { sidebarNavigation } from './navigation';
-export type { NavItem } from './navigation';

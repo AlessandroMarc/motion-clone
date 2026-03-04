@@ -161,7 +161,7 @@ export function mapMotionTaskToCreateInput(
 
 // ── Result types ─────────────────────────────────────────────────────────────
 
-export interface MigrationWorkspaceSummary {
+interface MigrationWorkspaceSummary {
   motionWorkspaceId: string;
   motionWorkspaceName: string;
   projectsImported: number;
@@ -170,7 +170,7 @@ export interface MigrationWorkspaceSummary {
   errors: string[];
 }
 
-export interface MigrationResult {
+interface MigrationResult {
   userId: string;
   schedulesFound: number;
   workspaces: MigrationWorkspaceSummary[];

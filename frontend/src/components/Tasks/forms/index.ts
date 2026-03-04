@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 // Form field components
 export { TaskTitleField } from './TaskTitleField';
 export { TaskDescriptionField } from './TaskDescriptionField';
@@ -7,15 +8,11 @@ export { TaskPriorityField } from './TaskPriorityField';
 export { TaskFormActions } from './TaskFormActions';
 export { TaskDurationFields } from './TaskDurationFields';
 
+=======
+>>>>>>> origin/main
 // Complete form components
 export { TaskCreateDialogForm } from './TaskCreateDialogForm';
-export { TaskCreateCardForm } from './TaskCreateCardForm';
 export { TaskEditDialogForm } from './TaskEditDialogForm';
 
 // Re-export types and hooks
-export {
-  useTaskForm,
-  taskSchema,
-  type TaskFormData,
-  type TaskCreateFormProps,
-} from '@/hooks/useTaskForm';
+export { type TaskCreateFormProps } from '@/hooks/useTaskForm';

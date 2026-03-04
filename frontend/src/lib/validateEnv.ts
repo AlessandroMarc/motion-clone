@@ -1,4 +1,4 @@
-export interface ValidationResult {
+interface ValidationResult {
   valid: boolean;
   errors: string[];
   warnings: string[];
@@ -8,7 +8,7 @@ export interface ValidationResult {
  * Validates all required environment variables for the frontend.
  * Returns a validation result with errors and warnings.
  */
-export function validateEnv(): ValidationResult {
+function validateEnv(): ValidationResult {
   const errors: string[] = [];
   const warnings: string[] = [];
 

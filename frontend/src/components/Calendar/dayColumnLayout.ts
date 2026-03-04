@@ -1,7 +1,7 @@
 import type { CalendarEventUnion } from '@/types';
 
 export const HOUR_PX = 64; // 64px per hour to match time gutter (h-16)
-export const GAP_PX = 4; // horizontal gap between side-by-side items
+const GAP_PX = 4; // horizontal gap between side-by-side items
 
 type LayoutInfo = { column: number; columns: number };
 type LayoutMap = Record<string, LayoutInfo>;
@@ -12,7 +12,7 @@ function minutesFromMidnight(date: Date): number {
   return date.getHours() * 60 + date.getMinutes();
 }
 
-export function durationMinutes(start: Date, end: Date): number {
+function durationMinutes(start: Date, end: Date): number {
   return Math.max(30, (end.getTime() - start.getTime()) / 60000);
 }
 

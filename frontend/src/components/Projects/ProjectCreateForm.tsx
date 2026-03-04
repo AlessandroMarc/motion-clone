@@ -1,16 +1,8 @@
 'use client';
 
-import {
-  ProjectCreateDialogForm,
-  ProjectCreateCardForm,
-  type ProjectCreateFormProps,
-} from './forms';
+import { ProjectCreateDialogForm } from './forms';
+import type { ProjectCreateFormProps } from '@/hooks/useProjectForm';
 
 export function ProjectCreateForm(props: ProjectCreateFormProps) {
   return <ProjectCreateDialogForm {...props} />;
-}
-
-// Quick Project Creation Card (for inline creation)
-export function QuickProjectCreateCard(props: ProjectCreateFormProps) {
-  return <ProjectCreateCardForm {...props} />;
 }

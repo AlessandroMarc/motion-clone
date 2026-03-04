@@ -1,6 +1,6 @@
 import { request } from './apiClient';
 
-export interface SubscriptionResponse {
+interface SubscriptionResponse {
   email: string;
 }
 

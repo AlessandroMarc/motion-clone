@@ -133,7 +133,7 @@ interface TaskGroup {
   tasks: Task[];
 }
 
-export interface MobileTaskListProps {
+interface MobileTaskListProps {
   tasks: Task[];
   projects: Project[];
   onSelectTask: (task: Task) => void;

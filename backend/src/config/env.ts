@@ -32,7 +32,7 @@ function requireHttpUrlEnv(name: string): string {
   return url.toString();
 }
 
-export type GoogleOAuthEnv = {
+type GoogleOAuthEnv = {
   clientId: string;
   clientSecret: string;
   redirectUri: string;

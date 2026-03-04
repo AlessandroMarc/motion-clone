@@ -52,6 +52,3 @@ export const PRIORITY_CONFIG: Record<
     bgClass: 'bg-slate-500/10 text-slate-600 dark:text-slate-400',
   },
 };
-
-// Re-export priority helpers from taskUtils for component convenience
-export { TASK_PRIORITY_RANK, compareTaskPriority } from '@/utils/taskUtils';
