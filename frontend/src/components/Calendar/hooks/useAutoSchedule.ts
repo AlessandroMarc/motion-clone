@@ -19,11 +19,8 @@ import { expandRecurringTasks } from '@/utils/recurrenceCalculator';
 // ---------------------------------------------------------------------------
 const DEBOUNCE_MS = 1_000;
 const THROTTLE_MS = 3_000;
-const DEFAULT_EVENT_DURATION = 60;
 /** Minimum time between two consecutive auto-applies (safety net). */
-const APPLY_COOLDOWN_MS = 15_000;
 /** Stop auto-running after this many consecutive automatic cycles. */
-const MAX_CONSECUTIVE_AUTO_RUNS = 2;
 
 const DEFAULT_EVENT_DURATION = 60;/** After applying changes, suppress auto-checks for this period so the
  *  self-caused events.length change does not re-trigger the scheduler. */
@@ -123,9 +120,6 @@ export function useAutoSchedule(
   // before the first enters runFullSchedule is still blocked.
   const isClickInFlightRef = useRef(false);
 
-  // Cooldown & oscillation guards
-  const lastAppliedAtRef = useRef<number>(0);
-  const consecutiveAutoRunsRef = useRef<number>(0);
   /** Track the last few proposedTotal counts to detect oscillation patterns. */
   const recentProposedCountsRef = useRef<number[]>([]);
   // Timestamp of the last successful apply.  Used to suppress the
