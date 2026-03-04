@@ -53,5 +53,4 @@ export const PRIORITY_CONFIG: Record<
   },
 };
 
-// Re-export priority helpers from taskUtils for component convenience
-export { TASK_PRIORITY_RANK, compareTaskPriority } from '@/utils/taskUtils';
+

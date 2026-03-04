@@ -7,7 +7,7 @@ interface AuthenticatedContentProps {
   user: User;
 }
 
-export function AuthenticatedContent({ user }: AuthenticatedContentProps) {
+function AuthenticatedContent({ user }: AuthenticatedContentProps) {
   return (
     <div className="text-center">
       <div className="mb-8">

@@ -51,7 +51,7 @@ export const PROJECT_STATUS_CONFIG: StatusConfig[] = [
   },
 ];
 
-export function getPriorityColor(priority: string) {
+function getPriorityColor(priority: string) {
   switch (priority) {
     case 'high':
       return 'bg-red-500';

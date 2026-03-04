@@ -9,7 +9,7 @@ import { KanbanTaskCard } from './KanbanTaskCard';
 import { TaskCreateDialogForm } from './forms';
 import Link from 'next/link';
 
-export interface KanbanColumnProps {
+interface KanbanColumnProps {
   title: string;
   icon: React.ReactNode;
   tasks: Task[];

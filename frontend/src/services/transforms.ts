@@ -7,7 +7,7 @@ export type UnknownRecord = Record<string, unknown>;
 /** Regex for plain date strings returned by Supabase DATE columns: "YYYY-MM-DD" */
 const ISO_DATE_ONLY = /^\d{4}-\d{2}-\d{2}$/;
 
-export function toDate(value: unknown): Date {
+function toDate(value: unknown): Date {
   if (value instanceof Date) return value;
   if (typeof value === 'string') {
     // Parse date-only strings in local timezone to avoid UTC-midnight day shift
@@ -19,7 +19,7 @@ export function toDate(value: unknown): Date {
   return new Date(String(value));
 }
 
-export function toOptionalDate(value: unknown): Date | null {
+function toOptionalDate(value: unknown): Date | null {
   if (value === null || value === undefined || value === '') return null;
   return toDate(value);
 }

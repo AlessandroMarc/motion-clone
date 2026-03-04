@@ -5,7 +5,7 @@ interface PriorityBadgeProps {
   priority?: string | null;
 }
 
-export function PriorityBadge({
+function PriorityBadge({
   priority,
 }: PriorityBadgeProps): React.ReactElement | null {
   if (!priority) return null;

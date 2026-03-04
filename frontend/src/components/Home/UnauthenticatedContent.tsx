@@ -7,7 +7,7 @@ interface UnauthenticatedContentProps {
   isSigningIn: boolean;
 }
 
-export function UnauthenticatedContent({
+function UnauthenticatedContent({
   onSignIn,
   isSigningIn,
 }: UnauthenticatedContentProps) {

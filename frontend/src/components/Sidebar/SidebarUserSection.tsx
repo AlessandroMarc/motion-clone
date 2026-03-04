@@ -7,7 +7,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Skeleton } from '@/components/ui/skeleton';
 import { logger } from '@/lib/logger';
 
-export interface SidebarUserSectionProps {
+interface SidebarUserSectionProps {
   onAfterSignOut?: () => void;
 }
 

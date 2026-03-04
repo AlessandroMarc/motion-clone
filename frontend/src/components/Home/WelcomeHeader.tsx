@@ -6,7 +6,7 @@ interface WelcomeHeaderProps {
   apiMessage: string;
 }
 
-export function WelcomeHeader({ apiMessage }: WelcomeHeaderProps) {
+function WelcomeHeader({ apiMessage }: WelcomeHeaderProps) {
   return (
     <div className="text-center mb-12">
       <div className="flex items-center justify-center mb-4">

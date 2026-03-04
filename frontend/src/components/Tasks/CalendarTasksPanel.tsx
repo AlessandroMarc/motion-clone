@@ -240,4 +240,3 @@ export function CalendarTasksPanel({
   );
 }
 
-export default CalendarTasksPanel;

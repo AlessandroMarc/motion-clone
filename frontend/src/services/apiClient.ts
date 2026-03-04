@@ -1,6 +1,6 @@
 import { getAuthToken } from '@/lib/auth';
 
-export interface ApiResponse<T> {
+interface ApiResponse<T> {
   success: boolean;
   message: string;
   data?: T;

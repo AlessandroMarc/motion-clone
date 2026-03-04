@@ -48,7 +48,7 @@ export function getAuthenticatedSupabase(authToken: string) {
  * Get Supabase JWT secret from environment variables
  * This is used for local JWT verification
  */
-export function getSupabaseJwtSecret(): string {
+function getSupabaseJwtSecret(): string {
   const secret = process.env.SUPABASE_JWT_SECRET;
   if (!secret) {
     throw new Error(
@@ -62,7 +62,7 @@ export function getSupabaseJwtSecret(): string {
 /**
  * Interface for verified JWT payload
  */
-export interface VerifiedTokenPayload {
+interface VerifiedTokenPayload {
   userId: string;
   email?: string;
   exp: number;

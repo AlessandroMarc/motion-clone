@@ -1,76 +1,76 @@
 // Landing Content Interfaces
-export interface LandingNav {
+interface LandingNav {
   brand: string;
   cta: string;
   dashboard: string;
 }
 
-export interface LandingHero {
+interface LandingHero {
   headline: string;
   subheadline: string;
   primaryCta: string;
   secondaryCta: string;
 }
 
-export interface LandingSellingPoint {
+interface LandingSellingPoint {
   id: string;
   title: string;
   description: string;
   icon: string;
 }
 
-export interface LandingSellingPoints {
+interface LandingSellingPoints {
   items: LandingSellingPoint[];
 }
 
-export interface LandingFeature {
+interface LandingFeature {
   id: string;
   title: string;
   description: string;
   icon: string;
 }
 
-export interface LandingFeatures {
+interface LandingFeatures {
   sectionTitle: string;
   sectionSubtitle: string;
   items: LandingFeature[];
 }
 
-export interface LandingBenefit {
+interface LandingBenefit {
   id: string;
   metric: string;
   label: string;
 }
 
-export interface LandingBenefits {
+interface LandingBenefits {
   sectionTitle: string;
   items: LandingBenefit[];
 }
 
-export interface LandingHowItWorksStep {
+interface LandingHowItWorksStep {
   number: string;
   title: string;
   description: string;
 }
 
-export interface LandingHowItWorks {
+interface LandingHowItWorks {
   sectionTitle: string;
   sectionSubtitle: string;
   steps: LandingHowItWorksStep[];
 }
 
-export interface LandingFinalCta {
+interface LandingFinalCta {
   headline: string;
   subheadline: string;
   primaryCta: string;
 }
 
-export interface LandingFooter {
+interface LandingFooter {
   copyright: string;
   tagline: string;
 }
 
-export interface LandingContent {
+interface LandingContent {
   nav: LandingNav;
   hero: LandingHero;
   sellingPoints: LandingSellingPoints;
@@ -82,35 +82,35 @@ export interface LandingContent {
 }
 
 // Onboarding Content Interfaces
-export interface OnboardingWelcome {
+interface OnboardingWelcome {
   title: string;
   description: string;
   cta: string;
 }
 
-export interface OnboardingStep {
+interface OnboardingStep {
   title: string;
   description: string;
 }
 
-export interface OnboardingSteps {
+interface OnboardingSteps {
   createTask: OnboardingStep;
   createProject: OnboardingStep;
   schedule: OnboardingStep;
   syncCalendar: OnboardingStep;
 }
 
-export interface OnboardingChecklistStep {
+interface OnboardingChecklistStep {
   id: string;
   label: string;
 }
 
-export interface OnboardingChecklist {
+interface OnboardingChecklist {
   title: string;
   steps: OnboardingChecklistStep[];
 }
 
-export interface OnboardingContent {
+interface OnboardingContent {
   welcome: OnboardingWelcome;
   steps: OnboardingSteps;
   checklist: OnboardingChecklist;

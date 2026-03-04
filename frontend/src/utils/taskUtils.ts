@@ -24,7 +24,7 @@ export const TASK_COMPLETED_CLASS = 'line-through text-muted-foreground';
 /** Optional class for completed card opacity. */
 export const TASK_COMPLETED_OPACITY_CLASS = 'opacity-60';
 
-export function getTaskCompletedClassName(): string {
+function getTaskCompletedClassName(): string {
   return TASK_COMPLETED_CLASS;
 }
 
@@ -48,7 +48,7 @@ export function sortTasksByPriority(tasks: Task[]): Task[] {
   return [...tasks].sort(compareTaskPriority);
 }
 
-export interface GroupTasksByProjectResult {
+interface GroupTasksByProjectResult {
   unassigned: Task[];
   byProject: { project: Project; tasks: Task[] }[];
 }

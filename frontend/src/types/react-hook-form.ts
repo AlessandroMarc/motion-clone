@@ -7,17 +7,17 @@ import type {
 /**
  * Shared types for React Hook Form components
  */
-export interface FormFieldRegister {
+interface FormFieldRegister {
   register: UseFormRegisterReturn;
 }
 
-export interface FormFieldErrors<
+interface FormFieldErrors<
   TFieldValues extends FieldValues = Record<string, unknown>,
 > {
   errors: FieldErrors<TFieldValues>;
 }
 
-export interface FormFieldProps<
+interface FormFieldProps<
   TFieldValues extends FieldValues = Record<string, unknown>,
 > {
   register: UseFormRegisterReturn;

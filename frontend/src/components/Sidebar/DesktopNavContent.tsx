@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { sidebarNavigation, supportNavigation } from './navigation';
 import { SidebarUserSection } from './SidebarUserSection';
 
-export interface DesktopNavContentProps {
+interface DesktopNavContentProps {
   onLinkClick?: () => void;
 }
 

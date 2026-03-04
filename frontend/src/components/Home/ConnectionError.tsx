@@ -9,7 +9,7 @@ import {
 } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 
-export function ConnectionError() {
+function ConnectionError() {
   return (
     <div className="flex-1 p-6 flex items-center justify-center">
       <Card className="w-full max-w-md">

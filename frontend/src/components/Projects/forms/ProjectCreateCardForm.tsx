@@ -19,7 +19,7 @@ import { ProjectDescriptionField } from './ProjectDescriptionField';
 import { ProjectDeadlineField } from './ProjectDeadlineField';
 import { ProjectFormActions } from './ProjectFormActions';
 
-export function ProjectCreateCardForm({
+function ProjectCreateCardForm({
   onProjectCreate,
 }: ProjectCreateFormProps) {
   const [isExpanded, setIsExpanded] = useState(false);

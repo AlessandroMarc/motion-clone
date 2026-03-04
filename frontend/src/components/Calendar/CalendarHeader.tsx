@@ -226,7 +226,7 @@ interface CalendarGridHeaderProps {
   weekDates: Date[];
 }
 
-export function CalendarGridHeader({ weekDates }: CalendarGridHeaderProps) {
+function CalendarGridHeader({ weekDates }: CalendarGridHeaderProps) {
   return (
     <div className="grid grid-cols-8 gap-px bg-border rounded-lg overflow-hidden">
       {/* Time column header */}

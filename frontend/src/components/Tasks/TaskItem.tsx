@@ -31,7 +31,7 @@ interface TaskItemProps {
   onSelect?: (task: Task) => void;
 }
 
-export function TaskItem({
+function TaskItem({
   task,
   project,
   availableProjects,

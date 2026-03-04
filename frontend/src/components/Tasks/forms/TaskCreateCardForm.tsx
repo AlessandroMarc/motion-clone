@@ -24,7 +24,7 @@ import { TaskBlockedByField } from './TaskBlockedByField';
 import { TaskDurationFields } from './TaskDurationFields';
 import { TaskFormActions } from './TaskFormActions';
 
-export function TaskCreateCardForm({ onTaskCreate }: TaskCreateFormProps) {
+function TaskCreateCardForm({ onTaskCreate }: TaskCreateFormProps) {
   const [isExpanded, setIsExpanded] = useState(false);
 
   const {
