@@ -4,4 +4,3 @@
  */
 export * from './entities';
 export * from './api';
-export * from './react-hook-form';
