@@ -240,6 +240,15 @@ export function distributeEvents(
       roundedNow > workingHoursStart ? roundedNow : workingHoursStart;
   }
 
+  // Respect start_date: don't schedule before the task's earliest allowed date
+  if (task.start_date) {
+    const startDateWorkingHours = new Date(task.start_date);
+    startDateWorkingHours.setHours(config.workingHoursStart, 0, 0, 0);
+    if (currentTime < startDateWorkingHours) {
+      currentTime = startDateWorkingHours;
+    }
+  }
+
   // Determine end date
   let endDate: Date;
   if (task.due_date) {

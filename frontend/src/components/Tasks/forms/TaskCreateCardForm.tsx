@@ -17,6 +17,7 @@ import {
 import { TaskTitleField } from './TaskTitleField';
 import { TaskDescriptionField } from './TaskDescriptionField';
 import { TaskDueDateField } from './TaskDueDateField';
+import { TaskStartDateField } from './TaskStartDateField';
 import { TaskPriorityField } from './TaskPriorityField';
 import { TaskProjectField } from './TaskProjectField';
 import { TaskScheduleField } from './TaskScheduleField';
@@ -106,6 +107,12 @@ export function TaskCreateCardForm({ onTaskCreate }: TaskCreateFormProps) {
                   placeholder="Select priority"
                 />
               </div>
+
+              <TaskStartDateField
+                register={register}
+                errors={errors}
+                id="quick-startDate"
+              />
 
               <TaskProjectField errors={errors} />
               <TaskScheduleField errors={errors} id="quick-scheduleId" />

@@ -89,6 +89,12 @@ export class TaskService {
       dueDateString = toDateOnly(input.due_date);
     }
 
+    // Normalize start_date (earliest scheduling date)
+    let startDateString: string | null = null;
+    if (input.start_date !== null && input.start_date !== undefined) {
+      startDateString = toDateOnly(input.start_date);
+    }
+
     // Resolve schedule_id: use provided value, then fall back to user's active/default schedule
     // Uses a single optimized query instead of 4 sequential queries
     const scheduleStart = Date.now();
@@ -230,6 +236,7 @@ export class TaskService {
           actual_duration_minutes: normalizedActual,
           user_id: input.user_id,
           schedule_id: scheduleId,
+          start_date: startDateString,
           is_recurring: isRecurring,
           recurrence_pattern: isRecurring ? input.recurrence_pattern : null,
           recurrence_interval: isRecurring
@@ -331,6 +338,7 @@ export class TaskService {
       recurrence_interval?: number;
       next_generation_cutoff?: string | null;
       recurrence_start_date?: string | null;
+      start_date?: string | null;
     } = {
       updated_at: new Date().toISOString(),
     };
@@ -345,6 +353,10 @@ export class TaskService {
       } else {
         updateData.due_date = toDateOnly(input.due_date);
       }
+    }
+    if (input.start_date !== undefined) {
+      updateData.start_date =
+        input.start_date !== null ? toDateOnly(input.start_date) : null;
     }
     if (input.priority !== undefined) updateData.priority = input.priority;
     if (input.dependencies !== undefined)

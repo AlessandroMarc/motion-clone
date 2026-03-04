@@ -21,6 +21,7 @@ import { normalizeToMidnight } from '@/utils/dateUtils';
 import { TaskTitleField } from './TaskTitleField';
 import { TaskDescriptionField } from './TaskDescriptionField';
 import { TaskDueDateField } from './TaskDueDateField';
+import { TaskStartDateField } from './TaskStartDateField';
 import { TaskPriorityField } from './TaskPriorityField';
 import { TaskProjectField } from './TaskProjectField';
 import { TaskScheduleField } from './TaskScheduleField';
@@ -53,6 +54,7 @@ const emptyFormValues: TaskFormData = {
   recurrence_pattern: undefined,
   recurrence_interval: 1,
   recurrenceStartDate: undefined,
+  startDate: undefined,
 };
 
 const formatDateOnly = (date: Date): string => {
@@ -77,6 +79,9 @@ const mapTaskToFormValues = (task: Task): TaskFormData => ({
   recurrence_interval: task.recurrence_interval ?? 1,
   recurrenceStartDate: task.recurrence_start_date
     ? formatDateOnly(new Date(task.recurrence_start_date))
+    : undefined,
+  startDate: task.start_date
+    ? formatDateOnly(new Date(task.start_date))
     : undefined,
 });
 
@@ -218,6 +223,7 @@ export function TaskEditDialogForm({
           data.is_recurring && data.recurrenceStartDate
             ? new Date(data.recurrenceStartDate)
             : null,
+        startDate: data.startDate ? new Date(data.startDate) : null,
       });
 
       console.log(
@@ -302,6 +308,7 @@ export function TaskEditDialogForm({
           data.is_recurring && data.recurrenceStartDate
             ? new Date(data.recurrenceStartDate)
             : null,
+        startDate: data.startDate ? new Date(data.startDate) : null,
       });
 
       onTaskCloned?.(clonedTask);
@@ -356,6 +363,7 @@ export function TaskEditDialogForm({
               {!isRecurring && (
                 <TaskDueDateField register={register} errors={errors} />
               )}
+              <TaskStartDateField register={register} errors={errors} />
               <TaskPriorityField
                 value={priority}
                 onValueChange={handlePriorityChange}

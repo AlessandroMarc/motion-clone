@@ -2,6 +2,7 @@
 export { TaskTitleField } from './TaskTitleField';
 export { TaskDescriptionField } from './TaskDescriptionField';
 export { TaskDueDateField } from './TaskDueDateField';
+export { TaskStartDateField } from './TaskStartDateField';
 export { TaskPriorityField } from './TaskPriorityField';
 export { TaskFormActions } from './TaskFormActions';
 export { TaskDurationFields } from './TaskDurationFields';

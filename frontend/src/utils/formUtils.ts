@@ -38,6 +38,9 @@ export function transformFormDataToTask(
       isRecurring && data.recurrenceStartDate
         ? normalizeToMidnight(parseLocalDate(data.recurrenceStartDate))
         : null,
+    start_date: data.startDate
+      ? normalizeToMidnight(parseLocalDate(data.startDate))
+      : null,
   };
   return transformed;
 }

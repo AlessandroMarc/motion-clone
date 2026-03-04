@@ -42,6 +42,7 @@ export function toTask(raw: UnknownRecord): Task {
     blockedBy: raw.blocked_by || [],
     recurrence_start_date: toOptionalDate(raw.recurrence_start_date),
     next_generation_cutoff: toOptionalDate(raw.next_generation_cutoff),
+    start_date: toOptionalDate(raw.start_date),
   } as Task;
 }
 
