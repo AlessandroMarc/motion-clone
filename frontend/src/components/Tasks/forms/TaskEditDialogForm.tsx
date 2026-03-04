@@ -294,7 +294,9 @@ export function TaskEditDialogForm({
       const clonedTask = await taskService.createTask({
         title: data.title,
         description: data.description,
-        dueDate: data.dueDate ? normalizeToMidnight(new Date(data.dueDate)) : null,
+        dueDate: data.dueDate
+          ? normalizeToMidnight(new Date(data.dueDate))
+          : null,
         priority: data.priority,
         project_id: data.project_id ?? undefined,
         scheduleId: data.scheduleId || undefined,
@@ -302,8 +304,12 @@ export function TaskEditDialogForm({
         plannedDurationMinutes: data.planned_duration_minutes,
         actualDurationMinutes: data.actual_duration_minutes ?? 0,
         isRecurring: data.is_recurring,
-        recurrencePattern: data.is_recurring ? data.recurrence_pattern : undefined,
-        recurrenceInterval: data.is_recurring ? data.recurrence_interval : undefined,
+        recurrencePattern: data.is_recurring
+          ? data.recurrence_pattern
+          : undefined,
+        recurrenceInterval: data.is_recurring
+          ? data.recurrence_interval
+          : undefined,
         recurrenceStartDate:
           data.is_recurring && data.recurrenceStartDate
             ? new Date(data.recurrenceStartDate)
@@ -348,7 +354,9 @@ export function TaskEditDialogForm({
               console.log('Form state:', { isDirty, isValid, errors });
               if (Object.keys(errors).length > 0) {
                 console.error('❌ Form validation errors:', errors);
-                toast.error(`Validation failed: ${getValidationErrorMessage()}`);
+                toast.error(
+                  `Validation failed: ${getValidationErrorMessage()}`
+                );
               }
               handleSubmit(onSubmit)(e);
             }}

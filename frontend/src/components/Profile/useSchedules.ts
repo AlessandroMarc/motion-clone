@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { userSettingsService } from '@/services/userSettingsService';
-import type { Schedule } from '@/types';
+import type { Schedule, DaySchedule } from '@/types';
 import { toast } from 'sonner';
 
 export function useSchedules() {
@@ -33,7 +33,8 @@ export function useSchedules() {
     async (
       name: string,
       workingHoursStart: number,
-      workingHoursEnd: number
+      workingHoursEnd: number,
+      workingDays?: Record<number, DaySchedule | null>
     ) => {
       if (!user?.id) return;
 
@@ -42,7 +43,8 @@ export function useSchedules() {
         name,
         workingHoursStart,
         workingHoursEnd,
-        schedules.length === 0 // First schedule is default
+        schedules.length === 0, // First schedule is default
+        workingDays
       );
 
       await loadSchedules();
@@ -63,7 +65,8 @@ export function useSchedules() {
       scheduleId: string,
       name: string,
       workingHoursStart: number,
-      workingHoursEnd: number
+      workingHoursEnd: number,
+      workingDays?: Record<number, DaySchedule | null>
     ) => {
       if (!user?.id) return;
 
@@ -72,7 +75,8 @@ export function useSchedules() {
         user.id,
         name,
         workingHoursStart,
-        workingHoursEnd
+        workingHoursEnd,
+        workingDays
       );
 
       await loadSchedules();

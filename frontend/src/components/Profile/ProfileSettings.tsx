@@ -19,6 +19,7 @@ import { Plus } from 'lucide-react';
 import { toast } from 'sonner';
 import type { Schedule } from '@/types';
 import { logger } from '@/lib/logger';
+import type { ScheduleFormData } from './ScheduleFormDialog';
 
 export function ProfileSettings() {
   const { activeSchedule } = useAuth();
@@ -35,16 +36,13 @@ export function ProfileSettings() {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [editingSchedule, setEditingSchedule] = useState<Schedule | null>(null);
 
-  const handleCreateSchedule = async (data: {
-    name: string;
-    workingHoursStart: number;
-    workingHoursEnd: number;
-  }) => {
+  const handleCreateSchedule = async (data: ScheduleFormData) => {
     try {
       await createSchedule(
         data.name,
         data.workingHoursStart,
-        data.workingHoursEnd
+        data.workingHoursEnd,
+        data.workingDays
       );
       toast.success('Schedule created successfully');
     } catch (error) {
@@ -53,11 +51,7 @@ export function ProfileSettings() {
     }
   };
 
-  const handleEditSchedule = async (data: {
-    name: string;
-    workingHoursStart: number;
-    workingHoursEnd: number;
-  }) => {
+  const handleEditSchedule = async (data: ScheduleFormData) => {
     if (!editingSchedule) return;
 
     try {
@@ -65,7 +59,8 @@ export function ProfileSettings() {
         editingSchedule.id,
         data.name,
         data.workingHoursStart,
-        data.workingHoursEnd
+        data.workingHoursEnd,
+        data.workingDays
       );
       toast.success('Schedule updated successfully');
       setEditingSchedule(null);

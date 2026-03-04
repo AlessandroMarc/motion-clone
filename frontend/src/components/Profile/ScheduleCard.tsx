@@ -16,6 +16,7 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import type { Schedule } from '@/types';
+import { formatWorkingHoursSummary } from '@/utils/scheduleUtils';
 
 interface ScheduleCardProps {
   schedule: Schedule;
@@ -58,8 +59,7 @@ export function ScheduleCard({
             {isActive && <Badge variant="default">Active</Badge>}
           </div>
           <p className="text-sm text-muted-foreground">
-            {String(schedule.working_hours_start).padStart(2, '0')}:00 -{' '}
-            {String(schedule.working_hours_end).padStart(2, '0')}:00
+            {formatWorkingHoursSummary(schedule)}
           </p>
         </div>
       </div>
