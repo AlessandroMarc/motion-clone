@@ -1,9 +1,5 @@
 import { test, expect, Page, Route } from '@playwright/test';
-import {
-  mockTasks,
-  mockProjects,
-  apiSuccess,
-} from './fixtures/apiMocks';
+import { mockTasks, mockProjects, apiSuccess } from './fixtures/apiMocks';
 
 /**
  * E2E tests for Auto-Schedule overlap prevention.
@@ -89,7 +85,7 @@ async function setupMocks(
   const createdEvents: Record<string, unknown>[] = [];
 
   // Catch-all for any other API calls (register first so specific handlers below can override it)
-  await page.route('http://localhost:3003/**', (route) =>
+  await page.route('http://localhost:3003/**', route =>
     route.fulfill({
       status: 200,
       contentType: 'application/json',
@@ -147,7 +143,8 @@ async function setupMocks(
                 apiSuccess({
                   results: body.map((_, i) => ({
                     success: true,
-                    event: createdEvents[createdEvents.length - body.length + i],
+                    event:
+                      createdEvents[createdEvents.length - body.length + i],
                     index: i,
                   })),
                   total: body.length,
@@ -208,7 +205,7 @@ async function setupMocks(
   );
 
   // GET /projects
-  await page.route('http://localhost:3003/api/projects*', (route) =>
+  await page.route('http://localhost:3003/api/projects*', route =>
     route.fulfill({
       status: 200,
       contentType: 'application/json',
@@ -219,7 +216,7 @@ async function setupMocks(
   );
 
   // GET /schedules
-  await page.route('http://localhost:3003/api/schedules*', (route) =>
+  await page.route('http://localhost:3003/api/schedules*', route =>
     route.fulfill({
       status: 200,
       contentType: 'application/json',
@@ -230,7 +227,7 @@ async function setupMocks(
   );
 
   // GET /user-settings
-  await page.route('http://localhost:3003/api/user-settings*', (route) =>
+  await page.route('http://localhost:3003/api/user-settings*', route =>
     route.fulfill({
       status: 200,
       contentType: 'application/json',
@@ -294,8 +291,12 @@ test.describe('Auto-Schedule – overlap prevention', () => {
     // Verify: created events do not overlap
     const sorted = [...createdEvents]
       .filter(
-        (e): e is Record<string, unknown> & { start_time: string; end_time: string } =>
-          typeof e.start_time === 'string' && typeof e.end_time === 'string'
+        (
+          e
+        ): e is Record<string, unknown> & {
+          start_time: string;
+          end_time: string;
+        } => typeof e.start_time === 'string' && typeof e.end_time === 'string'
       )
       .sort(
         (a, b) =>
@@ -431,7 +432,12 @@ test.describe('Auto-Schedule – overlap prevention', () => {
     if (createdEvents.length > 0) {
       const sorted = [...createdEvents]
         .filter(
-          (e): e is Record<string, unknown> & { start_time: string; end_time: string } =>
+          (
+            e
+          ): e is Record<string, unknown> & {
+            start_time: string;
+            end_time: string;
+          } =>
             typeof e.start_time === 'string' && typeof e.end_time === 'string'
         )
         .sort(
