@@ -1154,20 +1154,21 @@ describe('taskScheduler', () => {
       const config: TaskSchedulingConfig = {
         ...DEFAULT_CONFIG,
         workingDays: {
+          0: null, // Sun
           1: { start: 9, end: 17 }, // Mon
           2: { start: 10, end: 18 }, // Tue
           3: { start: 8, end: 16 }, // Wed
+          4: null, // Thu
+          5: null, // Fri
+          6: null, // Sat
         },
       };
 
       expect(getDayWorkingHours(config, 1)).toEqual({ start: 9, end: 17 });
       expect(getDayWorkingHours(config, 2)).toEqual({ start: 10, end: 18 });
       expect(getDayWorkingHours(config, 3)).toEqual({ start: 8, end: 16 });
-      // Day 4 not in workingDays → falls back to global hours (DEFAULT_CONFIG)
-      expect(getDayWorkingHours(config, 4)).toEqual({
-        start: DEFAULT_CONFIG.workingHoursStart,
-        end: DEFAULT_CONFIG.workingHoursEnd,
-      });
+      // Day 4 explicitly null in workingDays → non-working day
+      expect(getDayWorkingHours(config, 4)).toBeNull();
     });
   });
 
@@ -1209,7 +1210,13 @@ describe('taskScheduler', () => {
         eventDurationMinutes: 60,
         defaultDaysWithoutDeadline: 7,
         workingDays: {
+          0: null,
+          1: null,
+          2: null,
           3: { start: 10, end: 12 }, // Only Wednesday, 10-12
+          4: null,
+          5: null,
+          6: null,
         },
       };
 
@@ -1281,11 +1288,13 @@ describe('taskScheduler', () => {
         working_hours_start: 9,
         working_hours_end: 22,
         working_days: {
+          0: null,
           1: { start: 9, end: 18 },
           2: { start: 9, end: 18 },
           3: { start: 9, end: 18 },
           4: { start: 9, end: 18 },
           5: { start: 9, end: 18 },
+          6: null,
         },
         is_default: true,
         created_at: new Date(),
