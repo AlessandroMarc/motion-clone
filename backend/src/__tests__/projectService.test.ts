@@ -48,10 +48,14 @@ describe('ProjectService', () => {
   describe('deleteProject', () => {
     test('should delete project and all related data atomically via RPC', async () => {
       // Arrange: RPC succeeds and returns success
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const mockRpc = jest.fn().mockImplementation((_name: string, _params: any) =>
+      const mockRpc = jest.fn().mockImplementation(() =>
         Promise.resolve({
-          data: [{ success: true, message: 'Project and all related data deleted successfully' }],
+          data: [
+            {
+              success: true,
+              message: 'Project and all related data deleted successfully',
+            },
+          ],
           error: null,
         })
       );
@@ -72,14 +76,18 @@ describe('ProjectService', () => {
 
     test('should throw an error if RPC call fails', async () => {
       // Arrange: RPC fails
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const mockRpc = jest.fn().mockImplementation((_name: string, _params: any) =>
+      const mockRpc = jest.fn().mockImplementation(() =>
         Promise.resolve({
           data: null,
           error: { message: 'RPC call failed' },
         })
       );
       mockClient.rpc = mockRpc;
+
+      // Suppress expected error log
+      const consoleErrorSpy = jest
+        .spyOn(console, 'error')
+        .mockImplementation(() => {});
 
       // Act & Assert
       await expect(
@@ -88,12 +96,14 @@ describe('ProjectService', () => {
           mockClient as unknown as SupabaseClient
         )
       ).rejects.toThrow('Failed to delete project: RPC call failed');
+
+      // Cleanup
+      consoleErrorSpy.mockRestore();
     });
 
     test('should throw an error if RPC returns failure status', async () => {
       // Arrange: RPC returns success flag as false
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const mockRpc = jest.fn().mockImplementation((_name: string, _params: any) =>
+      const mockRpc = jest.fn().mockImplementation(() =>
         Promise.resolve({
           data: [{ success: false, message: 'Database constraint violation' }],
           error: null,
@@ -101,13 +111,23 @@ describe('ProjectService', () => {
       );
       mockClient.rpc = mockRpc;
 
+      // Suppress expected error log
+      const consoleErrorSpy = jest
+        .spyOn(console, 'error')
+        .mockImplementation(() => {});
+
       // Act & Assert
       await expect(
         projectService.deleteProject(
           'project-123',
           mockClient as unknown as SupabaseClient
         )
-      ).rejects.toThrow('Project deletion failed: Database constraint violation');
+      ).rejects.toThrow(
+        'Project deletion failed: Database constraint violation'
+      );
+
+      // Cleanup
+      consoleErrorSpy.mockRestore();
     });
   });
 });

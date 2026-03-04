@@ -129,8 +129,9 @@ export class ProjectService {
     return data;
   }
 
-  // Delete project and all related tasks
-  // Uses a transaction-like pattern to prevent orphaning data
+  // Delete project and all related tasks atomically
+  // Uses a database transaction via stored procedure to prevent data loss
+  // If any step fails, the entire operation is rolled back
   async deleteProject(
     id: string,
     client: SupabaseClient = serviceRoleSupabase
@@ -138,44 +139,24 @@ export class ProjectService {
     const startTime = Date.now();
 
     try {
-      // Step 1: Get all related tasks (verification checkpoint)
-      const { data: relatedTasks, error: tasksListError } = await client
-        .from('tasks')
-        .select('id')
-        .eq('project_id', id);
+      // Call the atomic delete function as an RPC
+      const { data, error } = await client.rpc('delete_project_and_tasks', {
+        p_project_id: id,
+      });
 
-      if (tasksListError) {
-        throw new Error(`Failed to list tasks: ${tasksListError.message}`);
+      if (error) {
+        throw new Error(`Failed to delete project: ${error.message}`);
       }
 
-      // Step 2: Delete all related tasks first (before project)
-      if (relatedTasks && relatedTasks.length > 0) {
-        const { error: tasksError } = await client
-          .from('tasks')
-          .delete()
-          .eq('project_id', id);
-
-        if (tasksError) {
-          throw new Error(
-            `Failed to delete project tasks: ${tasksError.message}`
-          );
-        }
-      }
-
-      // Step 3: Delete the project (only if tasks deletion succeeded)
-      const { error: projectError } = await client
-        .from('projects')
-        .delete()
-        .eq('id', id);
-
-      if (projectError) {
-        throw new Error(`Failed to delete project: ${projectError.message}`);
+      // Verify the RPC returned a success response
+      if (!data || !data[0] || !data[0].success) {
+        const message = data?.[0]?.message || 'Unknown error';
+        throw new Error(`Project deletion failed: ${message}`);
       }
 
       const duration = Date.now() - startTime;
-      const taskCount = relatedTasks?.length || 0;
       console.log(
-        `[ProjectService] Deleted project with ${taskCount} tasks in ${duration}ms`
+        `[ProjectService] Deleted project and all related data in ${duration}ms`
       );
 
       return true;

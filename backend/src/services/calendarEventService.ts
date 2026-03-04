@@ -51,14 +51,17 @@ export class CalendarEventService {
   private async updateTaskDurationFromEvent(
     taskId: string,
     eventDurationMinutes: number,
-    isCompleting: boolean
+    isCompleting: boolean,
+    skipLogging = false
   ): Promise<void> {
     try {
       const task = await this.taskService.getTaskById(taskId);
       if (!task) {
-        console.warn(
-          `[CalendarEventService] Task ${taskId} not found, skipping duration update`
-        );
+        if (!skipLogging) {
+          console.warn(
+            `[CalendarEventService] Task ${taskId} not found, skipping duration update`
+          );
+        }
         return;
       }
 
@@ -76,14 +79,18 @@ export class CalendarEventService {
         actual_duration_minutes: newActual,
       });
 
-      console.log(
-        `[CalendarEventService] Updated task ${taskId} actual duration: ${currentActual} -> ${newActual} (${isCompleting ? '+' : '-'}${eventDurationMinutes}min)`
-      );
+      if (!skipLogging) {
+        console.log(
+          `[CalendarEventService] Updated task ${taskId} actual duration: ${currentActual} -> ${newActual} (${isCompleting ? '+' : '-'}${eventDurationMinutes}min)`
+        );
+      }
     } catch (error) {
-      console.error(
-        `[CalendarEventService] Failed to update task duration:`,
-        error
-      );
+      if (!skipLogging) {
+        console.error(
+          `[CalendarEventService] Failed to update task duration:`,
+          error
+        );
+      }
     }
   }
 
@@ -743,7 +750,8 @@ export class CalendarEventService {
         await this.updateTaskDurationFromEvent(
           nextLinkedTaskId,
           eventDurationMinutes,
-          isCompleting
+          isCompleting,
+          skipLogging
         );
       }
     }

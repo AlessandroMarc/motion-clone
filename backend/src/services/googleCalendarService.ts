@@ -374,6 +374,8 @@ export class GoogleCalendarService {
             ? existingEventsMap.get(googleEvent.id)
             : null;
 
+          const incomingDescription = googleEvent.description ?? undefined;
+
           const eventData: {
             title: string;
             description?: string;
@@ -391,8 +393,8 @@ export class GoogleCalendarService {
             synced_from_google: true,
           };
 
-          if (googleEvent.description) {
-            eventData.description = googleEvent.description;
+          if (incomingDescription !== undefined) {
+            eventData.description = incomingDescription;
           }
 
           if (existingEvent) {
@@ -438,12 +440,16 @@ export class GoogleCalendarService {
                 }
               ).synced_from_google ?? false;
 
+            const effectiveDescription =
+              incomingDescription === undefined
+                ? existingDescription
+                : incomingDescription;
+
             const isUnchanged =
               existingTitle === eventData.title &&
               existingStart === normalizeDate(eventData.start_time) &&
               existingEnd === normalizeDate(eventData.end_time) &&
-              (eventData.description === undefined ||
-                existingDescription === eventData.description) &&
+              existingDescription === effectiveDescription &&
               existingSyncedFromGoogle === true;
 
             if (isUnchanged) {
@@ -463,8 +469,11 @@ export class GoogleCalendarService {
               start_time: eventData.start_time,
               end_time: eventData.end_time,
             };
-            if (eventData.description !== undefined) {
-              updateData.description = eventData.description;
+            if (
+              incomingDescription !== undefined &&
+              incomingDescription !== existingDescription
+            ) {
+              updateData.description = incomingDescription;
             }
             if (!existingSyncedFromGoogle) {
               updateData.synced_from_google = true;
