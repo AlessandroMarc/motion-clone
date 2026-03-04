@@ -15,16 +15,30 @@ jest.unstable_mockModule('../services/motionApiService.js', () => ({
 }));
 
 // ── Mock the Supabase config before importing services ────────────────────────
-const mockSupabaseClient = {
-  from: jest.fn().mockReturnThis(),
-  insert: jest.fn().mockReturnThis(),
-  update: jest.fn().mockReturnThis(),
-  select: jest.fn().mockReturnThis(),
-  single: jest.fn(),
-  eq: jest.fn().mockReturnThis(),
-  order: jest.fn().mockReturnThis(),
+const createMockSupabaseClient = () => {
+  const builder: any = {};
+
+  // Chainable query-builder methods
+  builder.from = jest.fn(() => builder);
+  builder.insert = jest.fn(() => builder);
+  builder.update = jest.fn(() => builder);
+  builder.select = jest.fn(() => builder);
+  builder.eq = jest.fn(() => builder);
+  builder.order = jest.fn(() => builder);
+
+  // Methods that are usually awaited
+  builder.single = jest.fn(() =>
+    Promise.resolve({ data: null, error: null }),
+  );
+
+  // Make the builder thenable so `await builder` yields `{ data, error }`
+  builder.then = (onFulfilled: any, onRejected?: any) =>
+    Promise.resolve({ data: null, error: null }).then(onFulfilled, onRejected);
+
+  return builder;
 };
 
+const mockSupabaseClient = createMockSupabaseClient();
 jest.unstable_mockModule('../config/supabase.js', () => ({
   serviceRoleSupabase: mockSupabaseClient,
   getAuthenticatedSupabase: jest.fn().mockReturnValue(mockSupabaseClient),
