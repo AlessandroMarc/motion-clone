@@ -4,7 +4,7 @@ import { useOnboarding as useOnboardingContext } from '@/contexts/OnboardingCont
 import { useAuth } from '@/contexts/AuthContext';
 import { usePathname } from 'next/navigation';
 import { useEffect, useCallback } from 'react';
-import posthog from 'posthog-js';
+import { captureEvent } from '@/lib/analytics';
 
 /**
  * Hook personalizzato per gestire la logica dell'onboarding
@@ -103,7 +103,7 @@ export function useOnboarding() {
       // Nuovo utente o utente senza onboarding completato, traccia l'inizio dell'onboarding
       // Solo se non è già stato tracciato (started_at è null)
       if (!status.started_at) {
-        posthog.capture('onboarding_started');
+        captureEvent('onboarding_started');
       }
     }
   }, [user, status]);

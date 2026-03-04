@@ -17,9 +17,17 @@ export const changelogEntries: ChangelogEntry[] = [
   {
     version: '1.6.0',
     date: 'March 2026',
-    title: "Support for day by day scheduling",
+    title: 'Support for Start Date',
     description:
-      "The auto-scheduler can now plan tasks on a day-by-day basis, respecting your configured working hours and skipping non-working days.",
+      'The auto-scheduler can now take into account a task\'s "start date" to ensure it only schedules tasks on or after that date.',
+      items: []
+  },
+  {
+    version: '1.6.0',
+    date: 'March 2026',
+    title: 'Support for setting a different schedule each day of the week',
+    description:
+      'The auto-scheduler can now plan tasks on a day-by-day basis, respecting your configured working hours and skipping non-working days.',
     items: [
       {
         type: 'new',
@@ -28,9 +36,10 @@ export const changelogEntries: ChangelogEntry[] = [
       {
         type: 'new',
         text: 'Non-working days are automatically skipped during scheduling, so your calendar only shows realistic time blocks.',
-      }]
+      },
+    ],
   },
-  {    
+  {
     version: '1.5.0',
     date: 'March 2026',
     title: 'Recurring Tasks',
