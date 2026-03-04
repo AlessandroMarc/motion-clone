@@ -52,41 +52,43 @@ router.post('/', async (req: Request, res: Response) => {
     });
   }
 
-  // Respond immediately — the migration runs async in the background
-  res.status(202).json({
-    success: true,
-    message: 'Migration started. Results will be logged server-side.',
-  });
-
   migrationsInProgress.add(userId);
 
-  const migrationService = new MotionMigrationService(motionApiKey);
-  migrationService
-    .migrate(userId, authReq.authToken)
-    .then(result => {
-      console.log(
-        `[motion-migration] user=${userId} ` +
-        `projects=${result.totalProjectsImported} ` +
-        `tasks=${result.totalTasksImported} ` +
-        `recurring=${result.totalRecurringTasksImported}`
+  try {
+    const migrationService = new MotionMigrationService(motionApiKey);
+    const result = await migrationService.migrate(userId, authReq.authToken);
+
+    console.log(
+      `[motion-migration] user=${userId} ` +
+      `projects=${result.totalProjectsImported} ` +
+      `tasks=${result.totalTasksImported} ` +
+      `recurring=${result.totalRecurringTasksImported}`
+    );
+    const totalErrors = result.workspaces.reduce((n, w) => n + w.errors.length, 0);
+    if (totalErrors > 0) {
+      console.warn(`[motion-migration] user=${userId} completed with ${totalErrors} error(s):`);
+      result.workspaces.forEach(w =>
+        w.errors.forEach(e => console.warn(`  [${w.motionWorkspaceName}] ${e}`))
       );
-      const totalErrors = result.workspaces.reduce((n, w) => n + w.errors.length, 0);
-      if (totalErrors > 0) {
-        console.warn(`[motion-migration] user=${userId} completed with ${totalErrors} error(s):`);
-        result.workspaces.forEach(w =>
-          w.errors.forEach(e => console.warn(`  [${w.motionWorkspaceName}] ${e}`))
-        );
-      }
-    })
-    .catch(err => {
-      console.error(
-        `[motion-migration] user=${userId} fatal error:`,
-        err instanceof Error ? err.message : String(err)
-      );
-    })
-    .finally(() => {
-      migrationsInProgress.delete(userId);
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: 'Migration completed.',
+      result,
     });
+  } catch (err) {
+    console.error(
+      `[motion-migration] user=${userId} fatal error:`,
+      err instanceof Error ? err.message : String(err)
+    );
+    return res.status(500).json({
+      success: false,
+      message: 'Migration failed due to an internal error.',
+    });
+  } finally {
+    migrationsInProgress.delete(userId);
+  }
 });
 
 export default router;
