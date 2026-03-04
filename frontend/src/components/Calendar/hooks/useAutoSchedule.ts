@@ -18,8 +18,12 @@ import { expandRecurringTasks } from '@/utils/recurrenceCalculator';
 // Constants
 // ---------------------------------------------------------------------------
 const DEBOUNCE_MS = 1_000;
-const THROTTLE_MS = 30_000;
+const THROTTLE_MS = 3_000;
 const DEFAULT_EVENT_DURATION = 60;
+/** Minimum time between two consecutive auto-applies (safety net). */
+const APPLY_COOLDOWN_MS = 15_000;
+/** Stop auto-running after this many consecutive automatic cycles. */
+const MAX_CONSECUTIVE_AUTO_RUNS = 2;
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -115,6 +119,12 @@ export function useAutoSchedule(
   // set synchronously before refreshEvents() so a second click arriving
   // before the first enters runFullSchedule is still blocked.
   const isClickInFlightRef = useRef(false);
+
+  // Cooldown & oscillation guards
+  const lastAppliedAtRef = useRef<number>(0);
+  const consecutiveAutoRunsRef = useRef<number>(0);
+  /** Track the last few proposedTotal counts to detect oscillation patterns. */
+  const recentProposedCountsRef = useRef<number[]>([]);
 
   // Refs that always point at the latest value without affecting dep arrays
   const refreshEventsRef = useRef(refreshEvents);
@@ -575,6 +585,10 @@ export function useAutoSchedule(
     isClickInFlightRef.current = true;
 
     try {
+      // User clicked → reset all guards so the flow runs unconditionally
+      consecutiveAutoRunsRef.current = 0;
+      recentProposedCountsRef.current = [];
+      lastAppliedAtRef.current = 0;
       await runFullSchedule();
     } catch (err) {
       logger.error('Failed to fetch events for auto-scheduling:', err);
@@ -596,6 +610,23 @@ export function useAutoSchedule(
   const checkAndMaybeApply = useCallback(async () => {
     if (!user || !isInitialSyncComplete || isSchedulingRef.current) return;
 
+    // ── Cooldown guard ──
+    const elapsed = Date.now() - lastAppliedAtRef.current;
+    if (elapsed < APPLY_COOLDOWN_MS) {
+      console.log(
+        `[AUTOSCHEDULE:check] cooling down (${Math.round(elapsed / 1000)}s / ${APPLY_COOLDOWN_MS / 1000}s) — skipping`
+      );
+      return;
+    }
+
+    // ── Consecutive-run guard ──
+    if (consecutiveAutoRunsRef.current >= MAX_CONSECUTIVE_AUTO_RUNS) {
+      console.log(
+        `[AUTOSCHEDULE:check] hit max consecutive auto-runs (${MAX_CONSECUTIVE_AUTO_RUNS}) — pausing until user click`
+      );
+      return;
+    }
+
     try {
       // Ensure we have tasks — fetch if empty (e.g. first mount)
       const tasksToUse = tasks.length > 0 ? tasks : await loadTasks();
@@ -609,15 +640,35 @@ export function useAutoSchedule(
 
       const { existingTaskEvents, eventsToCreate } = result;
 
+      // ── Oscillation detector ──
+      const counts = recentProposedCountsRef.current;
+      counts.push(eventsToCreate.length);
+      if (counts.length > 4) counts.shift();
+      if (
+        counts.length >= 4 &&
+        counts[0] === counts[2] &&
+        counts[1] === counts[3] &&
+        counts[0] !== counts[1]
+      ) {
+        console.warn(
+          `[AUTOSCHEDULE:check] oscillation detected: ${counts.join(' → ')} — stopping`
+        );
+        return;
+      }
+
       if (isSameSchedule(existingTaskEvents, eventsToCreate)) {
         logger.info(
           'Auto-schedule: Schedule is already optimal. Skipping update.'
         );
+        // Reset consecutive counter since the schedule is stable
+        consecutiveAutoRunsRef.current = 0;
         return;
       }
 
       // Schedule differs — run the full flow (fetches fresh data + applies)
       logger.info('Auto-schedule: Schedule differs. Running full apply...');
+      consecutiveAutoRunsRef.current += 1;
+      lastAppliedAtRef.current = Date.now();
       await runFullSchedule();
     } catch (err) {
       logger.error('Auto-schedule check failed:', err);
@@ -687,8 +738,9 @@ export function useAutoSchedule(
     user,
     isInitialSyncComplete,
     tasksFingerprint,
-    events.length,
-    schedulesState.length,
+    // NOTE: events.length was intentionally removed — it caused re-triggering
+    // after every apply (since apply changes event count), leading to infinite
+    // oscillation loops.
   ]);
 
   return {
