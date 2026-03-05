@@ -104,7 +104,10 @@ export function calculateAutoSchedule(params: {
     const taskSchedule =
       (task.schedule_id ? scheduleMap.get(task.schedule_id) : undefined) ??
       activeSchedule;
-    const taskConfig = createConfigFromSchedule(taskSchedule ?? null, eventDuration);
+    const taskConfig = createConfigFromSchedule(
+      taskSchedule ?? null,
+      eventDuration
+    );
     const gapMs = (taskConfig.gapBetweenEventsMinutes ?? 5) * 60 * 1000;
 
     const taskWorkingHoursStart = new Date(now);
@@ -182,9 +185,8 @@ export function calculateAutoSchedule(params: {
     if (taskStartDate && taskStartTime < taskStartDate) {
       const startDateWorking = new Date(taskStartDate);
       startDateWorking.setHours(taskConfig.workingHoursStart, 0, 0, 0);
-      taskStartTime = startDateWorking > taskBaseStartTime
-        ? startDateWorking
-        : taskStartTime;
+      taskStartTime =
+        startDateWorking > taskBaseStartTime ? startDateWorking : taskStartTime;
     }
 
     const blockers = (task.blockedBy ?? []).filter(id =>

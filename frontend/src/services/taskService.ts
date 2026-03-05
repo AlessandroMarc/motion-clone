@@ -48,7 +48,10 @@ class TaskService {
 
     // Trigger auto-schedule asynchronously (fire-and-forget)
     calendarService.runAutoSchedule().catch(err => {
-      console.debug('[TaskService] Auto-schedule triggered after create', err?.message);
+      console.debug(
+        '[TaskService] Auto-schedule triggered after create',
+        err?.message
+      );
     });
 
     return task;
@@ -136,7 +139,10 @@ class TaskService {
 
     // Trigger auto-schedule asynchronously (fire-and-forget)
     calendarService.runAutoSchedule().catch(err => {
-      console.debug('[TaskService] Auto-schedule triggered after update', err?.message);
+      console.debug(
+        '[TaskService] Auto-schedule triggered after update',
+        err?.message
+      );
     });
 
     return updatedTask;
@@ -153,7 +159,10 @@ class TaskService {
 
     // Trigger auto-schedule asynchronously (fire-and-forget)
     calendarService.runAutoSchedule().catch(err => {
-      console.debug('[TaskService] Auto-schedule triggered after delete', err?.message);
+      console.debug(
+        '[TaskService] Auto-schedule triggered after delete',
+        err?.message
+      );
     });
   }
 

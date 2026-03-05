@@ -25,7 +25,7 @@ import {
 import { projectService } from '@/services/projectService';
 import type { Project, WorkItemStatus } from '@/types';
 import type { ProjectFormData } from '@/hooks/useProjectForm';
-import { normalizeToMidnight } from '@/utils/dateUtils';
+import { normalizeToMidnight, parseLocalDate } from '@/utils/dateUtils';
 
 // Helper function to format date for input field
 const formatDateForInput = (date: Date | null): string => {
@@ -77,7 +77,7 @@ export function ProjectEditDialog({
         name: data.name,
         description: data.description || undefined,
         deadline: data.deadline
-          ? normalizeToMidnight(new Date(data.deadline))
+          ? normalizeToMidnight(parseLocalDate(data.deadline))
           : null,
         status: status as 'not-started' | 'in-progress' | 'completed',
       };

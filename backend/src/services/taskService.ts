@@ -488,14 +488,15 @@ export class TaskService {
     }
 
     // Trigger auto-schedule if scheduling-relevant fields changed
-    if (authToken && (
-      input.due_date !== undefined ||
-      input.start_date !== undefined ||
-      input.blockedBy !== undefined ||
-      input.planned_duration_minutes !== undefined ||
-      input.is_recurring !== undefined ||
-      input.schedule_id !== undefined
-    )) {
+    if (
+      authToken &&
+      (input.due_date !== undefined ||
+        input.start_date !== undefined ||
+        input.blockedBy !== undefined ||
+        input.planned_duration_minutes !== undefined ||
+        input.is_recurring !== undefined ||
+        input.schedule_id !== undefined)
+    ) {
       const userId = input.user_id ?? existingTask.user_id;
       autoScheduleTriggerQueue.trigger(userId, authToken);
     }

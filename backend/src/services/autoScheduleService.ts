@@ -21,9 +21,7 @@ import { TaskService } from './taskService.js';
 import { CalendarEventService } from './calendarEventService.js';
 import { UserSettingsService } from './userSettingsService.js';
 import { calculateAutoSchedule } from '../utils/autoScheduleCalculator.js';
-import {
-  expandRecurringTasks,
-} from '../utils/recurrenceCalculator.js';
+import { expandRecurringTasks } from '../utils/recurrenceCalculator.js';
 
 const DEFAULT_EVENT_DURATION = 60; // minutes
 
@@ -97,41 +95,69 @@ export class AutoScheduleService {
    * Run the full auto-schedule flow for the given user.
    * Returns a summary of what was changed (or unchanged).
    */
-  async run(
-    userId: string,
-    authToken: string
-  ): Promise<AutoScheduleRunResult> {
+  async run(userId: string, authToken: string): Promise<AutoScheduleRunResult> {
     // 1. Fetch tasks
     const allTasks = await this.taskService.getAllTasks(authToken);
     console.log(`[AutoSchedule] fetched ${allTasks.length} tasks`);
 
     if (allTasks.length === 0) {
-      return { unchanged: true, eventsCreated: 0, eventsDeleted: 0, violations: 0 };
+      return {
+        unchanged: true,
+        eventsCreated: 0,
+        eventsDeleted: 0,
+        violations: 0,
+      };
     }
 
     // 2. Fetch all calendar events for this user (full history + future)
-    const allEvents = await this.calendarEventService.getAllCalendarEvents(authToken);
+    const allEvents =
+      await this.calendarEventService.getAllCalendarEvents(authToken);
     console.log(`[AutoSchedule] fetched ${allEvents.length} calendar events`);
 
     // 3. Enrich with full-horizon events for recurring tasks (fetch per-task if needed)
-    const enrichedEvents = await this.fetchFullHorizonEvents(allTasks, allEvents, authToken);
+    const enrichedEvents = await this.fetchFullHorizonEvents(
+      allTasks,
+      allEvents,
+      authToken
+    );
     console.log(`[AutoSchedule] enriched to ${enrichedEvents.length} events`);
 
     // 4. Fetch schedules
-    const schedules = await this.userSettingsService.getUserSchedules(userId, authToken);
-    const activeSchedule = await this.userSettingsService.getActiveSchedule(userId, authToken);
-    console.log(`[AutoSchedule] schedules: ${schedules.length}, active: ${activeSchedule?.id}`);
+    const schedules = await this.userSettingsService.getUserSchedules(
+      userId,
+      authToken
+    );
+    const activeSchedule = await this.userSettingsService.getActiveSchedule(
+      userId,
+      authToken
+    );
+    console.log(
+      `[AutoSchedule] schedules: ${schedules.length}, active: ${activeSchedule?.id}`
+    );
 
     // 5. Compute proposed schedule
     const { eventsToCreate, existingTaskEvents, violations } =
-      this.computeProposedSchedule(userId, allTasks, enrichedEvents, activeSchedule, schedules);
+      this.computeProposedSchedule(
+        userId,
+        allTasks,
+        enrichedEvents,
+        activeSchedule,
+        schedules
+      );
 
-    console.log(`[AutoSchedule] proposed: ${eventsToCreate.length} events, existing: ${existingTaskEvents.length}`);
+    console.log(
+      `[AutoSchedule] proposed: ${eventsToCreate.length} events, existing: ${existingTaskEvents.length}`
+    );
 
     // 6. Compare
     if (isSameSchedule(existingTaskEvents, eventsToCreate)) {
       console.log('[AutoSchedule] schedule unchanged — skipping');
-      return { unchanged: true, eventsCreated: 0, eventsDeleted: 0, violations };
+      return {
+        unchanged: true,
+        eventsCreated: 0,
+        eventsDeleted: 0,
+        violations,
+      };
     }
 
     // 7. Apply diff
@@ -142,7 +168,12 @@ export class AutoScheduleService {
       authToken
     );
 
-    return { unchanged: false, eventsCreated: created, eventsDeleted: deleted, violations };
+    return {
+      unchanged: false,
+      eventsCreated: created,
+      eventsDeleted: deleted,
+      violations,
+    };
   }
 
   // -------------------------------------------------------------------------

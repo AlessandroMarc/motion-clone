@@ -1,6 +1,6 @@
 import type { Project, CreateProjectData, UpdateProjectData } from '@/types';
 import { request } from './apiClient';
-import { normalizeToMidnight } from '@/utils/dateUtils';
+import { normalizeToMidnight, parseLocalDate } from '@/utils/dateUtils';
 import { calendarService } from './calendarService';
 
 class ProjectService {
@@ -33,7 +33,7 @@ class ProjectService {
           ? normalizeToMidnight(
               data.deadline instanceof Date
                 ? data.deadline
-                : new Date(data.deadline)
+                : parseLocalDate(data.deadline)
             ).toISOString()
           : null,
       }),
@@ -47,7 +47,10 @@ class ProjectService {
 
     // Trigger auto-schedule asynchronously (fire-and-forget)
     calendarService.runAutoSchedule().catch(err => {
-      console.debug('[ProjectService] Auto-schedule triggered after create', err?.message);
+      console.debug(
+        '[ProjectService] Auto-schedule triggered after create',
+        err?.message
+      );
     });
 
     return project;
@@ -62,7 +65,7 @@ class ProjectService {
           ? normalizeToMidnight(
               data.deadline instanceof Date
                 ? data.deadline
-                : new Date(data.deadline)
+                : parseLocalDate(data.deadline)
             ).toISOString()
           : null,
       }),
@@ -86,7 +89,10 @@ class ProjectService {
 
     // Trigger auto-schedule asynchronously (fire-and-forget)
     calendarService.runAutoSchedule().catch(err => {
-      console.debug('[ProjectService] Auto-schedule triggered after delete', err?.message);
+      console.debug(
+        '[ProjectService] Auto-schedule triggered after delete',
+        err?.message
+      );
     });
   }
 }

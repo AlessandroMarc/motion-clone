@@ -22,8 +22,10 @@ export function CalendarTasksPanel({
 }: CalendarTasksPanelProps) {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [projectsById, setProjectsById] = useState<Record<string, Project>>({});
-  const [weekEvents, setWeekEvents] = useState<CalendarEventUnion[]>([]);
-  const [allFutureEvents, setAllFutureEvents] = useState<CalendarEventUnion[]>([]);
+  const [_weekEvents, setWeekEvents] = useState<CalendarEventUnion[]>([]);
+  const [allFutureEvents, setAllFutureEvents] = useState<CalendarEventUnion[]>(
+    []
+  );
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -96,17 +98,14 @@ export function CalendarTasksPanel({
     });
   }, [weekDates, refreshTrigger]);
 
-  const plannedTaskIds = useMemo(
-    () => {
-      // Use allFutureEvents to detect tasks that are scheduled anywhere in the future
-      return new Set(
-        allFutureEvents
-          .filter(ev => !!ev.linked_task_id)
-          .map(ev => ev.linked_task_id as string)
-      );
-    },
-    [allFutureEvents]
-  );
+  const plannedTaskIds = useMemo(() => {
+    // Use allFutureEvents to detect tasks that are scheduled anywhere in the future
+    return new Set(
+      allFutureEvents
+        .filter(ev => !!ev.linked_task_id)
+        .map(ev => ev.linked_task_id as string)
+    );
+  }, [allFutureEvents]);
 
   const handleOpenScheduleDialog = (task: Task) => {
     setSelectedTask(task);

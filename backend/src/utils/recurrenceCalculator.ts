@@ -154,7 +154,9 @@ export function generateSyntheticRecurringEvents(
         id: `synthetic-${task.id}-${occurrenceDate.getTime()}`,
         linked_task_id: task.id,
         title: task.title,
-        ...(task.description !== undefined && { description: task.description }),
+        ...(task.description !== undefined && {
+          description: task.description,
+        }),
         start_time: occurrenceDate,
         end_time: occurrenceDate,
         user_id: task.user_id,

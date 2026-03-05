@@ -12,8 +12,6 @@
  * triggers fire within the debounce window.
  */
 
-import type { AutoScheduleService } from './autoScheduleService.js';
-
 interface PendingTrigger {
   userId: string;
   authToken: string;
@@ -23,20 +21,27 @@ interface PendingTrigger {
 // Debounce window: wait this long for additional triggers before running
 const DEBOUNCE_MS = 500;
 
+// Module-scoped service instance (lazy initialization)
+let autoScheduleServiceInstance: any = null;
+
+async function getAutoScheduleService(): Promise<any> {
+  if (!autoScheduleServiceInstance) {
+    try {
+      const module = await import('./autoScheduleService.js');
+      autoScheduleServiceInstance = new module.AutoScheduleService();
+    } catch (error) {
+      console.error(
+        '[AutoScheduleTrigger] Failed to load AutoScheduleService:',
+        error
+      );
+      throw error;
+    }
+  }
+  return autoScheduleServiceInstance;
+}
+
 class AutoScheduleTriggerQueueImpl {
   private pendingTriggers = new Map<string, PendingTrigger>();
-  private autoScheduleService: AutoScheduleService | null = null;
-
-  /**
-   * Lazy initialization of AutoScheduleService to avoid circular dependencies.
-   */
-  private async getAutoScheduleService(): Promise<AutoScheduleService> {
-    if (!this.autoScheduleService) {
-      const { AutoScheduleService } = await import('./autoScheduleService.js');
-      this.autoScheduleService = new AutoScheduleService();
-    }
-    return this.autoScheduleService;
-  }
 
   /**
    * Queue an auto-schedule trigger for the given user.
@@ -67,10 +72,10 @@ class AutoScheduleTriggerQueueImpl {
    * Errors are logged but not thrown.
    */
   private runAutoScheduleAsync(userId: string, authToken: string): void {
-    // Fire-and-forget: don't await, don't throw
-    this.getAutoScheduleService()
-      .then(service => service.run(userId, authToken))
-      .then(result => {
+    // Fire-and-forget: don't await at call site, but handle errors internally
+    getAutoScheduleService()
+      .then((service: any) => service.run(userId, authToken))
+      .then((result: any) => {
         console.log(
           `[AutoScheduleTrigger] Auto-schedule run complete for user ${userId}:`,
           {
@@ -81,7 +86,7 @@ class AutoScheduleTriggerQueueImpl {
           }
         );
       })
-      .catch(error => {
+      .catch((error: any) => {
         console.error(
           `[AutoScheduleTrigger] Auto-schedule run failed for user ${userId}:`,
           error instanceof Error ? error.message : error
@@ -99,6 +104,17 @@ class AutoScheduleTriggerQueueImpl {
       clearTimeout(pending.timer);
       this.pendingTriggers.delete(userId);
     }
+  }
+
+  /**
+   * Cancel all pending triggers.
+   * Useful for test cleanup.
+   */
+  cancelAll(): void {
+    for (const [, pending] of this.pendingTriggers) {
+      clearTimeout(pending.timer);
+    }
+    this.pendingTriggers.clear();
   }
 }
 

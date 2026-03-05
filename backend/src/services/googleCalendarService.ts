@@ -223,7 +223,10 @@ export class GoogleCalendarService {
   /**
    * Sync events from Google Calendar
    */
-  async syncEventsFromGoogle(userId: string, authToken?: string): Promise<{
+  async syncEventsFromGoogle(
+    userId: string,
+    authToken?: string
+  ): Promise<{
     success: boolean;
     synced: number;
     errors: string[];
@@ -257,7 +260,10 @@ export class GoogleCalendarService {
     return syncPromise;
   }
 
-  private async performSyncEventsFromGoogle(userId: string, authToken?: string): Promise<{
+  private async performSyncEventsFromGoogle(
+    userId: string,
+    authToken?: string
+  ): Promise<{
     success: boolean;
     synced: number;
     errors: string[];

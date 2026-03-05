@@ -1,4 +1,11 @@
-import { jest, describe, test, expect, beforeEach } from '@jest/globals';
+import {
+  jest,
+  describe,
+  test,
+  expect,
+  beforeEach,
+  afterEach,
+} from '@jest/globals';
 import type { Task } from '../../types/database.js';
 
 // Mock Supabase client – methods chain and return the client or results
@@ -63,6 +70,21 @@ describe('TaskService', () => {
       if (mock) mock.mockReturnValue(mockClient);
     }
     service = new TaskService();
+  });
+
+  afterEach(async () => {
+    // Clean up any pending auto-schedule triggers
+    try {
+      const mod = await import('../autoScheduleTriggerQueue.js');
+      if (
+        mod.autoScheduleTriggerQueue &&
+        mod.autoScheduleTriggerQueue.cancelAll
+      ) {
+        mod.autoScheduleTriggerQueue.cancelAll();
+      }
+    } catch {
+      // Silently ignore cleanup errors
+    }
   });
 
   // ─── getAllTasks ──────────────────────────────────────────────────────────────
@@ -324,6 +346,16 @@ describe('TaskService', () => {
   // ─── deleteTask ──────────────────────────────────────────────────────────────
   describe('deleteTask', () => {
     test('should delete related calendar events before deleting the task', async () => {
+      // Set up task retrieval mock for getTaskById
+      const selectMock = jest.fn().mockReturnValue({
+        eq: jest.fn().mockReturnValue({
+          single: jest.fn().mockResolvedValue({
+            data: makeTask({ id: 'task-1' }),
+            error: null,
+          }),
+        }),
+      });
+
       // Set up calendar event deletion mock
       const calendarEqMock = jest.fn() as any;
       calendarEqMock.mockResolvedValue({ error: null });
@@ -336,13 +368,13 @@ describe('TaskService', () => {
       taskEqMock.mockResolvedValue({ error: null });
       const taskDeleteMock = jest.fn().mockReturnValue({ eq: taskEqMock });
 
-      // Set up mockClient.from to return different delete mocks based on table name
+      // Set up mockClient.from to return different mocks based on table name
       mockClient.from.mockImplementation((tableName: string) => {
         if (tableName === 'calendar_events') {
           return { delete: calendarDeleteMock };
         }
         if (tableName === 'tasks') {
-          return { delete: taskDeleteMock };
+          return { select: selectMock, delete: taskDeleteMock };
         }
         return mockClient;
       });
@@ -363,6 +395,16 @@ describe('TaskService', () => {
     });
 
     test('should throw if calendar event deletion fails', async () => {
+      // Set up task retrieval mock for getTaskById
+      const selectMock = jest.fn().mockReturnValue({
+        eq: jest.fn().mockReturnValue({
+          single: jest.fn().mockResolvedValue({
+            data: makeTask({ id: 'task-1' }),
+            error: null,
+          }),
+        }),
+      });
+
       const calendarEqMock = jest.fn() as any;
       calendarEqMock.mockResolvedValue({
         error: { message: 'Calendar delete failed' },
@@ -375,6 +417,9 @@ describe('TaskService', () => {
         if (tableName === 'calendar_events') {
           return { delete: calendarDeleteMock };
         }
+        if (tableName === 'tasks') {
+          return { select: selectMock };
+        }
         return mockClient;
       });
 
@@ -384,6 +429,16 @@ describe('TaskService', () => {
     });
 
     test('should throw if task deletion fails after calendar events are deleted', async () => {
+      // Set up task retrieval mock for getTaskById
+      const selectMock = jest.fn().mockReturnValue({
+        eq: jest.fn().mockReturnValue({
+          single: jest.fn().mockResolvedValue({
+            data: makeTask({ id: 'task-1' }),
+            error: null,
+          }),
+        }),
+      });
+
       // Set up calendar event deletion mock (succeeds)
       const calendarEqMock = jest.fn() as any;
       calendarEqMock.mockResolvedValue({ error: null });
@@ -403,7 +458,7 @@ describe('TaskService', () => {
           return { delete: calendarDeleteMock };
         }
         if (tableName === 'tasks') {
-          return { delete: taskDeleteMock };
+          return { select: selectMock, delete: taskDeleteMock };
         }
         return mockClient;
       });

@@ -208,7 +208,7 @@ export function TaskEditDialogForm({
         title: data.title,
         description: data.description,
         dueDate: data.dueDate
-          ? normalizeToMidnight(new Date(data.dueDate))
+          ? normalizeToMidnight(parseLocalDate(data.dueDate))
           : null,
         priority: data.priority,
         project_id: data.project_id ?? null,
@@ -295,7 +295,7 @@ export function TaskEditDialogForm({
         title: data.title,
         description: data.description,
         dueDate: data.dueDate
-          ? normalizeToMidnight(new Date(data.dueDate))
+          ? normalizeToMidnight(parseLocalDate(data.dueDate))
           : null,
         priority: data.priority,
         project_id: data.project_id ?? undefined,
