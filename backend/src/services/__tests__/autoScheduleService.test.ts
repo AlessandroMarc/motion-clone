@@ -6,14 +6,32 @@ import type {
   Schedule,
 } from '../../types/database.js';
 
-const mockGetAllTasks = jest.fn();
-const mockGetAllCalendarEvents = jest.fn();
-const mockCreateCalendarEventsBatch = jest.fn();
-const mockDeleteCalendarEventsBatch = jest.fn();
-const mockGetUserSchedules = jest.fn();
-const mockGetActiveSchedule = jest.fn();
+const mockGetAllTasks = jest.fn<(authToken: string) => Promise<Task[]>>();
+const mockGetAllCalendarEvents = jest.fn<
+  (authToken: string) => Promise<CalendarEventUnion[]>
+>();
+const mockCreateCalendarEventsBatch = jest.fn<
+  (
+    inputs: unknown[],
+    authToken: string
+  ) => Promise<Array<{ success: boolean }>>
+>();
+const mockDeleteCalendarEventsBatch = jest.fn<
+  (
+    eventIds: string[],
+    authToken: string
+  ) => Promise<Array<{ success: boolean }>>
+>();
+const mockGetUserSchedules = jest.fn<
+  (userId: string, authToken: string) => Promise<Schedule[]>
+>();
+const mockGetActiveSchedule = jest.fn<
+  (userId: string, authToken: string) => Promise<Schedule | null>
+>();
 const mockCalculateAutoSchedule = jest.fn();
-const mockExpandRecurringTasks = jest.fn();
+const mockExpandRecurringTasks = jest.fn<
+  (tasks: Task[], existingTaskEvents: CalendarEventTask[]) => CalendarEventTask[]
+>();
 
 jest.unstable_mockModule('../taskService.js', () => ({
   TaskService: jest.fn().mockImplementation(() => ({
