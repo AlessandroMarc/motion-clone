@@ -11,6 +11,7 @@ import type {
   CreateUserSettingsInput,
   UpdateUserSettingsInput,
 } from '../types/userSettings.js';
+import { autoScheduleTriggerQueue } from './autoScheduleTriggerQueue.js';
 
 export class UserSettingsService {
   // Schedule cache: Map<userId, Schedule[]>
@@ -144,7 +145,7 @@ export class UserSettingsService {
         user_id: userId,
         name: 'Default',
         working_hours_start: 9,
-        working_hours_end: 22,
+        working_hours_end: 18,
         is_default: true,
         created_at: new Date(),
         updated_at: new Date(),
@@ -255,6 +256,11 @@ export class UserSettingsService {
 
     // Invalidate cache since schedules changed
     UserSettingsService.invalidateScheduleCache(userId);
+
+    // Trigger auto-schedule asynchronously (fire-and-forget)
+    if (token) {
+      autoScheduleTriggerQueue.trigger(userId, token);
+    }
 
     return {
       ...data,

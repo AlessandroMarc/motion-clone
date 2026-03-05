@@ -26,3 +26,4 @@ backend/.env.debug
 .env.debug
 .vscode/launch.json
 frontend/nexto.run-1772651339795.log
+bugchecks/*

@@ -1,4 +1,11 @@
-import { jest, describe, test, expect, beforeEach } from '@jest/globals';
+import {
+  jest,
+  describe,
+  test,
+  expect,
+  beforeEach,
+  afterEach,
+} from '@jest/globals';
 
 // ── Mock the Motion API service before importing the migration service ────────
 const mockMotionApiService = {
@@ -78,6 +85,9 @@ const {
   mapMotionTaskToCreateInput,
   MotionMigrationService,
 } = await import('../services/motionMigrationService.js');
+
+const { autoScheduleTriggerQueue } =
+  await import('../services/autoScheduleTriggerQueue.js');
 
 // ── Fixtures ──────────────────────────────────────────────────────────────────
 const mockUser = { id: 'motion-user-1', email: 'test@example.com' };
@@ -224,6 +234,11 @@ describe('MotionMigrationService', () => {
     mockMotionApiService.listRecurringTasks.mockResolvedValue([
       mockRecurringTask,
     ]);
+  });
+
+  afterEach(() => {
+    // Clean up any pending auto-schedule triggers to avoid test teardown errors
+    autoScheduleTriggerQueue.cancelAll();
   });
 
   test('returns a MigrationResult with correct counts on success', async () => {

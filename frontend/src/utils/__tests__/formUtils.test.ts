@@ -223,3 +223,151 @@ describe('getPriorityDisplayText', () => {
     expect(getPriorityDisplayText('critical')).toBe('Unknown Priority');
   });
 });
+
+describe('transformFormDataToTask - Date Timezone Safety', () => {
+  /**
+   * Regression tests for the "day before" bug where dates were shifted
+   * backwards due to UTC-midnight conversions in new Date().
+   *
+   * These tests ensure that form date inputs are parsed in local timezone
+   * to prevent off-by-one-day errors for users in negative UTC offsets.
+   */
+
+  const TEST_DATES = [
+    '2026-03-05',
+    '2024-01-01',
+    '2024-02-29', // leap year
+    '2026-12-31', // year boundary
+    '2024-07-15',
+  ];
+
+  describe('dueDate parsing - No UTC-midnight bug', () => {
+    it('should parse dueDate in local timezone, not UTC', () => {
+      TEST_DATES.forEach(dateStr => {
+        const result = transformFormDataToTask(
+          makeFormData({ dueDate: dateStr }),
+          'u1'
+        );
+
+        const [year, month, day] = dateStr.split('-').map(Number);
+        expect(result.due_date!.getFullYear()).toBe(year);
+        expect(result.due_date!.getMonth()).toBe(month - 1);
+        expect(result.due_date!.getDate()).toBe(day); // NOT day-1
+      });
+    });
+
+    it('should preserve date when normalized to midnight', () => {
+      const dateStr = '2026-03-05';
+      const result = transformFormDataToTask(
+        makeFormData({ dueDate: dateStr }),
+        'u1'
+      );
+
+      // Date should be preserved
+      expect(result.due_date!.getDate()).toBe(5);
+
+      // Normalized to midnight local time
+      expect(result.due_date!.getHours()).toBe(0);
+      expect(result.due_date!.getMinutes()).toBe(0);
+      expect(result.due_date!.getSeconds()).toBe(0);
+    });
+  });
+
+  describe('startDate parsing - No UTC-midnight bug', () => {
+    it('should parse startDate in local timezone', () => {
+      TEST_DATES.forEach(dateStr => {
+        const result = transformFormDataToTask(
+          makeFormData({ startDate: dateStr }),
+          'u1'
+        );
+
+        const [year, month, day] = dateStr.split('-').map(Number);
+        expect(result.start_date!.getFullYear()).toBe(year);
+        expect(result.start_date!.getMonth()).toBe(month - 1);
+        expect(result.start_date!.getDate()).toBe(day);
+      });
+    });
+
+    it('should set startDate to midnight local time', () => {
+      const result = transformFormDataToTask(
+        makeFormData({ startDate: '2026-03-05' }),
+        'u1'
+      );
+
+      expect(result.start_date!.getHours()).toBe(0);
+      expect(result.start_date!.getMinutes()).toBe(0);
+      expect(result.start_date!.getSeconds()).toBe(0);
+    });
+  });
+
+  describe('recurrenceStartDate parsing - No UTC-midnight bug', () => {
+    it('should parse recurrenceStartDate in local timezone for recurring tasks', () => {
+      TEST_DATES.forEach(dateStr => {
+        const result = transformFormDataToTask(
+          makeFormData({
+            is_recurring: true,
+            recurrence_pattern: 'weekly',
+            recurrenceStartDate: dateStr,
+          }),
+          'u1'
+        );
+
+        const [year, month, day] = dateStr.split('-').map(Number);
+        expect(result.recurrence_start_date!.getFullYear()).toBe(year);
+        expect(result.recurrence_start_date!.getMonth()).toBe(month - 1);
+        expect(result.recurrence_start_date!.getDate()).toBe(day);
+      });
+    });
+
+    it('should set recurrenceStartDate to midnight local time', () => {
+      const result = transformFormDataToTask(
+        makeFormData({
+          is_recurring: true,
+          recurrence_pattern: 'weekly',
+          recurrenceStartDate: '2026-03-05',
+        }),
+        'u1'
+      );
+
+      expect(result.recurrence_start_date!.getHours()).toBe(0);
+      expect(result.recurrence_start_date!.getMinutes()).toBe(0);
+    });
+  });
+
+  describe('Multiple dates in one form', () => {
+    it('should handle startDate < dueDate correctly', () => {
+      const result = transformFormDataToTask(
+        makeFormData({
+          startDate: '2026-03-05',
+          dueDate: '2026-03-15',
+        }),
+        'u1'
+      );
+
+      expect(result.start_date! < result.due_date!).toBe(true);
+      expect(result.start_date!.getDate()).toBe(5);
+      expect(result.due_date!.getDate()).toBe(15);
+    });
+
+    it('should handle leap year date correctly', () => {
+      const result = transformFormDataToTask(
+        makeFormData({ dueDate: '2024-02-29' }),
+        'u1'
+      );
+
+      expect(result.due_date!.getDate()).toBe(29);
+      expect(result.due_date!.getMonth()).toBe(1); // February
+    });
+
+    it('should handle year boundary dates correctly', () => {
+      const result = transformFormDataToTask(
+        makeFormData({ dueDate: '2026-01-01' }),
+        'u1'
+      );
+
+      expect(result.due_date!.getDate()).toBe(1);
+      expect(result.due_date!.getMonth()).toBe(0); // January
+      expect(result.due_date!.getFullYear()).toBe(2026);
+    });
+  });
+});

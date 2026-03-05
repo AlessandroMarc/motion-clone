@@ -107,3 +107,92 @@ export function get90DayHorizon(now: Date = new Date()): Date {
   horizon.setHours(23, 59, 59, 999);
   return horizon;
 }
+
+// ---------------------------------------------------------------------------
+// Synthetic recurring event helpers (used by auto-schedule)
+// ---------------------------------------------------------------------------
+
+import type { Task, CalendarEventTask } from '../types/database.js';
+
+/**
+ * Create synthetic calendar events for recurring task occurrences.
+ * These are never persisted — they serve as scheduling placeholders.
+ */
+export function generateSyntheticRecurringEvents(
+  task: Task,
+  existingEvents: CalendarEventTask[]
+): CalendarEventTask[] {
+  if (!task.is_recurring || !task.recurrence_pattern) {
+    return [];
+  }
+
+  const syntheticEvents: CalendarEventTask[] = [];
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const startDate = task.next_generation_cutoff || task.due_date || new Date();
+  const clampedStart =
+    new Date(startDate) > today ? new Date(startDate) : new Date(today);
+
+  const occurrenceDates = generateOccurrenceDates(
+    clampedStart,
+    task.recurrence_pattern,
+    task.recurrence_interval || 1,
+    get90DayHorizon()
+  );
+
+  for (const occurrenceDate of occurrenceDates) {
+    const existingForDate = existingEvents.some(
+      e =>
+        e.linked_task_id === task.id &&
+        new Date(e.start_time).toDateString() === occurrenceDate.toDateString()
+    );
+
+    if (!existingForDate) {
+      const syntheticEvent: CalendarEventTask = {
+        id: `synthetic-${task.id}-${occurrenceDate.getTime()}`,
+        linked_task_id: task.id,
+        title: task.title,
+        ...(task.description !== undefined && {
+          description: task.description,
+        }),
+        start_time: occurrenceDate,
+        end_time: occurrenceDate,
+        user_id: task.user_id,
+        completed_at: null,
+        created_at: new Date(),
+        updated_at: new Date(),
+      };
+      syntheticEvents.push(syntheticEvent);
+    }
+  }
+
+  return syntheticEvents;
+}
+
+/**
+ * Expand all recurring tasks by generating synthetic events for them.
+ * Call this before running calculateAutoSchedule.
+ */
+export function expandRecurringTasks(
+  tasks: Task[],
+  existingTaskEvents: CalendarEventTask[]
+): CalendarEventTask[] {
+  const syntheticEvents: CalendarEventTask[] = [];
+
+  for (const task of tasks) {
+    if (task.is_recurring && task.recurrence_pattern) {
+      const taskExistingEvents = existingTaskEvents.filter(
+        e => e.linked_task_id === task.id
+      );
+      const taskSyntheticEvents = generateSyntheticRecurringEvents(
+        task,
+        taskExistingEvents
+      );
+      syntheticEvents.push(...taskSyntheticEvents);
+    }
+  }
+
+  return syntheticEvents;
+}

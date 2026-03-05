@@ -146,7 +146,7 @@ describe('UserSettingsService', () => {
       expect(result?.id).toBe('');
       expect(result?.name).toBe('Default');
       expect(result?.working_hours_start).toBe(9);
-      expect(result?.working_hours_end).toBe(22);
+      expect(result?.working_hours_end).toBe(18);
       expect(result?.user_id).toBe('user-1');
     });
   });

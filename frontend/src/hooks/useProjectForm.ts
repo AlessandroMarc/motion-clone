@@ -6,7 +6,7 @@ import { toast } from 'sonner';
 import type { Project, WorkItemStatus } from '@/types';
 import { useAuth } from '@/contexts/AuthContext';
 import { useOnboarding } from '@/hooks/useOnboarding';
-import { normalizeToMidnight } from '@/utils/dateUtils';
+import { normalizeToMidnight, parseLocalDate } from '@/utils/dateUtils';
 import { captureEvent } from '@/lib/analytics';
 
 // Project form schema
@@ -67,7 +67,7 @@ export function useProjectForm(
         name: data.name,
         description: data.description || undefined,
         deadline: data.deadline
-          ? normalizeToMidnight(new Date(data.deadline))
+          ? normalizeToMidnight(parseLocalDate(data.deadline))
           : null,
         status: 'not-started' as WorkItemStatus,
         user_id: user.id,
