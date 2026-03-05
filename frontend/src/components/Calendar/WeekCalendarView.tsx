@@ -98,7 +98,6 @@ export function WeekCalendarView({
   displayDates,
   displayEventsByDay,
   events,
-  setEvents,
   draggingEventId,
   dragPreview,
   externalDragPreview,
@@ -167,27 +166,14 @@ export function WeekCalendarView({
         open={dialogs.editOpen}
         onOpenChange={dialogs.setEditOpen}
         title={dialogs.editTitle}
-        setTitle={dialogs.setEditTitle}
         description={dialogs.editDescription}
-        setDescription={dialogs.setEditDescription}
         startTime={dialogs.editStartTime}
-        setStartTime={dialogs.setEditStartTime}
         endTime={dialogs.editEndTime}
-        setEndTime={dialogs.setEditEndTime}
         isTaskEvent={
           dialogs.editEvent ? isCalendarEventTask(dialogs.editEvent) : false
         }
         completed={dialogs.editCompleted}
-        completedAt={
-          dialogs.editEvent &&
-          isCalendarEventTask(dialogs.editEvent) &&
-          dialogs.editEvent.completed_at
-            ? new Date(dialogs.editEvent.completed_at)
-            : null
-        }
         onCompletedChange={dialogs.setEditCompleted}
-        onSave={() => dialogs.handleSaveEdit(setEvents)}
-        onDelete={() => dialogs.handleDeleteEdit(setEvents)}
       />
     </div>
   );
