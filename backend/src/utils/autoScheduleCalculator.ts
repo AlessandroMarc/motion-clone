@@ -102,6 +102,9 @@ export function calculateAutoSchedule(params: {
   } = params;
 
   const incompleteTasks = tasks.filter(task => task.status !== 'completed');
+  console.log(
+    `[AutoSchedule:calc] ${tasks.length} total tasks, ${incompleteTasks.length} incomplete`
+  );
   const baseSortedTasks = sortTasksForScheduling(incompleteTasks);
 
   const orderingNowMs = Date.now();
@@ -300,6 +303,30 @@ export function calculateAutoSchedule(params: {
     const finalEvents = [...keptSlots, ...events].sort(
       (a, b) => a.start_time.getTime() - b.start_time.getTime()
     );
+
+    if (finalEvents.length === 0 && task.status !== 'completed') {
+      const resolvedScheduleId = taskSchedule?.id ?? activeSchedule?.id ?? null;
+      console.log(
+        `[AutoSchedule:calc] Task "${task.title}" (${task.id}) scheduled 0 events:`,
+        {
+          status: task.status,
+          planned: task.planned_duration_minutes,
+          actual: task.actual_duration_minutes,
+          due_date: task.due_date,
+          start_date: task.start_date,
+          task_schedule_id: task.schedule_id,
+          resolved_schedule_id: resolvedScheduleId,
+          schedule_hours: {
+            start: taskConfig.workingHoursStart,
+            end: taskConfig.workingHoursEnd,
+          },
+          has_working_days: !!taskConfig.workingDays,
+          lockedEvents: lockedFutureEvents.length,
+          newEvents: events.length,
+          violations: violations.length,
+        }
+      );
+    }
 
     taskEvents.push({ task, events: finalEvents, violations });
 

@@ -324,6 +324,7 @@ export function distributeEvents(
 
   const events: ScheduledEvent[] = [];
   const gapMs = (config.gapBetweenEventsMinutes ?? 5) * 60 * 1000;
+  let extendedDueDateWindow = false;
 
   const sortedExistingEvents: TimeRange[] = allExistingEvents
     .map(e => ({
@@ -373,7 +374,18 @@ export function distributeEvents(
       currentTime.setMilliseconds(0);
 
       if (currentTime > endDate) {
-        break;
+        // If a due-date task cannot find any in-window slot (for example,
+        // restrictive working days/hours), extend once so it is still
+        // scheduled as overdue instead of disappearing from the calendar.
+        if (hasDueDate && !extendedDueDateWindow) {
+          const extensionDays = config.defaultDaysWithoutDeadline || 14;
+          endDate = new Date(currentTime);
+          endDate.setDate(endDate.getDate() + extensionDays);
+          endDate.setHours(23, 59, 59, 999);
+          extendedDueDateWindow = true;
+        } else {
+          break;
+        }
       }
 
       slot = getNextAvailableSlot(
@@ -620,13 +632,9 @@ function prepareRecurringTaskEvents(
     const ds = occurrenceDate.toDateString();
     const existing = existingByDate.get(ds);
 
+    // Skip days that already have an event — they're handled by the caller
+    // via lockedFutureEvents. Returning them here would create duplicates.
     if (existing) {
-      const slot: ScheduledEvent = {
-        task_id: task.id,
-        start_time: new Date(existing.start_time),
-        end_time: new Date(existing.end_time),
-      };
-      events.push(slot);
       continue;
     }
 

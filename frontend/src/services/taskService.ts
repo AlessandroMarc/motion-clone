@@ -12,7 +12,7 @@ class TaskService {
       description: input.description,
       due_date:
         !isRecurring && input.dueDate
-          ? normalizeToMidnight(input.dueDate).toISOString()
+          ? toLocalDateString(normalizeToMidnight(input.dueDate))
           : null,
       priority: input.priority,
       schedule_id: input.scheduleId,
@@ -97,7 +97,9 @@ class TaskService {
 
     const payload = {
       ...rest,
-      due_date: dueDate ? normalizeToMidnight(dueDate).toISOString() : null,
+      due_date: dueDate
+        ? toLocalDateString(normalizeToMidnight(dueDate))
+        : null,
       project_id: input.project_id,
       schedule_id: scheduleId,
       blocked_by: blockedBy,
@@ -134,7 +136,7 @@ class TaskService {
     const updatedTask = toTask(response.data);
     console.log(
       '✅ [taskService.updateTask] Task updated successfully:',
-      updatedTask
+      JSON.parse(JSON.stringify(updatedTask))
     );
 
     // Trigger auto-schedule asynchronously (fire-and-forget)
