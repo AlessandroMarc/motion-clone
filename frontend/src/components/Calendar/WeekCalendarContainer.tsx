@@ -23,7 +23,6 @@ import { useWeekCalendarNavigation } from './useWeekCalendarNavigation';
 import { WeekCalendarView } from './WeekCalendarView';
 import { MobileDayScrollView } from './MobileDayScrollView';
 import { DeadlineViolationsBar } from './DeadlineViolationsBar';
-import CalendarCreateDialog from './CalendarCreateDialog';
 import CalendarEditDialog from './CalendarEditDialog';
 import { HOUR_PX } from './dayColumnLayout';
 import { logger } from '@/lib/logger';
@@ -266,44 +265,19 @@ export function WeekCalendarContainer({
           isAutoScheduleRefreshing={isRefreshing || !initialSyncComplete}
           onZenMode={onZenMode}
         />
-        <CalendarCreateDialog
-          open={dialogs.createOpen}
-          onOpenChange={dialogs.setCreateOpen}
-          title={dialogs.title}
-          setTitle={dialogs.setTitle}
-          description={dialogs.description}
-          setDescription={dialogs.setDescription}
-          startTime={dialogs.startTime}
-          setStartTime={dialogs.setStartTime}
-          endTime={dialogs.endTime}
-          setEndTime={dialogs.setEndTime}
-          onCreate={dialogs.handleCreate}
-        />
+
         <CalendarEditDialog
           open={dialogs.editOpen}
           onOpenChange={dialogs.setEditOpen}
           title={dialogs.editTitle}
-          setTitle={dialogs.setEditTitle}
           description={dialogs.editDescription}
-          setDescription={dialogs.setEditDescription}
           startTime={dialogs.editStartTime}
-          setStartTime={dialogs.setEditStartTime}
           endTime={dialogs.editEndTime}
-          setEndTime={dialogs.setEditEndTime}
           isTaskEvent={
             dialogs.editEvent ? isCalendarEventTask(dialogs.editEvent) : false
           }
           completed={dialogs.editCompleted}
-          completedAt={
-            dialogs.editEvent &&
-            isCalendarEventTask(dialogs.editEvent) &&
-            dialogs.editEvent.completed_at
-              ? new Date(dialogs.editEvent.completed_at)
-              : null
-          }
           onCompletedChange={dialogs.setEditCompleted}
-          onSave={() => dialogs.handleSaveEdit(setEvents)}
-          onDelete={() => dialogs.handleDeleteEdit(setEvents)}
         />
       </div>
     );
