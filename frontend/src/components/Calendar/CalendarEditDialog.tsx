@@ -89,18 +89,18 @@ function GoogleEventDetails({
         {description && (
           <div className="flex items-start gap-3 text-sm">
             <AlignLeft className="h-4 w-4 mt-0.5 text-muted-foreground shrink-0" />
-            <p className="whitespace-pre-wrap">{description}</p>
+            <p className="whitespace-pre-wrap line-clamp-4">{description}</p>
           </div>
         )}
       </div>
 
-      <DialogFooter className="flex flex-row items-center gap-2 sm:justify-end">
+      <DialogFooter className="flex flex-col gap-2 sm:flex-row sm:items-center">
         {isTaskEvent && (
           <Button
             type="button"
             variant={completed ? 'default' : 'outline'}
             onClick={handleCompleteClick}
-            className="flex-1 gap-2"
+            className="w-full sm:flex-1 gap-2"
           >
             <CheckCircle2
               className={`h-4 w-4 ${completed ? 'text-green-500' : ''}`}
@@ -108,7 +108,7 @@ function GoogleEventDetails({
             {completed ? 'Task completed' : 'Complete task'}
           </Button>
         )}
-        <Button variant="outline" onClick={onClose} className={isTaskEvent ? 'w-auto' : 'w-full'}>
+        <Button variant="outline" onClick={onClose} className="w-full sm:w-auto">
           Close
         </Button>
       </DialogFooter>
