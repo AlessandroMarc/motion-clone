@@ -92,25 +92,23 @@ function GoogleEventDetails({
             <p className="whitespace-pre-wrap">{description}</p>
           </div>
         )}
-
-        {isTaskEvent && (
-          <div className="pt-2">
-            <Button
-              type="button"
-              variant={completed ? 'default' : 'outline'}
-              onClick={handleCompleteClick}
-              className="w-full gap-2"
-            >
-              <CheckCircle2
-                className={`h-4 w-4 ${completed ? 'text-green-500' : ''}`}
-              />
-              {completed ? 'Task completed' : 'Complete task'}
-            </Button>
-          </div>
-        )}
       </div>
-      <DialogFooter>
-        <Button variant="outline" onClick={onClose} className="w-full sm:w-auto">
+
+      <DialogFooter className="flex flex-row items-center gap-2 sm:justify-end">
+        {isTaskEvent && (
+          <Button
+            type="button"
+            variant={completed ? 'default' : 'outline'}
+            onClick={handleCompleteClick}
+            className="flex-1 gap-2"
+          >
+            <CheckCircle2
+              className={`h-4 w-4 ${completed ? 'text-green-500' : ''}`}
+            />
+            {completed ? 'Task completed' : 'Complete task'}
+          </Button>
+        )}
+        <Button variant="outline" onClick={onClose} className={isTaskEvent ? 'w-auto' : 'w-full'}>
           Close
         </Button>
       </DialogFooter>
