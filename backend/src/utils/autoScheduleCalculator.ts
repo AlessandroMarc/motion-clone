@@ -305,6 +305,7 @@ export function calculateAutoSchedule(params: {
     );
 
     if (finalEvents.length === 0 && task.status !== 'completed') {
+      const resolvedScheduleId = taskSchedule?.id ?? activeSchedule?.id ?? null;
       console.log(
         `[AutoSchedule:calc] Task "${task.title}" (${task.id}) scheduled 0 events:`,
         {
@@ -313,6 +314,13 @@ export function calculateAutoSchedule(params: {
           actual: task.actual_duration_minutes,
           due_date: task.due_date,
           start_date: task.start_date,
+          task_schedule_id: task.schedule_id,
+          resolved_schedule_id: resolvedScheduleId,
+          schedule_hours: {
+            start: taskConfig.workingHoursStart,
+            end: taskConfig.workingHoursEnd,
+          },
+          has_working_days: !!taskConfig.workingDays,
           lockedEvents: lockedFutureEvents.length,
           newEvents: events.length,
           violations: violations.length,
