@@ -274,4 +274,76 @@ describe('AutoScheduleService schedule comparison', () => {
     expect(mockCreateCalendarEventsBatch).not.toHaveBeenCalled();
     expect(mockDeleteCalendarEventsBatch).not.toHaveBeenCalled();
   });
+
+  test('detects and cleans up DB duplicates when raw length differs from deduplicated length', async () => {
+    const userId = 'user-1';
+    const token = 'token';
+    const task = makeTask();
+    const schedules = [makeSchedule()];
+
+    // DB has duplicate events (38 raw events, but only 27 unique)
+    const existingA = makeTaskEvent(
+      'e-1',
+      task.id,
+      '2026-03-05T13:35:00.000Z',
+      '2026-03-05T13:55:00.000Z'
+    );
+    const existingB = makeTaskEvent(
+      'e-2',
+      task.id,
+      '2026-03-05T14:00:00.000Z',
+      '2026-03-05T14:20:00.000Z'
+    );
+    // Duplicate of existingB with different ID (simulates DB duplicate)
+    const existingBDuplicate = makeTaskEvent(
+      'e-3',
+      task.id,
+      '2026-03-05T14:00:00.000Z',
+      '2026-03-05T14:20:00.000Z'
+    );
+
+    mockGetAllTasks.mockResolvedValue([task]);
+    mockGetAllCalendarEvents.mockResolvedValue([
+      existingA,
+      existingB,
+      existingBDuplicate, // Raw length is 3
+    ] as CalendarEventUnion[]);
+    mockGetUserSchedules.mockResolvedValue(schedules);
+    mockGetActiveSchedule.mockResolvedValue(schedules[0]);
+
+    // Proposed schedule has no duplicates (only 2 unique events)
+    mockCalculateAutoSchedule.mockReturnValue({
+      taskEvents: [
+        {
+          task,
+          events: [
+            {
+              start_time: new Date('2026-03-05T13:35:00.000Z'),
+              end_time: new Date('2026-03-05T13:55:00.000Z'),
+            },
+            {
+              start_time: new Date('2026-03-05T14:00:00.000Z'),
+              end_time: new Date('2026-03-05T14:20:00.000Z'),
+            },
+          ],
+          violations: [],
+        },
+      ],
+      totalEvents: 2,
+      totalViolations: 0,
+      tasksWithDeadlineCount: 0,
+      tasksWithoutDeadlineCount: 1,
+    });
+
+    const result = await service.run(userId, token);
+
+    // Should detect mismatch due to raw length check (3 !== 2)
+    expect(result.unchanged).toBe(false);
+    expect(result.eventsDeleted).toBeGreaterThan(0);
+    expect(result.eventsCreated).toBeGreaterThan(0);
+
+    // Should clean up all events and recreate without duplicates
+    expect(mockDeleteCalendarEventsBatch).toHaveBeenCalled();
+    expect(mockCreateCalendarEventsBatch).toHaveBeenCalled();
+  });
 });
