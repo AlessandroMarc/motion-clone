@@ -339,11 +339,16 @@ describe('AutoScheduleService schedule comparison', () => {
 
     // Should detect mismatch due to raw length check (3 !== 2)
     expect(result.unchanged).toBe(false);
-    expect(result.eventsDeleted).toBeGreaterThan(0);
-    expect(result.eventsCreated).toBeGreaterThan(0);
+    // Should delete the duplicate event
+    expect(result.eventsDeleted).toBe(1);
+    // Should NOT create new events (all unique events already exist)
+    expect(result.eventsCreated).toBe(0);
 
-    // Should clean up all events and recreate without duplicates
-    expect(mockDeleteCalendarEventsBatch).toHaveBeenCalled();
-    expect(mockCreateCalendarEventsBatch).toHaveBeenCalled();
+    // Should clean up duplicates without recreating existing events
+    expect(mockDeleteCalendarEventsBatch).toHaveBeenCalledWith(
+      ['e-3'], // Only the duplicate should be deleted
+      token
+    );
+    expect(mockCreateCalendarEventsBatch).not.toHaveBeenCalled();
   });
 });
