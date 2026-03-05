@@ -1,6 +1,7 @@
 import type { Project, CreateProjectData, UpdateProjectData } from '@/types';
 import { request } from './apiClient';
 import { normalizeToMidnight } from '@/utils/dateUtils';
+import { calendarService } from './calendarService';
 
 class ProjectService {
   async getAllProjects(): Promise<Project[]> {
@@ -42,7 +43,14 @@ class ProjectService {
       throw new Error(response.error || 'Failed to create project');
     }
 
-    return response.data;
+    const project = response.data;
+
+    // Trigger auto-schedule asynchronously (fire-and-forget)
+    calendarService.runAutoSchedule().catch(err => {
+      console.debug('[ProjectService] Auto-schedule triggered after create', err?.message);
+    });
+
+    return project;
   }
 
   async updateProject(id: string, data: UpdateProjectData): Promise<Project> {
@@ -75,6 +83,11 @@ class ProjectService {
     if (!response.success) {
       throw new Error(response.error || 'Failed to delete project');
     }
+
+    // Trigger auto-schedule asynchronously (fire-and-forget)
+    calendarService.runAutoSchedule().catch(err => {
+      console.debug('[ProjectService] Auto-schedule triggered after delete', err?.message);
+    });
   }
 }
 

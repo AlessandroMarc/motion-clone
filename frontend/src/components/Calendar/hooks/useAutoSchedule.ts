@@ -248,41 +248,15 @@ export function useAutoSchedule(
   const checkAndMaybeApplyRef = useRef(checkAndMaybeApply);
   checkAndMaybeApplyRef.current = checkAndMaybeApply;
 
-  useEffect(() => {
-    if (!user || !isInitialSyncComplete) return;
-
-    const scheduleRun = () => {
-      if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
-      debounceTimerRef.current = setTimeout(() => {
-        debounceTimerRef.current = null;
-        checkAndMaybeApplyRef.current();
-      }, DEBOUNCE_MS);
-    };
-
-    // Reset guards when schedule-relevant deps change
-    consecutiveAutoRunsRef.current = 0;
-    lastAppliedAtRef.current = 0;
-
-    scheduleRun();
-
-    const handleVisibilityChange = () => {
-      if (document.visibilityState === 'visible') {
-        scheduleRun();
-      }
-    };
-
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-
-    return () => {
-      if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
-    };
-  }, [
-    user,
-    isInitialSyncComplete,
-    tasksFingerprint,
-    schedulesFingerprint,
-  ]);
+  // -----------------------------------------------------------------------
+  // Note: Auto-triggering on schedule-relevant data changes has been removed.
+  // Auto-schedule is now triggered event-driven from:
+  // - Task create/update/delete via taskService
+  // - Project create/delete via projectService
+  // - Schedule updates via API routes
+  // - Google Calendar sync completion
+  // -----------------------------------------------------------------------
+  // Manual trigger via handleAutoScheduleClick button remains available.
 
   return {
     tasksMap,

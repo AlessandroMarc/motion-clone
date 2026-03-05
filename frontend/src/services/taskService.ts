@@ -2,6 +2,7 @@ import type { Task, CreateTaskInput, UpdateTaskInput } from '@/types';
 import { request } from './apiClient';
 import { toTask, toTasks, type UnknownRecord } from './transforms';
 import { normalizeToMidnight, toLocalDateString } from '@/utils/dateUtils';
+import { calendarService } from './calendarService';
 
 class TaskService {
   async createTask(input: CreateTaskInput): Promise<Task> {
@@ -43,7 +44,14 @@ class TaskService {
       throw new Error(response.error || 'Failed to create task');
     }
 
-    return toTask(response.data);
+    const task = toTask(response.data);
+
+    // Trigger auto-schedule asynchronously (fire-and-forget)
+    calendarService.runAutoSchedule().catch(err => {
+      console.debug('[TaskService] Auto-schedule triggered after create', err?.message);
+    });
+
+    return task;
   }
 
   async getAllTasks(): Promise<Task[]> {
@@ -125,6 +133,12 @@ class TaskService {
       '✅ [taskService.updateTask] Task updated successfully:',
       updatedTask
     );
+
+    // Trigger auto-schedule asynchronously (fire-and-forget)
+    calendarService.runAutoSchedule().catch(err => {
+      console.debug('[TaskService] Auto-schedule triggered after update', err?.message);
+    });
+
     return updatedTask;
   }
 
@@ -136,6 +150,11 @@ class TaskService {
     if (!response.success) {
       throw new Error(response.error || 'Failed to delete task');
     }
+
+    // Trigger auto-schedule asynchronously (fire-and-forget)
+    calendarService.runAutoSchedule().catch(err => {
+      console.debug('[TaskService] Auto-schedule triggered after delete', err?.message);
+    });
   }
 
   async getTasksByProject(projectId: string): Promise<Task[]> {

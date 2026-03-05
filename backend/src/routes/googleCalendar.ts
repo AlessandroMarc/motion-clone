@@ -2,7 +2,7 @@ import express, { type Request, type Response } from 'express';
 import { GoogleCalendarService } from '../services/googleCalendarService.js';
 import { getFrontendUrl } from '../config/env.js';
 import { ResponseHelper } from '../utils/responseHelpers.js';
-import { authMiddleware } from '../middleware/auth.js';
+import { authMiddleware, type AuthRequest } from '../middleware/auth.js';
 
 const router = express.Router();
 const googleCalendarService = new GoogleCalendarService();
@@ -125,13 +125,17 @@ router.get('/status', authMiddleware, async (req: Request, res: Response) => {
 // POST /api/google-calendar/sync - Manual sync
 router.post('/sync', authMiddleware, async (req: Request, res: Response) => {
   try {
+    const authReq = req as AuthRequest;
     const userId = req.body?.user_id as string;
 
     if (!userId) {
       return ResponseHelper.badRequest(res, 'User ID is required');
     }
 
-    const result = await googleCalendarService.syncEventsFromGoogle(userId);
+    const result = await googleCalendarService.syncEventsFromGoogle(
+      userId,
+      authReq.authToken
+    );
 
     if (result.success) {
       ResponseHelper.success(

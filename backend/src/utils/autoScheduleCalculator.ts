@@ -155,7 +155,38 @@ export function calculateAutoSchedule(params: {
       }
     }
 
+    // ── Filter out invalid existing events ──────────────────────────────
+    // 1. Past uncompleted events → their time needs replanning
+    // 2. Events before the task's start_date → should never have been placed
+    // Only futureValidEvents count toward "already scheduled" time; the
+    // reclaimed time will be filled with new optimally-placed events.
+    const nowMs = now.getTime();
+    const taskStartDate = task.start_date ? new Date(task.start_date) : null;
+    if (taskStartDate) taskStartDate.setHours(0, 0, 0, 0);
+
+    const futureValidEvents = effectiveExistingEvents.filter(e => {
+      if (new Date(e.end_time).getTime() <= nowMs) return false;
+      if (taskStartDate && new Date(e.start_time) < taskStartDate) return false;
+      return true;
+    });
+
+    // Add kept future events as blockers BEFORE generating new events so new
+    // slots won't overlap with them.
+    for (const evt of futureValidEvents) {
+      accumulatedScheduledEvents.push(evt);
+    }
+
     let taskStartTime = new Date(taskBaseStartTime);
+
+    // Respect task start_date for the scheduling origin
+    if (taskStartDate && taskStartTime < taskStartDate) {
+      const startDateWorking = new Date(taskStartDate);
+      startDateWorking.setHours(taskConfig.workingHoursStart, 0, 0, 0);
+      taskStartTime = startDateWorking > taskBaseStartTime
+        ? startDateWorking
+        : taskStartTime;
+    }
+
     const blockers = (task.blockedBy ?? []).filter(id =>
       taskLatestEndTime.has(id)
     );
@@ -174,25 +205,25 @@ export function calculateAutoSchedule(params: {
 
     const { events, violations } = prepareTaskEvents(
       task,
-      effectiveExistingEvents,
+      futureValidEvents,
       taskConfig,
       accumulatedScheduledEvents,
       taskStartTime
     );
 
-    const finalEvents =
-      events.length === 0 && effectiveExistingEvents.length > 0
-        ? effectiveExistingEvents.map(e => ({
-            task_id: task.id,
-            start_time: new Date(e.start_time),
-            end_time: new Date(e.end_time),
-          }))
-        : events;
+    // Combine kept future events with newly generated events
+    const keptSlots = futureValidEvents.map(e => ({
+      start_time: new Date(e.start_time),
+      end_time: new Date(e.end_time),
+    }));
+    const finalEvents = [...keptSlots, ...events].sort(
+      (a, b) => a.start_time.getTime() - b.start_time.getTime()
+    );
 
     taskEvents.push({ task, events: finalEvents, violations });
 
-    for (const event of finalEvents) {
-      // Push a minimal placeholder so subsequent tasks avoid this slot
+    // Only add NEW events to the accumulated pool (kept events were added above)
+    for (const event of events) {
       const tempEvent: CalendarEventUnion = {
         id: `temp-${task.id}-${event.start_time.getTime()}`,
         title: task.title,
@@ -201,7 +232,6 @@ export function calculateAutoSchedule(params: {
         user_id: task.user_id,
         created_at: new Date(),
         updated_at: new Date(),
-        // CalendarEvent fields (non-task variant — no linked_task_id / completed_at)
       } as CalendarEventUnion;
       accumulatedScheduledEvents.push(tempEvent);
     }

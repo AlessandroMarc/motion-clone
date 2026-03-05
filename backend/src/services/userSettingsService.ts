@@ -11,6 +11,7 @@ import type {
   CreateUserSettingsInput,
   UpdateUserSettingsInput,
 } from '../types/userSettings.js';
+import { autoScheduleTriggerQueue } from './autoScheduleTriggerQueue.js';
 
 export class UserSettingsService {
   // Schedule cache: Map<userId, Schedule[]>
@@ -255,6 +256,11 @@ export class UserSettingsService {
 
     // Invalidate cache since schedules changed
     UserSettingsService.invalidateScheduleCache(userId);
+
+    // Trigger auto-schedule asynchronously (fire-and-forget)
+    if (token) {
+      autoScheduleTriggerQueue.trigger(userId, token);
+    }
 
     return {
       ...data,

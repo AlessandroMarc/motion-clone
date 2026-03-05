@@ -4,6 +4,7 @@ import { CalendarEventService } from './calendarEventService.js';
 import { getGoogleOAuthEnv } from '../config/env.js';
 import { loadEnv } from '../config/loadEnv.js';
 import type { CalendarEventUnion } from '../types/database.js';
+import { autoScheduleTriggerQueue } from './autoScheduleTriggerQueue.js';
 
 /**
  * Load environment variables and return the validated Google OAuth configuration.
@@ -222,7 +223,7 @@ export class GoogleCalendarService {
   /**
    * Sync events from Google Calendar
    */
-  async syncEventsFromGoogle(userId: string): Promise<{
+  async syncEventsFromGoogle(userId: string, authToken?: string): Promise<{
     success: boolean;
     synced: number;
     errors: string[];
@@ -236,7 +237,7 @@ export class GoogleCalendarService {
       return existingSync;
     }
 
-    const syncPromise = this.performSyncEventsFromGoogle(userId)
+    const syncPromise = this.performSyncEventsFromGoogle(userId, authToken)
       .catch(error => {
         console.error('[GoogleCalendarService] Sync error:', error);
         return {
@@ -256,7 +257,7 @@ export class GoogleCalendarService {
     return syncPromise;
   }
 
-  private async performSyncEventsFromGoogle(userId: string): Promise<{
+  private async performSyncEventsFromGoogle(userId: string, authToken?: string): Promise<{
     success: boolean;
     synced: number;
     errors: string[];
@@ -587,6 +588,11 @@ export class GoogleCalendarService {
           last_synced_at: new Date().toISOString(),
         })
         .eq('user_id', userId);
+
+      // Trigger auto-schedule asynchronously (fire-and-forget)
+      if (authToken) {
+        autoScheduleTriggerQueue.trigger(userId, authToken);
+      }
 
       return { success: true, synced, errors, durationMs };
     } catch (error) {

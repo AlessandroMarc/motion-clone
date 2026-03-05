@@ -4,6 +4,7 @@ import {
 } from '../config/supabase.js';
 import type { CreateTaskInput, UpdateTaskInput } from '../types/database.js';
 import type { Task } from '../types/database.js';
+import { autoScheduleTriggerQueue } from './autoScheduleTriggerQueue.js';
 
 /**
  * Normalize a date to midnight (00:00:00.000) in local time
@@ -262,6 +263,11 @@ export class TaskService {
       );
     }
 
+    // Trigger auto-schedule asynchronously (fire-and-forget)
+    if (authToken) {
+      autoScheduleTriggerQueue.trigger(input.user_id, authToken);
+    }
+
     return data;
   }
 
@@ -481,6 +487,19 @@ export class TaskService {
       }
     }
 
+    // Trigger auto-schedule if scheduling-relevant fields changed
+    if (authToken && (
+      input.due_date !== undefined ||
+      input.start_date !== undefined ||
+      input.blockedBy !== undefined ||
+      input.planned_duration_minutes !== undefined ||
+      input.is_recurring !== undefined ||
+      input.schedule_id !== undefined
+    )) {
+      const userId = input.user_id ?? existingTask.user_id;
+      autoScheduleTriggerQueue.trigger(userId, authToken);
+    }
+
     return data;
   }
 
@@ -489,6 +508,12 @@ export class TaskService {
     const client = authToken
       ? getAuthenticatedSupabase(authToken)
       : serviceRoleSupabase;
+
+    // Get the task first to extract userId
+    const existingTask = await this.getTaskById(id, authToken);
+    if (!existingTask) {
+      throw new Error('Task not found');
+    }
 
     // First, delete all calendar events linked to this task
     const { error: calendarError } = await client
@@ -507,6 +532,11 @@ export class TaskService {
 
     if (error) {
       throw new Error(`Failed to delete task: ${error.message}`);
+    }
+
+    // Trigger auto-schedule asynchronously
+    if (authToken) {
+      autoScheduleTriggerQueue.trigger(existingTask.user_id, authToken);
     }
 
     return true;

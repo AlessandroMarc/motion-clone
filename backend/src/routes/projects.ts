@@ -80,7 +80,8 @@ router.post('/', async (req: Request, res: Response) => {
     const input: CreateProjectInput = req.body;
     const project = await projectService.createProject(
       input,
-      authReq.supabaseClient
+      authReq.supabaseClient,
+      authReq.authToken
     );
     ResponseHelper.created(res, project, 'Project created successfully');
   } catch (error) {
@@ -128,7 +129,12 @@ router.delete('/:id', async (req: Request, res: Response) => {
         'Project ID is required and must be a string'
       );
     }
-    await projectService.deleteProject(id, authReq.supabaseClient);
+    await projectService.deleteProject(
+      id,
+      authReq.supabaseClient,
+      authReq.userId,
+      authReq.authToken
+    );
     ResponseHelper.deleted(res, 'Project deleted successfully');
   } catch (error) {
     ResponseHelper.internalError(

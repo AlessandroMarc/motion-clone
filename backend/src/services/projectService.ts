@@ -5,6 +5,7 @@ import type {
   UpdateProjectInput,
 } from '../types/database.js';
 import type { Project } from '../types/database.js';
+import { autoScheduleTriggerQueue } from './autoScheduleTriggerQueue.js';
 
 /**
  * Normalize a date to midnight (00:00:00.000) in local time
@@ -21,7 +22,8 @@ export class ProjectService {
   // Create a new project
   async createProject(
     input: CreateProjectInput,
-    client: SupabaseClient = serviceRoleSupabase
+    client: SupabaseClient = serviceRoleSupabase,
+    authToken?: string
   ): Promise<Project> {
     const { data, error } = await client
       .from('projects')
@@ -39,6 +41,11 @@ export class ProjectService {
 
     if (error) {
       throw new Error(`Failed to create project: ${error.message}`);
+    }
+
+    // Trigger auto-schedule asynchronously (fire-and-forget)
+    if (authToken) {
+      autoScheduleTriggerQueue.trigger(input.user_id, authToken);
     }
 
     return data;
@@ -134,7 +141,9 @@ export class ProjectService {
   // If any step fails, the entire operation is rolled back
   async deleteProject(
     id: string,
-    client: SupabaseClient = serviceRoleSupabase
+    client: SupabaseClient = serviceRoleSupabase,
+    userId?: string,
+    authToken?: string
   ): Promise<boolean> {
     const startTime = Date.now();
 
@@ -158,6 +167,11 @@ export class ProjectService {
       console.log(
         `[ProjectService] Deleted project and all related data in ${duration}ms`
       );
+
+      // Trigger auto-schedule if we have userId and authToken
+      if (userId && authToken) {
+        autoScheduleTriggerQueue.trigger(userId, authToken);
+      }
 
       return true;
     } catch (error) {
