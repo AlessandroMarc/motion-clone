@@ -5,14 +5,16 @@ jest.mock('@/lib/auth', () => ({
   getAuthToken: jest.fn(async () => null),
 }));
 
+const mockRunAutoSchedule = jest.fn(async () => ({
+  unchanged: true,
+  eventsCreated: 0,
+  eventsDeleted: 0,
+  violations: 0,
+}));
+
 jest.mock('../calendarService', () => ({
   calendarService: {
-    runAutoSchedule: jest.fn(async () => ({
-      unchanged: true,
-      eventsCreated: 0,
-      eventsDeleted: 0,
-      violations: 0,
-    })),
+    runAutoSchedule: mockRunAutoSchedule,
   },
 }));
 
@@ -24,7 +26,9 @@ function makeJsonResponse(body: unknown): Response {
     status: 200,
     headers: {
       get: (key: string) =>
-        key.toLowerCase() === 'content-type' ? 'application/json' : null as string | null,
+        key.toLowerCase() === 'content-type'
+          ? 'application/json'
+          : (null as string | null),
     },
     json: async () => body,
     text: async () => JSON.stringify(body),
@@ -91,7 +95,7 @@ describe('taskService due_date serialization', () => {
 
     const fetchCalls = (global.fetch as jest.Mock).mock.calls;
     const [, options] = (fetchCalls[0] ?? []) as [string, RequestInit?];
-    const body = JSON.parse(((options?.body as string) ?? '{}')) as {
+    const body = JSON.parse((options?.body as string) ?? '{}') as {
       due_date?: string | null;
     };
 
@@ -109,12 +113,55 @@ describe('taskService due_date serialization', () => {
 
     const fetchCalls = (global.fetch as jest.Mock).mock.calls;
     const [, options] = (fetchCalls[0] ?? []) as [string, RequestInit?];
-    const body = JSON.parse(((options?.body as string) ?? '{}')) as {
+    const body = JSON.parse((options?.body as string) ?? '{}') as {
       due_date?: string | null;
     };
 
     expect(body.due_date).toBe(toLocalDateString(normalizeToMidnight(dueDate)));
     expect(body.due_date).toMatch(/^\d{4}-\d{2}-\d{2}$/);
     expect(body.due_date).not.toContain('T');
+  });
+});
+
+describe('taskService auto-schedule triggering', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    global.fetch = jest.fn(async () =>
+      makeJsonResponse({
+        success: true,
+        data: makeRawTask(),
+        message: 'ok',
+      })
+    ) as unknown as typeof fetch;
+  });
+
+  it('createTask does NOT trigger runAutoSchedule (backend handles it)', async () => {
+    await taskService.createTask({
+      title: 'Test Task',
+      description: '',
+      dueDate: new Date(2026, 2, 5),
+      priority: 'medium',
+      project_id: undefined,
+      plannedDurationMinutes: 60,
+      actualDurationMinutes: 0,
+      blockedBy: [],
+      isRecurring: false,
+      recurrencePattern: undefined,
+      recurrenceInterval: 1,
+      recurrenceStartDate: undefined,
+      startDate: undefined,
+    });
+
+    // Verify runAutoSchedule was never called - backend event queue handles auto-scheduling
+    expect(mockRunAutoSchedule).not.toHaveBeenCalled();
+  });
+
+  it('updateTask does NOT trigger runAutoSchedule (backend handles it)', async () => {
+    await taskService.updateTask('task-1', {
+      title: 'Updated Task',
+    });
+
+    // Verify runAutoSchedule was never called - backend event queue handles auto-scheduling
+    expect(mockRunAutoSchedule).not.toHaveBeenCalled();
   });
 });

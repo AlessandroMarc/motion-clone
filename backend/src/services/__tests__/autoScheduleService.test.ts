@@ -7,31 +7,34 @@ import type {
 } from '../../types/database.js';
 
 const mockGetAllTasks = jest.fn<(authToken: string) => Promise<Task[]>>();
-const mockGetAllCalendarEvents = jest.fn<
-  (authToken: string) => Promise<CalendarEventUnion[]>
->();
-const mockCreateCalendarEventsBatch = jest.fn<
-  (
-    inputs: unknown[],
-    authToken: string
-  ) => Promise<Array<{ success: boolean }>>
->();
-const mockDeleteCalendarEventsBatch = jest.fn<
-  (
-    eventIds: string[],
-    authToken: string
-  ) => Promise<Array<{ success: boolean }>>
->();
-const mockGetUserSchedules = jest.fn<
-  (userId: string, authToken: string) => Promise<Schedule[]>
->();
-const mockGetActiveSchedule = jest.fn<
-  (userId: string, authToken: string) => Promise<Schedule | null>
->();
+const mockGetAllCalendarEvents =
+  jest.fn<(authToken: string) => Promise<CalendarEventUnion[]>>();
+const mockCreateCalendarEventsBatch =
+  jest.fn<
+    (
+      inputs: unknown[],
+      authToken: string
+    ) => Promise<Array<{ success: boolean }>>
+  >();
+const mockDeleteCalendarEventsBatch =
+  jest.fn<
+    (
+      eventIds: string[],
+      authToken: string
+    ) => Promise<Array<{ success: boolean }>>
+  >();
+const mockGetUserSchedules =
+  jest.fn<(userId: string, authToken: string) => Promise<Schedule[]>>();
+const mockGetActiveSchedule =
+  jest.fn<(userId: string, authToken: string) => Promise<Schedule | null>>();
 const mockCalculateAutoSchedule = jest.fn();
-const mockExpandRecurringTasks = jest.fn<
-  (tasks: Task[], existingTaskEvents: CalendarEventTask[]) => CalendarEventTask[]
->();
+const mockExpandRecurringTasks =
+  jest.fn<
+    (
+      tasks: Task[],
+      existingTaskEvents: CalendarEventTask[]
+    ) => CalendarEventTask[]
+  >();
 
 jest.unstable_mockModule('../taskService.js', () => ({
   TaskService: jest.fn().mockImplementation(() => ({
@@ -66,7 +69,7 @@ const { AutoScheduleService } = await import('../autoScheduleService.js');
 
 const makeTask = (overrides: Partial<Task> = {}): Task => ({
   id: 'task-1',
-  title: 'Studiare verbi e parole nuove dall\'imperativo',
+  title: "Studiare verbi e parole nuove dall'imperativo",
   description: 'language study',
   due_date: null,
   priority: 'medium',
@@ -270,5 +273,82 @@ describe('AutoScheduleService schedule comparison', () => {
     expect(result.eventsDeleted).toBe(0);
     expect(mockCreateCalendarEventsBatch).not.toHaveBeenCalled();
     expect(mockDeleteCalendarEventsBatch).not.toHaveBeenCalled();
+  });
+
+  test('detects and cleans up DB duplicates when raw length differs from deduplicated length', async () => {
+    const userId = 'user-1';
+    const token = 'token';
+    const task = makeTask();
+    const schedules = [makeSchedule()];
+
+    // DB has duplicate events (38 raw events, but only 27 unique)
+    const existingA = makeTaskEvent(
+      'e-1',
+      task.id,
+      '2026-03-05T13:35:00.000Z',
+      '2026-03-05T13:55:00.000Z'
+    );
+    const existingB = makeTaskEvent(
+      'e-2',
+      task.id,
+      '2026-03-05T14:00:00.000Z',
+      '2026-03-05T14:20:00.000Z'
+    );
+    // Duplicate of existingB with different ID (simulates DB duplicate)
+    const existingBDuplicate = makeTaskEvent(
+      'e-3',
+      task.id,
+      '2026-03-05T14:00:00.000Z',
+      '2026-03-05T14:20:00.000Z'
+    );
+
+    mockGetAllTasks.mockResolvedValue([task]);
+    mockGetAllCalendarEvents.mockResolvedValue([
+      existingA,
+      existingB,
+      existingBDuplicate, // Raw length is 3
+    ] as CalendarEventUnion[]);
+    mockGetUserSchedules.mockResolvedValue(schedules);
+    mockGetActiveSchedule.mockResolvedValue(schedules[0]);
+
+    // Proposed schedule has no duplicates (only 2 unique events)
+    mockCalculateAutoSchedule.mockReturnValue({
+      taskEvents: [
+        {
+          task,
+          events: [
+            {
+              start_time: new Date('2026-03-05T13:35:00.000Z'),
+              end_time: new Date('2026-03-05T13:55:00.000Z'),
+            },
+            {
+              start_time: new Date('2026-03-05T14:00:00.000Z'),
+              end_time: new Date('2026-03-05T14:20:00.000Z'),
+            },
+          ],
+          violations: [],
+        },
+      ],
+      totalEvents: 2,
+      totalViolations: 0,
+      tasksWithDeadlineCount: 0,
+      tasksWithoutDeadlineCount: 1,
+    });
+
+    const result = await service.run(userId, token);
+
+    // Should detect mismatch due to raw length check (3 !== 2)
+    expect(result.unchanged).toBe(false);
+    // Should delete the duplicate event
+    expect(result.eventsDeleted).toBe(1);
+    // Should NOT create new events (all unique events already exist)
+    expect(result.eventsCreated).toBe(0);
+
+    // Should clean up duplicates without recreating existing events
+    expect(mockDeleteCalendarEventsBatch).toHaveBeenCalledWith(
+      ['e-3'], // Only the duplicate should be deleted
+      token
+    );
+    expect(mockCreateCalendarEventsBatch).not.toHaveBeenCalled();
   });
 });

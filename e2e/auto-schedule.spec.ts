@@ -99,21 +99,34 @@ async function setupMocks(
       }
 
       console.log('[E2E Mock] Auto-schedule/run POST called, creating events');
-      console.log('[E2E Mock] Current tasks:', tasks.map((t: any) => ({ id: t.id, status: t.status })));
-      console.log('[E2E Mock] Current calendar events:', calendarEvents.map((e: any) => ({ id: e.id, linked_task_id: e.linked_task_id })));
+      console.log(
+        '[E2E Mock] Current tasks:',
+        tasks.map((t: any) => ({ id: t.id, status: t.status }))
+      );
+      console.log(
+        '[E2E Mock] Current calendar events:',
+        calendarEvents.map((e: any) => ({
+          id: e.id,
+          linked_task_id: e.linked_task_id,
+        }))
+      );
 
       // Simulate auto-schedule: create events for tasks that don't have events yet
-      const existingTaskIds = new Set([
-        ...calendarEvents,
-        ...createdEvents,
-      ].map((e: any) => e.linked_task_id));
+      const existingTaskIds = new Set(
+        [...calendarEvents, ...createdEvents].map((e: any) => e.linked_task_id)
+      );
       console.log('[E2E Mock] Existing task IDs:', Array.from(existingTaskIds));
 
       const tasksToSchedule = tasks
-        .filter((t: any) => t.status === 'not-started' && !existingTaskIds.has(t.id))
+        .filter(
+          (t: any) => t.status === 'not-started' && !existingTaskIds.has(t.id)
+        )
         .slice(0, 2); // Limit to 2 to avoid too many events
-      
-      console.log('[E2E Mock] Tasks to schedule:', tasksToSchedule.map((t: any) => ({ id: t.id, title: t.title })));
+
+      console.log(
+        '[E2E Mock] Tasks to schedule:',
+        tasksToSchedule.map((t: any) => ({ id: t.id, title: t.title }))
+      );
 
       let eventsCreated = 0;
       for (const task of tasksToSchedule) {
@@ -139,7 +152,10 @@ async function setupMocks(
       }
 
       console.log(`[E2E Mock] Created ${eventsCreated} total events`);
-      console.log('[E2E Mock] createdEvents.length is now:', createdEvents.length);
+      console.log(
+        '[E2E Mock] createdEvents.length is now:',
+        createdEvents.length
+      );
 
       await route.fulfill({
         status: 200,
@@ -302,44 +318,40 @@ async function setupMocks(
   );
 
   // GET /google-calendar/status
-  await page.route(
-    'http://localhost:3003/api/google-calendar/status*',
-    route =>
-      route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify(
-          apiSuccess(
-            {
-              connected: false,
-              email: null,
-              calendarId: null,
-              lastSyncedAt: null,
-            },
-            'Status retrieved'
-          )
-        ),
-      })
+  await page.route('http://localhost:3003/api/google-calendar/status*', route =>
+    route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify(
+        apiSuccess(
+          {
+            connected: false,
+            email: null,
+            calendarId: null,
+            lastSyncedAt: null,
+          },
+          'Status retrieved'
+        )
+      ),
+    })
   );
 
   // POST /google-calendar/sync
-  await page.route(
-    'http://localhost:3003/api/google-calendar/sync*',
-    route =>
-      route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify(
-          apiSuccess(
-            {
-              synced: 0,
-              conflicts: 0,
-              errors: [],
-            },
-            'Sync completed'
-          )
-        ),
-      })
+  await page.route('http://localhost:3003/api/google-calendar/sync*', route =>
+    route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify(
+        apiSuccess(
+          {
+            synced: 0,
+            conflicts: 0,
+            errors: [],
+          },
+          'Sync completed'
+        )
+      ),
+    })
   );
 
   // Catch-all for any other API calls (registered last so specific routes take precedence)

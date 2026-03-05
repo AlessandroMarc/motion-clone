@@ -95,15 +95,15 @@ export function ZenModeView({ onExit }: ZenModeViewProps) {
       dayDate.setDate(dayDate.getDate() + i);
       dayDate.setHours(0, 0, 0, 0);
       const timestamp = dayDate.getTime();
-      
+
       const dayItems: TimelineItem[] = [];
-      
+
       // Process all events for this day
       for (const event of events) {
         const eventDate = new Date(event.start_time);
         eventDate.setHours(0, 0, 0, 0);
         if (eventDate.getTime() !== timestamp) continue;
-        
+
         if (isCalendarEventTask(event)) {
           // Task-linked event: find the task and add it
           const taskId = (event as { linked_task_id?: string | null })
@@ -133,7 +133,7 @@ export function ZenModeView({ onExit }: ZenModeViewProps) {
 
       // Sort items within this day by start time
       dayItems.sort((a, b) => a.startTime.getTime() - b.startTime.getTime());
-      
+
       schedules.push({
         date: dayDate,
         items: dayItems,
@@ -212,11 +212,15 @@ export function ZenModeView({ onExit }: ZenModeViewProps) {
                         const { task, taskEventId, startTime, endTime } = item;
                         const isCompleted = isTaskCompleted(task);
                         const statusConfig =
-                          STATUS_CONFIG[task.status] ?? STATUS_CONFIG['not-started'];
+                          STATUS_CONFIG[task.status] ??
+                          STATUS_CONFIG['not-started'];
                         const StatusIcon = statusConfig.icon;
                         const timeLabel = formatTimeRange(startTime, endTime);
                         return (
-                          <li key={taskEventId} className="flex items-start gap-3">
+                          <li
+                            key={taskEventId}
+                            className="flex items-start gap-3"
+                          >
                             <button
                               type="button"
                               onClick={() => handleToggleComplete(task)}
@@ -226,13 +230,16 @@ export function ZenModeView({ onExit }: ZenModeViewProps) {
                                 isCompleted && 'hover:opacity-90'
                               )}
                               aria-label={
-                                isCompleted ? 'Mark incomplete' : 'Mark complete'
+                                isCompleted
+                                  ? 'Mark incomplete'
+                                  : 'Mark complete'
                               }
                             >
                               <StatusIcon
                                 className={cn(
                                   'h-6 w-6 md:h-7 md:w-7',
-                                  task.status === 'in-progress' && 'animate-spin'
+                                  task.status === 'in-progress' &&
+                                    'animate-spin'
                                 )}
                               />
                             </button>
@@ -241,7 +248,9 @@ export function ZenModeView({ onExit }: ZenModeViewProps) {
                               onClick={() => handleToggleComplete(task)}
                               className={cn(
                                 'flex-1 text-left font-body text-lg md:text-xl transition-colors touch-manipulation focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded',
-                                isCompleted ? TASK_COMPLETED_CLASS : 'text-foreground'
+                                isCompleted
+                                  ? TASK_COMPLETED_CLASS
+                                  : 'text-foreground'
                               )}
                             >
                               <span className="block">{task.title}</span>

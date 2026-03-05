@@ -1,6 +1,9 @@
 import { describe, expect, it } from '@jest/globals';
 import type { Task, Schedule } from '../../types/database.js';
-import { createConfigFromSchedule, distributeEvents } from '../taskScheduler.js';
+import {
+  createConfigFromSchedule,
+  distributeEvents,
+} from '../taskScheduler.js';
 
 function makeTask(overrides: Partial<Task> = {}): Task {
   return {
