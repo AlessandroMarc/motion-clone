@@ -620,13 +620,9 @@ function prepareRecurringTaskEvents(
     const ds = occurrenceDate.toDateString();
     const existing = existingByDate.get(ds);
 
+    // Skip days that already have an event — they're handled by the caller
+    // via lockedFutureEvents. Returning them here would create duplicates.
     if (existing) {
-      const slot: ScheduledEvent = {
-        task_id: task.id,
-        start_time: new Date(existing.start_time),
-        end_time: new Date(existing.end_time),
-      };
-      events.push(slot);
       continue;
     }
 

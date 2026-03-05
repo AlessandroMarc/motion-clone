@@ -136,7 +136,7 @@ class TaskService {
     const updatedTask = toTask(response.data);
     console.log(
       '✅ [taskService.updateTask] Task updated successfully:',
-      updatedTask
+      JSON.parse(JSON.stringify(updatedTask))
     );
 
     // Trigger auto-schedule asynchronously (fire-and-forget)

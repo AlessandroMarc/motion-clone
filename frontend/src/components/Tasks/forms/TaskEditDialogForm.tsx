@@ -230,7 +230,7 @@ export function TaskEditDialogForm({
 
       console.log(
         '✅ [TaskEditDialogForm] Task updated successfully:',
-        updatedTask
+        JSON.parse(JSON.stringify(updatedTask))
       );
       onTaskUpdated(updatedTask);
       toast.success('Task updated successfully');
