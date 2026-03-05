@@ -99,6 +99,8 @@ export function calculateAutoSchedule(params: {
   const roundedNow = roundToNext15Minutes(now);
 
   const taskLatestEndTime = new Map<string, Date>();
+  const lastScheduledTaskId = { id: '' }; // Track which task was scheduled last
+  const smallGapMs = 2 * 60 * 1000; // 2-minute gap for consecutive occurrences of same task
 
   for (const task of sortedTasks) {
     const taskSchedule =
@@ -109,6 +111,10 @@ export function calculateAutoSchedule(params: {
       eventDuration
     );
     const gapMs = (taskConfig.gapBetweenEventsMinutes ?? 5) * 60 * 1000;
+    
+    // Use smaller gap (2 min) if the last scheduled task was the same task,
+    // otherwise use the configured gap (usually 5 min)
+    const effectiveGapMs = lastScheduledTaskId.id === task.id ? smallGapMs : gapMs;
 
     const taskWorkingHoursStart = new Date(now);
     taskWorkingHoursStart.setHours(taskConfig.workingHoursStart, 0, 0, 0);
@@ -205,6 +211,18 @@ export function calculateAutoSchedule(params: {
       }
     }
 
+    // If this task is the same as the last scheduled task, use smaller gap (2 min)
+    // to keep multiple occurrences of the same task grouped together
+    if (lastScheduledTaskId.id === task.id) {
+      const lastTaskEnd = taskLatestEndTime.get(task.id);
+      if (lastTaskEnd) {
+        const startWithSmallGap = new Date(lastTaskEnd.getTime() + smallGapMs);
+        if (startWithSmallGap > taskStartTime) {
+          taskStartTime = startWithSmallGap;
+        }
+      }
+    }
+
     const { events, violations } = prepareTaskEvents(
       task,
       futureValidEvents,
@@ -241,6 +259,7 @@ export function calculateAutoSchedule(params: {
     const lastEvent = finalEvents[finalEvents.length - 1];
     if (lastEvent) {
       taskLatestEndTime.set(task.id, lastEvent.end_time);
+      lastScheduledTaskId.id = task.id; // Track that we just scheduled this task
     }
   }
 

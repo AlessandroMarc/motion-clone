@@ -34,12 +34,7 @@ export default defineConfig({
     },
   ],
   webServer: {
-    command: [
-      'NEXT_PUBLIC_AUTH_BYPASS=1',
-      'NEXT_PUBLIC_SUPABASE_URL=https://placeholder.supabase.co',
-      'NEXT_PUBLIC_SUPABASE_ANON_KEY=placeholder-anon-key',
-      'npm --prefix frontend run dev',
-    ].join(' '),
+    command: 'npm --prefix frontend run dev',
     url: 'http://localhost:3000',
     reuseExistingServer: !process.env.CI,
     timeout: 120_000,
@@ -47,6 +42,7 @@ export default defineConfig({
       NEXT_PUBLIC_AUTH_BYPASS: '1',
       NEXT_PUBLIC_SUPABASE_URL: 'https://placeholder.supabase.co',
       NEXT_PUBLIC_SUPABASE_ANON_KEY: 'placeholder-anon-key',
+      NODE_ENV: 'development',
     },
   },
 });
