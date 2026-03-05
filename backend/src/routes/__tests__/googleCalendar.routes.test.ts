@@ -180,7 +180,8 @@ describe('POST /api/google-calendar/sync', () => {
     expect(res.body.success).toBe(true);
     expect(res.body.data.synced).toBe(5);
     expect(mockGoogleCalendarService.syncEventsFromGoogle).toHaveBeenCalledWith(
-      'user-1'
+      'user-1',
+      'fake-test-token'
     );
   });
 

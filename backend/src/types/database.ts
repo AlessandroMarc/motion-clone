@@ -8,6 +8,8 @@ export type {
   CalendarEventUnion,
   CreateCalendarEventInput,
   UpdateCalendarEventInput,
+  DayOfWeek,
+  DaySchedule,
   Schedule,
   UserSettings,
   OnboardingStatus,

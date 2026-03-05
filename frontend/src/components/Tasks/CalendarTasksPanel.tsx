@@ -22,7 +22,10 @@ export function CalendarTasksPanel({
 }: CalendarTasksPanelProps) {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [projectsById, setProjectsById] = useState<Record<string, Project>>({});
-  const [weekEvents, setWeekEvents] = useState<CalendarEventUnion[]>([]);
+  const [_weekEvents, setWeekEvents] = useState<CalendarEventUnion[]>([]);
+  const [allFutureEvents, setAllFutureEvents] = useState<CalendarEventUnion[]>(
+    []
+  );
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -58,6 +61,7 @@ export function CalendarTasksPanel({
         for (const p of fetchedProjects) map[p.id] = p as Project;
         setProjectsById(map);
 
+        // Fetch current week events for display
         const startDate = weekDates[0].toISOString().split('T')[0];
         const endDate = weekDates[6].toISOString().split('T')[0];
         const events = await calendarService.getCalendarEventsByDateRange(
@@ -65,6 +69,16 @@ export function CalendarTasksPanel({
           endDate
         );
         setWeekEvents(events);
+
+        // Fetch broader range (90 days ahead) to detect all scheduled tasks
+        const today = new Date();
+        const futureEnd = new Date(today);
+        futureEnd.setDate(futureEnd.getDate() + 90);
+        const futureEvents = await calendarService.getCalendarEventsByDateRange(
+          today.toISOString().split('T')[0],
+          futureEnd.toISOString().split('T')[0]
+        );
+        setAllFutureEvents(futureEvents);
       } catch (e) {
         const msg = e instanceof Error ? e.message : '';
         const errorMessage = msg.startsWith('429:')
@@ -84,15 +98,14 @@ export function CalendarTasksPanel({
     });
   }, [weekDates, refreshTrigger]);
 
-  const plannedTaskIds = useMemo(
-    () =>
-      new Set(
-        weekEvents
-          .filter(ev => !!ev.linked_task_id)
-          .map(ev => ev.linked_task_id as string)
-      ),
-    [weekEvents]
-  );
+  const plannedTaskIds = useMemo(() => {
+    // Use allFutureEvents to detect tasks that are scheduled anywhere in the future
+    return new Set(
+      allFutureEvents
+        .filter(ev => !!ev.linked_task_id)
+        .map(ev => ev.linked_task_id as string)
+    );
+  }, [allFutureEvents]);
 
   const handleOpenScheduleDialog = (task: Task) => {
     setSelectedTask(task);
@@ -130,6 +143,16 @@ export function CalendarTasksPanel({
         endDate
       );
       setWeekEvents(events);
+
+      // Also refresh future events
+      const today = new Date();
+      const futureEnd = new Date(today);
+      futureEnd.setDate(futureEnd.getDate() + 90);
+      const futureEvents = await calendarService.getCalendarEventsByDateRange(
+        today.toISOString().split('T')[0],
+        futureEnd.toISOString().split('T')[0]
+      );
+      setAllFutureEvents(futureEvents);
     } catch (err) {
       const errorMessage =
         err instanceof Error

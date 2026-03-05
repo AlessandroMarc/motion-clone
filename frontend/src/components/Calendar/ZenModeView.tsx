@@ -30,20 +30,22 @@ export function ZenModeView({ onExit }: ZenModeViewProps) {
     return date;
   }, []);
 
-  // Fetch today's tasks and events
+  // Fetch tasks and events for the next 4 days (today + 3 days)
   useEffect(() => {
     const loadData = async () => {
       try {
         setLoading(true);
         const startDate = today.toISOString();
         const endDate = new Date(
-          today.getTime() + 24 * 60 * 60 * 1000 - 1
+          today.getTime() + 4 * 24 * 60 * 60 * 1000
         ).toISOString();
 
         const [allTasks, allEvents] = await Promise.all([
           taskService.getAllTasks(),
           calendarService.getCalendarEventsByDateRange(startDate, endDate),
         ]);
+
+        console.log('ZenModeView loaded tasks:', allTasks);
         setTasks(allTasks);
         setEvents(allEvents);
       } catch (error) {
@@ -55,29 +57,20 @@ export function ZenModeView({ onExit }: ZenModeViewProps) {
     loadData();
   }, [today]);
 
-  // Today's task-linked events (for start/end time display)
-  const todayTaskEvents = useMemo(() => {
-    const taskEvents: Map<string, { start_time: Date; end_time: Date }> =
-      new Map();
-    for (const event of events) {
-      if (!isCalendarEventTask(event)) continue;
-      const eventDate = new Date(event.start_time);
-      if (!isSameDay(eventDate, today)) continue;
-      const taskId = (event as { linked_task_id?: string | null })
-        .linked_task_id;
-      if (!taskId || taskEvents.has(taskId)) continue;
-      taskEvents.set(taskId, {
-        start_time: new Date(event.start_time),
-        end_time: new Date(event.end_time),
-      });
+  // Task-linked events for all 4 days (grouped by task ID, keeping first occurrence per task per day)
+  const taskMap = useMemo(() => {
+    const map = new Map<string, Task>();
+    for (const task of tasks) {
+      map.set(task.id, task);
     }
-    return taskEvents;
-  }, [events, today]);
+    return map;
+  }, [tasks]);
 
   // Build a unified timeline: tasks (with their scheduled time) + regular events, sorted by start_time
   type TimelineTask = {
     kind: 'task';
     task: Task;
+    taskEventId: string;
     startTime: Date;
     endTime: Date;
   };
@@ -89,38 +82,66 @@ export function ZenModeView({ onExit }: ZenModeViewProps) {
   };
   type TimelineItem = TimelineTask | TimelineEvent;
 
-  const timeline = useMemo((): TimelineItem[] => {
-    const items: TimelineItem[] = [];
+  interface DaySchedule {
+    date: Date;
+    items: TimelineItem[];
+  }
 
-    // Tasks that have a calendar event scheduled for today
-    const todayEventTaskIds = new Set(todayTaskEvents.keys());
-    for (const task of tasks) {
-      const range = todayTaskEvents.get(task.id);
-      if (!todayEventTaskIds.has(task.id) || !range) continue;
-      items.push({
-        kind: 'task',
-        task,
-        startTime: range.start_time,
-        endTime: range.end_time,
+  const daySchedules = useMemo((): DaySchedule[] => {
+    // Build day schedules for the next 4 days
+    const schedules: DaySchedule[] = [];
+    for (let i = 0; i < 4; i++) {
+      const dayDate = new Date(today);
+      dayDate.setDate(dayDate.getDate() + i);
+      dayDate.setHours(0, 0, 0, 0);
+      const timestamp = dayDate.getTime();
+      
+      const dayItems: TimelineItem[] = [];
+      
+      // Process all events for this day
+      for (const event of events) {
+        const eventDate = new Date(event.start_time);
+        eventDate.setHours(0, 0, 0, 0);
+        if (eventDate.getTime() !== timestamp) continue;
+        
+        if (isCalendarEventTask(event)) {
+          // Task-linked event: find the task and add it
+          const taskId = (event as { linked_task_id?: string | null })
+            .linked_task_id;
+          if (taskId) {
+            const task = taskMap.get(taskId);
+            if (task) {
+              dayItems.push({
+                kind: 'task',
+                task,
+                taskEventId: event.id,
+                startTime: new Date(event.start_time),
+                endTime: new Date(event.end_time),
+              });
+            }
+          }
+        } else {
+          // Regular calendar event
+          dayItems.push({
+            kind: 'event',
+            event: event as CalendarEvent,
+            startTime: new Date(event.start_time),
+            endTime: new Date(event.end_time),
+          });
+        }
+      }
+
+      // Sort items within this day by start time
+      dayItems.sort((a, b) => a.startTime.getTime() - b.startTime.getTime());
+      
+      schedules.push({
+        date: dayDate,
+        items: dayItems,
       });
     }
 
-    // Regular (non-task) calendar events for today
-    for (const event of events) {
-      if (isCalendarEventTask(event)) continue;
-      if (!isSameDay(new Date(event.start_time), today)) continue;
-      items.push({
-        kind: 'event',
-        event: event as CalendarEvent,
-        startTime: new Date(event.start_time),
-        endTime: new Date(event.end_time),
-      });
-    }
-
-    // Sort everything by start time
-    items.sort((a, b) => a.startTime.getTime() - b.startTime.getTime());
-    return items;
-  }, [tasks, events, todayTaskEvents, today]);
+    return schedules;
+  }, [events, taskMap, today]);
 
   const handleToggleComplete = useCallback(async (task: Task) => {
     try {
@@ -134,8 +155,6 @@ export function ZenModeView({ onExit }: ZenModeViewProps) {
     }
   }, []);
 
-  const formattedDate = formatDateLong(today);
-
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -145,115 +164,132 @@ export function ZenModeView({ onExit }: ZenModeViewProps) {
   }
 
   return (
-    <div className="relative min-h-screen flex flex-col items-center justify-center p-8">
-      {/* Exit button: below mobile header, touch-friendly on small screens */}
+    <div className="relative min-h-screen flex flex-col p-8">
+      {/* Exit button: above content, fixed position */}
       <button
         type="button"
         onClick={onExit}
         className={cn(
-          'absolute right-4 z-10 font-body text-sm transition-colors rounded-lg touch-manipulation',
+          'absolute right-4 top-4 z-10 font-body text-sm transition-colors rounded-lg touch-manipulation',
           'text-muted-foreground hover:text-foreground hover:bg-muted/50',
           isMobile
-            ? 'top-4 min-h-[44px] min-w-[44px] flex items-center justify-center px-3'
-            : 'top-4'
+            ? 'min-h-[44px] min-w-[44px] flex items-center justify-center px-3'
+            : ''
         )}
         aria-label="Exit zen mode"
       >
         Exit
       </button>
 
-      {/* Title with today's date */}
-      <h1 className="text-4xl md:text-5xl font-title text-foreground mb-12 text-center">
-        {formattedDate}
-      </h1>
+      {/* Scrollable content area */}
+      <div className="flex-1 overflow-y-auto pt-12 scroll-smooth">
+        <div className="max-w-2xl mx-auto">
+          {daySchedules.map(daySchedule => {
+            const dayFormatted = formatDateLong(daySchedule.date);
+            const isToday = isSameDay(daySchedule.date, today);
 
-      {/* Today's schedule: tasks + calendar events sorted by start time */}
-      <div className="w-full max-w-2xl">
-        {timeline.length === 0 ? (
-          <p className="text-center text-muted-foreground font-body text-lg">
-            Nothing scheduled for today
-          </p>
-        ) : (
-          <ul className="space-y-4 list-none">
-            {timeline.map(item => {
-              if (item.kind === 'task') {
-                const { task, startTime, endTime } = item;
-                const isCompleted = isTaskCompleted(task);
-                const statusConfig =
-                  STATUS_CONFIG[task.status] ?? STATUS_CONFIG['not-started'];
-                const StatusIcon = statusConfig.icon;
-                const timeLabel = formatTimeRange(startTime, endTime);
-                return (
-                  <li key={task.id} className="flex items-start gap-3">
-                    <button
-                      type="button"
-                      onClick={() => handleToggleComplete(task)}
-                      className={cn(
-                        'shrink-0 rounded-full p-0.5 transition-colors touch-manipulation focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
-                        statusConfig.className,
-                        isCompleted && 'hover:opacity-90'
-                      )}
-                      aria-label={
-                        isCompleted ? 'Mark incomplete' : 'Mark complete'
-                      }
-                    >
-                      <StatusIcon
-                        className={cn(
-                          'h-6 w-6 md:h-7 md:w-7',
-                          task.status === 'in-progress' && 'animate-spin'
-                        )}
-                      />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => handleToggleComplete(task)}
-                      className={cn(
-                        'flex-1 text-left font-body text-lg md:text-xl transition-colors touch-manipulation focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded',
-                        isCompleted ? TASK_COMPLETED_CLASS : 'text-foreground'
-                      )}
-                    >
-                      <span className="block">{task.title}</span>
-                      <span
-                        className={cn(
-                          'block text-sm font-normal mt-0.5',
-                          isCompleted
-                            ? 'text-muted-foreground/80'
-                            : 'text-muted-foreground'
-                        )}
-                      >
-                        {timeLabel}
-                      </span>
-                    </button>
-                  </li>
-                );
-              }
-
-              // Regular calendar event
-              const { event, startTime, endTime } = item;
-              const isPast = endTime < new Date();
-              const timeLabel = formatTimeRange(startTime, endTime);
-              return (
-                <li
-                  key={event.id}
+            return (
+              <section key={daySchedule.date.toISOString()} className="mb-12">
+                {/* Day heading */}
+                <h2
                   className={cn(
-                    'flex items-start gap-3',
-                    isPast && 'opacity-50'
+                    'text-3xl md:text-4xl font-title mb-8',
+                    isToday ? 'text-foreground' : 'text-muted-foreground'
                   )}
                 >
-                  <span className="shrink-0 rounded-full p-0.5 text-muted-foreground">
-                    <Calendar className="h-6 w-6 md:h-7 md:w-7" />
-                  </span>
-                  <div className="flex-1 font-body text-lg md:text-xl text-foreground">
-                    <span className="block">{event.title}</span>
-                    <span className="block text-sm font-normal mt-0.5 text-muted-foreground">
-                      {timeLabel}
-                    </span>
-                  </div>
-                </li>
-              );
-            })}
-          </ul>
-        )}
+                  {dayFormatted}
+                </h2>
+
+                {/* Items for this day */}
+                {daySchedule.items.length === 0 ? (
+                  <p className="text-muted-foreground font-body text-lg">
+                    Nothing scheduled
+                  </p>
+                ) : (
+                  <ul className="space-y-4 list-none">
+                    {daySchedule.items.map(item => {
+                      if (item.kind === 'task') {
+                        const { task, taskEventId, startTime, endTime } = item;
+                        const isCompleted = isTaskCompleted(task);
+                        const statusConfig =
+                          STATUS_CONFIG[task.status] ?? STATUS_CONFIG['not-started'];
+                        const StatusIcon = statusConfig.icon;
+                        const timeLabel = formatTimeRange(startTime, endTime);
+                        return (
+                          <li key={taskEventId} className="flex items-start gap-3">
+                            <button
+                              type="button"
+                              onClick={() => handleToggleComplete(task)}
+                              className={cn(
+                                'shrink-0 rounded-full p-0.5 transition-colors touch-manipulation focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
+                                statusConfig.className,
+                                isCompleted && 'hover:opacity-90'
+                              )}
+                              aria-label={
+                                isCompleted ? 'Mark incomplete' : 'Mark complete'
+                              }
+                            >
+                              <StatusIcon
+                                className={cn(
+                                  'h-6 w-6 md:h-7 md:w-7',
+                                  task.status === 'in-progress' && 'animate-spin'
+                                )}
+                              />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleToggleComplete(task)}
+                              className={cn(
+                                'flex-1 text-left font-body text-lg md:text-xl transition-colors touch-manipulation focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded',
+                                isCompleted ? TASK_COMPLETED_CLASS : 'text-foreground'
+                              )}
+                            >
+                              <span className="block">{task.title}</span>
+                              <span
+                                className={cn(
+                                  'block text-sm font-normal mt-0.5',
+                                  isCompleted
+                                    ? 'text-muted-foreground/80'
+                                    : 'text-muted-foreground'
+                                )}
+                              >
+                                {timeLabel}
+                              </span>
+                            </button>
+                          </li>
+                        );
+                      }
+
+                      // Regular calendar event
+                      const { event, startTime, endTime } = item;
+                      const isPast = endTime < new Date();
+                      const timeLabel = formatTimeRange(startTime, endTime);
+                      return (
+                        <li
+                          key={event.id}
+                          className={cn(
+                            'flex items-start gap-3',
+                            isPast && 'opacity-50'
+                          )}
+                        >
+                          <span className="shrink-0 rounded-full p-0.5 text-muted-foreground">
+                            <Calendar className="h-6 w-6 md:h-7 md:w-7" />
+                          </span>
+                          <div className="flex-1 font-body text-lg md:text-xl text-foreground">
+                            <span className="block">{event.title}</span>
+                            <span className="block text-sm font-normal mt-0.5 text-muted-foreground">
+                              {timeLabel}
+                            </span>
+                          </div>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                )}
+              </section>
+            );
+          })}
+        </div>
       </div>
     </div>
   );
