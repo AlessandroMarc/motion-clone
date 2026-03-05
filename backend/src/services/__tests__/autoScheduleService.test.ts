@@ -7,31 +7,34 @@ import type {
 } from '../../types/database.js';
 
 const mockGetAllTasks = jest.fn<(authToken: string) => Promise<Task[]>>();
-const mockGetAllCalendarEvents = jest.fn<
-  (authToken: string) => Promise<CalendarEventUnion[]>
->();
-const mockCreateCalendarEventsBatch = jest.fn<
-  (
-    inputs: unknown[],
-    authToken: string
-  ) => Promise<Array<{ success: boolean }>>
->();
-const mockDeleteCalendarEventsBatch = jest.fn<
-  (
-    eventIds: string[],
-    authToken: string
-  ) => Promise<Array<{ success: boolean }>>
->();
-const mockGetUserSchedules = jest.fn<
-  (userId: string, authToken: string) => Promise<Schedule[]>
->();
-const mockGetActiveSchedule = jest.fn<
-  (userId: string, authToken: string) => Promise<Schedule | null>
->();
+const mockGetAllCalendarEvents =
+  jest.fn<(authToken: string) => Promise<CalendarEventUnion[]>>();
+const mockCreateCalendarEventsBatch =
+  jest.fn<
+    (
+      inputs: unknown[],
+      authToken: string
+    ) => Promise<Array<{ success: boolean }>>
+  >();
+const mockDeleteCalendarEventsBatch =
+  jest.fn<
+    (
+      eventIds: string[],
+      authToken: string
+    ) => Promise<Array<{ success: boolean }>>
+  >();
+const mockGetUserSchedules =
+  jest.fn<(userId: string, authToken: string) => Promise<Schedule[]>>();
+const mockGetActiveSchedule =
+  jest.fn<(userId: string, authToken: string) => Promise<Schedule | null>>();
 const mockCalculateAutoSchedule = jest.fn();
-const mockExpandRecurringTasks = jest.fn<
-  (tasks: Task[], existingTaskEvents: CalendarEventTask[]) => CalendarEventTask[]
->();
+const mockExpandRecurringTasks =
+  jest.fn<
+    (
+      tasks: Task[],
+      existingTaskEvents: CalendarEventTask[]
+    ) => CalendarEventTask[]
+  >();
 
 jest.unstable_mockModule('../taskService.js', () => ({
   TaskService: jest.fn().mockImplementation(() => ({
@@ -66,7 +69,7 @@ const { AutoScheduleService } = await import('../autoScheduleService.js');
 
 const makeTask = (overrides: Partial<Task> = {}): Task => ({
   id: 'task-1',
-  title: 'Studiare verbi e parole nuove dall\'imperativo',
+  title: "Studiare verbi e parole nuove dall'imperativo",
   description: 'language study',
   due_date: null,
   priority: 'medium',

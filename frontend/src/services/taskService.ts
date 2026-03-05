@@ -46,14 +46,7 @@ class TaskService {
 
     const task = toTask(response.data);
 
-    // Trigger auto-schedule asynchronously (fire-and-forget)
-    calendarService.runAutoSchedule().catch(err => {
-      console.debug(
-        '[TaskService] Auto-schedule triggered after create',
-        err?.message
-      );
-    });
-
+    // Auto-schedule is triggered by backend event queue on task creation
     return task;
   }
 

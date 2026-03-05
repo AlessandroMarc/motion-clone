@@ -51,6 +51,10 @@ function isSameSchedule(
     end_time: string;
   }>
 ): boolean {
+  // Check raw lengths first: if DB has duplicates, raw count will differ from deduplicated count
+  // This forces a diff cleanup even if deduplicated sets match
+  if (existingEvents.length !== proposedEvents.length) return false;
+
   const existingSet = new Set(
     existingEvents.map(e =>
       eventKey(e.linked_task_id, e.start_time, e.end_time)

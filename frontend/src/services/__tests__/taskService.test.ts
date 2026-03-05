@@ -24,7 +24,9 @@ function makeJsonResponse(body: unknown): Response {
     status: 200,
     headers: {
       get: (key: string) =>
-        key.toLowerCase() === 'content-type' ? 'application/json' : null as string | null,
+        key.toLowerCase() === 'content-type'
+          ? 'application/json'
+          : (null as string | null),
     },
     json: async () => body,
     text: async () => JSON.stringify(body),
@@ -91,7 +93,7 @@ describe('taskService due_date serialization', () => {
 
     const fetchCalls = (global.fetch as jest.Mock).mock.calls;
     const [, options] = (fetchCalls[0] ?? []) as [string, RequestInit?];
-    const body = JSON.parse(((options?.body as string) ?? '{}')) as {
+    const body = JSON.parse((options?.body as string) ?? '{}') as {
       due_date?: string | null;
     };
 
@@ -109,7 +111,7 @@ describe('taskService due_date serialization', () => {
 
     const fetchCalls = (global.fetch as jest.Mock).mock.calls;
     const [, options] = (fetchCalls[0] ?? []) as [string, RequestInit?];
-    const body = JSON.parse(((options?.body as string) ?? '{}')) as {
+    const body = JSON.parse((options?.body as string) ?? '{}') as {
       due_date?: string | null;
     };
 
