@@ -42,6 +42,48 @@ function roundToNext15Minutes(date: Date): Date {
   return startFrom;
 }
 
+function reorderTasksForContinuation(
+  baseOrder: Task[],
+  tasksWithUpcomingEvents: Set<string>
+): Task[] {
+  const remaining = [...baseOrder];
+  const scheduled = new Set<string>();
+  const ordered: Task[] = [];
+
+  while (remaining.length > 0) {
+    const readyIndices: number[] = [];
+
+    for (let i = 0; i < remaining.length; i++) {
+      const task = remaining[i];
+      if (!task) continue;
+      const blockers = (task.blockedBy ?? []).filter(id =>
+        baseOrder.some(t => t.id === id)
+      );
+      const isReady = blockers.every(id => scheduled.has(id));
+      if (isReady) readyIndices.push(i);
+    }
+
+    if (readyIndices.length === 0) {
+      ordered.push(...remaining);
+      break;
+    }
+
+    const continuationIdx = readyIndices.find(idx => {
+      const task = remaining[idx];
+      return task ? tasksWithUpcomingEvents.has(task.id) : false;
+    });
+
+    const pickedIdx = continuationIdx ?? readyIndices[0] ?? 0;
+    const [pickedTask] = remaining.splice(pickedIdx, 1);
+    if (!pickedTask) continue;
+
+    ordered.push(pickedTask);
+    scheduled.add(pickedTask.id);
+  }
+
+  return ordered;
+}
+
 export function calculateAutoSchedule(params: {
   tasks: Task[];
   existingEvents: CalendarEventTask[];
@@ -60,7 +102,23 @@ export function calculateAutoSchedule(params: {
   } = params;
 
   const incompleteTasks = tasks.filter(task => task.status !== 'completed');
-  const sortedTasks = sortTasksForScheduling(incompleteTasks);
+  const baseSortedTasks = sortTasksForScheduling(incompleteTasks);
+
+  const orderingNowMs = Date.now();
+  const tasksWithUpcomingEvents = new Set(
+    existingEvents
+      .filter(
+        e =>
+          !e.id.startsWith('synthetic-') &&
+          new Date(e.end_time).getTime() > orderingNowMs
+      )
+      .map(e => e.linked_task_id)
+  );
+
+  const sortedTasks = reorderTasksForContinuation(
+    baseSortedTasks,
+    tasksWithUpcomingEvents
+  );
 
   const tasksWithDeadlineCount = sortedTasks.filter(
     t => t.due_date !== null
@@ -111,10 +169,6 @@ export function calculateAutoSchedule(params: {
       eventDuration
     );
     const gapMs = (taskConfig.gapBetweenEventsMinutes ?? 5) * 60 * 1000;
-    
-    // Use smaller gap (2 min) if the last scheduled task was the same task,
-    // otherwise use the configured gap (usually 5 min)
-    const effectiveGapMs = lastScheduledTaskId.id === task.id ? smallGapMs : gapMs;
 
     const taskWorkingHoursStart = new Date(now);
     taskWorkingHoursStart.setHours(taskConfig.workingHoursStart, 0, 0, 0);
@@ -179,9 +233,16 @@ export function calculateAutoSchedule(params: {
       return true;
     });
 
+    // Reflow policy for non-recurring tasks:
+    // Do not treat existing future pending task events as fixed placements.
+    // They should be recomputed on each run so remaining chunks can move earlier
+    // (for example, to continue the same task before unrelated tasks).
+    // Recurring tasks keep their dated occurrences stable.
+    const lockedFutureEvents = task.is_recurring ? futureValidEvents : [];
+
     // Add kept future events as blockers BEFORE generating new events so new
     // slots won't overlap with them.
-    for (const evt of futureValidEvents) {
+    for (const evt of lockedFutureEvents) {
       accumulatedScheduledEvents.push(evt);
     }
 
@@ -225,14 +286,14 @@ export function calculateAutoSchedule(params: {
 
     const { events, violations } = prepareTaskEvents(
       task,
-      futureValidEvents,
+      lockedFutureEvents,
       taskConfig,
       accumulatedScheduledEvents,
       taskStartTime
     );
 
     // Combine kept future events with newly generated events
-    const keptSlots = futureValidEvents.map(e => ({
+    const keptSlots = lockedFutureEvents.map(e => ({
       start_time: new Date(e.start_time),
       end_time: new Date(e.end_time),
     }));

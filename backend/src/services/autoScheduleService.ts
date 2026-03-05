@@ -51,13 +51,19 @@ function isSameSchedule(
     end_time: string;
   }>
 ): boolean {
-  if (existingEvents.length !== proposedEvents.length) return false;
-
   const existingSet = new Set(
     existingEvents.map(e =>
       eventKey(e.linked_task_id, e.start_time, e.end_time)
     )
   );
+
+  const proposedSet = new Set(
+    proposedEvents.map(e =>
+      eventKey(e.linked_task_id, e.start_time, e.end_time)
+    )
+  );
+
+  if (existingSet.size !== proposedSet.size) return false;
 
   for (const event of proposedEvents) {
     const key = eventKey(
@@ -69,6 +75,33 @@ function isSameSchedule(
   }
 
   return true;
+}
+
+function dedupeProposedEvents(
+  events: Array<{
+    title: string;
+    start_time: string;
+    end_time: string;
+    description?: string;
+    linked_task_id: string;
+    user_id: string;
+  }>
+): Array<{
+  title: string;
+  start_time: string;
+  end_time: string;
+  description?: string;
+  linked_task_id: string;
+  user_id: string;
+}> {
+  const byKey = new Map<string, (typeof events)[number]>();
+  for (const event of events) {
+    byKey.set(
+      eventKey(event.linked_task_id, event.start_time, event.end_time),
+      event
+    );
+  }
+  return Array.from(byKey.values());
 }
 
 // ---------------------------------------------------------------------------
@@ -145,12 +178,14 @@ export class AutoScheduleService {
         schedules
       );
 
+    const uniqueEventsToCreate = dedupeProposedEvents(eventsToCreate);
+
     console.log(
-      `[AutoSchedule] proposed: ${eventsToCreate.length} events, existing: ${existingTaskEvents.length}`
+      `[AutoSchedule] proposed: ${eventsToCreate.length} events (${uniqueEventsToCreate.length} unique), existing: ${existingTaskEvents.length}`
     );
 
     // 6. Compare
-    if (isSameSchedule(existingTaskEvents, eventsToCreate)) {
+    if (isSameSchedule(existingTaskEvents, uniqueEventsToCreate)) {
       console.log('[AutoSchedule] schedule unchanged — skipping');
       return {
         unchanged: true,
@@ -163,13 +198,13 @@ export class AutoScheduleService {
     // 7. Apply diff
     console.log('[AutoSchedule] schedule differs — applying...');
     const { created, deleted } = await this.applyDiff(
-      eventsToCreate,
+      uniqueEventsToCreate,
       existingTaskEvents,
       authToken
     );
 
     return {
-      unchanged: false,
+      unchanged: created === 0 && deleted === 0,
       eventsCreated: created,
       eventsDeleted: deleted,
       violations,
