@@ -73,3 +73,37 @@ If a task has a `due_date`, the system tries its best to fit it before that date
 - **`CalendarEventTask`**: A specific instance (block of time) on the calendar linked to a task.
 - **`Schedule`**: Defines the "valid" hours for a specific day of the week.
 - **`TaskSchedulingConfig`**: Holds defaults like `gapBetweenEventsMinutes` and `minBlockMinutes`.
+
+---
+
+## 7. Triggering & Scheduling Lifecycle
+The auto-schedule is not a continuous background process; it is **event-driven** and **debounced**. 
+
+### The Trigger Queue
+**Core File:** [backend/src/services/autoScheduleTriggerQueue.ts](backend/src/services/autoScheduleTriggerQueue.ts)
+
+To prevent "waterfall" scheduling (where multiple rapid changes cause multiple expensive re-calculations), the system uses a **500ms debounce window**.
+
+### When is it triggered?
+The `trigger()` function is called by various services whenever a mutation occurs that could affect the optimal schedule:
+
+1.  **Task Mutations** ([TaskService](backend/src/services/taskService.ts)):
+    - Creating a new task.
+    - Updating a task (changing its duration, due date, priority, or status).
+    - Deleting a task.
+2.  **Project Mutations** ([ProjectService](backend/src/services/projectService.ts)):
+    - Creating a project (which might have default due dates).
+    - Updating project timelines.
+3.  **Schedule Changes** ([UserSettingsService](backend/src/services/userSettingsService.ts)):
+    - Modifying working hours (e.g., changing 9-5 to 10-6).
+    - Toggling working days (e.g., adding Saturday as a working day).
+4.  **Calendar Sync** ([GoogleCalendarService](backend/src/services/googleCalendarService.ts)):
+    - When new external events are synced from Google Calendar, as these create new "busy" blocks that tasks must move around.
+5.  **Manual Trigger**: Users can manually request a "Reschedule" via the `/api/auto-schedule/run` endpoint.
+
+### Lifecycle Summary
+1.  **Mutation**: User updates a task.
+2.  **Queue**: `TaskService` calls `autoScheduleTriggerQueue.trigger()`.
+3.  **Wait**: System waits 500ms for any other rapid changes.
+4.  **Async Run**: `AutoScheduleService.run()` executes in the background (fire-and-forget).
+5.  **Notify**: The schedule is updated in the database, and the frontend usually refreshes via a websocket or polling notification.
