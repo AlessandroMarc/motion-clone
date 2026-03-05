@@ -228,37 +228,11 @@ function CalendarEditDialog({
 }: CalendarEditDialogProps): React.ReactElement {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
-  const handleDeleteClick = () => {
-    setDeleteDialogOpen(true);
-  };
-
-  const handleConfirmDelete = () => {
-    setDeleteDialogOpen(false);
-    onDelete();
-  };
-
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent>
-          {isTaskEvent ? (
-            <TaskEventEdit
-              title={title}
-              setTitle={setTitle}
-              description={description}
-              setDescription={setDescription}
-              startTime={startTime}
-              setStartTime={setStartTime}
-              endTime={endTime}
-              setEndTime={setEndTime}
-              completed={completed}
-              completedAt={completedAt}
-              onCompletedChange={onCompletedChange}
-              onSave={onSave}
-              onDeleteClick={handleDeleteClick}
-              onClose={() => onOpenChange(false)}
-            />
-          ) : (
+
             <GoogleEventDetails
               title={title}
               description={description}
@@ -266,32 +240,8 @@ function CalendarEditDialog({
               endTime={endTime}
               onClose={() => onOpenChange(false)}
             />
-          )}
         </DialogContent>
       </Dialog>
-
-      {isTaskEvent && (
-        <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>Delete Event</AlertDialogTitle>
-              <AlertDialogDescription>
-                Are you sure you want to delete &quot;{title}&quot;? This action
-                cannot be undone.
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel>Cancel</AlertDialogCancel>
-              <AlertDialogAction
-                onClick={handleConfirmDelete}
-                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-              >
-                Delete
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
-      )}
     </>
   );
 }
