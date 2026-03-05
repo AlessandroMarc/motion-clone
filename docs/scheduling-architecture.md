@@ -21,7 +21,13 @@ The `AutoScheduleService` is the entry point. When a scheduling run is triggered
 2.  **Horizon Enrichment**: For recurring tasks, it ensures a 90-day window is considered so future occurrences are "blocked off" even if they haven't been fully instantiated yet.
 3.  **Calculation**: It delegates the core logic to `calculateAutoSchedule`.
 4.  **Diffing (`isSameSchedule`)**: It compares the *new* proposed schedule against what is currently in the database to avoid unnecessary writes.
-5.  **Atomic Update (`applyDiff`)**: If changes are needed, it performs a "wipe and replace" for the user's auto-scheduled events to ensure no duplicates or stale blocks remain.
+5.  **Atomic Update (`applyDiff`)**:
+    The backend applies the proposed schedule using a "wipe and replace" strategy for auto-scheduled events.
+    - **Transactional Boundaries**: `applyDiff` executes batch operations via `calendarEventService`. While operations are batched, individual record failures are logged, and the system relies on the next debounced trigger to reconcile any partial state.
+    - **Failure Semantics**: In the event of a mid-operation failure (e.g., network error during a batch create), the system may be left in a partial state. However, because the `eventKey` (linked task ID + start/end time) is used to calculate the diff, the next successful run will naturally identify and fix any discrepancies (idempotency).
+    - **Idempotency**: Repeated calls to `applyDiff` are safe. The system first calculates a symmetric difference (missing vs. stale). If a partial write occurred in a previous run, the next run will see those events as "existing" and skip creating them, or see them as "stale" and delete them.
+    - **Concurrency & Locking**: To prevent race conditions, the `AutoScheduleTriggerQueue` ensures only one run tracks a specific `userId` at a time. The system uses optimistic concurrency—if the underlying task data changes during a run, the next debounced trigger will immediately supersede the current results.
+    - **Retry Behavior**: Failed batches are not immediately retried with exponential backoff at the service level; instead, the system relies on the event-driven triggers (or a manual resync) to re-invoke the full pipeline, ensuring that retries always move the system toward the *latest* desired state rather than an outdated one.
 
 ---
 
