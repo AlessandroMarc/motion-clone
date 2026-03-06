@@ -57,6 +57,8 @@ interface WeekCalendarViewProps {
   displayDates: Date[];
   displayEventsByDay: Record<string, CalendarEventUnion[]>;
   events: CalendarEventUnion[];
+  // Optional full event set (across all weeks) for components that need global visibility
+  violationEvents?: CalendarEventUnion[];
   setEvents: React.Dispatch<React.SetStateAction<CalendarEventUnion[]>>;
   draggingEventId: string | null;
   dragPreview: CalendarEventUnion | null;
@@ -115,6 +117,7 @@ export function WeekCalendarView({
   onExternalTaskDrop,
   onExternalTaskDragOver,
   tasksMap,
+  violationEvents,
   currentDay,
   onPreviousWeek,
   onNextWeek,
@@ -131,7 +134,10 @@ export function WeekCalendarView({
 }: WeekCalendarViewProps) {
   return (
     <div className="space-y-4">
-      <DeadlineViolationsBar events={events} tasksMap={tasksMap} />
+      <DeadlineViolationsBar
+        events={violationEvents ?? events}
+        tasksMap={tasksMap}
+      />
 
       <CalendarHeader
         weekDates={weekDates}

@@ -17,6 +17,7 @@ interface KanbanColumnProps {
   projectId: string | null;
   onDeleteTask: (taskId: string) => void;
   onSelectTask: (task: Task) => void;
+  onToggleTaskCompletion: (task: Task, nextCompleted: boolean) => Promise<void>;
   onTaskCreate: (
     taskData: Omit<
       Task,
@@ -34,6 +35,7 @@ export function KanbanColumn({
   projectId,
   onDeleteTask,
   onSelectTask,
+  onToggleTaskCompletion,
   onTaskCreate,
   color,
 }: KanbanColumnProps) {
@@ -78,6 +80,7 @@ export function KanbanColumn({
                 task={task}
                 onDelete={onDeleteTask}
                 onSelect={onSelectTask}
+                onToggleCompletion={onToggleTaskCompletion}
                 isPlanned={linkedTaskIds.has(task.id)}
               />
             ))}

@@ -108,7 +108,7 @@ describe('CalendarPage', () => {
   it('renders task panel toggle button on desktop', () => {
     useIsMobile.mockReturnValue(false);
     render(<CalendarPage />);
-    const toggleBtn = screen.getByRole('button', { name: /hide tasks/i });
+    const toggleBtn = screen.getByRole('button', { name: /show tasks/i });
     expect(toggleBtn).toBeInTheDocument();
   });
 
@@ -116,15 +116,17 @@ describe('CalendarPage', () => {
     useIsMobile.mockReturnValue(false);
     render(<CalendarPage />);
 
-    // Panel should be visible initially
-    expect(screen.getByTestId('calendar-tasks-panel')).toBeInTheDocument();
-
-    // Click the hide button
-    fireEvent.click(screen.getByRole('button', { name: /hide tasks/i }));
-
-    // Toggle button label switches to "Show tasks"
+    // Panel starts closed — button shows "Show tasks"
     expect(
       screen.getByRole('button', { name: /show tasks/i })
+    ).toBeInTheDocument();
+
+    // Click to open the panel
+    fireEvent.click(screen.getByRole('button', { name: /show tasks/i }));
+
+    // Toggle button label switches to "Hide tasks"
+    expect(
+      screen.getByRole('button', { name: /hide tasks/i })
     ).toBeInTheDocument();
   });
 });

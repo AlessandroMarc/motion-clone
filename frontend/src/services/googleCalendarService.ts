@@ -5,10 +5,21 @@ export interface GoogleCalendarStatus {
   last_synced_at: string | null;
 }
 
+export interface FilteredGoogleEvent {
+  title: string;
+  start_time: string;
+  end_time: string;
+  reason: 'free' | 'declined';
+}
+
 export interface SyncResult {
   synced: number;
   errors: string[];
   durationMs: number;
+  filtered?: {
+    count: number;
+    events: FilteredGoogleEvent[];
+  };
 }
 
 class GoogleCalendarService {

@@ -5,8 +5,10 @@
 import {
   calculateNextOccurrence,
   generateOccurrenceDates,
+  generateSyntheticRecurringEvents,
   get90DayHorizon,
 } from '../recurrenceCalculator';
+import type { Task, CalendarEventTask } from '../../types/database';
 
 describe('recurrenceCalculator', () => {
   describe('calculateNextOccurrence', () => {
@@ -122,6 +124,56 @@ describe('recurrenceCalculator', () => {
           new Date('2026-03-15T23:59:59Z').getTime()
         );
       }
+    });
+  });
+
+  describe('generateSyntheticRecurringEvents', () => {
+    const makeRecurringTask = (): Task => ({
+      id: 'recurring-1',
+      title: 'Weekend trains',
+      description: '',
+      due_date: null,
+      priority: 'medium',
+      status: 'not-started',
+      dependencies: [],
+      blockedBy: [],
+      user_id: 'user-1',
+      created_at: new Date(),
+      updated_at: new Date(),
+      planned_duration_minutes: 60,
+      actual_duration_minutes: 0,
+      is_recurring: true,
+      recurrence_pattern: 'daily',
+      recurrence_interval: 1,
+    });
+
+    it('should not generate a synthetic event for a date that has a completed event', () => {
+      const task = makeRecurringTask();
+      const today = new Date();
+      today.setHours(9, 0, 0, 0);
+
+      const completedEvent: CalendarEventTask = {
+        id: 'event-completed',
+        linked_task_id: task.id,
+        title: task.title,
+        start_time: today,
+        end_time: new Date(today.getTime() + 60 * 60 * 1000),
+        user_id: task.user_id,
+        completed_at: new Date(),
+        created_at: new Date(),
+        updated_at: new Date(),
+      };
+
+      const synthetics = generateSyntheticRecurringEvents(task, [
+        completedEvent,
+      ]);
+
+      // No synthetic should exist for today's date
+      const todayStr = today.toDateString();
+      const syntheticForToday = synthetics.find(
+        e => new Date(e.start_time).toDateString() === todayStr
+      );
+      expect(syntheticForToday).toBeUndefined();
     });
   });
 

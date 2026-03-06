@@ -10,8 +10,59 @@ import { cn } from '@/lib/utils';
 import { isSameDay } from '@/utils/calendarUtils';
 import { formatTimeRange, formatDateLong } from '@/utils/dateUtils';
 import { isTaskCompleted, TASK_COMPLETED_CLASS } from '@/utils/taskUtils';
-import { STATUS_CONFIG } from '@/components/Tasks/taskCardConfig';
+import { TaskCompletionDot } from '@/components/Tasks/TaskCompletionDot';
+import { TaskEditDialogForm } from '@/components/Tasks/forms/TaskEditDialogForm';
+import CalendarEditDialog from '@/components/Calendar/CalendarEditDialog';
 import { Calendar } from 'lucide-react';
+
+function ZenTaskItem({
+  task,
+  startTime,
+  endTime,
+  onToggleComplete,
+  onRowClick,
+}: {
+  task: Task;
+  startTime: Date;
+  endTime: Date;
+  onToggleComplete: (task: Task, nextCompleted: boolean) => Promise<void>;
+  onRowClick: () => void;
+}) {
+  const [isPreviewingComplete, setIsPreviewingComplete] = useState(false);
+  const isCompleted = isTaskCompleted(task);
+  const timeLabel = formatTimeRange(startTime, endTime);
+
+  return (
+    <li className="flex items-start gap-3">
+      <TaskCompletionDot
+        completed={isCompleted}
+        onToggle={nextCompleted => onToggleComplete(task, nextCompleted)}
+        onPreviewChange={setIsPreviewingComplete}
+        iconClassName="h-6 w-6 md:h-7 md:w-7"
+      />
+      <button
+        type="button"
+        onClick={onRowClick}
+        className={cn(
+          'flex-1 text-left font-body text-lg md:text-xl transition-colors touch-manipulation focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded',
+          isCompleted || isPreviewingComplete
+            ? TASK_COMPLETED_CLASS
+            : 'text-foreground'
+        )}
+      >
+        <span className="block">{task.title}</span>
+        <span
+          className={cn(
+            'block text-sm font-normal mt-0.5',
+            isCompleted ? 'text-muted-foreground/80' : 'text-muted-foreground'
+          )}
+        >
+          {timeLabel}
+        </span>
+      </button>
+    </li>
+  );
+}
 
 interface ZenModeViewProps {
   onExit: () => void;
@@ -22,6 +73,12 @@ export function ZenModeView({ onExit }: ZenModeViewProps) {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [events, setEvents] = useState<CalendarEventUnion[]>([]);
   const [loading, setLoading] = useState(true);
+  const [calendarDialogItem, setCalendarDialogItem] = useState<{
+    task: Task;
+    startTime: Date;
+    endTime: Date;
+  } | null>(null);
+  const [taskEditTask, setTaskEditTask] = useState<Task | null>(null);
 
   // Get today's date (stable reference)
   const today = useMemo(() => {
@@ -143,16 +200,22 @@ export function ZenModeView({ onExit }: ZenModeViewProps) {
     return schedules;
   }, [events, taskMap, today]);
 
-  const handleToggleComplete = useCallback(async (task: Task) => {
-    try {
-      const updated = await taskService.setTaskCompleted(
-        task,
-        !isTaskCompleted(task)
-      );
-      setTasks(prev => prev.map(t => (t.id === updated.id ? updated : t)));
-    } catch {
-      // leave UI unchanged on error
-    }
+  const handleToggleComplete = useCallback(
+    async (task: Task, nextCompleted: boolean) => {
+      try {
+        const updated = await taskService.setTaskCompleted(task, nextCompleted);
+        setTasks(prev => prev.map(t => (t.id === updated.id ? updated : t)));
+      } catch {
+        // leave UI unchanged on error
+      }
+    },
+    []
+  );
+
+  const handleTaskUpdated = useCallback((updatedTask: Task) => {
+    setTasks(prev =>
+      prev.map(t => (t.id === updatedTask.id ? updatedTask : t))
+    );
   }, []);
 
   if (loading) {
@@ -210,62 +273,17 @@ export function ZenModeView({ onExit }: ZenModeViewProps) {
                     {daySchedule.items.map(item => {
                       if (item.kind === 'task') {
                         const { task, taskEventId, startTime, endTime } = item;
-                        const isCompleted = isTaskCompleted(task);
-                        const statusConfig =
-                          STATUS_CONFIG[task.status] ??
-                          STATUS_CONFIG['not-started'];
-                        const StatusIcon = statusConfig.icon;
-                        const timeLabel = formatTimeRange(startTime, endTime);
                         return (
-                          <li
+                          <ZenTaskItem
                             key={taskEventId}
-                            className="flex items-start gap-3"
-                          >
-                            <button
-                              type="button"
-                              onClick={() => handleToggleComplete(task)}
-                              className={cn(
-                                'shrink-0 rounded-full p-0.5 transition-colors touch-manipulation focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
-                                statusConfig.className,
-                                isCompleted && 'hover:opacity-90'
-                              )}
-                              aria-label={
-                                isCompleted
-                                  ? 'Mark incomplete'
-                                  : 'Mark complete'
-                              }
-                            >
-                              <StatusIcon
-                                className={cn(
-                                  'h-6 w-6 md:h-7 md:w-7',
-                                  task.status === 'in-progress' &&
-                                    'animate-spin'
-                                )}
-                              />
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => handleToggleComplete(task)}
-                              className={cn(
-                                'flex-1 text-left font-body text-lg md:text-xl transition-colors touch-manipulation focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded',
-                                isCompleted
-                                  ? TASK_COMPLETED_CLASS
-                                  : 'text-foreground'
-                              )}
-                            >
-                              <span className="block">{task.title}</span>
-                              <span
-                                className={cn(
-                                  'block text-sm font-normal mt-0.5',
-                                  isCompleted
-                                    ? 'text-muted-foreground/80'
-                                    : 'text-muted-foreground'
-                                )}
-                              >
-                                {timeLabel}
-                              </span>
-                            </button>
-                          </li>
+                            task={task}
+                            startTime={startTime}
+                            endTime={endTime}
+                            onToggleComplete={handleToggleComplete}
+                            onRowClick={() =>
+                              setCalendarDialogItem({ task, startTime, endTime })
+                            }
+                          />
                         );
                       }
 
@@ -300,6 +318,37 @@ export function ZenModeView({ onExit }: ZenModeViewProps) {
           })}
         </div>
       </div>
+
+      {calendarDialogItem && (
+        <CalendarEditDialog
+          open={true}
+          onOpenChange={(open: boolean) => {
+            if (!open) setCalendarDialogItem(null);
+          }}
+          title={calendarDialogItem.task.title}
+          description={calendarDialogItem.task.description ?? ''}
+          startTime={calendarDialogItem.startTime.toISOString()}
+          endTime={calendarDialogItem.endTime.toISOString()}
+          isTaskEvent={true}
+          completed={isTaskCompleted(calendarDialogItem.task)}
+          onCompletedChange={(nextCompleted: boolean) =>
+            handleToggleComplete(calendarDialogItem.task, nextCompleted)
+          }
+          onLinkClick={() => {
+            const task = calendarDialogItem.task;
+            setCalendarDialogItem(null);
+            setTaskEditTask(task);
+          }}
+        />
+      )}
+      <TaskEditDialogForm
+        task={taskEditTask}
+        open={taskEditTask !== null}
+        onOpenChange={open => {
+          if (!open) setTaskEditTask(null);
+        }}
+        onTaskUpdated={handleTaskUpdated}
+      />
     </div>
   );
 }

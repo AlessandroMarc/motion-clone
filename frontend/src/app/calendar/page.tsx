@@ -13,7 +13,7 @@ import { useIsMobile } from '@/hooks/use-mobile';
 
 export default function CalendarPage() {
   const [taskPanelRefresh, setTaskPanelRefresh] = useState(0);
-  const [taskPanelOpen, setTaskPanelOpen] = useState(true);
+  const [taskPanelOpen, setTaskPanelOpen] = useState(false);
   const [zenMode, setZenMode] = useState(false);
   const isMobile = useIsMobile();
 

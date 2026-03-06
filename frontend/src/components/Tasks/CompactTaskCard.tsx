@@ -17,6 +17,7 @@ interface CompactTaskCardProps {
   isPlanned?: boolean;
   onSelect?: (task: Task) => void;
   onDelete?: (taskId: string) => void;
+  onToggleCompletion?: (task: Task, nextCompleted: boolean) => Promise<void>;
   onSchedule?: (task: Task) => void;
   project?: Project;
   showDragHandle?: boolean;
@@ -31,6 +32,7 @@ export function CompactTaskCard({
   isPlanned = false,
   onSelect,
   onDelete,
+  onToggleCompletion,
   onSchedule,
   project,
   showDragHandle = false,
@@ -73,6 +75,7 @@ export function CompactTaskCard({
           disabled={disabled}
           canSchedule={canSchedule}
           hasDelete={Boolean(onDelete)}
+          onToggleCompletion={onToggleCompletion}
           onSchedule={onSchedule}
           onDelete={onDelete}
         />

@@ -81,7 +81,7 @@ function GoogleEventDetails({
   return (
     <>
       <DialogHeader>
-        <DialogTitle className="flex items-center gap-2">
+        <DialogTitle className="flex items-start gap-2 pr-8 break-words">
           <FileText className="h-5 w-5 text-muted-foreground shrink-0" />
           {title || 'Untitled event'}
         </DialogTitle>
@@ -89,7 +89,7 @@ function GoogleEventDetails({
       <div className="space-y-4 pt-2">
         <div className="flex items-start gap-3 text-sm">
           <Clock className="h-4 w-4 mt-0.5 text-muted-foreground shrink-0" />
-          <div>
+          <div className="min-w-0">
             <p>{formatDisplayTime(startTime)}</p>
             <p className="text-muted-foreground">
               to {formatDisplayTime(endTime)}
@@ -99,7 +99,9 @@ function GoogleEventDetails({
         {description && (
           <div className="flex items-start gap-3 text-sm">
             <AlignLeft className="h-4 w-4 mt-0.5 text-muted-foreground shrink-0" />
-            <p className="whitespace-pre-wrap line-clamp-4">{description}</p>
+            <p className="min-w-0 whitespace-pre-wrap break-all overflow-y-auto line-clamp-8">
+              {description}
+            </p>
           </div>
         )}
       </div>
@@ -153,7 +155,7 @@ function CalendarEditDialog({
 }: CalendarEditDialogProps): React.ReactElement {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
+      <DialogContent className="max-h-[85vh] overflow-y-auto">
         <GoogleEventDetails
           title={title}
           description={description}

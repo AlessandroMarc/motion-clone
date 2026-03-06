@@ -11,6 +11,7 @@ import { taskService } from '@/services/taskService';
 import { logger } from '@/lib/logger';
 import { useTaskListData } from './useTaskListData';
 import { TaskListView } from './TaskListView';
+import { isTaskCompleted, sortTasksByPriority } from '@/utils/taskUtils';
 
 interface TaskListContainerProps {
   refreshTrigger?: number;
@@ -28,6 +29,7 @@ export function TaskListContainer({
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [viewType, setViewType] = useState<'list' | 'kanban'>('list');
+  const [showCompleted, setShowCompleted] = useState(false);
 
   useEffect(() => {
     setTasks(data?.tasks ?? []);
@@ -42,6 +44,13 @@ export function TaskListContainer({
         .filter(Boolean)
     );
   }, [data?.calendarEvents]);
+
+  const visibleTasks = useMemo(() => {
+    const filtered = showCompleted
+      ? tasks
+      : tasks.filter(task => !isTaskCompleted(task));
+    return sortTasksByPriority(filtered);
+  }, [showCompleted, tasks]);
 
   const handleDeleteTask = async (taskId: string) => {
     try {
@@ -68,6 +77,28 @@ export function TaskListContainer({
     onTaskUpdate?.();
     if (options.showToast !== false) {
       toast.success('Task updated successfully');
+    }
+  };
+
+  const handleToggleTaskCompletion = async (
+    task: Task,
+    nextCompleted: boolean
+  ) => {
+    try {
+      const updatedTask = await taskService.setTaskCompleted(
+        task,
+        nextCompleted
+      );
+      setTasks(prev =>
+        prev.map(current =>
+          current.id === updatedTask.id ? updatedTask : current
+        )
+      );
+      onTaskUpdate?.();
+      toast.success(nextCompleted ? 'Task completed' : 'Task reopened');
+    } catch (error) {
+      logger.error('[TaskList] Failed to toggle task completion', error);
+      toast.error('Failed to update task');
     }
   };
 
@@ -125,7 +156,7 @@ export function TaskListContainer({
 
   return (
     <TaskListView
-      tasks={tasks}
+      tasks={visibleTasks}
       projects={projects}
       linkedTaskIds={linkedTaskIds}
       loading={loading}
@@ -142,6 +173,9 @@ export function TaskListContainer({
       onTaskClonedInDialog={handleTaskClonedInDialog}
       viewType={viewType}
       onViewTypeChange={setViewType}
+      showCompleted={showCompleted}
+      onShowCompletedChange={setShowCompleted}
+      onToggleTaskCompletion={handleToggleTaskCompletion}
     />
   );
 }

@@ -41,6 +41,15 @@ export class GoogleCalendarService {
       synced: number;
       errors: string[];
       durationMs: number;
+      filtered: {
+        count: number;
+        events: Array<{
+          title: string;
+          start_time: string;
+          end_time: string;
+          reason: 'free' | 'declined';
+        }>;
+      };
     }>
   >();
 
@@ -231,6 +240,15 @@ export class GoogleCalendarService {
     synced: number;
     errors: string[];
     durationMs: number;
+    filtered: {
+      count: number;
+      events: Array<{
+        title: string;
+        start_time: string;
+        end_time: string;
+        reason: 'free' | 'declined';
+      }>;
+    };
   }> {
     const existingSync = GoogleCalendarService.inFlightSyncs.get(userId);
     if (existingSync) {
@@ -250,6 +268,7 @@ export class GoogleCalendarService {
             error instanceof Error ? error.message : 'Unknown sync error',
           ],
           durationMs: 0,
+          filtered: { count: 0, events: [] as Array<{ title: string; start_time: string; end_time: string; reason: 'free' | 'declined' }> },
         };
       })
       .finally(() => {
@@ -268,6 +287,15 @@ export class GoogleCalendarService {
     synced: number;
     errors: string[];
     durationMs: number;
+    filtered: {
+      count: number;
+      events: Array<{
+        title: string;
+        start_time: string;
+        end_time: string;
+        reason: 'free' | 'declined';
+      }>;
+    };
   }> {
     const startTime = Date.now();
     try {
@@ -309,6 +337,13 @@ export class GoogleCalendarService {
       const googleEvents = response.data.items || [];
       const errors: string[] = [];
       let synced = 0;
+      const filteredEvents: Array<{
+        title: string;
+        start_time: string;
+        end_time: string;
+        reason: 'free' | 'declined';
+      }> = [];
+      const eventsToDeleteIds: string[] = [];
 
       console.log(
         `[GoogleCalendarService] Processing ${googleEvents.length} events from Google Calendar`
@@ -380,6 +415,30 @@ export class GoogleCalendarService {
           const existingEvent = googleEvent.id
             ? existingEventsMap.get(googleEvent.id)
             : null;
+
+          // Skip events that are free (shown as available) or declined by the user —
+          // they should not block time in the task scheduler. If they were previously
+          // synced, remove them from the DB.
+          const isFree = googleEvent.transparency === 'transparent';
+          const isDeclined =
+            googleEvent.attendees?.some(
+              a => a.self === true && a.responseStatus === 'declined'
+            ) ?? false;
+
+          if (isFree || isDeclined) {
+            skipped++;
+            filteredEvents.push({
+              title: googleEvent.summary || 'Untitled Event',
+              start_time: new Date(startTime).toISOString(),
+              end_time: new Date(endTime).toISOString(),
+              reason: isDeclined ? 'declined' : 'free',
+            });
+            // If it was previously synced, delete it from DB
+            if (existingEvent) {
+              eventsToDeleteIds.push(existingEvent.id);
+            }
+            continue;
+          }
 
           const incomingDescription = googleEvent.description ?? undefined;
 
@@ -538,6 +597,17 @@ export class GoogleCalendarService {
         }
       }
 
+      // Second pass (b): batch delete free/declined events that were previously synced
+      if (eventsToDeleteIds.length > 0) {
+        console.log(
+          `[GoogleCalendarService] Deleting ${eventsToDeleteIds.length} free/declined events`
+        );
+        await serviceRoleSupabase
+          .from('calendar_events')
+          .delete()
+          .in('id', eventsToDeleteIds);
+      }
+
       // Third pass: batch update events with bounded concurrency
       if (eventsToUpdate.length > 0) {
         console.log(
@@ -600,7 +670,13 @@ export class GoogleCalendarService {
         autoScheduleTriggerQueue.trigger(userId, authToken);
       }
 
-      return { success: true, synced, errors, durationMs };
+      return {
+        success: true,
+        synced,
+        errors,
+        durationMs,
+        filtered: { count: filteredEvents.length, events: filteredEvents },
+      };
     } catch (error) {
       const durationMs = Date.now() - startTime;
       return {
@@ -608,6 +684,7 @@ export class GoogleCalendarService {
         synced: 0,
         errors: [error instanceof Error ? error.message : 'Unknown sync error'],
         durationMs,
+        filtered: { count: 0, events: [] },
       };
     }
   }

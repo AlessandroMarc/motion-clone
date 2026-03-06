@@ -1,11 +1,12 @@
 'use client';
 
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Trash2, CalendarPlus, GripVertical } from 'lucide-react';
 import type { Task } from '@/types';
 import { cn } from '@/lib/utils';
 import { isTaskCompleted, TASK_COMPLETED_CLASS } from '@/utils/taskUtils';
-import { STATUS_CONFIG } from './taskCardConfig';
+import { TaskCompletionDot } from './TaskCompletionDot';
 
 interface TaskCardHeaderProps {
   task: Task;
@@ -13,6 +14,7 @@ interface TaskCardHeaderProps {
   disabled: boolean;
   canSchedule: boolean;
   hasDelete: boolean;
+  onToggleCompletion?: (task: Task, nextCompleted: boolean) => Promise<void>;
   onSchedule?: (task: Task) => void;
   onDelete?: (taskId: string) => void;
 }
@@ -23,13 +25,12 @@ export function TaskCardHeader({
   disabled,
   canSchedule,
   hasDelete,
+  onToggleCompletion,
   onSchedule,
   onDelete,
 }: TaskCardHeaderProps) {
-  const statusConfig =
-    STATUS_CONFIG[task.status] ?? STATUS_CONFIG['not-started'];
-  const StatusIcon = statusConfig.icon;
   const isCompleted = isTaskCompleted(task);
+  const [isPreviewingComplete, setIsPreviewingComplete] = useState(false);
 
   return (
     <div className="flex items-start justify-between gap-1">
@@ -39,18 +40,19 @@ export function TaskCardHeader({
             <GripVertical className="h-3 w-3 text-muted-foreground" />
           </div>
         )}
-        <div className={cn('mt-px shrink-0', statusConfig.className)}>
-          <StatusIcon
-            className={cn(
-              'h-3 w-3',
-              task.status === 'in-progress' && 'animate-spin'
-            )}
-          />
-        </div>
+        <TaskCompletionDot
+          completed={isCompleted}
+          disabled={disabled || !onToggleCompletion}
+          onToggle={nextCompleted =>
+            onToggleCompletion?.(task, nextCompleted) ?? Promise.resolve()
+          }
+          onPreviewChange={setIsPreviewingComplete}
+          iconClassName="h-3 w-3"
+        />
         <h3
           className={cn(
             'font-medium text-[11px] leading-tight line-clamp-2',
-            isCompleted && TASK_COMPLETED_CLASS
+            (isCompleted || isPreviewingComplete) && TASK_COMPLETED_CLASS
           )}
         >
           {task.title}

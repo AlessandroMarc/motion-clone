@@ -203,15 +203,13 @@ export function CalendarLegend() {
   return (
     <div className="flex items-center gap-3 text-[10px] text-muted-foreground flex-wrap">
       <div className="flex items-center gap-1">
-        <span className="inline-block h-2.5 w-2.5 rounded-sm bg-sky-500/75" />
-        <span>Task</span>
+        <span className="inline-block h-2.5 w-2.5 rounded-sm bg-sky-500/75 border-l-2 border-blue-700" />
+        <span className="inline-block h-2.5 w-2.5 rounded-sm bg-sky-500/75 border-l-2 border-purple-500" />
+        <span className="inline-block h-2.5 w-2.5 rounded-sm bg-sky-500/75 border-l-2 border-emerald-500" />
+        <span>Tasks (border = project)</span>
       </div>
       <div className="flex items-center gap-1">
-        <span className="inline-block h-2.5 w-2.5 rounded-sm bg-emerald-500/75" />
-        <span>Recurring task</span>
-      </div>
-      <div className="flex items-center gap-1">
-        <span className="inline-block h-2.5 w-2.5 rounded-sm bg-violet-500/70" />
+        <span className="inline-block h-2.5 w-2.5 rounded-sm bg-slate-500/70" />
         <span>External event</span>
       </div>
       <div className="flex items-center gap-1">

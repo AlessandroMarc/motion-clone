@@ -275,6 +275,52 @@ describe('AutoScheduleService schedule comparison', () => {
     expect(mockDeleteCalendarEventsBatch).not.toHaveBeenCalled();
   });
 
+  test('passes completed task events to expandRecurringTasks so recurring dates are not duplicated', async () => {
+    const userId = 'user-1';
+    const token = 'token';
+    const recurringTask = makeTask({
+      id: 'recurring-1',
+      title: 'Weekend trains',
+      is_recurring: true,
+      recurrence_pattern: 'weekly',
+      recurrence_interval: 1,
+    });
+    const schedules = [makeSchedule()];
+
+    // Today's occurrence was completed
+    const completedEvent = makeTaskEvent(
+      'ce-1',
+      recurringTask.id,
+      '2026-03-06T09:00:00.000Z',
+      '2026-03-06T10:00:00.000Z'
+    );
+    (completedEvent as any).completed_at = new Date('2026-03-06T10:05:00.000Z');
+
+    mockGetAllTasks.mockResolvedValue([recurringTask]);
+    mockGetAllCalendarEvents.mockResolvedValue([
+      completedEvent,
+    ] as CalendarEventUnion[]);
+    mockGetUserSchedules.mockResolvedValue(schedules);
+    mockGetActiveSchedule.mockResolvedValue(schedules[0]);
+
+    mockCalculateAutoSchedule.mockReturnValue({
+      taskEvents: [],
+      totalEvents: 0,
+      totalViolations: 0,
+      tasksWithDeadlineCount: 0,
+      tasksWithoutDeadlineCount: 0,
+    });
+
+    await service.run(userId, token);
+
+    // expandRecurringTasks must receive the completed event so it knows
+    // that today's date already has an occurrence and doesn't create a duplicate
+    const expandCall = mockExpandRecurringTasks.mock.calls[0];
+    const passedEvents = expandCall?.[1] as CalendarEventTask[] | undefined;
+    expect(passedEvents).toBeDefined();
+    expect(passedEvents!.some(e => e.id === 'ce-1')).toBe(true);
+  });
+
   test('detects and cleans up DB duplicates when raw length differs from deduplicated length', async () => {
     const userId = 'user-1';
     const token = 'token';

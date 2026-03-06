@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useMemo, useState } from 'react';
-import { Folder, Inbox, ChevronDown } from 'lucide-react';
+import { Folder, Inbox, ChevronDown, Plus } from 'lucide-react';
 import Link from 'next/link';
 import type { Task, Project } from '@/types';
 import { cn } from '@/lib/utils';
@@ -10,8 +10,9 @@ import {
   isTaskCompleted,
   TASK_COMPLETED_CLASS,
 } from '@/utils/taskUtils';
-import { STATUS_CONFIG } from './taskCardConfig';
 import { PriorityDot, ScheduleBadge, DueDateDisplay } from './listComponents';
+import { TaskCompletionDot } from './TaskCompletionDot';
+import { TaskCreateDialogForm } from './forms/TaskCreateDialogForm';
 
 // ============================================================================
 // Mobile Row
@@ -20,21 +21,19 @@ import { PriorityDot, ScheduleBadge, DueDateDisplay } from './listComponents';
 interface MobileTaskListRowProps {
   task: Task;
   onSelect: (task: Task) => void;
+  onToggleTaskCompletion: (task: Task, nextCompleted: boolean) => Promise<void>;
 }
 
 function MobileTaskListRow({
   task,
   onSelect,
+  onToggleTaskCompletion,
 }: MobileTaskListRowProps): React.ReactElement {
-  const statusConfig =
-    STATUS_CONFIG[task.status] ?? STATUS_CONFIG['not-started'];
-  const StatusIcon = statusConfig.icon;
   const isCompleted = isTaskCompleted(task);
+  const [isPreviewingComplete, setIsPreviewingComplete] = useState(false);
 
   return (
-    <button
-      type="button"
-      onClick={() => onSelect(task)}
+    <div
       className={cn(
         'flex items-center gap-3 w-full text-left py-2.5 px-3 rounded-lg',
         'hover:bg-muted/50 active:bg-muted transition-colors',
@@ -42,23 +41,22 @@ function MobileTaskListRow({
       )}
     >
       <PriorityDot priority={task.priority} />
-      <span className={cn('shrink-0', statusConfig.className)}>
-        <StatusIcon
-          className={cn(
-            'h-4 w-4',
-            task.status === 'in-progress' && 'animate-spin'
-          )}
-        />
-      </span>
-      <span
+      <TaskCompletionDot
+        completed={isCompleted}
+        onToggle={nextCompleted => onToggleTaskCompletion(task, nextCompleted)}
+        onPreviewChange={setIsPreviewingComplete}
+      />
+      <button
+        type="button"
+        onClick={() => onSelect(task)}
         className={cn(
           'flex-1 min-w-0 font-medium text-sm truncate',
-          isCompleted && TASK_COMPLETED_CLASS
+          (isCompleted || isPreviewingComplete) && TASK_COMPLETED_CLASS
         )}
       >
         {task.title}
-      </span>
-    </button>
+      </button>
+    </div>
   );
 }
 
@@ -69,21 +67,19 @@ function MobileTaskListRow({
 interface DesktopTaskListRowProps {
   task: Task;
   onSelect: (task: Task) => void;
+  onToggleTaskCompletion: (task: Task, nextCompleted: boolean) => Promise<void>;
 }
 
 function DesktopTaskListRow({
   task,
   onSelect,
+  onToggleTaskCompletion,
 }: DesktopTaskListRowProps): React.ReactElement {
-  const statusConfig =
-    STATUS_CONFIG[task.status] ?? STATUS_CONFIG['not-started'];
-  const StatusIcon = statusConfig.icon;
   const isCompleted = isTaskCompleted(task);
+  const [isPreviewingComplete, setIsPreviewingComplete] = useState(false);
 
   return (
-    <button
-      type="button"
-      onClick={() => onSelect(task)}
+    <div
       className={cn(
         'flex items-center gap-4 w-full text-left py-3 px-4 rounded-lg',
         'hover:bg-muted/50 active:bg-muted transition-colors',
@@ -93,25 +89,23 @@ function DesktopTaskListRow({
       {/* Priority Dot */}
       <PriorityDot priority={task.priority} />
 
-      {/* Status Icon */}
-      <span className={cn('shrink-0', statusConfig.className)}>
-        <StatusIcon
-          className={cn(
-            'h-4 w-4',
-            task.status === 'in-progress' && 'animate-spin'
-          )}
-        />
-      </span>
+      <TaskCompletionDot
+        completed={isCompleted}
+        onToggle={nextCompleted => onToggleTaskCompletion(task, nextCompleted)}
+        onPreviewChange={setIsPreviewingComplete}
+      />
 
       {/* Title */}
-      <span
+      <button
+        type="button"
+        onClick={() => onSelect(task)}
         className={cn(
-          'flex-grow max-w-xs font-medium text-sm truncate',
-          isCompleted && TASK_COMPLETED_CLASS
+          'flex-grow max-w-xs font-medium text-sm truncate text-left',
+          (isCompleted || isPreviewingComplete) && TASK_COMPLETED_CLASS
         )}
       >
         {task.title}
-      </span>
+      </button>
 
       {/* Due Date */}
       <div className="w-48 text-muted-foreground">
@@ -122,7 +116,7 @@ function DesktopTaskListRow({
       <div className="w-28 flex justify-end">
         <ScheduleBadge task={task} />
       </div>
-    </button>
+    </div>
   );
 }
 
@@ -137,7 +131,14 @@ interface MobileTaskListProps {
   tasks: Task[];
   projects: Project[];
   onSelectTask: (task: Task) => void;
+  onToggleTaskCompletion: (task: Task, nextCompleted: boolean) => Promise<void>;
   onDeleteTask: (taskId: string) => void;
+  onTaskCreate: (
+    taskData: Omit<
+      Task,
+      'id' | 'created_at' | 'updated_at' | 'status' | 'dependencies'
+    >
+  ) => Promise<void>;
   isDesktop?: boolean;
 }
 
@@ -145,6 +146,8 @@ export function MobileTaskList({
   tasks,
   projects,
   onSelectTask,
+  onToggleTaskCompletion,
+  onTaskCreate,
   isDesktop = false,
 }: MobileTaskListProps): React.ReactElement {
   const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(
@@ -230,6 +233,16 @@ export function MobileTaskList({
                   {group.label}
                 </span>
               )}
+              <TaskCreateDialogForm
+                onTaskCreate={onTaskCreate}
+                initialProjectId={group.projectId}
+                trigger={
+                  <Plus
+                    className="h-4 w-4 text-muted-foreground shrink-0"
+                    onClick={e => e.stopPropagation()}
+                  />
+                }
+              />
               <span className="text-[10px] text-muted-foreground bg-muted px-1.5 py-0.5 rounded shrink-0 ml-auto">
                 {group.tasks.length}
               </span>
@@ -242,6 +255,7 @@ export function MobileTaskList({
                     key={task.id}
                     task={task}
                     onSelect={onSelectTask}
+                    onToggleTaskCompletion={onToggleTaskCompletion}
                   />
                 ))}
               </div>
