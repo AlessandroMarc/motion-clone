@@ -18,7 +18,7 @@ export const taskSchema = z
       .max(100, 'Title must be less than 100 characters'),
     description: z
       .string()
-      .max(500, 'Description must be less than 500 characters'),
+      .max(4000, 'Description must be less than 4000 characters'),
     dueDate: z.string().optional(),
     priority: z.enum(['low', 'medium', 'high']),
     project_id: z.string().nullable().optional(),
