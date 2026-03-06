@@ -109,7 +109,7 @@ export function GoogleCalendarSettings() {
       // Clean URL
       window.history.replaceState({}, '', window.location.pathname);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+  
   }, [user?.id]);
 
   const handleConnect = () => {
