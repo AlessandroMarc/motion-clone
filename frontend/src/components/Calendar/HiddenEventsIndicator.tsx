@@ -21,7 +21,7 @@ export function HiddenEventsIndicator({ events }: HiddenEventsIndicatorProps) {
         type="button"
         onClick={() => setOpen(true)}
         className={cn(
-          'fixed bottom-4 left-4 z-40 flex items-center gap-1.5',
+          'fixed bottom-4 right-4 z-40 flex items-center gap-1.5',
           'rounded-full px-3 py-1.5 text-xs font-medium shadow-md',
           'bg-muted text-muted-foreground border border-border',
           'hover:bg-accent hover:text-accent-foreground transition-colors'
