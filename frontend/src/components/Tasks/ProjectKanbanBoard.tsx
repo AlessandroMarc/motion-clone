@@ -13,6 +13,10 @@ interface ProjectKanbanBoardProps {
   linkedTaskIds: Set<string>;
   onDeleteTask: (taskId: string) => void;
   onSelectTask: (task: Task) => void;
+  onToggleTaskCompletion: (
+    task: Task,
+    nextCompleted: boolean
+  ) => Promise<void>;
   onTaskCreate: (
     taskData: Omit<
       Task,
@@ -39,6 +43,7 @@ export function ProjectKanbanBoard({
   linkedTaskIds,
   onDeleteTask,
   onSelectTask,
+  onToggleTaskCompletion,
   onTaskCreate,
 }: ProjectKanbanBoardProps) {
   const tasksByProject = useMemo((): { unassigned: Task[] } & Record<
@@ -75,6 +80,7 @@ export function ProjectKanbanBoard({
         projectId={null}
         onDeleteTask={onDeleteTask}
         onSelectTask={onSelectTask}
+        onToggleTaskCompletion={onToggleTaskCompletion}
         onTaskCreate={onTaskCreate}
         color="bg-muted"
       />
@@ -90,6 +96,7 @@ export function ProjectKanbanBoard({
           projectId={project.id}
           onDeleteTask={onDeleteTask}
           onSelectTask={onSelectTask}
+          onToggleTaskCompletion={onToggleTaskCompletion}
           onTaskCreate={onTaskCreate}
           color={PROJECT_COLORS[index % PROJECT_COLORS.length]}
         />

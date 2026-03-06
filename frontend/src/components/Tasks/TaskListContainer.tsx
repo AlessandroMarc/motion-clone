@@ -80,6 +80,25 @@ export function TaskListContainer({
     }
   };
 
+  const handleToggleTaskCompletion = async (
+    task: Task,
+    nextCompleted: boolean
+  ) => {
+    try {
+      const updatedTask = await taskService.setTaskCompleted(task, nextCompleted);
+      setTasks(prev =>
+        prev.map(current =>
+          current.id === updatedTask.id ? updatedTask : current
+        )
+      );
+      onTaskUpdate?.();
+      toast.success(nextCompleted ? 'Task completed' : 'Task reopened');
+    } catch (error) {
+      logger.error('[TaskList] Failed to toggle task completion', error);
+      toast.error('Failed to update task');
+    }
+  };
+
   const handleSelectTask = (task: Task) => {
     setSelectedTask(task);
     setDetailsOpen(true);
@@ -153,6 +172,7 @@ export function TaskListContainer({
       onViewTypeChange={setViewType}
       showCompleted={showCompleted}
       onShowCompletedChange={setShowCompleted}
+      onToggleTaskCompletion={handleToggleTaskCompletion}
     />
   );
 }

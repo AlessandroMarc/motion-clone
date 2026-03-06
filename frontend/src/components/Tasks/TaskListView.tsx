@@ -36,6 +36,7 @@ interface TaskListViewProps {
   onViewTypeChange: (viewType: 'list' | 'kanban') => void;
   showCompleted: boolean;
   onShowCompletedChange: (show: boolean) => void;
+  onToggleTaskCompletion: (task: Task, nextCompleted: boolean) => Promise<void>;
 }
 
 export function TaskListView({
@@ -57,6 +58,7 @@ export function TaskListView({
   onViewTypeChange,
   showCompleted,
   onShowCompletedChange,
+  onToggleTaskCompletion,
 }: TaskListViewProps) {
   const isMobile = useIsMobile();
 
@@ -140,6 +142,7 @@ export function TaskListView({
           tasks={tasks}
           projects={projects}
           onSelectTask={onSelectTask}
+          onToggleTaskCompletion={onToggleTaskCompletion}
           onDeleteTask={id => {
             void onDeleteTask(id).catch(err => {
               toast.error(
@@ -154,6 +157,7 @@ export function TaskListView({
           tasks={tasks}
           projects={projects}
           linkedTaskIds={linkedTaskIds}
+          onToggleTaskCompletion={onToggleTaskCompletion}
           onDeleteTask={id => {
             void onDeleteTask(id).catch(err => {
               toast.error(

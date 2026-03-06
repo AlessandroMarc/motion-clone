@@ -10,6 +10,7 @@ import {
 } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Calendar, AlertCircle, X, Clock } from 'lucide-react';
+import { toast } from 'sonner';
 import { formatDate } from '@/utils/dateUtils';
 import { cn } from '@/lib/utils';
 import type { Task } from '@/types';
@@ -28,6 +29,8 @@ import {
   TaskCreateDialogForm,
   TaskEditDialogForm,
 } from '@/components/Tasks/forms';
+import { TaskCompletionDot } from '@/components/Tasks/TaskCompletionDot';
+import { taskService } from '@/services/taskService';
 
 interface ProjectTasksSectionProps {
   projectId: string;
@@ -41,6 +44,110 @@ interface ProjectTasksSectionProps {
   onTaskUnlink: (taskId: string) => Promise<void>;
   onTaskUpdate?: (updatedTask: Task) => void;
   onTaskClone?: (clonedTask: Task) => void;
+}
+
+interface ProjectTaskRowProps {
+  task: Task;
+  onOpenTask: (task: Task) => void;
+  onUnlinkTask: (taskId: string) => void;
+  onToggleTaskCompletion: (task: Task, nextCompleted: boolean) => Promise<void>;
+}
+
+function ProjectTaskRow({
+  task,
+  onOpenTask,
+  onUnlinkTask,
+  onToggleTaskCompletion,
+}: ProjectTaskRowProps): React.ReactElement {
+  const isCompleted = isTaskCompleted(task);
+  const taskIsOverdue = isTaskOverdue(task);
+  const statusConfig = STATUS_CONFIG[task.status] ?? STATUS_CONFIG['not-started'];
+  const priorityConfig = PRIORITY_CONFIG[task.priority] ?? PRIORITY_CONFIG['medium'];
+  const [isPreviewingComplete, setIsPreviewingComplete] = useState(false);
+
+  return (
+    <div
+      className={cn(
+        'group flex items-start gap-3 p-3 rounded-lg border transition-all',
+        'hover:bg-accent/30 hover:border-accent cursor-pointer',
+        isCompleted && TASK_COMPLETED_OPACITY_CLASS
+      )}
+      onClick={() => onOpenTask(task)}
+    >
+      <TaskCompletionDot
+        completed={isCompleted}
+        onToggle={nextCompleted => onToggleTaskCompletion(task, nextCompleted)}
+        onPreviewChange={setIsPreviewingComplete}
+        className={cn('mt-0.5', statusConfig.className)}
+      />
+
+      <div className="flex-1 min-w-0">
+        <h4
+          className={cn(
+            'text-sm font-medium',
+            (isCompleted || isPreviewingComplete) && TASK_COMPLETED_CLASS
+          )}
+        >
+          {task.title}
+        </h4>
+
+        {task.description && (
+          <p className="text-xs text-muted-foreground mt-0.5 truncate">
+            {task.description}
+          </p>
+        )}
+
+        <div className="mt-2 flex flex-wrap items-center gap-2">
+          <span
+            className={cn(
+              'inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-xs font-medium',
+              priorityConfig.bgClass
+            )}
+          >
+            <span className={cn('h-1.5 w-1.5 rounded-full', priorityConfig.dotClass)} />
+            {priorityConfig.label}
+          </span>
+
+          {task.planned_duration_minutes > 0 && (
+            <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
+              <Clock className="h-3 w-3" />
+              {task.planned_duration_minutes}m
+              {task.actual_duration_minutes > 0 && (
+                <span className="opacity-70">/ {task.actual_duration_minutes}m</span>
+              )}
+            </span>
+          )}
+
+          {task.due_date && (
+            <span
+              className={cn(
+                'inline-flex items-center gap-1 text-xs',
+                taskIsOverdue ? 'text-red-500' : 'text-muted-foreground'
+              )}
+            >
+              <Calendar className="h-3 w-3" />
+              {formatDate(task.due_date)}
+              {taskIsOverdue && <AlertCircle className="h-3 w-3" />}
+            </span>
+          )}
+        </div>
+      </div>
+
+      <Button
+        type="button"
+        variant="ghost"
+        size="icon"
+        className="opacity-0 group-hover:opacity-100 transition-opacity h-7 w-7 text-muted-foreground hover:text-destructive hover:bg-destructive/10 shrink-0"
+        onClick={e => {
+          e.stopPropagation();
+          onUnlinkTask(task.id);
+        }}
+        title="Unlink from project"
+      >
+        <X className="h-3.5 w-3.5" />
+      </Button>
+    </div>
+  );
 }
 
 export function ProjectTasksSection({
@@ -94,6 +201,20 @@ export function ProjectTasksSection({
     console.log('🔌 [ProjectTasksSection] Dialog and selection cleared');
   };
 
+  const handleToggleTaskCompletion = async (
+    task: Task,
+    nextCompleted: boolean
+  ) => {
+    try {
+      const updatedTask = await taskService.setTaskCompleted(task, nextCompleted);
+      onTaskUpdate?.(updatedTask);
+      toast.success(nextCompleted ? 'Task completed' : 'Task reopened');
+    } catch (error) {
+      toast.error('Failed to update task');
+      console.error('Failed to toggle task completion:', error);
+    }
+  };
+
   return (
     <Card>
       <CardHeader className="pt-4">
@@ -133,118 +254,15 @@ export function ProjectTasksSection({
           </div>
         ) : (
           <div className="space-y-2">
-            {visibleTasks.map(task => {
-              const isCompleted = isTaskCompleted(task);
-              const taskIsOverdue = isTaskOverdue(task);
-              const statusConfig =
-                STATUS_CONFIG[task.status] ?? STATUS_CONFIG['not-started'];
-              const priorityConfig =
-                PRIORITY_CONFIG[task.priority] ?? PRIORITY_CONFIG['medium'];
-              const StatusIcon = statusConfig.icon;
-
-              return (
-                <div
-                  key={task.id}
-                  className={cn(
-                    'group flex items-start gap-3 p-3 rounded-lg border transition-all',
-                    'hover:bg-accent/30 hover:border-accent cursor-pointer',
-                    isCompleted && TASK_COMPLETED_OPACITY_CLASS
-                  )}
-                  onClick={() => handleTaskClick(task)}
-                >
-                  {/* Status Icon */}
-                  <div className={cn('mt-0.5', statusConfig.className)}>
-                    <StatusIcon
-                      className={cn(
-                        'h-4 w-4',
-                        task.status === 'in-progress' && 'animate-spin'
-                      )}
-                    />
-                  </div>
-
-                  {/* Content */}
-                  <div className="flex-1 min-w-0">
-                    <h4
-                      className={cn(
-                        'text-sm font-medium',
-                        isCompleted && TASK_COMPLETED_CLASS
-                      )}
-                    >
-                      {task.title}
-                    </h4>
-
-                    {task.description && (
-                      <p className="text-xs text-muted-foreground mt-0.5 truncate">
-                        {task.description}
-                      </p>
-                    )}
-
-                    {/* Metadata Row */}
-                    <div className="mt-2 flex flex-wrap items-center gap-2">
-                      {/* Priority */}
-                      <span
-                        className={cn(
-                          'inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-xs font-medium',
-                          priorityConfig.bgClass
-                        )}
-                      >
-                        <span
-                          className={cn(
-                            'h-1.5 w-1.5 rounded-full',
-                            priorityConfig.dotClass
-                          )}
-                        />
-                        {priorityConfig.label}
-                      </span>
-
-                      {/* Duration */}
-                      {task.planned_duration_minutes > 0 && (
-                        <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
-                          <Clock className="h-3 w-3" />
-                          {task.planned_duration_minutes}m
-                          {task.actual_duration_minutes > 0 && (
-                            <span className="opacity-70">
-                              / {task.actual_duration_minutes}m
-                            </span>
-                          )}
-                        </span>
-                      )}
-
-                      {/* Due Date */}
-                      {task.due_date && (
-                        <span
-                          className={cn(
-                            'inline-flex items-center gap-1 text-xs',
-                            taskIsOverdue
-                              ? 'text-red-500'
-                              : 'text-muted-foreground'
-                          )}
-                        >
-                          <Calendar className="h-3 w-3" />
-                          {formatDate(task.due_date)}
-                          {taskIsOverdue && <AlertCircle className="h-3 w-3" />}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Unlink Button */}
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    className="opacity-0 group-hover:opacity-100 transition-opacity h-7 w-7 text-muted-foreground hover:text-destructive hover:bg-destructive/10 shrink-0"
-                    onClick={e => {
-                      e.stopPropagation();
-                      handleUnlinkTask(task.id);
-                    }}
-                    title="Unlink from project"
-                  >
-                    <X className="h-3.5 w-3.5" />
-                  </Button>
-                </div>
-              );
-            })}
+            {visibleTasks.map(task => (
+              <ProjectTaskRow
+                key={task.id}
+                task={task}
+                onOpenTask={handleTaskClick}
+                onUnlinkTask={handleUnlinkTask}
+                onToggleTaskCompletion={handleToggleTaskCompletion}
+              />
+            ))}
           </div>
         )}
       </CardContent>
