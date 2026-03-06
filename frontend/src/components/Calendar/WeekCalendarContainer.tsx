@@ -19,6 +19,7 @@ import {
   useExternalTaskDrag,
   useExternalTaskDrop,
 } from './hooks';
+import { calendarService } from '@/services/calendarService';
 import { useWeekCalendarNavigation } from './useWeekCalendarNavigation';
 import { WeekCalendarView } from './WeekCalendarView';
 import { MobileDayScrollView } from './MobileDayScrollView';
@@ -67,8 +68,8 @@ export function WeekCalendarContainer({
           logger.info('[WeekCalendarContainer] Syncing Google Calendar...');
           await googleCalendarService.sync(user.id);
           logger.info('[WeekCalendarContainer] Google Calendar sync complete');
-          // Refresh events to show newly synced ones
-          await refreshEvents();
+          // Refresh events to show newly synced ones and refresh global events
+          await Promise.all([refreshEvents(), refreshAllEvents()]);
         }
       } catch (err) {
         // Silent fail - don't block the UI if Google sync fails
@@ -94,6 +95,31 @@ export function WeekCalendarContainer({
 
   const { events, setEvents, eventsByDay, loading, error, refreshEvents } =
     useCalendarEvents(weekDates);
+
+  // Fetch all calendar events (used by DeadlineViolationsBar to show violations across weeks)
+  const [allEvents, setAllEvents] = useState<CalendarEventUnion[]>([]);
+
+  const refreshAllEvents = async () => {
+    try {
+      const ev = await calendarService.getAllCalendarEvents();
+      setAllEvents(ev);
+      return ev;
+    } catch (err) {
+      console.warn(
+        '[WeekCalendarContainer] Failed to load all calendar events',
+        err
+      );
+      setAllEvents([]);
+      return [] as CalendarEventUnion[];
+    }
+  };
+
+  // Ensure we load global events once when user is available
+  useEffect(() => {
+    if (!user?.id) return;
+    // refreshAllEvents is safe to call; failures are non-critical
+    refreshAllEvents().catch(() => {});
+  }, [user?.id]);
 
   const dialogs = useCalendarDialogs(user, refreshEvents, onTaskDropped);
 
@@ -277,7 +303,7 @@ export function WeekCalendarContainer({
   if (isMobile) {
     return (
       <div className="space-y-4 flex flex-col min-h-0 flex-1">
-        <DeadlineViolationsBar events={events} tasksMap={tasksMap} />
+        <DeadlineViolationsBar events={allEvents} tasksMap={tasksMap} />
         <MobileDayScrollView
           dates={weekDates}
           eventsByDay={eventsByDay as Record<string, CalendarEventUnion[]>}
@@ -331,6 +357,8 @@ export function WeekCalendarContainer({
           displayEventsByDay as Record<string, CalendarEventUnion[]>
         }
         events={events}
+        // Full event set for DeadlineViolationsBar to detect violations across weeks
+        violationEvents={allEvents}
         setEvents={setEvents}
         draggingEventId={draggingEventId}
         dragPreview={dragPreview}

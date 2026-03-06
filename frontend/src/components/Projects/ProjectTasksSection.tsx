@@ -61,8 +61,10 @@ function ProjectTaskRow({
 }: ProjectTaskRowProps): React.ReactElement {
   const isCompleted = isTaskCompleted(task);
   const taskIsOverdue = isTaskOverdue(task);
-  const statusConfig = STATUS_CONFIG[task.status] ?? STATUS_CONFIG['not-started'];
-  const priorityConfig = PRIORITY_CONFIG[task.priority] ?? PRIORITY_CONFIG['medium'];
+  const statusConfig =
+    STATUS_CONFIG[task.status] ?? STATUS_CONFIG['not-started'];
+  const priorityConfig =
+    PRIORITY_CONFIG[task.priority] ?? PRIORITY_CONFIG['medium'];
   const [isPreviewingComplete, setIsPreviewingComplete] = useState(false);
 
   return (
@@ -104,7 +106,12 @@ function ProjectTaskRow({
               priorityConfig.bgClass
             )}
           >
-            <span className={cn('h-1.5 w-1.5 rounded-full', priorityConfig.dotClass)} />
+            <span
+              className={cn(
+                'h-1.5 w-1.5 rounded-full',
+                priorityConfig.dotClass
+              )}
+            />
             {priorityConfig.label}
           </span>
 
@@ -113,7 +120,9 @@ function ProjectTaskRow({
               <Clock className="h-3 w-3" />
               {task.planned_duration_minutes}m
               {task.actual_duration_minutes > 0 && (
-                <span className="opacity-70">/ {task.actual_duration_minutes}m</span>
+                <span className="opacity-70">
+                  / {task.actual_duration_minutes}m
+                </span>
               )}
             </span>
           )}
@@ -160,7 +169,7 @@ export function ProjectTasksSection({
 }: ProjectTasksSectionProps) {
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-  const [showCompleted, setShowCompleted] = useState(true);
+  const [showCompleted, setShowCompleted] = useState(false);
 
   const visibleTasks = useMemo(() => {
     const filtered = showCompleted
@@ -206,7 +215,10 @@ export function ProjectTasksSection({
     nextCompleted: boolean
   ) => {
     try {
-      const updatedTask = await taskService.setTaskCompleted(task, nextCompleted);
+      const updatedTask = await taskService.setTaskCompleted(
+        task,
+        nextCompleted
+      );
       onTaskUpdate?.(updatedTask);
       toast.success(nextCompleted ? 'Task completed' : 'Task reopened');
     } catch (error) {

@@ -144,6 +144,7 @@ router.post('/sync', authMiddleware, async (req: Request, res: Response) => {
           synced: result.synced,
           errors: result.errors,
           durationMs: result.durationMs,
+          filtered: result.filtered,
         },
         `Successfully synced ${result.synced} events in ${result.durationMs}ms`
       );

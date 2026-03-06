@@ -10,6 +10,11 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
+import {
+  PROJECT_CALENDAR_COLORS,
+  DEFAULT_TASK_CALENDAR_COLOR,
+  getProjectColorIndex,
+} from '@/utils/projectColors';
 
 interface CalendarEventCardProps {
   event: CalendarEventUnion;
@@ -24,7 +29,6 @@ export function CalendarEventCard({
 }: CalendarEventCardProps) {
   const isTaskEvent = isCalendarEventTask(event);
   const isCompleted = isTaskEvent && !!event.completed_at;
-  const isRecurring = isTaskEvent && task?.is_recurring;
   const now = new Date();
   const eventEnd = new Date(event.end_time);
   const isPast = eventEnd < now;
@@ -41,26 +45,38 @@ export function CalendarEventCard({
       return new Date(event.start_time) > deadline;
     })();
 
+  const projectColor = (() => {
+    if (!isTaskEvent) return null;
+    const projectId = task?.project_id;
+    if (!projectId) return DEFAULT_TASK_CALENDAR_COLOR;
+    return PROJECT_CALENDAR_COLORS[getProjectColorIndex(projectId)];
+  })();
+
+  // Background encodes the event type
+  const bgClass = isAfterDeadline
+    ? 'bg-red-500/80 text-white shadow-sm hover:bg-red-500/90'
+    : isTaskEvent
+      ? isCompleted
+        ? 'bg-sky-500/25 text-sky-900 dark:text-sky-100'
+        : 'bg-sky-500/75 text-white shadow-sm hover:bg-sky-500/85'
+      : 'bg-slate-500/70 text-white shadow-sm hover:bg-slate-500/80';
+
+  // Border encodes the project
+  const borderClass =
+    isTaskEvent && projectColor
+      ? isCompleted
+        ? projectColor.completedBorder
+        : projectColor.border
+      : '';
+
   return (
     <div
       className={cn(
         'calendar-event-card h-full overflow-hidden rounded-md cursor-pointer transition-all',
         'text-[10px] leading-tight',
-        // Color per event type for easy visual distinction
-        isTaskEvent
-          ? isAfterDeadline
-            ? 'bg-red-500/80 text-white shadow-sm hover:bg-red-500/90'
-            : isRecurring
-              ? isCompleted
-                ? 'bg-emerald-500/30 text-emerald-800 dark:text-emerald-200'
-                : 'bg-emerald-500/75 text-white shadow-sm hover:bg-emerald-500/85'
-              : isCompleted
-                ? 'bg-sky-500/30 text-sky-800 dark:text-sky-200'
-                : 'bg-sky-500/75 text-white shadow-sm hover:bg-sky-500/85'
-          : // External (Google Calendar) events
-            'bg-violet-500/70 text-white shadow-sm hover:bg-violet-500/80',
+        bgClass,
+        borderClass,
         isCompleted && 'opacity-60',
-        // Grey out past events
         isPast &&
           !isCompleted &&
           'opacity-20 grayscale dark:opacity-20 dark:grayscale'

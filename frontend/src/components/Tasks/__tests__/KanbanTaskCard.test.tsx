@@ -53,6 +53,16 @@ jest.mock('@/components/ui/badge', () => ({
   ),
 }));
 
+jest.mock('../TaskCompletionDot', () => ({
+  TaskCompletionDot: ({ completed, onToggle, disabled }: any) => (
+    <button
+      data-testid="completion-dot"
+      onClick={() => !disabled && onToggle(!completed)}
+      aria-label={completed ? 'Mark task as incomplete' : 'Mark task as complete'}
+    />
+  ),
+}));
+
 const makeTask = (overrides: Partial<Task> = {}): Task => ({
   id: 'task-1',
   title: 'Test Task',

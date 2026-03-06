@@ -99,7 +99,7 @@ function GoogleEventDetails({
         {description && (
           <div className="flex items-start gap-3 text-sm">
             <AlignLeft className="h-4 w-4 mt-0.5 text-muted-foreground shrink-0" />
-            <p className="min-w-0 whitespace-pre-wrap break-all line-clamp-4">
+            <p className="min-w-0 whitespace-pre-wrap break-all overflow-y-auto line-clamp-8">
               {description}
             </p>
           </div>

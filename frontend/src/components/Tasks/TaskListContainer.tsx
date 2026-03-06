@@ -29,7 +29,7 @@ export function TaskListContainer({
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [viewType, setViewType] = useState<'list' | 'kanban'>('list');
-  const [showCompleted, setShowCompleted] = useState(true);
+  const [showCompleted, setShowCompleted] = useState(false);
 
   useEffect(() => {
     setTasks(data?.tasks ?? []);
@@ -85,7 +85,10 @@ export function TaskListContainer({
     nextCompleted: boolean
   ) => {
     try {
-      const updatedTask = await taskService.setTaskCompleted(task, nextCompleted);
+      const updatedTask = await taskService.setTaskCompleted(
+        task,
+        nextCompleted
+      );
       setTasks(prev =>
         prev.map(current =>
           current.id === updatedTask.id ? updatedTask : current

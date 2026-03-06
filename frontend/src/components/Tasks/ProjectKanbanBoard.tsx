@@ -5,6 +5,7 @@ import { Folder, Inbox } from 'lucide-react';
 import type { Task, Project } from '@/types';
 import { cn } from '@/lib/utils';
 import { groupTasksByProject } from '@/utils/taskUtils';
+import { PROJECT_COLORS } from '@/utils/projectColors';
 import { KanbanColumn } from './KanbanColumn';
 
 interface ProjectKanbanBoardProps {
@@ -13,10 +14,7 @@ interface ProjectKanbanBoardProps {
   linkedTaskIds: Set<string>;
   onDeleteTask: (taskId: string) => void;
   onSelectTask: (task: Task) => void;
-  onToggleTaskCompletion: (
-    task: Task,
-    nextCompleted: boolean
-  ) => Promise<void>;
+  onToggleTaskCompletion: (task: Task, nextCompleted: boolean) => Promise<void>;
   onTaskCreate: (
     taskData: Omit<
       Task,
@@ -24,18 +22,6 @@ interface ProjectKanbanBoardProps {
     >
   ) => Promise<void>;
 }
-
-// Generate a color for project based on index
-const PROJECT_COLORS = [
-  'bg-blue-500/20 text-blue-600',
-  'bg-purple-500/20 text-purple-600',
-  'bg-green-500/20 text-green-600',
-  'bg-orange-500/20 text-orange-600',
-  'bg-pink-500/20 text-pink-600',
-  'bg-cyan-500/20 text-cyan-600',
-  'bg-yellow-500/20 text-yellow-600',
-  'bg-red-500/20 text-red-600',
-];
 
 export function ProjectKanbanBoard({
   tasks,

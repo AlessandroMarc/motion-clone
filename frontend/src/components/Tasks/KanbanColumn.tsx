@@ -17,10 +17,7 @@ interface KanbanColumnProps {
   projectId: string | null;
   onDeleteTask: (taskId: string) => void;
   onSelectTask: (task: Task) => void;
-  onToggleTaskCompletion: (
-    task: Task,
-    nextCompleted: boolean
-  ) => Promise<void>;
+  onToggleTaskCompletion: (task: Task, nextCompleted: boolean) => Promise<void>;
   onTaskCreate: (
     taskData: Omit<
       Task,

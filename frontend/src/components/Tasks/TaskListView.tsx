@@ -150,6 +150,7 @@ export function TaskListView({
               );
             });
           }}
+          onTaskCreate={onTaskCreate}
           isDesktop={!isMobile}
         />
       ) : (

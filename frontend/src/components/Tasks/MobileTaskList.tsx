@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useMemo, useState } from 'react';
-import { Folder, Inbox, ChevronDown } from 'lucide-react';
+import { Folder, Inbox, ChevronDown, Plus } from 'lucide-react';
 import Link from 'next/link';
 import type { Task, Project } from '@/types';
 import { cn } from '@/lib/utils';
@@ -12,6 +12,7 @@ import {
 } from '@/utils/taskUtils';
 import { PriorityDot, ScheduleBadge, DueDateDisplay } from './listComponents';
 import { TaskCompletionDot } from './TaskCompletionDot';
+import { TaskCreateDialogForm } from './forms/TaskCreateDialogForm';
 
 // ============================================================================
 // Mobile Row
@@ -20,10 +21,7 @@ import { TaskCompletionDot } from './TaskCompletionDot';
 interface MobileTaskListRowProps {
   task: Task;
   onSelect: (task: Task) => void;
-  onToggleTaskCompletion: (
-    task: Task,
-    nextCompleted: boolean
-  ) => Promise<void>;
+  onToggleTaskCompletion: (task: Task, nextCompleted: boolean) => Promise<void>;
 }
 
 function MobileTaskListRow({
@@ -69,10 +67,7 @@ function MobileTaskListRow({
 interface DesktopTaskListRowProps {
   task: Task;
   onSelect: (task: Task) => void;
-  onToggleTaskCompletion: (
-    task: Task,
-    nextCompleted: boolean
-  ) => Promise<void>;
+  onToggleTaskCompletion: (task: Task, nextCompleted: boolean) => Promise<void>;
 }
 
 function DesktopTaskListRow({
@@ -136,11 +131,14 @@ interface MobileTaskListProps {
   tasks: Task[];
   projects: Project[];
   onSelectTask: (task: Task) => void;
-  onToggleTaskCompletion: (
-    task: Task,
-    nextCompleted: boolean
-  ) => Promise<void>;
+  onToggleTaskCompletion: (task: Task, nextCompleted: boolean) => Promise<void>;
   onDeleteTask: (taskId: string) => void;
+  onTaskCreate: (
+    taskData: Omit<
+      Task,
+      'id' | 'created_at' | 'updated_at' | 'status' | 'dependencies'
+    >
+  ) => Promise<void>;
   isDesktop?: boolean;
 }
 
@@ -149,6 +147,7 @@ export function MobileTaskList({
   projects,
   onSelectTask,
   onToggleTaskCompletion,
+  onTaskCreate,
   isDesktop = false,
 }: MobileTaskListProps): React.ReactElement {
   const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(
@@ -234,6 +233,16 @@ export function MobileTaskList({
                   {group.label}
                 </span>
               )}
+              <TaskCreateDialogForm
+                onTaskCreate={onTaskCreate}
+                initialProjectId={group.projectId}
+                trigger={
+                  <Plus
+                    className="h-4 w-4 text-muted-foreground shrink-0"
+                    onClick={e => e.stopPropagation()}
+                  />
+                }
+              />
               <span className="text-[10px] text-muted-foreground bg-muted px-1.5 py-0.5 rounded shrink-0 ml-auto">
                 {group.tasks.length}
               </span>

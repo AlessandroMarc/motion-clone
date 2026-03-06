@@ -263,14 +263,18 @@ export class AutoScheduleService {
     existingTaskEvents: CalendarEventTask[];
     violations: number;
   } {
-    const existingTaskEvents = events.filter(
-      e => isCalendarEventTask(e) && !(e as CalendarEventTask).completed_at
+    const allTaskEvents = events.filter(e =>
+      isCalendarEventTask(e)
     ) as CalendarEventTask[];
 
-    // Expand recurring tasks into synthetic placeholders
+    const existingTaskEvents = allTaskEvents.filter(e => !e.completed_at);
+
+    // Expand recurring tasks into synthetic placeholders.
+    // Pass ALL task events (including completed) so that dates with a completed
+    // occurrence are not re-generated as synthetics.
     const recurringTaskSyntheticEvents = expandRecurringTasks(
       tasks,
-      existingTaskEvents
+      allTaskEvents
     );
 
     const allTaskEventsForScheduling = [

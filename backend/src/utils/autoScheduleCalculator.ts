@@ -241,7 +241,21 @@ export function calculateAutoSchedule(params: {
     // They should be recomputed on each run so remaining chunks can move earlier
     // (for example, to continue the same task before unrelated tasks).
     // Recurring tasks keep their dated occurrences stable.
-    const lockedFutureEvents = task.is_recurring ? futureValidEvents : [];
+    //
+    // For recurring tasks, also include completed events for this task so that
+    // prepareRecurringTaskEvents sees them in existingByDate and does not
+    // generate a duplicate occurrence on a date that was already completed.
+    const completedEventsForTask = task.is_recurring
+      ? (allCalendarEvents.filter(
+          e =>
+            isCalendarEventTask(e) &&
+            (e as CalendarEventTask).linked_task_id === task.id &&
+            (e as CalendarEventTask).completed_at !== null
+        ) as CalendarEventTask[])
+      : [];
+    const lockedFutureEvents = task.is_recurring
+      ? [...futureValidEvents, ...completedEventsForTask]
+      : [];
 
     // Add kept future events as blockers BEFORE generating new events so new
     // slots won't overlap with them.
