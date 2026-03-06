@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import {
   Card,
   CardContent,
@@ -16,6 +16,7 @@ import type { Task } from '@/types';
 import {
   isTaskCompleted,
   isTaskOverdue,
+  sortTasksByPriority,
   TASK_COMPLETED_CLASS,
   TASK_COMPLETED_OPACITY_CLASS,
 } from '@/utils/taskUtils';
@@ -52,6 +53,14 @@ export function ProjectTasksSection({
 }: ProjectTasksSectionProps) {
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [showCompleted, setShowCompleted] = useState(true);
+
+  const visibleTasks = useMemo(() => {
+    const filtered = showCompleted
+      ? tasks
+      : tasks.filter(task => !isTaskCompleted(task));
+    return sortTasksByPriority(filtered);
+  }, [showCompleted, tasks]);
 
   const handleTaskCreate = async (
     taskData: Omit<
@@ -89,7 +98,14 @@ export function ProjectTasksSection({
     <Card>
       <CardHeader className="pt-4">
         <CardTitle className="text-xl font-semibold">Project Tasks</CardTitle>
-        <CardAction>
+        <CardAction className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setShowCompleted(prev => !prev)}
+          >
+            {showCompleted ? 'Hide completed' : 'Show completed'}
+          </Button>
           <TaskCreateDialogForm
             onTaskCreate={handleTaskCreate}
             initialProjectId={projectId}
@@ -102,11 +118,9 @@ export function ProjectTasksSection({
         </CardAction>
       </CardHeader>
       <CardContent className="pb-4">
-        {tasks.length === 0 ? (
+        {visibleTasks.length === 0 ? (
           <div className="text-center py-12 bg-muted/30 rounded-lg">
-            <p className="text-muted-foreground mb-4">
-              No tasks linked to this project yet.
-            </p>
+            <p className="text-muted-foreground mb-4">No tasks to show.</p>
             <TaskCreateDialogForm
               onTaskCreate={handleTaskCreate}
               initialProjectId={projectId}
@@ -119,7 +133,7 @@ export function ProjectTasksSection({
           </div>
         ) : (
           <div className="space-y-2">
-            {tasks.map(task => {
+            {visibleTasks.map(task => {
               const isCompleted = isTaskCompleted(task);
               const taskIsOverdue = isTaskOverdue(task);
               const statusConfig =

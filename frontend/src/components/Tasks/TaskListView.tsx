@@ -34,6 +34,8 @@ interface TaskListViewProps {
   onTaskClonedInDialog: (clonedTask: Task) => void;
   viewType: 'list' | 'kanban';
   onViewTypeChange: (viewType: 'list' | 'kanban') => void;
+  showCompleted: boolean;
+  onShowCompletedChange: (show: boolean) => void;
 }
 
 export function TaskListView({
@@ -53,6 +55,8 @@ export function TaskListView({
   onTaskClonedInDialog,
   viewType,
   onViewTypeChange,
+  showCompleted,
+  onShowCompletedChange,
 }: TaskListViewProps) {
   const isMobile = useIsMobile();
 
@@ -108,6 +112,25 @@ export function TaskListView({
           >
             <Columns3 className="h-4 w-4" />
             Kanban
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => onShowCompletedChange(!showCompleted)}
+          >
+            {showCompleted ? 'Hide completed' : 'Show completed'}
+          </Button>
+        </div>
+      )}
+
+      {isMobile && (
+        <div className="mb-3">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => onShowCompletedChange(!showCompleted)}
+          >
+            {showCompleted ? 'Hide completed' : 'Show completed'}
           </Button>
         </div>
       )}
