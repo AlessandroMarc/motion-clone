@@ -83,6 +83,37 @@ export function useCalendarDialogs(
     setEditOpen(true);
   };
 
+  const handleUpdateCompletion = async (
+    completed: boolean,
+    setEvents: React.Dispatch<React.SetStateAction<CalendarEventUnion[]>>
+  ) => {
+    if (!editEventId || !editEvent || !isCalendarEventTask(editEvent)) return;
+
+    try {
+      const updateData: UpdateCalendarEventInput = {
+        completed_at: completed ? new Date().toISOString() : null,
+      };
+
+      const updated = await calendarService.updateCalendarEvent(
+        editEventId,
+        updateData
+      );
+
+      // Update local state
+      setEvents(curr =>
+        curr.map(ev => (ev.id === updated.id ? { ...updated } : ev))
+      );
+      setEditCompleted(completed);
+      setEditOpen(false);
+
+      // Notify parent to refresh task list
+      onTaskDropped?.();
+    } catch (err) {
+      console.error('Failed to update task completion:', err);
+      toast.error('Failed to update task');
+    }
+  };
+
   const handleSaveEdit = async (
     setEvents: React.Dispatch<React.SetStateAction<CalendarEventUnion[]>>
   ) => {
@@ -175,5 +206,6 @@ export function useCalendarDialogs(
     openEditDialog,
     handleSaveEdit,
     handleDeleteEdit,
+    handleUpdateCompletion,
   };
 }

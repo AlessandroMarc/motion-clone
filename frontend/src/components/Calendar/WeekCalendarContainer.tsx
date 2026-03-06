@@ -277,7 +277,9 @@ export function WeekCalendarContainer({
             dialogs.editEvent ? isCalendarEventTask(dialogs.editEvent) : false
           }
           completed={dialogs.editCompleted}
-          onCompletedChange={dialogs.setEditCompleted}
+          onCompletedChange={completed =>
+            dialogs.handleUpdateCompletion(completed, setEvents)
+          }
         />
       </div>
     );

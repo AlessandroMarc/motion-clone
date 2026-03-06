@@ -45,6 +45,10 @@ type Dialogs = {
   handleDeleteEdit: (
     setEvents: React.Dispatch<React.SetStateAction<CalendarEventUnion[]>>
   ) => Promise<void>;
+  handleUpdateCompletion: (
+    completed: boolean,
+    setEvents: React.Dispatch<React.SetStateAction<CalendarEventUnion[]>>
+  ) => Promise<void>;
 };
 
 interface WeekCalendarViewProps {
@@ -98,6 +102,7 @@ export function WeekCalendarView({
   displayDates,
   displayEventsByDay,
   events,
+  setEvents,
   draggingEventId,
   dragPreview,
   externalDragPreview,
@@ -173,7 +178,9 @@ export function WeekCalendarView({
           dialogs.editEvent ? isCalendarEventTask(dialogs.editEvent) : false
         }
         completed={dialogs.editCompleted}
-        onCompletedChange={dialogs.setEditCompleted}
+        onCompletedChange={completed =>
+          dialogs.handleUpdateCompletion(completed, setEvents)
+        }
       />
     </div>
   );
