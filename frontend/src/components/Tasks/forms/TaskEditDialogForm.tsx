@@ -267,9 +267,13 @@ export function TaskEditDialogForm({
 
   const getValidationErrorMessage = () => {
     const errorMessages = Object.entries(form.formState.errors)
-      .map(([field, error]: [string, any]) => {
+      .map(([field, error]) => {
         const fieldName = field.replace(/_/g, ' ');
-        return error?.message || `${fieldName} is invalid`;
+        const message =
+          error && typeof error === 'object' && 'message' in error
+            ? String(error.message)
+            : '';
+        return message || `${fieldName} is invalid`;
       })
       .join(', ');
 
@@ -335,20 +339,20 @@ export function TaskEditDialogForm({
 
   return (
     <Dialog open={open && !!task} onOpenChange={handleDialogOpenChange}>
-      <DialogContent className="sm:max-w-[500px] max-h-[90vh] flex flex-col overflow-hidden">
+      <DialogContent className="w-[calc(100%-1rem)] p-4 sm:w-full sm:max-w-[500px] sm:p-6 max-h-[92vh] sm:max-h-[90vh] flex flex-col overflow-hidden">
         <DialogHeader>
-          <DialogTitle>Edit Task</DialogTitle>
+          <DialogTitle className="pr-8">Edit Task</DialogTitle>
           {task && (
             <DialogDescription>
               Update the fields below to change the details of{' '}
-              <span className="font-medium">{task.title}</span>.
+              <span className="font-medium break-words">{task.title}</span>.
             </DialogDescription>
           )}
         </DialogHeader>
 
         <FormProvider {...form}>
           <form
-            className="space-y-6 overflow-y-auto flex-1 pr-1"
+            className="space-y-6 overflow-y-auto flex-1 min-w-0 pr-0 sm:pr-1"
             onSubmit={e => {
               console.log(
                 '📋 [TaskEditDialogForm] Form submit event triggered'
@@ -363,7 +367,7 @@ export function TaskEditDialogForm({
               handleSubmit(onSubmit)(e);
             }}
           >
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 min-w-0">
               <div className="md:col-span-2">
                 <TaskTitleField register={register} errors={errors} />
               </div>
@@ -466,13 +470,13 @@ export function TaskEditDialogForm({
                       key={event.id}
                       className="rounded-md border border-muted bg-muted/40 p-3"
                     >
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="space-y-1">
-                          <div className="flex align-center gap-2 items-baseline">
+                      <div className="flex items-start justify-between gap-3 min-w-0">
+                        <div className="space-y-1 min-w-0 flex-1">
+                          <div className="flex flex-col sm:flex-row sm:items-baseline gap-1 sm:gap-2 min-w-0">
                             <p className="text-sm font-medium leading-snug">
                               {event.title}
                             </p>
-                            <p className="text-xs text-muted-foreground">
+                            <p className="text-xs text-muted-foreground break-words">
                               {event.start_time.toLocaleDateString(undefined, {
                                 month: 'short',
                                 day: 'numeric',
@@ -504,12 +508,13 @@ export function TaskEditDialogForm({
               )}
             </div>
 
-            <div className="flex items-center gap-2">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-2 min-w-0">
               <Button
                 type="button"
                 variant="outline"
                 onClick={handleCloneTask}
                 disabled={isSubmitting}
+                className="w-full sm:w-auto"
               >
                 <Copy className="mr-2 h-4 w-4" />
                 Clone Task
@@ -521,7 +526,7 @@ export function TaskEditDialogForm({
                 submittingText="Saving..."
                 submitIcon={<Save className="mr-2 h-4 w-4" />}
                 cancelText="Close"
-                className="ml-auto"
+                className="w-full sm:w-auto sm:ml-auto max-sm:flex-col [&>button]:max-sm:w-full [&>button]:max-sm:justify-center"
               />
             </div>
           </form>
