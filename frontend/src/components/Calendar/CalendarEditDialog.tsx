@@ -20,8 +20,8 @@ interface CalendarEditDialogProps {
   endTime: string;
   isTaskEvent?: boolean;
   completed?: boolean;
-  onCompletedChange?: (completed: boolean) => Promise<void> | void;
-  onLinkClick?: () => void;
+  onCompletedChange: (completed: boolean) => Promise<void> | void;
+  onLinkClick: () => void;
 }
 
 function formatDisplayTime(isoLocalString: string): string {
@@ -54,9 +54,9 @@ function GoogleEventDetails({
   endTime: string;
   isTaskEvent?: boolean;
   completed?: boolean;
-  onCompletedChange?: (completed: boolean) => Promise<void> | void;
+  onCompletedChange: (completed: boolean) => Promise<void> | void;
   onClose: () => void;
-  onLinkClick?: () => void;
+  onLinkClick: () => void;
 }): React.ReactElement {
   const handleCompleteClick = async () => {
     const newCompletedState = !completed;
@@ -105,26 +105,35 @@ function GoogleEventDetails({
       </div>
 
       <DialogFooter className="flex flex-col gap-2 sm:flex-row sm:items-center">
-        {isTaskEvent && (<>
-          <Button
-            type="button"
-            variant={completed ? 'default' : 'outline'}
-            onClick={handleCompleteClick}
-            className="w-full sm:flex-1 gap-2"
-          >
-            <CheckCircle2
-              className={`h-4 w-4 ${completed ? 'text-green-500' : ''}`}
-            />
-            {completed ? 'Task completed' : 'Complete task'}
-          </Button>
-          <Button variant="outline" onClick={onLinkClick} className="w-full sm:w-auto">
-            🔗
-          </Button>
-        </>)}
-        <Button variant="outline" onClick={onClose} className="w-full sm:w-auto">
+        {isTaskEvent && (
+          <>
+            <Button
+              type="button"
+              variant={completed ? 'default' : 'outline'}
+              onClick={handleCompleteClick}
+              className="w-full sm:flex-1 gap-2"
+            >
+              <CheckCircle2
+                className={`h-4 w-4 ${completed ? 'text-green-500' : ''}`}
+              />
+              {completed ? 'Task completed' : 'Complete task'}
+            </Button>
+            <Button
+              variant="outline"
+              onClick={onLinkClick}
+              className="w-full sm:w-auto"
+            >
+              🔗
+            </Button>
+          </>
+        )}
+        <Button
+          variant="outline"
+          onClick={onClose}
+          className="w-full sm:w-auto"
+        >
           Close
         </Button>
-
       </DialogFooter>
     </>
   );
@@ -140,7 +149,7 @@ function CalendarEditDialog({
   isTaskEvent = false,
   completed = false,
   onCompletedChange,
-  onLinkClick
+  onLinkClick,
 }: CalendarEditDialogProps): React.ReactElement {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>

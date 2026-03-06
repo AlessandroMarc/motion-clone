@@ -24,6 +24,8 @@ import { WeekCalendarView } from './WeekCalendarView';
 import { MobileDayScrollView } from './MobileDayScrollView';
 import { DeadlineViolationsBar } from './DeadlineViolationsBar';
 import CalendarEditDialog from './CalendarEditDialog';
+import { TaskEditDialogForm } from '@/components/Tasks/forms/TaskEditDialogForm';
+import type { Task } from '@/types';
 import { HOUR_PX } from './dayColumnLayout';
 import { logger } from '@/lib/logger';
 import { googleCalendarService } from '@/services/googleCalendarService';
@@ -161,6 +163,27 @@ export function WeekCalendarContainer({
 
   const displayDates = isMobile ? [navigation.currentDay] : weekDates;
 
+  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
+  const [taskEditOpen, setTaskEditOpen] = useState(false);
+
+  const openTaskEditForm = () => {
+    if (!dialogs.editEvent) return;
+
+    // Check if this is a task event
+    if (isCalendarEventTask(dialogs.editEvent)) {
+      const taskId = (dialogs.editEvent as { linked_task_id?: string | null })
+        .linked_task_id;
+      if (taskId) {
+        const task = tasksMap.get(taskId);
+        if (task) {
+          setSelectedTask(task);
+          setTaskEditOpen(true);
+          dialogs.setEditOpen(false); // Close the calendar event dialog
+        }
+      }
+    }
+  };
+
   const displayEventsByDay = useMemo(() => {
     if (!isMobile) return eventsByDay;
 
@@ -280,44 +303,72 @@ export function WeekCalendarContainer({
           onCompletedChange={completed =>
             dialogs.handleUpdateCompletion(completed, setEvents)
           }
+          onLinkClick={openTaskEditForm}
+        />
+        <TaskEditDialogForm
+          task={selectedTask}
+          open={taskEditOpen}
+          onOpenChange={setTaskEditOpen}
+          onTaskUpdated={_updatedTask => {
+            onTaskDropped?.();
+            refreshEvents();
+          }}
+          onTaskCloned={() => {
+            onTaskDropped?.();
+          }}
         />
       </div>
     );
   }
 
   return (
-    <WeekCalendarView
-      isMobile={isMobile}
-      weekDates={weekDates}
-      displayDates={displayDates}
-      displayEventsByDay={
-        displayEventsByDay as Record<string, CalendarEventUnion[]>
-      }
-      events={events}
-      setEvents={setEvents}
-      draggingEventId={draggingEventId}
-      dragPreview={dragPreview}
-      externalDragPreview={externalDragPreview}
-      onEventMouseDown={onEventMouseDown}
-      setDayRef={(idx, el) => (dayRefs.current[idx] = el)}
-      gridRef={gridRef}
-      scrollSentinelRef={scrollSentinelRef}
-      sentinelHour={sentinelHour}
-      onExternalTaskDrop={handleExternalTaskDrop}
-      onExternalTaskDragOver={handleExternalTaskDragOver}
-      tasksMap={tasksMap}
-      currentDay={navigation.currentDay}
-      onPreviousWeek={navigation.goPreviousWeek}
-      onNextWeek={navigation.goNextWeek}
-      onCurrentWeek={navigation.goCurrentWeek}
-      onPreviousDay={navigation.goPreviousDay}
-      onNextDay={navigation.goNextDay}
-      onZenMode={onZenMode}
-      dialogs={dialogs}
-      handleAutoScheduleClick={handleAutoScheduleClick}
-      isAutoScheduleRefreshing={isRefreshing || !initialSyncComplete}
-      workingHoursStart={activeSchedule?.working_hours_start}
-      workingHoursEnd={activeSchedule?.working_hours_end}
-    />
+    <>
+      <WeekCalendarView
+        isMobile={isMobile}
+        weekDates={weekDates}
+        displayDates={displayDates}
+        displayEventsByDay={
+          displayEventsByDay as Record<string, CalendarEventUnion[]>
+        }
+        events={events}
+        setEvents={setEvents}
+        draggingEventId={draggingEventId}
+        dragPreview={dragPreview}
+        externalDragPreview={externalDragPreview}
+        onEventMouseDown={onEventMouseDown}
+        setDayRef={(idx, el) => (dayRefs.current[idx] = el)}
+        gridRef={gridRef}
+        scrollSentinelRef={scrollSentinelRef}
+        sentinelHour={sentinelHour}
+        onExternalTaskDrop={handleExternalTaskDrop}
+        onExternalTaskDragOver={handleExternalTaskDragOver}
+        tasksMap={tasksMap}
+        currentDay={navigation.currentDay}
+        onPreviousWeek={navigation.goPreviousWeek}
+        onNextWeek={navigation.goNextWeek}
+        onCurrentWeek={navigation.goCurrentWeek}
+        onPreviousDay={navigation.goPreviousDay}
+        onNextDay={navigation.goNextDay}
+        onZenMode={onZenMode}
+        dialogs={dialogs}
+        openTaskEditForm={openTaskEditForm}
+        handleAutoScheduleClick={handleAutoScheduleClick}
+        isAutoScheduleRefreshing={isRefreshing || !initialSyncComplete}
+        workingHoursStart={activeSchedule?.working_hours_start}
+        workingHoursEnd={activeSchedule?.working_hours_end}
+      />
+      <TaskEditDialogForm
+        task={selectedTask}
+        open={taskEditOpen}
+        onOpenChange={setTaskEditOpen}
+        onTaskUpdated={_updatedTask => {
+          onTaskDropped?.();
+          refreshEvents();
+        }}
+        onTaskCloned={() => {
+          onTaskDropped?.();
+        }}
+      />
+    </>
   );
 }

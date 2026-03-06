@@ -88,6 +88,7 @@ interface WeekCalendarViewProps {
   onZenMode?: () => void;
 
   dialogs: Dialogs;
+  openTaskEditForm: () => void;
 
   handleAutoScheduleClick: () => Promise<void>;
   isAutoScheduleRefreshing?: boolean;
@@ -122,6 +123,7 @@ export function WeekCalendarView({
   onNextDay,
   onZenMode,
   dialogs,
+  openTaskEditForm,
   handleAutoScheduleClick,
   isAutoScheduleRefreshing,
   workingHoursStart,
@@ -181,6 +183,7 @@ export function WeekCalendarView({
         onCompletedChange={completed =>
           dialogs.handleUpdateCompletion(completed, setEvents)
         }
+        onLinkClick={openTaskEditForm}
       />
     </div>
   );
