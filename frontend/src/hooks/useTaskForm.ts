@@ -8,6 +8,14 @@ import { transformFormDataToTask } from '@/utils/formUtils';
 import { useAuth } from '@/contexts/AuthContext';
 import { useOnboarding } from '@/hooks/useOnboarding';
 import { captureEvent } from '@/lib/analytics';
+import {
+  TASK_TITLE_MAX_LENGTH,
+  TASK_DESCRIPTION_MAX_LENGTH,
+  TASK_DURATION_MIN_MINUTES,
+  TASK_RECURRENCE_INTERVAL_MIN,
+  TASK_PRIORITIES,
+  RECURRENCE_PATTERNS,
+} from '@shared/validation';
 
 // Form validation schema
 export const taskSchema = z
@@ -15,16 +23,16 @@ export const taskSchema = z
     title: z
       .string()
       .min(1, 'Title is required')
-      .max(100, 'Title must be less than 100 characters'),
+      .max(TASK_TITLE_MAX_LENGTH, `Title must be less than ${TASK_TITLE_MAX_LENGTH} characters`),
     description: z
       .string()
-      .max(4000, 'Description must be less than 4000 characters'),
+      .max(TASK_DESCRIPTION_MAX_LENGTH, `Description must be less than ${TASK_DESCRIPTION_MAX_LENGTH} characters`),
     dueDate: z.string().optional(),
-    priority: z.enum(['low', 'medium', 'high']),
+    priority: z.enum(TASK_PRIORITIES),
     project_id: z.string().nullable().optional(),
     planned_duration_minutes: z
       .number()
-      .min(1, 'Planned duration must be at least 1 minute'),
+      .min(TASK_DURATION_MIN_MINUTES, `Planned duration must be at least ${TASK_DURATION_MIN_MINUTES} minute`),
     actual_duration_minutes: z
       .number()
       .min(0, 'Actual duration cannot be negative'),
@@ -33,12 +41,12 @@ export const taskSchema = z
     // Recurring task fields
     is_recurring: z.boolean(),
     recurrence_pattern: z.union([
-      z.enum(['daily', 'weekly', 'monthly']),
+      z.enum(RECURRENCE_PATTERNS),
       z.undefined(),
     ]),
     recurrence_interval: z
       .number()
-      .min(1, 'Interval must be at least 1')
+      .min(TASK_RECURRENCE_INTERVAL_MIN, `Interval must be at least ${TASK_RECURRENCE_INTERVAL_MIN}`)
       .optional(),
     recurrenceStartDate: z.string().optional(), // 'YYYY-MM-DD'; anchors day-of-week / day-of-month
     startDate: z.string().optional(), // 'YYYY-MM-DD'; earliest date the task may be scheduled

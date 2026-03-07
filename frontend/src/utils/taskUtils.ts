@@ -1,6 +1,13 @@
 import type { Task, Project } from '@/types';
 import { isOverdue } from '@/utils/dateUtils';
 
+// Re-export shared priority utilities so existing imports keep working
+export {
+  TASK_PRIORITY_RANK,
+  compareTaskPriority,
+  sortByPriority as sortTasksByPriority,
+} from '@shared/taskPriority';
+
 /** Whether the task is in completed status. */
 export function isTaskCompleted(task: { status: string }): boolean {
   return task.status === 'completed';
@@ -23,26 +30,6 @@ export const TASK_COMPLETED_CLASS = 'line-through text-muted-foreground';
 
 /** Optional class for completed card opacity. */
 export const TASK_COMPLETED_OPACITY_CLASS = 'opacity-60';
-
-/** Priority rank for sorting (high first): higher number = higher priority. */
-export const TASK_PRIORITY_RANK: Record<Task['priority'], number> = {
-  high: 3,
-  medium: 2,
-  low: 1,
-};
-
-/** Comparator for sorting tasks by priority (high first). Use with Array.prototype.sort. */
-export function compareTaskPriority(a: Task, b: Task): number {
-  return (
-    (TASK_PRIORITY_RANK[b.priority] ?? 0) -
-    (TASK_PRIORITY_RANK[a.priority] ?? 0)
-  );
-}
-
-/** Returns a new array of tasks sorted by priority (high first). */
-export function sortTasksByPriority(tasks: Task[]): Task[] {
-  return [...tasks].sort(compareTaskPriority);
-}
 
 interface GroupTasksByProjectResult {
   unassigned: Task[];

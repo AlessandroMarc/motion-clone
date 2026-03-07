@@ -257,8 +257,8 @@ describe('MotionMigrationService', () => {
             user_id: 'u-1',
             milestones: [],
             deadline: null,
-            createdAt: new Date(),
-            updatedAt: new Date(),
+            created_at: new Date(),
+            updated_at: new Date(),
           },
           error: null,
         };

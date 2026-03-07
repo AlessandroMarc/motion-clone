@@ -43,8 +43,8 @@ const mockProject: Project = {
   milestones: [],
   status: 'not-started',
   user_id: 'user-1',
-  createdAt: new Date('2024-01-01'),
-  updatedAt: new Date('2024-01-01'),
+  created_at: new Date('2024-01-01'),
+  updated_at: new Date('2024-01-01'),
 };
 
 describe('ProjectList', () => {
