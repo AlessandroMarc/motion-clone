@@ -69,11 +69,11 @@ export function ProjectDetailView({
           <div className="grid grid-cols-2 gap-4 text-sm text-muted-foreground">
             <div>
               <span className="font-medium">Created:</span>{' '}
-              {formatDate(project.createdAt, false)}
+              {formatDate(project.created_at, false)}
             </div>
             <div>
               <span className="font-medium">Last Updated:</span>{' '}
-              {formatDate(project.updatedAt, false)}
+              {formatDate(project.updated_at, false)}
             </div>
           </div>
         </div>
