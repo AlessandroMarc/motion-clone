@@ -6,6 +6,7 @@ import {
   useEffect,
   useState,
   useCallback,
+  useRef,
 } from 'react';
 import type { OnboardingStatus, OnboardingStep } from '@/types';
 import { userSettingsService } from '@/services/userSettingsService';
@@ -33,6 +34,7 @@ export function OnboardingProvider({
   const { user } = useAuth();
   const [status, setStatus] = useState<OnboardingStatus | null>(null);
   const [loading, setLoading] = useState(true);
+  const updatingRef = useRef(false);
 
   const loadStatus = useCallback(async () => {
     if (!user?.id) {
@@ -65,11 +67,15 @@ export function OnboardingProvider({
 
   const updateStep = useCallback(
     async (step: OnboardingStep) => {
-      if (!user?.id) return;
+      if (!user?.id || updatingRef.current) return;
+      updatingRef.current = true;
 
-      const previousStatus = status;
-      // Optimistically update to prevent tour from re-opening during async call
-      setStatus(prev => (prev ? { ...prev, step } : prev));
+      // Capture snapshot via functional update to avoid stale closure
+      let snapshotStatus: OnboardingStatus | null = null;
+      setStatus(prev => {
+        snapshotStatus = prev;
+        return prev ? { ...prev, step } : prev;
+      });
 
       try {
         await userSettingsService.updateOnboardingStep(user.id, step);
@@ -78,69 +84,73 @@ export function OnboardingProvider({
         );
         setStatus(newStatus);
 
-        // PostHog: Track step completion
         if (step) {
-          posthog.capture('onboarding_step_completed', {
-            step,
-          });
+          posthog.capture('onboarding_step_completed', { step });
         }
       } catch (error) {
-        // Revert on failure
-        setStatus(previousStatus);
+        setStatus(snapshotStatus);
         console.error('Failed to update onboarding step:', error);
         throw error;
+      } finally {
+        updatingRef.current = false;
       }
     },
-    [user?.id, status]
+    [user?.id]
   );
 
   const completeOnboarding = useCallback(async () => {
-    if (!user?.id) return;
+    if (!user?.id || updatingRef.current) return;
+    updatingRef.current = true;
 
-    const previousStatus = status;
-    // Optimistically mark as completed to prevent tour from re-opening
-    setStatus(prev =>
-      prev ? { ...prev, completed: true, completed_at: new Date() } : prev
-    );
+    let snapshotStatus: OnboardingStatus | null = null;
+    setStatus(prev => {
+      snapshotStatus = prev;
+      return prev
+        ? { ...prev, completed: true, completed_at: new Date() }
+        : prev;
+    });
 
     try {
       await userSettingsService.completeOnboarding(user.id);
       const newStatus = await userSettingsService.getOnboardingStatus(user.id);
       setStatus(newStatus);
 
-      // PostHog: Track completion
       posthog.capture('onboarding_completed');
     } catch (error) {
-      // Revert on failure
-      setStatus(previousStatus);
+      setStatus(snapshotStatus);
       console.error('Failed to complete onboarding:', error);
       throw error;
+    } finally {
+      updatingRef.current = false;
     }
-  }, [user?.id, status]);
+  }, [user?.id]);
 
   const skipOnboarding = useCallback(async () => {
-    if (!user?.id) return;
+    if (!user?.id || updatingRef.current) return;
+    updatingRef.current = true;
 
-    const previousStatus = status;
-    // Optimistically mark as completed to prevent tour from re-opening
-    setStatus(prev =>
-      prev ? { ...prev, completed: true, completed_at: new Date() } : prev
-    );
+    let snapshotStatus: OnboardingStatus | null = null;
+    setStatus(prev => {
+      snapshotStatus = prev;
+      return prev
+        ? { ...prev, completed: true, completed_at: new Date() }
+        : prev;
+    });
 
     try {
       await userSettingsService.completeOnboarding(user.id);
       const newStatus = await userSettingsService.getOnboardingStatus(user.id);
       setStatus(newStatus);
 
-      // PostHog: Track skip
       posthog.capture('onboarding_skipped');
     } catch (error) {
-      // Revert on failure
-      setStatus(previousStatus);
+      setStatus(snapshotStatus);
       console.error('Failed to skip onboarding:', error);
       throw error;
+    } finally {
+      updatingRef.current = false;
     }
-  }, [user?.id, status]);
+  }, [user?.id]);
 
   const refreshStatus = useCallback(async () => {
     await loadStatus();
