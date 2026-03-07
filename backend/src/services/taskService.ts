@@ -5,50 +5,29 @@ import {
 import type { CreateTaskInput, UpdateTaskInput } from '../types/database.js';
 import type { Task } from '../types/database.js';
 import { autoScheduleTriggerQueue } from './autoScheduleTriggerQueue.js';
+import {
+  normalizeToMidnight as normalizeToMidnightDate,
+  toLocalDateString,
+} from '../../../shared/dateUtils.js';
 
 /**
- * Normalize a date to midnight (00:00:00.000) in local time
- * Used for deadlines to ensure consistent date-only comparison
+ * Normalize a date to midnight ISO string.
+ * Uses shared normalizeToMidnight then converts to ISO.
  */
 function normalizeToMidnight(date: Date | string): string {
   const dateObj = typeof date === 'string' ? new Date(date) : date;
-  const normalized = new Date(dateObj);
-  normalized.setHours(0, 0, 0, 0);
-  return normalized.toISOString();
-}
-
-/**
- * Extract a plain YYYY-MM-DD string from a Date or string value.
- * Used for Supabase DATE columns (due_date, recurrence_start_date) so the
- * stored value matches the user's local calendar date regardless of timezone.
- *
- * If the input is already "YYYY-MM-DD" it is returned as-is.
- * If the input is a full ISO timestamp or Date object, it extracts the local date parts.
- */
-function toDateOnly(value: Date | string): string {
-  if (typeof value === 'string') {
-    // Already a plain date string — pass through
-    const dateOnlyMatch = /^\d{4}-\d{2}-\d{2}$/.exec(value);
-    if (dateOnlyMatch) return value;
-  }
-  // Full ISO timestamp or Date object — extract local date parts
-  const d = typeof value === 'string' ? new Date(value) : value;
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, '0');
-  const day = String(d.getDate()).padStart(2, '0');
-  return `${y}-${m}-${day}`;
+  return normalizeToMidnightDate(dateObj).toISOString();
 }
 
 /**
  * Normalize optional date values to YYYY-MM-DD format.
- * Returns null for null/undefined inputs, otherwise delegates to toDateOnly.
- * Used to deduplicate null-handling logic for date fields.
+ * Returns null for null/undefined inputs, otherwise delegates to toLocalDateString.
  */
 function toOptionalDateOnly(
   value: Date | string | null | undefined
 ): string | null {
   if (value === null || value === undefined) return null;
-  return toDateOnly(value);
+  return toLocalDateString(value);
 }
 
 export class TaskService {
@@ -217,7 +196,7 @@ export class TaskService {
     // Normalize recurrence_start_date (use today if not provided)
     const recurrenceStartDateString = isRecurring
       ? (toOptionalDateOnly(input.recurrence_start_date) ??
-        toDateOnly(new Date()))
+        toLocalDateString(new Date()))
       : null;
 
     const client = authToken

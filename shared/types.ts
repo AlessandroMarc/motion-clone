@@ -60,20 +60,20 @@ interface Project {
   milestones: Milestone[];
   status: WorkItemStatus;
   user_id: string; // owner of the project
-  createdAt: Date;
-  updatedAt: Date;
+  created_at: Date;
+  updated_at: Date;
 }
 
 interface Milestone {
   id: string; // unique identifier
   title: string;
   description?: string;
-  dueDate: Date | null;
+  due_date: Date | null;
   status: WorkItemStatus;
   tasks: string[]; // array of Task ids under this milestone
   user_id: string; // owner of the milestone
-  createdAt: Date;
-  updatedAt: Date;
+  created_at: Date;
+  updated_at: Date;
 }
 
 interface CalendarEvent {

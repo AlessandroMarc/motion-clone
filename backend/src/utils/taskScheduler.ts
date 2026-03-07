@@ -15,15 +15,7 @@ import {
   generateOccurrenceDates,
   get90DayHorizon,
 } from './recurrenceCalculator.js';
-
-// ---------------------------------------------------------------------------
-// Priority rank (mirrors frontend/src/utils/taskUtils.ts)
-// ---------------------------------------------------------------------------
-const TASK_PRIORITY_RANK: Record<'low' | 'medium' | 'high', number> = {
-  high: 3,
-  medium: 2,
-  low: 1,
-};
+import { TASK_PRIORITY_RANK } from '../../../shared/taskPriority.js';
 
 // ---------------------------------------------------------------------------
 // Config
