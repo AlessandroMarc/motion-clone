@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { toLocalDateString } from '@/utils/dateUtils';
 
 export function useWeekCalendarNavigation() {
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -13,7 +14,7 @@ export function useWeekCalendarNavigation() {
 
   const currentDateKey = useMemo(() => {
     const date = new Date(currentDateTimestamp);
-    return new Date(date).toISOString().split('T')[0];
+    return toLocalDateString(new Date(date));
   }, [currentDateTimestamp]);
 
   const goPreviousWeek = () => {

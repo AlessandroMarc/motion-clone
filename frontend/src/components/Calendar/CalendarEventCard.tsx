@@ -2,6 +2,7 @@
 
 import { CalendarEventUnion, isCalendarEventTask, type Task } from '@/types';
 import { formatEventTime } from '@/utils/calendarUtils';
+import { formatDate } from '@/utils/dateUtils';
 import { AlertTriangle, CheckCircle2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import {
@@ -112,7 +113,7 @@ export function CalendarEventCard({
                 <p>
                   Scheduled after deadline (
                   {task?.due_date
-                    ? new Date(task.due_date).toLocaleDateString()
+                    ? formatDate(task.due_date)
                     : 'unknown'}
                   )
                 </p>

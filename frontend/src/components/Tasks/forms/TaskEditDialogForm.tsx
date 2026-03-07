@@ -17,7 +17,7 @@ import { taskService } from '@/services/taskService';
 import { calendarService } from '@/services/calendarService';
 import type { Task, CalendarEventTask } from '@/types';
 import { taskSchema, type TaskFormData } from '@/hooks/useTaskForm';
-import { normalizeToMidnight, parseLocalDate } from '@/utils/dateUtils';
+import { formatDate, normalizeToMidnight, parseLocalDate, toLocalDateString } from '@/utils/dateUtils';
 import { TaskTitleField } from './TaskTitleField';
 import { TaskDescriptionField } from './TaskDescriptionField';
 import { TaskDueDateField } from './TaskDueDateField';
@@ -57,17 +57,11 @@ const emptyFormValues: TaskFormData = {
   startDate: undefined,
 };
 
-const formatDateOnly = (date: Date): string => {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
-};
 
 const mapTaskToFormValues = (task: Task): TaskFormData => ({
   title: task.title,
   description: task.description ?? '',
-  dueDate: task.due_date ? formatDateOnly(new Date(task.due_date)) : '',
+  dueDate: task.due_date ? toLocalDateString(new Date(task.due_date)) : '',
   priority: task.priority,
   project_id: task.project_id ?? null,
   planned_duration_minutes: task.planned_duration_minutes ?? 60,
@@ -78,10 +72,10 @@ const mapTaskToFormValues = (task: Task): TaskFormData => ({
   recurrence_pattern: task.recurrence_pattern ?? undefined, // Normalize null to undefined
   recurrence_interval: task.recurrence_interval ?? 1,
   recurrenceStartDate: task.recurrence_start_date
-    ? formatDateOnly(new Date(task.recurrence_start_date))
+    ? toLocalDateString(new Date(task.recurrence_start_date))
     : undefined,
   startDate: task.start_date
-    ? formatDateOnly(new Date(task.start_date))
+    ? toLocalDateString(new Date(task.start_date))
     : undefined,
 });
 
@@ -476,11 +470,7 @@ export function TaskEditDialogForm({
                               {event.title}
                             </p>
                             <p className="text-xs text-muted-foreground break-words">
-                              {event.start_time.toLocaleDateString(undefined, {
-                                month: 'short',
-                                day: 'numeric',
-                                year: 'numeric',
-                              })}
+                              {formatDate(event.start_time)}
                               {' - '}
                               {formatEventTime(
                                 event.start_time,
