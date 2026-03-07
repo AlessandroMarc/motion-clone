@@ -388,7 +388,6 @@ export function TaskEditDialogForm({
               <TaskBlockedByField errors={errors} currentTaskId={task?.id} />
               <div className="md:col-span-2">
                 <TaskDurationFields
-                  register={register}
                   errors={errors}
                   hideActualDuration={isRecurring}
                 />
