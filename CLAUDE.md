@@ -234,6 +234,19 @@ The low-level "searcher" that scans chronologically for a gap of at least `minBl
 - Already scheduled high-priority tasks
 - Recurring task placeholders
 
+**Important**: Events are **merged** before gap computation. Overlapping Google Calendar events (e.g. a duplicate train entry + a Study Time block that both cover 07:00–09:25) must be collapsed into a single interval first. Without merging, the gap finder produces phantom free slots that are actually still inside an overlapping event.
+
+### Date-only string parsing
+
+`task.start_date` and `task.recurrence_start_date` are stored as `YYYY-MM-DD` strings. **Never** use `new Date(dateStr)` on them — JS parses date-only strings as UTC midnight, which in UTC+1 (Italy) becomes the previous day at 23:00 local time.
+
+Use `parseDateLocal(date)` from `taskScheduler.ts` instead:
+
+```typescript
+import { parseDateLocal } from './taskScheduler.js';
+const d = parseDateLocal(task.start_date); // always local midnight
+```
+
 ---
 
 ## 5. Handling Violations
