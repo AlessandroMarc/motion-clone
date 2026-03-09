@@ -40,6 +40,7 @@ export function useCalendarEvents(weekDates: Date[]) {
     }
 
     weekKeyRef.current = weekKey;
+    const fetchedForKey = weekKey;
 
     const fetchEvents = async () => {
       try {
@@ -53,8 +54,14 @@ export function useCalendarEvents(weekDates: Date[]) {
           endIso
         );
 
+        // Discard stale results: if the week key has changed since this fetch
+        // started (e.g. isMobile hydration triggered a second fetch), ignore
+        // this response so it cannot overwrite the more-recent, correct data.
+        if (weekKeyRef.current !== fetchedForKey) return;
+
         setEvents(weekEvents);
       } catch (err) {
+        if (weekKeyRef.current !== fetchedForKey) return;
         const msg = err instanceof Error ? err.message : '';
         const errorMessage = msg.startsWith('429:')
           ? msg
@@ -65,6 +72,7 @@ export function useCalendarEvents(weekDates: Date[]) {
         // The error will be displayed in the UI via ErrorState component
         setError(errorMessage);
       } finally {
+        if (weekKeyRef.current !== fetchedForKey) return;
         setLoading(false);
       }
     };
