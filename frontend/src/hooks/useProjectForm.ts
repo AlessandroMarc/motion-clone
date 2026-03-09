@@ -25,7 +25,7 @@ export interface ProjectCreateFormProps {
   onProjectCreate: (
     projectData: Omit<
       Project,
-      'id' | 'createdAt' | 'updatedAt' | 'milestones' | 'status'
+      'id' | 'created_at' | 'updated_at' | 'milestones' | 'status'
     >
   ) => Promise<void>;
   isLoading?: boolean;
