@@ -8,17 +8,7 @@ export interface DurationSuggestion {
  * E.g., 1.5 → "1 hr 30 min", 2 → "2 hrs", 0.25 → "15 min"
  */
 function formatHours(hours: number): string {
-  const wholeHours = Math.floor(hours);
-  const remainderMinutes = Math.round((hours - wholeHours) * 60);
-
-  if (wholeHours === 0) {
-    return `${remainderMinutes} min`;
-  }
-  const hrLabel = wholeHours === 1 ? 'hr' : 'hrs';
-  if (remainderMinutes === 0) {
-    return `${wholeHours} ${hrLabel}`;
-  }
-  return `${wholeHours} ${hrLabel} ${remainderMinutes} min`;
+  return formatDurationDisplay(Math.round(hours * 60));
 }
 
 /**
@@ -30,7 +20,7 @@ export function parseDurationSuggestions(input: string): DurationSuggestion[] {
   if (trimmed === '') return [];
 
   // Reject strings that aren't valid numbers (parseFloat is too lenient, e.g. "12abc" → 12)
-  if (!/^\d+\.?\d*$/.test(trimmed)) return [];
+  if (!/^(?:\d+\.?\d*|\.\d+)$/.test(trimmed)) return [];
 
   const num = parseFloat(trimmed);
   if (isNaN(num) || num <= 0) return [];

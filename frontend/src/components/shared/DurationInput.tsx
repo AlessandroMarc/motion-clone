@@ -77,6 +77,8 @@ export function DurationInput({
     }
   };
 
+  const showClearOption = min <= 0 && value > 0;
+
   const displayValue = value > 0 ? formatDurationDisplay(value) : placeholder;
 
   return (
@@ -120,6 +122,11 @@ export function DurationInput({
             <CommandList>
               {inputValue.trim() === '' ? (
                 <CommandGroup heading="Common durations">
+                  {showClearOption && (
+                    <CommandItem value="0" onSelect={() => handleSelect(0)}>
+                      0 min
+                    </CommandItem>
+                  )}
                   {COMMON_PRESETS.filter(p => p.minutes >= min).map(preset => (
                     <CommandItem
                       key={preset.minutes}

@@ -100,8 +100,8 @@ describe('parseDurationSuggestions', () => {
     expect(result[1]).toEqual({ label: '1440 hrs', minutes: 86400 });
   });
 
-  it('deduplicates when both interpretations give same minutes', () => {
-    // input "60" → 60 minutes and 60 hours (3600 min) are different, both shown
+  it('returns two distinct suggestions when minute and hour interpretations differ', () => {
+    // "60" → 60 minutes OR 60 hours (3600 min); both are shown since they differ
     const result = parseDurationSuggestions('60');
     expect(result).toHaveLength(2);
     expect(result[0].minutes).toBe(60);
