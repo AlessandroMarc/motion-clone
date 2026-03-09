@@ -6,6 +6,7 @@ import { taskService } from '@/services/taskService';
 import { projectService } from '@/services/projectService';
 import { calendarService } from '@/services/calendarService';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { toLocalDateString } from '@/utils/dateUtils';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { TaskScheduleDialog } from './TaskScheduleDialog';
@@ -62,8 +63,8 @@ export function CalendarTasksPanel({
         setProjectsById(map);
 
         // Fetch current week events for display
-        const startDate = weekDates[0].toISOString().split('T')[0];
-        const endDate = weekDates[6].toISOString().split('T')[0];
+        const startDate = toLocalDateString(weekDates[0]);
+        const endDate = toLocalDateString(weekDates[6]);
         const events = await calendarService.getCalendarEventsByDateRange(
           startDate,
           endDate
@@ -75,8 +76,8 @@ export function CalendarTasksPanel({
         const futureEnd = new Date(today);
         futureEnd.setDate(futureEnd.getDate() + 90);
         const futureEvents = await calendarService.getCalendarEventsByDateRange(
-          today.toISOString().split('T')[0],
-          futureEnd.toISOString().split('T')[0]
+          toLocalDateString(today),
+          toLocalDateString(futureEnd)
         );
         setAllFutureEvents(futureEvents);
       } catch (e) {
@@ -136,8 +137,8 @@ export function CalendarTasksPanel({
       toast.success(`"${task.title}" added to calendar`);
 
       // Refresh the events to update the planned status
-      const startDate = weekDates[0].toISOString().split('T')[0];
-      const endDate = weekDates[6].toISOString().split('T')[0];
+      const startDate = toLocalDateString(weekDates[0]);
+      const endDate = toLocalDateString(weekDates[6]);
       const events = await calendarService.getCalendarEventsByDateRange(
         startDate,
         endDate
@@ -149,8 +150,8 @@ export function CalendarTasksPanel({
       const futureEnd = new Date(today);
       futureEnd.setDate(futureEnd.getDate() + 90);
       const futureEvents = await calendarService.getCalendarEventsByDateRange(
-        today.toISOString().split('T')[0],
-        futureEnd.toISOString().split('T')[0]
+        toLocalDateString(today),
+        toLocalDateString(futureEnd)
       );
       setAllFutureEvents(futureEvents);
     } catch (err) {

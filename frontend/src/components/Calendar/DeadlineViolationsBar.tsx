@@ -4,6 +4,7 @@ import { useState, useMemo } from 'react';
 import type { CalendarEventUnion, Task } from '@/types';
 import { isCalendarEventTask } from '@/types';
 import { AlertTriangle, X } from 'lucide-react';
+import { formatDate, formatTime } from '@/utils/dateUtils';
 import { Button } from '@/components/ui/button';
 
 interface DeadlineViolationsBarProps {
@@ -106,23 +107,10 @@ export function DeadlineViolationsBar({
                       {violation.task.title}
                     </p>
                     <p className="text-xs text-yellow-700 dark:text-yellow-300 mt-0.5">
-                      Deadline:{' '}
-                      {violation.deadline.toLocaleDateString('it-IT', {
-                        day: '2-digit',
-                        month: '2-digit',
-                        year: 'numeric',
-                      })}
+                      Deadline: {formatDate(violation.deadline)}
                       {' • '}
-                      Scheduled:{' '}
-                      {violation.scheduledTime.toLocaleDateString('it-IT', {
-                        day: '2-digit',
-                        month: '2-digit',
-                        year: 'numeric',
-                      })}{' '}
-                      {violation.scheduledTime.toLocaleTimeString('it-IT', {
-                        hour: '2-digit',
-                        minute: '2-digit',
-                      })}
+                      Scheduled: {formatDate(violation.scheduledTime)}{' '}
+                      {formatTime(violation.scheduledTime)}
                     </p>
                   </div>
                 </div>

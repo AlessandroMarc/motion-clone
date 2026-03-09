@@ -58,7 +58,9 @@ jest.mock('../TaskCompletionDot', () => ({
     <button
       data-testid="completion-dot"
       onClick={() => !disabled && onToggle(!completed)}
-      aria-label={completed ? 'Mark task as incomplete' : 'Mark task as complete'}
+      aria-label={
+        completed ? 'Mark task as incomplete' : 'Mark task as complete'
+      }
     />
   ),
 }));

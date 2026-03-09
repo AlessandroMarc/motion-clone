@@ -13,6 +13,7 @@ import {
   getDayAbbreviation,
   getMonthDay,
 } from '@/utils/calendarUtils';
+import { formatDate, formatDateDisplay } from '@/utils/dateUtils';
 import { useIsMobile } from '@/hooks/use-mobile';
 
 interface CalendarHeaderProps {
@@ -45,12 +46,8 @@ export function CalendarHeader({
 
   // Mobile view: show single day navigation
   if (isMobile && currentDay && onPreviousDay && onNextDay) {
-    const dayName = currentDay.toLocaleDateString('en-US', { weekday: 'long' });
-    const dayDate = currentDay.toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-    });
+    const dayName = formatDateDisplay(currentDay).split(',')[0];
+    const dayDate = formatDate(currentDay);
 
     return (
       <div className="flex flex-col gap-3 mb-4">

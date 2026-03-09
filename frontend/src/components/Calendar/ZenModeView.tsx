@@ -281,7 +281,11 @@ export function ZenModeView({ onExit }: ZenModeViewProps) {
                             endTime={endTime}
                             onToggleComplete={handleToggleComplete}
                             onRowClick={() =>
-                              setCalendarDialogItem({ task, startTime, endTime })
+                              setCalendarDialogItem({
+                                task,
+                                startTime,
+                                endTime,
+                              })
                             }
                           />
                         );
