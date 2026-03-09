@@ -5,6 +5,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Project Overview
 
 **Nexto** is an intelligent task scheduling app (originally a Motion clone). It is a monorepo with:
+
 - `frontend/` — Next.js 16 App Router (port 3000)
 - `backend/` — Express.js 5 REST API (port 3003)
 - `shared/` — Shared TypeScript types (`shared/types.ts`)
@@ -17,6 +18,7 @@ Database: Supabase (PostgreSQL with Row Level Security). Deployed to Vercel.
 All commands are run from the **repo root** unless noted otherwise.
 
 ### Development
+
 ```bash
 npm run dev          # Start frontend + backend concurrently
 npm run dev-f        # Frontend only (Next.js on port 3000)
@@ -24,6 +26,7 @@ npm run dev-b        # Backend only (Express on port 3003)
 ```
 
 ### Building
+
 ```bash
 npm run build        # Build frontend then backend
 npm run build-f      # Frontend only
@@ -33,6 +36,7 @@ npm run build-b      # Backend only (tsc, run from backend/)
 Backend build note: TypeScript compiles from the **repo root**. Output goes to `dist/backend/src/` and `dist/shared/`. Do not use path aliases for shared types — use relative imports like `../../../shared/types.js`.
 
 ### Testing
+
 ```bash
 npm run test              # Run all unit tests (frontend + backend)
 npm run test:frontend     # Frontend Jest tests only
@@ -42,11 +46,13 @@ npm run test:coverage     # Unit tests with coverage reports
 ```
 
 Run a **single backend test file**:
+
 ```bash
 cd backend && NODE_OPTIONS=--experimental-vm-modules jest src/services/__tests__/taskService.test.ts
 ```
 
 Run a **single frontend test file**:
+
 ```bash
 cd frontend && jest src/components/Tasks/__tests__/TaskCard.test.tsx
 ```
@@ -54,6 +60,7 @@ cd frontend && jest src/components/Tasks/__tests__/TaskCard.test.tsx
 Backend tests require `NODE_OPTIONS=--experimental-vm-modules` because they use ESM with `jest.unstable_mockModule`.
 
 ### Linting & Formatting
+
 ```bash
 npm run lint         # ESLint on frontend/src and backend/src
 npm run lint:fix     # Auto-fix lint issues
@@ -75,6 +82,7 @@ Express.js REST API following a layered architecture:
 - **`utils/responseHelpers.ts`** — `ResponseHelper.success()`, `.error()`, `.notFound()`, `.unauthorized()` for consistent API responses.
 
 Service pattern:
+
 ```typescript
 // Service method receives the authenticated client
 async getAllTasks(client: SupabaseClient): Promise<Task[]> { ... }
@@ -113,6 +121,7 @@ Playwright tests run against the Next.js dev server with `NEXT_PUBLIC_AUTH_BYPAS
 ### Backend (ESM with `jest.unstable_mockModule`)
 
 Service tests mock Supabase and dynamically import the service:
+
 ```typescript
 jest.unstable_mockModule('../../config/supabase.js', () => ({
   getAuthenticatedSupabase: jest.fn().mockReturnValue(mockClient),
@@ -121,9 +130,12 @@ const { TaskService } = await import('../taskService.js');
 ```
 
 Route tests use `supertest` with a minimal Express app and mock `verifyAuthToken`:
+
 ```typescript
 jest.unstable_mockModule('../../config/supabase.js', () => ({
-  verifyAuthToken: jest.fn().mockReturnValue({ userId: 'user-1', exp: 9999999999 }),
+  verifyAuthToken: jest
+    .fn()
+    .mockReturnValue({ userId: 'user-1', exp: 9999999999 }),
   getAuthenticatedSupabase: jest.fn().mockReturnValue({}),
 }));
 ```
@@ -137,6 +149,7 @@ Tests use `@testing-library/react` with `jest-environment-jsdom`. See existing t
 ## Environment Variables
 
 **Backend** (`backend/.env.development.local`):
+
 ```
 SUPABASE_URL=
 SUPABASE_ANON_KEY=
@@ -150,6 +163,7 @@ STRICT_AUTH_MODE=false      # Set true to also do remote Supabase verification
 ```
 
 **Frontend** (`frontend/.env.local`):
+
 ```
 NEXT_PUBLIC_SUPABASE_URL=
 NEXT_PUBLIC_SUPABASE_ANON_KEY=

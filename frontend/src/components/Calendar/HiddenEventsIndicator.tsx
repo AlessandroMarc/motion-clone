@@ -52,8 +52,13 @@ export function HiddenEventsIndicator({ events }: HiddenEventsIndicatorProps) {
           </p>
           <ul className="space-y-1.5 max-h-60 overflow-y-auto">
             {events.map((ev, i) => (
-              <li key={i} className="text-xs rounded-md bg-muted/50 px-2 py-1.5">
-                <p className="font-medium text-foreground truncate">{ev.title}</p>
+              <li
+                key={i}
+                className="text-xs rounded-md bg-muted/50 px-2 py-1.5"
+              >
+                <p className="font-medium text-foreground truncate">
+                  {ev.title}
+                </p>
                 <p className="text-muted-foreground mt-0.5">
                   {new Date(ev.start_time).toLocaleString(undefined, {
                     weekday: 'short',

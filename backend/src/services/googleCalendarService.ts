@@ -268,7 +268,15 @@ export class GoogleCalendarService {
             error instanceof Error ? error.message : 'Unknown sync error',
           ],
           durationMs: 0,
-          filtered: { count: 0, events: [] as Array<{ title: string; start_time: string; end_time: string; reason: 'free' | 'declined' }> },
+          filtered: {
+            count: 0,
+            events: [] as Array<{
+              title: string;
+              start_time: string;
+              end_time: string;
+              reason: 'free' | 'declined';
+            }>,
+          },
         };
       })
       .finally(() => {
