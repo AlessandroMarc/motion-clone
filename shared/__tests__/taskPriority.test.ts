@@ -43,10 +43,7 @@ describe('sortByPriority', () => {
   });
 
   it('does not mutate the original array', () => {
-    const items = [
-      { priority: 'low' as const },
-      { priority: 'high' as const },
-    ];
+    const items = [{ priority: 'low' as const }, { priority: 'high' as const }];
     const sorted = sortByPriority(items);
     expect(sorted).not.toBe(items);
     expect(items[0]!.priority).toBe('low');

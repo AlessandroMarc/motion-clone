@@ -49,9 +49,7 @@ function formatDateParts(d: Date): string {
 export function parseLocalDate(value: string): Date {
   const ISO_DATE_ONLY = /^\d{4}-\d{2}-\d{2}$/;
   if (!ISO_DATE_ONLY.test(value)) {
-    throw new Error(
-      `Invalid date format. Expected YYYY-MM-DD, got "${value}"`
-    );
+    throw new Error(`Invalid date format. Expected YYYY-MM-DD, got "${value}"`);
   }
   const [y, m, d] = value.split('-').map(Number) as [number, number, number];
   const date = new Date(y, m - 1, d);
