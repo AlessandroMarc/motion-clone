@@ -12,6 +12,7 @@ import type {
 import { isCalendarEventTask } from '../types/database.js';
 import {
   createConfigFromSchedule,
+  parseDateLocal,
   prepareTaskEvents,
   sortTasksForScheduling,
 } from './taskScheduler.js';
@@ -227,7 +228,9 @@ export function calculateAutoSchedule(params: {
     // Only futureValidEvents count toward "already scheduled" time; the
     // reclaimed time will be filled with new optimally-placed events.
     const nowMs = now.getTime();
-    const taskStartDate = task.start_date ? new Date(task.start_date) : null;
+    const taskStartDate = task.start_date
+      ? parseDateLocal(task.start_date as string | Date)
+      : null;
     if (taskStartDate) taskStartDate.setHours(0, 0, 0, 0);
 
     const futureValidEvents = effectiveExistingEvents.filter(e => {
