@@ -8,14 +8,28 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useOnboarding } from '@/hooks/useOnboarding';
 import { normalizeToMidnight, parseLocalDate } from '@/utils/dateUtils';
 import { captureEvent } from '@/lib/analytics';
+import {
+  PROJECT_NAME_MAX_LENGTH,
+  PROJECT_NAME_MIN_LENGTH,
+  PROJECT_DESCRIPTION_MAX_LENGTH,
+} from '@shared/validation';
 
 // Project form schema
 export const projectSchema = z.object({
   name: z
     .string()
-    .min(1, 'Project name is required')
-    .max(100, 'Project name must be less than 100 characters'),
-  description: z.string().optional(),
+    .min(PROJECT_NAME_MIN_LENGTH, 'Project name is required')
+    .max(
+      PROJECT_NAME_MAX_LENGTH,
+      `Project name must be at most ${PROJECT_NAME_MAX_LENGTH} characters`
+    ),
+  description: z
+    .string()
+    .max(
+      PROJECT_DESCRIPTION_MAX_LENGTH,
+      `Description must be at most ${PROJECT_DESCRIPTION_MAX_LENGTH} characters`
+    )
+    .optional(),
   deadline: z.string().optional(),
 });
 

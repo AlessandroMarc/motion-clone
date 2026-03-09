@@ -27,7 +27,7 @@ export function validateTaskTitle(title: string): string | null {
     return 'Title is required';
   }
   if (title.length > TASK_TITLE_MAX_LENGTH) {
-    return `Title must be less than ${TASK_TITLE_MAX_LENGTH} characters`;
+    return `Title must be at most ${TASK_TITLE_MAX_LENGTH} characters`;
   }
   return null;
 }
@@ -37,7 +37,7 @@ export function validateTaskTitle(title: string): string | null {
  */
 export function validateTaskDescription(description: string): string | null {
   if (description.length > TASK_DESCRIPTION_MAX_LENGTH) {
-    return `Description must be less than ${TASK_DESCRIPTION_MAX_LENGTH} characters`;
+    return `Description must be at most ${TASK_DESCRIPTION_MAX_LENGTH} characters`;
   }
   return null;
 }
