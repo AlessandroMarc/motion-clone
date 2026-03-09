@@ -26,43 +26,37 @@ export function DeadlineViolationsBar({
   const [isExpanded, setIsExpanded] = useState(false);
 
   const violations = useMemo(() => {
-    // Group events by task, keeping only the earliest event per task
-    const earliestEventByTask = new Map<string, CalendarEventUnion>();
+    const now = new Date();
+    const violationsByTask = new Map<string, Violation>();
+
     for (const event of events) {
-      if (!isCalendarEventTask(event) || !event.linked_task_id) {
-        continue;
-      }
-      const existing = earliestEventByTask.get(event.linked_task_id);
-      if (!existing || new Date(event.start_time) < new Date(existing.start_time)) {
-        earliestEventByTask.set(event.linked_task_id, event);
-      }
-    }
+      if (!isCalendarEventTask(event) || !event.linked_task_id) continue;
 
-    // A task violates its deadline only if its EARLIEST event starts after the deadline.
-    // This prevents false positives when a task has a chunk on the deadline day and an
-    // overflow chunk on the following day — the task was started in time.
-    const violationsList: Violation[] = [];
-    for (const [taskId, event] of earliestEventByTask) {
-      const task = tasksMap.get(taskId);
-      if (!task || !task.due_date) {
-        continue;
-      }
-
+      // Skip completed events and past events — nothing actionable about them
       const eventStart = new Date(event.start_time);
+      if (event.completed_at || eventStart <= now) continue;
+
+      const task = tasksMap.get(event.linked_task_id);
+      if (!task || !task.due_date || task.status === 'completed') continue;
+
       const deadline = new Date(task.due_date);
       deadline.setHours(23, 59, 59, 999);
 
       if (eventStart > deadline) {
-        violationsList.push({
-          task,
-          event,
-          deadline,
-          scheduledTime: eventStart,
-        });
+        // Keep the earliest violating event per task for display
+        const existing = violationsByTask.get(task.id);
+        if (!existing || eventStart < existing.scheduledTime) {
+          violationsByTask.set(task.id, {
+            task,
+            event,
+            deadline,
+            scheduledTime: eventStart,
+          });
+        }
       }
     }
 
-    return violationsList;
+    return Array.from(violationsByTask.values());
   }, [events, tasksMap]);
 
   if (violations.length === 0) {
