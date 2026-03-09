@@ -25,14 +25,24 @@ export function DeadlineViolationsBar({
   const [isExpanded, setIsExpanded] = useState(false);
 
   const violations = useMemo(() => {
-    const violationsList: Violation[] = [];
-
+    // Group events by task, keeping only the earliest event per task
+    const earliestEventByTask = new Map<string, CalendarEventUnion>();
     for (const event of events) {
       if (!isCalendarEventTask(event) || !event.linked_task_id) {
         continue;
       }
+      const existing = earliestEventByTask.get(event.linked_task_id);
+      if (!existing || new Date(event.start_time) < new Date(existing.start_time)) {
+        earliestEventByTask.set(event.linked_task_id, event);
+      }
+    }
 
-      const task = tasksMap.get(event.linked_task_id);
+    // A task violates its deadline only if its EARLIEST event starts after the deadline.
+    // This prevents false positives when a task has a chunk on the deadline day and an
+    // overflow chunk on the following day — the task was started in time.
+    const violationsList: Violation[] = [];
+    for (const [taskId, event] of earliestEventByTask) {
+      const task = tasksMap.get(taskId);
       if (!task || !task.due_date) {
         continue;
       }
@@ -58,13 +68,6 @@ export function DeadlineViolationsBar({
     return null;
   }
 
-  const uniqueTasks = new Map<string, Violation>();
-  for (const violation of violations) {
-    if (!uniqueTasks.has(violation.task.id)) {
-      uniqueTasks.set(violation.task.id, violation);
-    }
-  }
-
   return (
     <div className="bg-yellow-50 dark:bg-yellow-950/30 border-b border-yellow-200 dark:border-yellow-800">
       <div className="px-4 py-2">
@@ -72,7 +75,7 @@ export function DeadlineViolationsBar({
           <div className="flex items-center gap-2 flex-1 min-w-0">
             <AlertTriangle className="h-4 w-4 text-yellow-600 dark:text-yellow-400 shrink-0" />
             <span className="text-sm font-medium text-yellow-800 dark:text-yellow-200">
-              {uniqueTasks.size} task{uniqueTasks.size > 1 ? 's' : ''} scheduled
+              {violations.length} task{violations.length > 1 ? 's' : ''} scheduled
               after deadline
             </span>
           </div>
@@ -95,7 +98,7 @@ export function DeadlineViolationsBar({
 
         {isExpanded && (
           <div className="mt-3 space-y-2">
-            {Array.from(uniqueTasks.values()).map(violation => (
+            {violations.map(violation => (
               <div
                 key={violation.task.id}
                 className="bg-yellow-100/50 dark:bg-yellow-900/30 rounded-md p-2 text-sm"
