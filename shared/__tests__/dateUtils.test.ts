@@ -72,12 +72,8 @@ describe('parseLocalDate', () => {
   });
 
   it('throws on invalid calendar dates', () => {
-    expect(() => parseLocalDate('2025-02-30')).toThrow(
-      'Invalid calendar date'
-    );
-    expect(() => parseLocalDate('2025-13-01')).toThrow(
-      'Invalid calendar date'
-    );
+    expect(() => parseLocalDate('2025-02-30')).toThrow('Invalid calendar date');
+    expect(() => parseLocalDate('2025-13-01')).toThrow('Invalid calendar date');
   });
 
   it('handles leap year correctly', () => {
@@ -87,8 +83,6 @@ describe('parseLocalDate', () => {
   });
 
   it('rejects Feb 29 on non-leap years', () => {
-    expect(() => parseLocalDate('2025-02-29')).toThrow(
-      'Invalid calendar date'
-    );
+    expect(() => parseLocalDate('2025-02-29')).toThrow('Invalid calendar date');
   });
 });

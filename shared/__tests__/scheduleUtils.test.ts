@@ -1,5 +1,8 @@
 import type { Schedule, DayOfWeek } from '../types';
-import { getScheduleDayHours, formatWorkingHoursSummary } from '../scheduleUtils';
+import {
+  getScheduleDayHours,
+  formatWorkingHoursSummary,
+} from '../scheduleUtils';
 
 const makeSchedule = (overrides: Partial<Schedule> = {}): Schedule => ({
   id: 'sched-1',
