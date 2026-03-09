@@ -41,6 +41,7 @@ export function useCalendarEvents(weekDates: Date[]) {
     }
 
     weekKeyRef.current = weekKey;
+    const fetchedForKey = weekKey;
 
     const fetchEvents = async () => {
       try {
@@ -54,8 +55,14 @@ export function useCalendarEvents(weekDates: Date[]) {
           endIso
         );
 
+        // Discard stale results: if the week key has changed since this fetch
+        // started (e.g. isMobile hydration triggered a second fetch), ignore
+        // this response so it cannot overwrite the more-recent, correct data.
+        if (weekKeyRef.current !== fetchedForKey) return;
+
         setEvents(weekEvents);
       } catch (err) {
+        if (weekKeyRef.current !== fetchedForKey) return;
         const msg = err instanceof Error ? err.message : '';
         const errorMessage = msg.startsWith('429:')
           ? msg
@@ -66,7 +73,9 @@ export function useCalendarEvents(weekDates: Date[]) {
         // The error will be displayed in the UI via ErrorState component
         setError(errorMessage);
       } finally {
-        setLoading(false);
+        if (weekKeyRef.current === fetchedForKey) {
+          setLoading(false);
+        }
       }
     };
 
@@ -74,7 +83,6 @@ export function useCalendarEvents(weekDates: Date[]) {
     fetchEvents().catch(() => {
       // Already handled in try-catch, this prevents unhandled rejection
     });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [weekKey]);
 
   // Group events by day for easier rendering
