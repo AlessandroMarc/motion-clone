@@ -8,6 +8,7 @@ import {
   Folder,
 } from 'lucide-react';
 import { formatDate } from '@/utils/dateUtils';
+import { formatDurationDisplay } from '@/utils/durationParser';
 import type { Task, Project } from '@/types';
 import { cn } from '@/lib/utils';
 
@@ -54,7 +55,7 @@ export function TaskMetadata({
       {task.planned_duration_minutes > 0 && (
         <span className="inline-flex items-center gap-0.5 text-[9px] text-muted-foreground">
           <Clock className="h-2 w-2" />
-          {task.planned_duration_minutes}m
+          {formatDurationDisplay(task.planned_duration_minutes)}
         </span>
       )}
 

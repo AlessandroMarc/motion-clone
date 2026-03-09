@@ -12,6 +12,7 @@ import { Button } from '@/components/ui/button';
 import { Calendar, AlertCircle, X, Clock } from 'lucide-react';
 import { toast } from 'sonner';
 import { formatDate } from '@/utils/dateUtils';
+import { formatDurationDisplay } from '@/utils/durationParser';
 import { cn } from '@/lib/utils';
 import type { Task } from '@/types';
 import {
@@ -118,10 +119,10 @@ function ProjectTaskRow({
           {task.planned_duration_minutes > 0 && (
             <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
               <Clock className="h-3 w-3" />
-              {task.planned_duration_minutes}m
+              {formatDurationDisplay(task.planned_duration_minutes)}
               {task.actual_duration_minutes > 0 && (
                 <span className="opacity-70">
-                  / {task.actual_duration_minutes}m
+                  / {formatDurationDisplay(task.actual_duration_minutes)}
                 </span>
               )}
             </span>

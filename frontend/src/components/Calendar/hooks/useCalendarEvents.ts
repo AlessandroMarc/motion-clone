@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo, useRef } from 'react';
 import { CalendarEventUnion } from '@/types';
 import { calendarService } from '@/services/calendarService';
 import { isSameDay } from '@/utils/calendarUtils';
+import { toLocalDateString } from '@/utils/dateUtils';
 
 export function useCalendarEvents(weekDates: Date[]) {
   const [events, setEvents] = useState<CalendarEventUnion[]>([]);
@@ -11,8 +12,8 @@ export function useCalendarEvents(weekDates: Date[]) {
   // Stable key for the date range to prevent unnecessary re-fetches (supports 7-day week or N-day mobile range)
   const weekKey = useMemo(() => {
     if (weekDates.length === 0) return '';
-    const first = weekDates[0].toISOString().split('T')[0];
-    const last = weekDates[weekDates.length - 1].toISOString().split('T')[0];
+    const first = toLocalDateString(weekDates[0]);
+    const last = toLocalDateString(weekDates[weekDates.length - 1]);
     return `${first}_${last}`;
   }, [weekDates]);
 

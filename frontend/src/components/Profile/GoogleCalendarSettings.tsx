@@ -109,7 +109,6 @@ export function GoogleCalendarSettings() {
       // Clean URL
       window.history.replaceState({}, '', window.location.pathname);
     }
-  
   }, [user?.id]);
 
   const handleConnect = () => {

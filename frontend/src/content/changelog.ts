@@ -15,6 +15,43 @@ export interface ChangelogEntry {
 
 export const changelogEntries: ChangelogEntry[] = [
   {
+    version: '1.7.0',
+    date: 'March 2026',
+    title: 'Intelligent Duration Input',
+    description:
+      'A smarter way to enter task durations with flexible parsing and preset options.',
+    items: [
+      {
+        type: 'new',
+        text: 'Duration input component with intelligent parsing — enter "1.5" as either minutes or hours and get both suggestions.',
+      },
+      {
+        type: 'new',
+        text: 'Common preset durations (15 min, 30 min, 1 hr, etc.) available at a glance.',
+      },
+      {
+        type: 'new',
+        text: 'Support for decimal inputs without a leading zero (e.g., ".5" for 30 minutes).',
+      },
+      {
+        type: 'new',
+        text: 'Ability to clear task duration by selecting 0 minutes when editing actual duration.',
+      },
+      {
+        type: 'improved',
+        text: 'Enhanced accessibility with proper ARIA attributes for error messaging.',
+      },
+      {
+        type: 'fixed',
+        text: 'Fixed timezone issue where date-only strings were incorrectly parsed as UTC, causing deadline dates to shift.',
+      },
+      {
+        type: 'fixed',
+        text: 'Fixed label formatting that could produce invalid outputs like "1 hr 60 min" due to rounding carry.',
+      },
+    ],
+  },
+  {
     version: '1.6.0',
     date: 'March 2026',
     title: 'Support for Start Date',
