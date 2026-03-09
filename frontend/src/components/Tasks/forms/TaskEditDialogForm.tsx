@@ -17,7 +17,12 @@ import { taskService } from '@/services/taskService';
 import { calendarService } from '@/services/calendarService';
 import type { Task, CalendarEventTask } from '@/types';
 import { taskSchema, type TaskFormData } from '@/hooks/useTaskForm';
-import { formatDate, normalizeToMidnight, parseLocalDate, toLocalDateString } from '@/utils/dateUtils';
+import {
+  formatDate,
+  normalizeToMidnight,
+  parseLocalDate,
+  toLocalDateString,
+} from '@/utils/dateUtils';
 import { TaskTitleField } from './TaskTitleField';
 import { TaskDescriptionField } from './TaskDescriptionField';
 import { TaskDueDateField } from './TaskDueDateField';
@@ -56,7 +61,6 @@ const emptyFormValues: TaskFormData = {
   recurrenceStartDate: undefined,
   startDate: undefined,
 };
-
 
 const mapTaskToFormValues = (task: Task): TaskFormData => ({
   title: task.title,

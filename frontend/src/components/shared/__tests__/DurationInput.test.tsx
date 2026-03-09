@@ -41,7 +41,9 @@ describe('DurationInput', () => {
   });
 
   it('renders with placeholder when value is 0', () => {
-    render(<DurationInput {...defaultProps} value={0} placeholder="Pick duration" />);
+    render(
+      <DurationInput {...defaultProps} value={0} placeholder="Pick duration" />
+    );
     expect(screen.getByText('Pick duration')).toBeInTheDocument();
   });
 
@@ -61,7 +63,9 @@ describe('DurationInput', () => {
     await userEvent.click(button);
 
     await waitFor(() => {
-      expect(screen.getByPlaceholderText('Type a number (e.g. 30, 1.5)...')).toBeInTheDocument();
+      expect(
+        screen.getByPlaceholderText('Type a number (e.g. 30, 1.5)...')
+      ).toBeInTheDocument();
     });
   });
 

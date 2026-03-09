@@ -107,11 +107,9 @@ export function DeadlineViolationsBar({
                       {violation.task.title}
                     </p>
                     <p className="text-xs text-yellow-700 dark:text-yellow-300 mt-0.5">
-                      Deadline:{' '}
-                      {formatDate(violation.deadline)}
+                      Deadline: {formatDate(violation.deadline)}
                       {' • '}
-                      Scheduled:{' '}
-                      {formatDate(violation.scheduledTime)}{' '}
+                      Scheduled: {formatDate(violation.scheduledTime)}{' '}
                       {formatTime(violation.scheduledTime)}
                     </p>
                   </div>

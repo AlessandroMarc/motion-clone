@@ -112,10 +112,7 @@ export function CalendarEventCard({
               <TooltipContent>
                 <p>
                   Scheduled after deadline (
-                  {task?.due_date
-                    ? formatDate(task.due_date)
-                    : 'unknown'}
-                  )
+                  {task?.due_date ? formatDate(task.due_date) : 'unknown'})
                 </p>
               </TooltipContent>
             </Tooltip>

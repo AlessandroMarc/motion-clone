@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useId, useState, useMemo } from 'react';
 import {
   Command,
   CommandEmpty,
@@ -53,12 +53,14 @@ export function DurationInput({
   min = 0,
   className,
 }: DurationInputProps) {
+  const generatedId = useId();
+  const controlId = id ?? generatedId;
+  const errorId = error ? `${controlId}-error` : undefined;
   const [open, setOpen] = useState(false);
   const [inputValue, setInputValue] = useState('');
 
   const suggestions = useMemo(
-    () =>
-      parseDurationSuggestions(inputValue).filter(s => s.minutes >= min),
+    () => parseDurationSuggestions(inputValue).filter(s => s.minutes >= min),
     [inputValue, min]
   );
 
@@ -75,14 +77,13 @@ export function DurationInput({
     }
   };
 
-  const displayValue =
-    value > 0 ? formatDurationDisplay(value) : placeholder;
+  const displayValue = value > 0 ? formatDurationDisplay(value) : placeholder;
 
   return (
     <div className={className}>
       {label && (
         <label
-          htmlFor={id}
+          htmlFor={controlId}
           className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 mb-2 block"
         >
           {label}
@@ -91,11 +92,13 @@ export function DurationInput({
       <Popover open={open} onOpenChange={handleOpenChange}>
         <PopoverTrigger asChild>
           <Button
-            id={id}
+            id={controlId}
             type="button"
             variant="outline"
             role="combobox"
             aria-expanded={open}
+            aria-invalid={Boolean(error)}
+            aria-describedby={errorId}
             className="w-full justify-between"
           >
             <div className="flex items-center gap-2">
@@ -153,7 +156,11 @@ export function DurationInput({
           </Command>
         </PopoverContent>
       </Popover>
-      {error && <p className="text-sm text-red-500 mt-1">{error}</p>}
+      {error && (
+        <p id={errorId} className="text-sm text-red-500 mt-1">
+          {error}
+        </p>
+      )}
     </div>
   );
 }

@@ -318,7 +318,9 @@ export function distributeEvents(
   }
 
   if (task.start_date) {
-    const startDateWorkingHours = parseDateLocal(task.start_date as string | Date);
+    const startDateWorkingHours = parseDateLocal(
+      task.start_date as string | Date
+    );
     startDateWorkingHours.setHours(config.workingHoursStart, 0, 0, 0);
     if (currentTime < startDateWorkingHours) {
       currentTime = startDateWorkingHours;

@@ -117,11 +117,7 @@ export function TaskScheduleDialog({
   };
 
   const endTimeDisplay = startDateTime
-    ? formatTime(
-        new Date(
-          new Date(startDateTime).getTime() + duration * 60000
-        )
-      )
+    ? formatTime(new Date(new Date(startDateTime).getTime() + duration * 60000))
     : '';
 
   if (!task) return null;

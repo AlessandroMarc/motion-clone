@@ -32,7 +32,12 @@ export default function RootLayout({ children }: RootLayoutProps) {
           <AuthProvider>
             <OnboardingProvider>
               <LayoutWrapper>{children}</LayoutWrapper>
-              <Toaster position="bottom-right" richColors closeButton duration={3000} />
+              <Toaster
+                position="bottom-right"
+                richColors
+                closeButton
+                duration={3000}
+              />
             </OnboardingProvider>
           </AuthProvider>
         </ThemeProvider>

@@ -1,4 +1,7 @@
-import { parseDurationSuggestions, formatDurationDisplay } from '../durationParser';
+import {
+  parseDurationSuggestions,
+  formatDurationDisplay,
+} from '../durationParser';
 
 describe('parseDurationSuggestions', () => {
   it('returns minutes and hours suggestions for integer input', () => {
