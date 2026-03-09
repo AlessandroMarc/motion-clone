@@ -21,7 +21,7 @@ describe('validateTaskTitle', () => {
 
   it('returns error for title exceeding max length', () => {
     const longTitle = 'a'.repeat(TASK_TITLE_MAX_LENGTH + 1);
-    expect(validateTaskTitle(longTitle)).toContain('less than');
+    expect(validateTaskTitle(longTitle)).toContain('at most');
   });
 
   it('accepts title at exact max length', () => {
@@ -38,7 +38,7 @@ describe('validateTaskDescription', () => {
 
   it('returns error for description exceeding max length', () => {
     const longDesc = 'a'.repeat(TASK_DESCRIPTION_MAX_LENGTH + 1);
-    expect(validateTaskDescription(longDesc)).toContain('less than');
+    expect(validateTaskDescription(longDesc)).toContain('at most');
   });
 });
 

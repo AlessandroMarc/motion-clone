@@ -46,10 +46,13 @@ describe('toLocalDateString', () => {
   });
 
   it('extracts local date from an ISO timestamp string', () => {
-    // Create a known local date to test
-    const localDate = new Date(2025, 5, 15, 10, 0);
-    const isoString = localDate.toISOString();
-    expect(toLocalDateString(isoString)).toBe('2025-06-15');
+    // Use a fixed UTC timestamp and verify it extracts the local date
+    const utcTimestamp = '2025-06-15T15:00:00.000Z';
+    const expectedLocalDate = new Date(utcTimestamp);
+    const y = expectedLocalDate.getFullYear();
+    const m = String(expectedLocalDate.getMonth() + 1).padStart(2, '0');
+    const d = String(expectedLocalDate.getDate()).padStart(2, '0');
+    expect(toLocalDateString(utcTimestamp)).toBe(`${y}-${m}-${d}`);
   });
 });
 

@@ -49,7 +49,7 @@ export const taskSchema = z
     scheduleId: z.string().optional(),
     // Recurring task fields
     is_recurring: z.boolean(),
-    recurrence_pattern: z.union([z.enum(RECURRENCE_PATTERNS), z.undefined()]),
+    recurrence_pattern: z.enum(RECURRENCE_PATTERNS).optional(),
     recurrence_interval: z
       .number()
       .min(
