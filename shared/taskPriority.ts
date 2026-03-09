@@ -2,8 +2,9 @@
  * Shared task priority constants and comparison utilities.
  * Used by both frontend (sorting/display) and backend (scheduling).
  */
+import type { Task } from './types';
 
-type TaskPriority = 'low' | 'medium' | 'high';
+type TaskPriority = Task['priority'];
 
 /** Priority rank for sorting (high first): higher number = higher priority. */
 export const TASK_PRIORITY_RANK: Record<TaskPriority, number> = {
