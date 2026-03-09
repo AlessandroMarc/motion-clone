@@ -73,8 +73,9 @@ export function useCalendarEvents(weekDates: Date[]) {
         // The error will be displayed in the UI via ErrorState component
         setError(errorMessage);
       } finally {
-        if (weekKeyRef.current !== fetchedForKey) return;
-        setLoading(false);
+        if (weekKeyRef.current === fetchedForKey) {
+          setLoading(false);
+        }
       }
     };
 
@@ -82,7 +83,6 @@ export function useCalendarEvents(weekDates: Date[]) {
     fetchEvents().catch(() => {
       // Already handled in try-catch, this prevents unhandled rejection
     });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [weekKey]);
 
   // Group events by day for easier rendering
