@@ -116,7 +116,6 @@ export function TaskCreateDialogForm({
               <TaskScheduleField errors={errors} />
               <TaskBlockedByField errors={errors} />
               <TaskDurationFields
-                register={register}
                 errors={errors}
                 hideActualDuration={isRecurring}
               />

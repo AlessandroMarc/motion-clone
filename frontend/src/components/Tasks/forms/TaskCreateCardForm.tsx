@@ -118,7 +118,6 @@ export function TaskCreateCardForm({ onTaskCreate }: TaskCreateFormProps) {
               <TaskScheduleField errors={errors} id="quick-scheduleId" />
               <TaskBlockedByField errors={errors} />
               <TaskDurationFields
-                register={register}
                 errors={errors}
                 plannedId="quick-planned-duration"
                 actualId="quick-actual-duration"

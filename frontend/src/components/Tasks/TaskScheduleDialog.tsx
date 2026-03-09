@@ -9,15 +9,8 @@ import {
   DialogTitle,
   DialogDescription,
 } from '@/components/ui/dialog';
-import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
+import { DurationInput } from '@/components/shared/DurationInput';
 import { Loader2, CalendarPlus } from 'lucide-react';
 import type { Task, Schedule } from '@/types';
 import { DateTimePicker } from '@/components/forms/shared/DateTimePicker';
@@ -43,7 +36,7 @@ export function TaskScheduleDialog({
   activeSchedule,
 }: TaskScheduleDialogProps) {
   const [startDateTime, setStartDateTime] = useState('');
-  const [duration, setDuration] = useState('60');
+  const [duration, setDuration] = useState(60);
   const [isScheduling, setIsScheduling] = useState(false);
 
   // Memoize schedule values to ensure stable dependencies
@@ -101,7 +94,7 @@ export function TaskScheduleDialog({
       setStartDateTime(formatted);
 
       // Use task's planned duration if available, otherwise default to 60
-      setDuration(String(task.planned_duration_minutes || 60));
+      setDuration(task.planned_duration_minutes || 60);
     }
   }, [open, task, workingHoursStart, workingHoursEnd]);
 
@@ -112,7 +105,7 @@ export function TaskScheduleDialog({
     try {
       const startTime = new Date(startDateTime);
       const endTime = new Date(startTime);
-      endTime.setMinutes(endTime.getMinutes() + parseInt(duration, 10));
+      endTime.setMinutes(endTime.getMinutes() + duration);
 
       await onSchedule(task, startTime, endTime);
       onOpenChange(false);
@@ -124,11 +117,7 @@ export function TaskScheduleDialog({
   };
 
   const endTimeDisplay = startDateTime
-    ? formatTime(
-        new Date(
-          new Date(startDateTime).getTime() + parseInt(duration, 10) * 60000
-        )
-      )
+    ? formatTime(new Date(new Date(startDateTime).getTime() + duration * 60000))
     : '';
 
   if (!task) return null;
@@ -154,23 +143,13 @@ export function TaskScheduleDialog({
             id="schedule-datetime"
           />
 
-          <div className="space-y-2">
-            <Label htmlFor="schedule-duration">Duration</Label>
-            <Select value={duration} onValueChange={setDuration}>
-              <SelectTrigger id="schedule-duration" className="h-11">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="15">15 minutes</SelectItem>
-                <SelectItem value="30">30 minutes</SelectItem>
-                <SelectItem value="45">45 minutes</SelectItem>
-                <SelectItem value="60">1 hour</SelectItem>
-                <SelectItem value="90">1.5 hours</SelectItem>
-                <SelectItem value="120">2 hours</SelectItem>
-                <SelectItem value="180">3 hours</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+          <DurationInput
+            value={duration}
+            onChange={setDuration}
+            label="Duration"
+            id="schedule-duration"
+            min={1}
+          />
 
           {startDateTime && (
             <div className="rounded-lg bg-muted/50 p-3 text-sm">
