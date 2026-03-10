@@ -27,16 +27,59 @@ export const STORAGE_STATE_PATH = path.resolve(
   '.auth/storageState.json'
 );
 
+/** Helper to find user by email, paginating through all results. */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+async function getUserByEmailPaginated(admin: any, email: string) {
+  let page = 1;
+  const perPage = 50;
+
+  while (true) {
+    const { data, error } = await admin.auth.admin.listUsers({
+      page,
+      perPage,
+    });
+
+    if (error) {
+      throw new Error(`Failed to list users on page ${page}: ${error.message}`);
+    }
+
+    const user = data.users.find((u: { email: string }) => u.email === email);
+    if (user) {
+      return user;
+    }
+
+    // Stop if we've reached the last page
+    if (data.users.length < perPage) {
+      return null;
+    }
+
+    page++;
+  }
+}
+
 export default async function globalSetup(config: FullConfig) {
   const supabaseUrl = process.env.SUPABASE_URL;
   const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
   const testUserEmail = process.env.E2E_TEST_USER_EMAIL;
+  const isTestAccount = process.env.E2E_TEST_USER_IS_TEST === 'true';
 
   if (!supabaseUrl || !anonKey || !serviceRoleKey || !testUserEmail) {
     throw new Error(
-      'Integration tests require SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY, SUPABASE_SERVICE_ROLE_KEY, and E2E_TEST_USER_EMAIL env vars.\n' +
+      'Integration tests require environment variables in root .env:\n' +
+        '  - SUPABASE_URL\n' +
+        '  - NEXT_PUBLIC_SUPABASE_ANON_KEY\n' +
+        '  - SUPABASE_SERVICE_ROLE_KEY\n' +
+        '  - E2E_TEST_USER_EMAIL\n' +
+        '  - E2E_TEST_USER_IS_TEST=true (safety marker to prevent accidental deletion)\n' +
         'See e2e/integration/README.md for details.'
+    );
+  }
+
+  if (!isTestAccount) {
+    throw new Error(
+      'Integration tests require E2E_TEST_USER_IS_TEST=true to prevent accidental deletion of real user data.\n' +
+        'Set this environment variable in root .env to explicitly confirm this is a test account.'
     );
   }
 
@@ -45,11 +88,7 @@ export default async function globalSetup(config: FullConfig) {
   });
 
   // ── 1. Find the existing test user (registered via Google) ──
-  const { data: listData, error: listError } =
-    await admin.auth.admin.listUsers();
-  if (listError) throw new Error(`Failed to list users: ${listError.message}`);
-
-  const testUser = listData.users.find(u => u.email === testUserEmail);
+  const testUser = await getUserByEmailPaginated(admin, testUserEmail);
   if (!testUser) {
     throw new Error(
       `Test user "${testUserEmail}" not found in Supabase.\n` +
