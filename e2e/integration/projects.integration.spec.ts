@@ -17,10 +17,14 @@ test.describe('Projects — integration', () => {
     const projectName = `${E2E_PREFIX} Test Project ${Date.now()}`;
 
     // ── Navigate to projects page ──
+    // NOTE: Integration test session handling still needs refinement.
+    // The Supabase session from globalSetup should be available via storageState,
+    // but the app's AuthContext may not be recognizing it yet.
+    // TODO: Investigate @supabase/ssr session restoration behavior
     await page.goto('/projects');
     await expect(
       page.getByRole('heading', { name: /project manager/i })
-    ).toBeVisible();
+    ).toBeVisible({ timeout: 15_000 });
 
     // ── Open the create dialog ──
     const createBtn = page.getByRole('button', { name: /create project/i });

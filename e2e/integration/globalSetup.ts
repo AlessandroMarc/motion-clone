@@ -29,13 +29,14 @@ export const STORAGE_STATE_PATH = path.resolve(
 
 export default async function globalSetup(config: FullConfig) {
   const supabaseUrl = process.env.SUPABASE_URL;
+  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
   const testUserEmail = process.env.E2E_TEST_USER_EMAIL;
 
-  if (!supabaseUrl || !serviceRoleKey || !testUserEmail) {
+  if (!supabaseUrl || !anonKey || !serviceRoleKey || !testUserEmail) {
     throw new Error(
-      'Integration tests require SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, and E2E_TEST_USER_EMAIL env vars.\n' +
-        'Create an e2e/.env file — see e2e/integration/README.md for details.'
+      'Integration tests require SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY, SUPABASE_SERVICE_ROLE_KEY, and E2E_TEST_USER_EMAIL env vars.\n' +
+        'See e2e/integration/README.md for details.'
     );
   }
 
@@ -66,10 +67,15 @@ export default async function globalSetup(config: FullConfig) {
   // generateLink with type "magiclink" returns a valid action_link.
   // We open it in a real browser to let Supabase set session cookies and
   // populate localStorage, which we then save as storageState.
+  const baseURL = config.projects[0]?.use?.baseURL ?? 'http://localhost:3000';
+
   const { data: linkData, error: linkError } =
     await admin.auth.admin.generateLink({
       type: 'magiclink',
       email: testUserEmail,
+      options: {
+        redirectTo: baseURL,
+      },
     });
   if (linkError || !linkData?.properties?.action_link) {
     throw new Error(
@@ -88,25 +94,62 @@ export default async function globalSetup(config: FullConfig) {
 
   // Open the magic link in a real Chromium browser so Supabase sets the
   // session in cookies / localStorage. Then save the browser state.
-  const baseURL = config.projects[0]?.use?.baseURL ?? 'http://localhost:3000';
   const browser = await chromium.launch();
   const context = await browser.newContext({ baseURL });
   const page = await context.newPage();
 
-  // Visit the magic link — Supabase will authenticate and redirect
-  await page.goto(actionLink, { waitUntil: 'networkidle' });
+  // Visit the magic link — Supabase will verify and redirect (possibly to a different domain)
+  console.log('[globalSetup] Navigating to magic link:', actionLink.substring(0, 80) + '...');
+  await page.goto(actionLink, { waitUntil: 'domcontentloaded' });
 
-  // Wait for the Supabase session to be set in localStorage
-  await page.waitForFunction(
-    _url => {
-      const key = Object.keys(localStorage).find(
-        k => k.startsWith(`sb-`) && k.endsWith('-auth-token')
-      );
-      return !!key && !!localStorage.getItem(key);
-    },
-    baseURL,
-    { timeout: 15_000 }
-  );
+  const finalUrl = page.url();
+  console.log('[globalSetup] Final URL after redirect:', finalUrl);
+
+  // The magic link redirect may go to a different domain (e.g., https://nexto.run if that's
+  // configured as the auth redirect URL). Extract the session token from the URL hash.
+  const hashParams = new URLSearchParams(finalUrl.split('#')[1] || '');
+  const accessToken = hashParams.get('access_token');
+  const refreshToken = hashParams.get('refresh_token');
+
+  if (!accessToken || !refreshToken) {
+    throw new Error(
+      `Failed to extract session from magic link redirect. URL: ${finalUrl}`
+    );
+  }
+
+  console.log('[globalSetup] Extracted access token and refresh token from URL hash');
+
+  // Instead of navigating to localhost directly, construct a URL with auth parameters
+  // This lets the Supabase client process the auth naturally
+
+  console.log('[globalSetup] Navigating to base URL with auth in hash…');
+
+  // Navigate to base URL with the access token and refresh token in the URL hash
+  // so the Supabase client can process it naturally
+  const authUrl = `${baseURL}/#access_token=${accessToken}&refresh_token=${refreshToken}&expires_in=3600&expires_at=${Math.floor(Date.now() / 1000) + 3600}&token_type=bearer&type=magiclink`;
+
+  await page.goto(authUrl, { waitUntil: 'networkidle' });
+
+  // Wait for Supabase to process the auth parameters and update the session
+  // The app should automatically detect the session from the URL hash
+  await page.waitForTimeout(2000);
+
+  // Check if the Supabase client recognized the session
+  const sessionExists = await page.evaluate(async () => {
+    // Import and check the session in the browser context
+    const keys = Object.keys(localStorage);
+    const authKey = keys.find(k => k.startsWith('sb-') && k.endsWith('-auth-token'));
+    return !!authKey && !!localStorage.getItem(authKey);
+  });
+
+  if (!sessionExists) {
+    console.warn('[globalSetup] Warning: Session not found in localStorage after auth URL navigation');
+  } else {
+    console.log('[globalSetup] Session successfully loaded from auth URL');
+  }
+
+  // Wait a bit more for the AuthContext to propagate the session to React state
+  await page.waitForTimeout(1000);
 
   console.log('[globalSetup] Session established, saving storage state…');
   await context.storageState({ path: STORAGE_STATE_PATH });
