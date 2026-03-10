@@ -15,6 +15,31 @@ export interface ChangelogEntry {
 
 export const changelogEntries: ChangelogEntry[] = [
   {
+    version: '1.8.0',
+    date: 'March 2026',
+    title: 'Task Completion Management',
+    description:
+      'Complete and reopen tasks with visual celebrations and improved workflow.',
+    items: [
+      {
+        type: 'new',
+        text: 'Celebratory confetti animation plays when you complete a task — because achievements deserve recognition.',
+      },
+      {
+        type: 'new',
+        text: 'Reopen completed tasks directly from the task editor with a single click.',
+      },
+      {
+        type: 'improved',
+        text: 'Task completion actions are now more discoverable and prominent in the edit dialog.',
+      },
+      {
+        type: 'improved',
+        text: 'Auto-scheduler intelligently handles completed task events, clearing them from your calendar.',
+      },
+    ],
+  },
+  {
     version: '1.7.0',
     date: 'March 2026',
     title: 'Intelligent Duration Input',

@@ -16,6 +16,7 @@ backend/dist/
 # Playwright
 playwright-report/
 test-results/
+e2e/integration/.auth/
 
 # Motion export snapshots (may contain PII)
 backend/motion-export.json
