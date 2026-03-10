@@ -116,6 +116,18 @@ export function calculateRemainingDurationMinutes(
 }
 
 // ---------------------------------------------------------------------------
+// Parse a date-only string (YYYY-MM-DD) in local time.
+// new Date("2026-03-10") parses as UTC midnight, which in UTC+1 becomes
+// March 9 at 23:00 local — one day early. Splitting avoids that.
+// ---------------------------------------------------------------------------
+
+export function parseDateLocal(date: string | Date): Date {
+  if (date instanceof Date) return date;
+  const [year, month, day] = date.split('-').map(Number);
+  return new Date(year!, month! - 1, day!);
+}
+
+// ---------------------------------------------------------------------------
 // Round to next 15 minutes
 // ---------------------------------------------------------------------------
 
@@ -192,20 +204,33 @@ function getNextAvailableSlot(
   if (relevantEvents.length === 0) {
     gaps.push({ start: currentTime, end: endOfDay });
   } else {
+    // Merge overlapping/adjacent events before computing gaps so that
+    // e.g. [train 06:10–09:25] + [study 07:00–09:00] merge to [06:10–09:25]
+    // instead of producing a phantom gap at 09:05 that is still inside the train.
     const sorted = [...relevantEvents].sort((a, b) => a.start - b.start);
-    const firstEvent = sorted[0];
-    const lastEvent = sorted[sorted.length - 1];
+    const merged: Array<{ start: number; end: number }> = [];
+    for (const e of sorted) {
+      const last = merged[merged.length - 1];
+      if (!last || e.start > last.end) {
+        merged.push({ start: e.start, end: e.end });
+      } else {
+        last.end = Math.max(last.end, e.end);
+      }
+    }
 
-    if (firstEvent && firstEvent.start > currentTime) {
+    const firstMerged = merged[0];
+    const lastMerged = merged[merged.length - 1];
+
+    if (firstMerged && firstMerged.start > currentTime) {
       gaps.push({
         start: Math.max(currentTime, workingStart),
-        end: firstEvent.start,
+        end: firstMerged.start,
       });
     }
 
-    for (let i = 0; i < sorted.length - 1; i++) {
-      const cur = sorted[i];
-      const next = sorted[i + 1];
+    for (let i = 0; i < merged.length - 1; i++) {
+      const cur = merged[i];
+      const next = merged[i + 1];
       if (cur && next) {
         const gapStart = cur.end + gapMs;
         const gapEnd = next.start;
@@ -215,8 +240,8 @@ function getNextAvailableSlot(
       }
     }
 
-    if (lastEvent) {
-      const gapStart = lastEvent.end + gapMs;
+    if (lastMerged) {
+      const gapStart = lastMerged.end + gapMs;
       if (gapStart < endOfDay) {
         gaps.push({ start: gapStart, end: endOfDay });
       }
@@ -285,7 +310,9 @@ export function distributeEvents(
   }
 
   if (task.start_date) {
-    const startDateWorkingHours = new Date(task.start_date);
+    const startDateWorkingHours = parseDateLocal(
+      task.start_date as string | Date
+    );
     startDateWorkingHours.setHours(config.workingHoursStart, 0, 0, 0);
     if (currentTime < startDateWorkingHours) {
       currentTime = startDateWorkingHours;

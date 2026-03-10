@@ -25,15 +25,18 @@ import {
 import { projectService } from '@/services/projectService';
 import type { Project, WorkItemStatus } from '@/types';
 import type { ProjectFormData } from '@/hooks/useProjectForm';
-import { normalizeToMidnight, parseLocalDate } from '@/utils/dateUtils';
+import {
+  normalizeToMidnight,
+  parseLocalDate,
+  toLocalDateString,
+} from '@/utils/dateUtils';
 
 // Helper function to format date for input field
-const formatDateForInput = (date: Date | null): string => {
+const formatDateForInput = (date: Date | string | null): string => {
   if (!date) return '';
-  if (date instanceof Date) {
-    return date.toISOString().split('T')[0];
-  }
-  return new Date(date).toISOString().split('T')[0];
+  return toLocalDateString(
+    typeof date === 'string' ? parseLocalDate(date) : date
+  );
 };
 
 interface ProjectEditDialogProps {
