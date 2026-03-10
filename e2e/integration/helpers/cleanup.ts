@@ -11,7 +11,10 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-async function throwOnError(result: { error: any }, context: string): Promise<void> {
+async function throwOnError(
+  result: { error: any },
+  context: string
+): Promise<void> {
   if (result.error) {
     throw new Error(`[cleanup] ${context}: ${result.error.message}`);
   }
@@ -38,10 +41,7 @@ export async function cleanupTestUser(
   await throwOnError(milestonesResult, 'milestones');
 
   // 3. Tasks (references projects and schedules)
-  const tasksResult = await admin
-    .from('tasks')
-    .delete()
-    .eq('user_id', userId);
+  const tasksResult = await admin.from('tasks').delete().eq('user_id', userId);
   await throwOnError(tasksResult, 'tasks');
 
   // 4. Projects
@@ -59,21 +59,19 @@ export async function cleanupTestUser(
     .eq('user_id', userId);
   await throwOnError({ error: schedulesFetchErr }, 'schedules fetch');
 
-  const hasDefault = schedules?.some((s) => s.is_default);
+  const hasDefault = schedules?.some(s => s.is_default);
   if (!hasDefault && schedules && schedules.length > 0) {
     // Create a default schedule if none exists
-    const { error: upsertErr } = await admin
-      .from('schedules')
-      .upsert({
-        id: `default-${userId}`,
-        user_id: userId,
-        name: 'Default',
-        working_hours_start: 9,
-        working_hours_end: 22,
-        is_default: true,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      });
+    const { error: upsertErr } = await admin.from('schedules').upsert({
+      id: `default-${userId}`,
+      user_id: userId,
+      name: 'Default',
+      working_hours_start: 9,
+      working_hours_end: 22,
+      is_default: true,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    });
     await throwOnError({ error: upsertErr }, 'create default schedule');
   }
 
@@ -91,7 +89,10 @@ export async function cleanupTestUser(
     .delete()
     .eq('user_id', userId);
   // Ignore "table does not exist" errors for google_calendar_tokens
-  if (gcalResult.error && !gcalResult.error.message.includes('does not exist')) {
+  if (
+    gcalResult.error &&
+    !gcalResult.error.message.includes('does not exist')
+  ) {
     await throwOnError(gcalResult, 'google_calendar_tokens');
   }
 

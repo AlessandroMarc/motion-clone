@@ -9,7 +9,6 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { CheckCircle2, Clock, FileText, AlignLeft } from 'lucide-react';
-import confetti from 'canvas-confetti';
 
 interface CalendarEditDialogProps {
   open: boolean;
@@ -62,17 +61,9 @@ function GoogleEventDetails({
     const newCompletedState = !completed;
 
     try {
-      // Await completion handler (it saves and closes the dialog)
+      // Note: confetti is now handled by useCalendarDialogs (after checking
+      // for multi-session prompts). No need to fire it here.
       await onCompletedChange?.(newCompletedState);
-
-      // Show confetti only for completion
-      if (newCompletedState) {
-        confetti({
-          particleCount: 100,
-          spread: 70,
-          origin: { y: 0.6 },
-        });
-      }
     } catch (error) {
       console.error('Failed to update task completion:', error);
     }

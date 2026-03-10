@@ -6,8 +6,10 @@ import {
   type UpdateCalendarEventInput,
 } from '@/types';
 import { calendarService } from '@/services/calendarService';
+import { taskService } from '@/services/taskService';
 import { formatDateTimeLocal } from '@/utils/dateUtils';
 import { toast } from 'sonner';
+import { fireConfetti } from '@/utils/confetti';
 
 export function useCalendarDialogs(
   user: { id: string } | null,
@@ -28,6 +30,14 @@ export function useCalendarDialogs(
   const [editEndTime, setEditEndTime] = useState<string>('');
   const [editCompleted, setEditCompleted] = useState(false);
   const [editEvent, setEditEvent] = useState<CalendarEventUnion | null>(null);
+
+  // Completion choice dialog state
+  const [completionChoiceOpen, setCompletionChoiceOpen] = useState(false);
+  const [completionChoiceSessionCount, setCompletionChoiceSessionCount] =
+    useState(0);
+  const [pendingSetEvents, setPendingSetEvents] = useState<React.Dispatch<
+    React.SetStateAction<CalendarEventUnion[]>
+  > | null>(null);
 
   const openCreateDialog = (date: Date, hour: number, minute: number) => {
     const start = new Date(date);
@@ -89,6 +99,44 @@ export function useCalendarDialogs(
   ) => {
     if (!editEventId || !editEvent || !isCalendarEventTask(editEvent)) return;
 
+    // Uncompleting: always just uncomplete this event
+    if (!completed) {
+      await completeSingleEvent(false, setEvents);
+      return;
+    }
+
+    // Completing: check if there are other incomplete sessions
+    try {
+      const allEvents = await calendarService.getCalendarEventsByTaskId(
+        editEvent.linked_task_id
+      );
+      const otherIncomplete = allEvents.filter(
+        e => e.id !== editEventId && !e.completed_at
+      );
+
+      if (otherIncomplete.length > 0) {
+        // Multiple sessions — ask the user
+        setCompletionChoiceSessionCount(allEvents.length);
+        setPendingSetEvents(() => setEvents);
+        setCompletionChoiceOpen(true);
+      } else {
+        // Only session — just complete it
+        fireConfetti();
+        await completeSingleEvent(true, setEvents);
+      }
+    } catch (err) {
+      console.error('Failed to check other sessions:', err);
+      // Fallback: complete just this event
+      fireConfetti();
+      await completeSingleEvent(true, setEvents);
+    }
+  };
+
+  const completeSingleEvent = async (
+    completed: boolean,
+    setEvents: React.Dispatch<React.SetStateAction<CalendarEventUnion[]>>
+  ) => {
+    if (!editEventId) return;
     try {
       const updateData: UpdateCalendarEventInput = {
         completed_at: completed ? new Date().toISOString() : null,
@@ -99,18 +147,42 @@ export function useCalendarDialogs(
         updateData
       );
 
-      // Update local state
       setEvents(curr =>
         curr.map(ev => (ev.id === updated.id ? { ...updated } : ev))
       );
       setEditCompleted(completed);
       setEditOpen(false);
-
-      // Notify parent to refresh task list
       onTaskDropped?.();
     } catch (err) {
       console.error('Failed to update task completion:', err);
       toast.error('Failed to update task');
+    }
+  };
+
+  const handleCompletionChoice = async (
+    choice: 'session' | 'task',
+    setEvents: React.Dispatch<React.SetStateAction<CalendarEventUnion[]>>
+  ) => {
+    if (!editEvent || !isCalendarEventTask(editEvent)) return;
+
+    setCompletionChoiceOpen(false);
+    fireConfetti();
+
+    if (choice === 'session') {
+      await completeSingleEvent(true, setEvents);
+    } else {
+      // Complete entire task + all linked events
+      try {
+        const task = await taskService.getTaskById(editEvent.linked_task_id);
+        await taskService.completeTaskWithEvents(task);
+        await refreshEvents();
+        setEditOpen(false);
+        onTaskDropped?.();
+        toast.success('Task completed');
+      } catch (err) {
+        console.error('Failed to complete entire task:', err);
+        toast.error('Failed to complete task');
+      }
     }
   };
 
@@ -207,5 +279,11 @@ export function useCalendarDialogs(
     handleSaveEdit,
     handleDeleteEdit,
     handleUpdateCompletion,
+    // Completion choice dialog
+    completionChoiceOpen,
+    setCompletionChoiceOpen,
+    completionChoiceSessionCount,
+    handleCompletionChoice,
+    pendingSetEvents,
   };
 }

@@ -70,8 +70,8 @@ export function DeadlineViolationsBar({
           <div className="flex items-center gap-2 flex-1 min-w-0">
             <AlertTriangle className="h-4 w-4 text-yellow-600 dark:text-yellow-400 shrink-0" />
             <span className="text-sm font-medium text-yellow-800 dark:text-yellow-200">
-              {violations.length} task{violations.length > 1 ? 's' : ''} scheduled
-              after deadline
+              {violations.length} task{violations.length > 1 ? 's' : ''}{' '}
+              scheduled after deadline
             </span>
           </div>
           <Button

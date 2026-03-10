@@ -9,6 +9,7 @@ import {
 import { CalendarHeader, CalendarLegend } from './CalendarHeader';
 import WeekScrollableGrid from './WeekScrollableGrid';
 import CalendarEditDialog from './CalendarEditDialog';
+import { CalendarCompletionDialog } from './CalendarCompletionDialog';
 import { DeadlineViolationsBar } from './DeadlineViolationsBar';
 
 type Dialogs = {
@@ -47,6 +48,13 @@ type Dialogs = {
   ) => Promise<void>;
   handleUpdateCompletion: (
     completed: boolean,
+    setEvents: React.Dispatch<React.SetStateAction<CalendarEventUnion[]>>
+  ) => Promise<void>;
+  completionChoiceOpen: boolean;
+  setCompletionChoiceOpen: React.Dispatch<React.SetStateAction<boolean>>;
+  completionChoiceSessionCount: number;
+  handleCompletionChoice: (
+    choice: 'session' | 'task',
     setEvents: React.Dispatch<React.SetStateAction<CalendarEventUnion[]>>
   ) => Promise<void>;
 };
@@ -190,6 +198,12 @@ export function WeekCalendarView({
           dialogs.handleUpdateCompletion(completed, setEvents)
         }
         onLinkClick={openTaskEditForm}
+      />
+      <CalendarCompletionDialog
+        open={dialogs.completionChoiceOpen}
+        sessionCount={dialogs.completionChoiceSessionCount}
+        onChoice={choice => dialogs.handleCompletionChoice(choice, setEvents)}
+        onCancel={() => dialogs.setCompletionChoiceOpen(false)}
       />
     </div>
   );
