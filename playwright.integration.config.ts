@@ -1,5 +1,4 @@
 import { defineConfig, devices } from '@playwright/test';
-import path from 'path';
 import dotenv from 'dotenv';
 
 /**
@@ -7,14 +6,15 @@ import dotenv from 'dotenv';
  *
  * Unlike the default E2E config, this:
  *  - Does NOT set NEXT_PUBLIC_AUTH_BYPASS (real auth via Supabase session)
- *  - Points at the REAL Supabase instance (env vars from e2e/.env)
+ *  - Points at the REAL Supabase instance (env vars from root .env)
  *  - Starts BOTH frontend and backend servers
  *  - Runs globalSetup/globalTeardown to authenticate and clean up
  *  - Uses saved storageState so every test is already logged in
  */
 
-// Load integration test env vars
-dotenv.config({ path: path.resolve(__dirname, 'e2e/.env') });
+// Load env vars from root .env
+// (already has SUPABASE_URL, SUPABASE_ANON_KEY, SUPABASE_SERVICE_ROLE_KEY, E2E_TEST_USER_EMAIL)
+dotenv.config();
 
 export default defineConfig({
   testDir: './e2e/integration',

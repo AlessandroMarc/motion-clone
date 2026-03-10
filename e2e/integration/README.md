@@ -7,13 +7,11 @@ They use a dedicated Google test account so production user data is never touche
 
 1. **Dedicated test Google account** — sign in to the app with it at least once so the user exists in Supabase.
 
-2. **`e2e/.env`** — copy `e2e/.env.example` and fill in:
+2. **Add `E2E_TEST_USER_EMAIL` to your root `.env`**:
    ```
-   SUPABASE_URL=...
-   SUPABASE_ANON_KEY=...
-   SUPABASE_SERVICE_ROLE_KEY=...
    E2E_TEST_USER_EMAIL=your-test@gmail.com
    ```
+   The Supabase keys are already there (`SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`).
 
 ## How it works
 
