@@ -25,13 +25,13 @@ export const taskSchema = z
       .min(1, 'Title is required')
       .max(
         TASK_TITLE_MAX_LENGTH,
-        `Title must be less than ${TASK_TITLE_MAX_LENGTH} characters`
+        `Title must be at most ${TASK_TITLE_MAX_LENGTH} characters`
       ),
     description: z
       .string()
       .max(
         TASK_DESCRIPTION_MAX_LENGTH,
-        `Description must be less than ${TASK_DESCRIPTION_MAX_LENGTH} characters`
+        `Description must be at most ${TASK_DESCRIPTION_MAX_LENGTH} characters`
       ),
     dueDate: z.string().optional(),
     priority: z.enum(TASK_PRIORITIES),
