@@ -161,34 +161,52 @@ export default async function globalSetup(config: FullConfig) {
   // Instead of navigating to localhost directly, construct a URL with auth parameters
   // This lets the Supabase client process the auth naturally
 
-  console.log('[globalSetup] Navigating to base URL with auth in hash…');
+  console.log('[globalSetup] Navigating to base URL and setting session in localStorage…');
 
-  // Navigate to base URL with the access token and refresh token in the URL hash
-  // so the Supabase client can process it naturally
-  const authUrl = `${baseURL}/#access_token=${accessToken}&refresh_token=${refreshToken}&expires_in=3600&expires_at=${Math.floor(Date.now() / 1000) + 3600}&token_type=bearer&type=magiclink`;
+  // First navigate to the base URL
+  await page.goto(baseURL, { waitUntil: 'domcontentloaded' });
 
-  await page.goto(authUrl, { waitUntil: 'networkidle' });
+  // Now manually set the session in localStorage so Supabase client can read it
+  // The Supabase SDK stores the session under a key like: sb-<project-id>-auth-token
+  const expiresAt = Math.floor(Date.now() / 1000) + 3600;
 
-  // Wait for Supabase to process the auth parameters and update the session
-  // The app should automatically detect the session from the URL hash
-  await page.waitForTimeout(2000);
+  await page.evaluate(
+    ({ supabaseUrl, accessToken, refreshToken, expiresAt }) => {
+      // Extract project ID from Supabase URL (https://PROJECT_ID.supabase.co)
+      const projectId = supabaseUrl.split('.')[0].split('//')[1];
+      const storageKey = `sb-${projectId}-auth-token`;
 
-  // Check if the Supabase client recognized the session
-  const sessionExists = await page.evaluate(async () => {
-    // Import and check the session in the browser context
-    const keys = Object.keys(localStorage);
-    const authKey = keys.find(k => k.startsWith('sb-') && k.endsWith('-auth-token'));
-    return !!authKey && !!localStorage.getItem(authKey);
-  });
+      // Create session object matching Supabase's expected format
+      const session = {
+        access_token: accessToken,
+        refresh_token: refreshToken,
+        expires_in: 3600,
+        expires_at: expiresAt,
+        token_type: 'bearer',
+        type: 'magiclink',
+      };
 
-  if (!sessionExists) {
-    console.warn('[globalSetup] Warning: Session not found in localStorage after auth URL navigation');
-  } else {
-    console.log('[globalSetup] Session successfully loaded from auth URL');
-  }
+      localStorage.setItem(storageKey, JSON.stringify(session));
+      console.log('[browser] Session set in localStorage:', storageKey);
 
-  // Wait a bit more for the AuthContext to propagate the session to React state
+      // Also try to set cookies for Supabase
+      // Supabase SDK v2 uses sb-* prefixed localStorage keys, not cookies
+      // But let's also set these just in case
+      const expiresDate = new Date(expiresAt * 1000);
+      document.cookie = `sb-${projectId}-auth-token=${encodeURIComponent(JSON.stringify(session))}; path=/; expires=${expiresDate.toUTCString()}`;
+    },
+    { supabaseUrl, accessToken, refreshToken, expiresAt }
+  );
+
+  // Wait for the AuthContext to initialize and load the session
   await page.waitForTimeout(1000);
+
+  // Reload the page so the Supabase client picks up the session from localStorage
+  console.log('[globalSetup] Reloading page to let Supabase client pick up session…');
+  await page.reload({ waitUntil: 'domcontentloaded' });
+
+  // Wait for the page to fully render with auth
+  await page.waitForTimeout(2000);
 
   console.log('[globalSetup] Session established, saving storage state…');
   await context.storageState({ path: STORAGE_STATE_PATH });

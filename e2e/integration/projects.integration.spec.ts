@@ -17,14 +17,23 @@ test.describe('Projects — integration', () => {
     const projectName = `${E2E_PREFIX} Test Project ${Date.now()}`;
 
     // ── Navigate to projects page ──
-    // NOTE: Integration test session handling still needs refinement.
-    // The Supabase session from globalSetup should be available via storageState,
-    // but the app's AuthContext may not be recognizing it yet.
-    // TODO: Investigate @supabase/ssr session restoration behavior
     await page.goto('/projects');
+
+    // Wait for the AuthContext to load the session from storageState
+    // The session should be in localStorage and cookies from globalSetup
+    await page.waitForFunction(
+      () => {
+        // Check if authentication is complete by looking for content beyond the login screen
+        const heading = document.querySelector('h1, h2, h3');
+        return heading && !heading.textContent?.includes('Sign in');
+      },
+      { timeout: 15000 }
+    );
+
+    // Now wait for the specific projects heading to be visible
     await expect(
       page.getByRole('heading', { name: /project manager/i })
-    ).toBeVisible({ timeout: 15_000 });
+    ).toBeVisible({ timeout: 5000 });
 
     // ── Open the create dialog ──
     const createBtn = page.getByRole('button', { name: /create project/i });
@@ -52,29 +61,40 @@ test.describe('Projects — integration', () => {
     await expect(page.getByText(projectName)).toBeVisible({ timeout: 10_000 });
 
     // ── Delete the project ──
-    // Open the project's context menu / delete action
-    // Look for a delete button associated with this project.
-    // The ProjectItem likely has a dropdown or delete icon.
-    const projectRow = page.locator(`text=${projectName}`).locator('..');
-    const deleteBtn = projectRow
-      .getByRole('button')
-      .filter({ hasText: /delete/i });
+    // Find the Delete link for this project
+    // The project name is displayed in an h3, and Delete link is nearby
+    const projectHeading = page.locator('h3', { hasText: projectName });
+    const projectCard = projectHeading.locator('..');
+    const deleteLink = projectCard.getByRole('link', { name: 'Delete' });
 
-    // If there's a dropdown menu trigger (three dots / ellipsis), click it first
-    const menuTrigger = projectRow.locator(
-      'button[aria-haspopup], [data-testid="project-menu"]'
-    );
-    if (await menuTrigger.isVisible().catch(() => false)) {
-      await menuTrigger.click();
-      await page.getByRole('menuitem', { name: /delete/i }).click();
-    } else if (await deleteBtn.isVisible().catch(() => false)) {
-      await deleteBtn.click();
-    }
+    if (await deleteLink.isVisible().catch(() => false)) {
+      await deleteLink.click();
 
-    // Confirm deletion in the alert dialog
-    const confirmBtn = page.getByRole('button', { name: /^delete$/i });
-    if (await confirmBtn.isVisible().catch(() => false)) {
-      await confirmBtn.click();
+      // Wait for confirmation dialog
+      await page.waitForTimeout(500);
+
+      // Confirm deletion in the alert dialog
+      const confirmBtn = page.getByRole('button', { name: /^delete$/i });
+      if (await confirmBtn.isVisible().catch(() => false)) {
+        await confirmBtn.click();
+      }
+    } else {
+      // Fallback: just look for any Delete element containing this project's text
+      const allDeletes = page.getByText('Delete');
+      for (let i = 0; i < (await allDeletes.count()); i++) {
+        const deleteElem = allDeletes.nth(i);
+        const parent = deleteElem.locator('..');
+        const hasProjectName = await parent.getByText(projectName).isVisible().catch(() => false);
+        if (hasProjectName) {
+          await deleteElem.click();
+          await page.waitForTimeout(500);
+          const confirmBtn = page.getByRole('button', { name: /^delete$/i });
+          if (await confirmBtn.isVisible().catch(() => false)) {
+            await confirmBtn.click();
+          }
+          break;
+        }
+      }
     }
 
     // ── Verify it's gone ──
@@ -85,6 +105,16 @@ test.describe('Projects — integration', () => {
 
   test('navigate to tasks page from sidebar', async ({ page }) => {
     await page.goto('/projects');
+
+    // Wait for the AuthContext to load the session from storageState
+    await page.waitForFunction(
+      () => {
+        const heading = document.querySelector('h1, h2, h3');
+        return heading && !heading.textContent?.includes('Sign in');
+      },
+      { timeout: 15000 }
+    );
+
     await expect(
       page.getByRole('heading', { name: /project manager/i })
     ).toBeVisible();
