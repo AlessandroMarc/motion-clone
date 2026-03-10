@@ -19,7 +19,7 @@ dotenv.config({ path: '.env' });
 export default defineConfig({
   testDir: './e2e/integration',
   testMatch: '**/*.integration.spec.ts',
-  timeout: 30_000,
+  timeout: 90_000, // 90s for integration tests (real backend is slower)
   expect: {
     timeout: 10_000,
   },
