@@ -5,6 +5,8 @@ on:
     branches: [main, develop]
   pull_request:
     branches: [main, develop]
+  pull_request_target:
+    branches: [main, develop]
 
 jobs:
   test:
@@ -90,7 +92,7 @@ jobs:
     needs: test
     permissions:
       contents: read
-    if: github.event_name == 'pull_request'
+    if: github.event_name == 'pull_request_target'
 
     strategy:
       matrix:
