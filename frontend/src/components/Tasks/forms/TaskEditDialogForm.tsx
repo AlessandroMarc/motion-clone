@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { FormProvider, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Copy, Save } from 'lucide-react';
+import { CheckCircle2, Copy, RotateCcw, Save } from 'lucide-react';
 import { toast } from 'sonner';
 
 import {
@@ -36,6 +36,8 @@ import { TaskRecurrenceFields } from './TaskRecurrenceFields';
 import { TaskFormActions } from './TaskFormActions';
 import { formatEventTime } from '@/utils/calendarUtils';
 import { captureEvent, captureException } from '@/lib/analytics';
+import { isTaskCompleted } from '@/utils/taskUtils';
+import { fireConfetti } from '@/utils/confetti';
 
 interface TaskEditDialogFormProps {
   task: Task | null;
@@ -335,6 +337,36 @@ export function TaskEditDialogForm({
     }
   };
 
+  const taskCompleted = task ? isTaskCompleted(task) : false;
+
+  const handleToggleCompletion = async () => {
+    if (!task) return;
+
+    setIsSubmitting(true);
+    try {
+      if (!taskCompleted) {
+        fireConfetti();
+        const updatedTask = await taskService.completeTaskWithEvents(task);
+        onTaskUpdated(updatedTask);
+        toast.success('Task completed');
+      } else {
+        const updatedTask = await taskService.setTaskCompleted(task, false);
+        onTaskUpdated(updatedTask);
+        toast.success('Task reopened');
+      }
+      onOpenChange(false);
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : 'Failed to update task completion.';
+      toast.error(message);
+      captureException(error instanceof Error ? error : new Error(message));
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   return (
     <Dialog open={open && !!task} onOpenChange={handleDialogOpenChange}>
       <DialogContent className="w-[calc(100%-1rem)] p-4 sm:w-full sm:max-w-[500px] sm:p-6 max-h-[92vh] sm:max-h-[90vh] flex flex-col overflow-hidden">
@@ -502,6 +534,25 @@ export function TaskEditDialogForm({
             </div>
 
             <div className="flex flex-col sm:flex-row sm:items-center gap-2 min-w-0">
+              <Button
+                type="button"
+                variant={taskCompleted ? 'outline' : 'default'}
+                onClick={handleToggleCompletion}
+                disabled={isSubmitting}
+                className="w-full sm:w-auto gap-2"
+              >
+                {taskCompleted ? (
+                  <>
+                    <RotateCcw className="h-4 w-4" />
+                    Reopen Task
+                  </>
+                ) : (
+                  <>
+                    <CheckCircle2 className="h-4 w-4" />
+                    Complete Task
+                  </>
+                )}
+              </Button>
               <Button
                 type="button"
                 variant="outline"
