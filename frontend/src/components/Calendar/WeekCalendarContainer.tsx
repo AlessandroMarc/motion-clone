@@ -25,6 +25,7 @@ import { WeekCalendarView } from './WeekCalendarView';
 import { MobileDayScrollView } from './MobileDayScrollView';
 import { DeadlineViolationsBar } from './DeadlineViolationsBar';
 import CalendarEditDialog from './CalendarEditDialog';
+import { CalendarCompletionDialog } from './CalendarCompletionDialog';
 import { TaskEditDialogForm } from '@/components/Tasks/forms/TaskEditDialogForm';
 import type { Task } from '@/types';
 import { HOUR_PX } from './dayColumnLayout';
@@ -360,6 +361,12 @@ export function WeekCalendarContainer({
           }
           onLinkClick={openTaskEditForm}
         />
+        <CalendarCompletionDialog
+          open={dialogs.completionChoiceOpen}
+          sessionCount={dialogs.completionChoiceSessionCount}
+          onChoice={choice => dialogs.handleCompletionChoice(choice, setEvents)}
+          onCancel={() => dialogs.setCompletionChoiceOpen(false)}
+        />
         <TaskEditDialogForm
           task={selectedTask}
           open={taskEditOpen}
@@ -414,6 +421,12 @@ export function WeekCalendarContainer({
         isAutoScheduleRefreshing={isRefreshing || !initialSyncComplete}
         workingHoursStart={activeSchedule?.working_hours_start}
         workingHoursEnd={activeSchedule?.working_hours_end}
+      />
+      <CalendarCompletionDialog
+        open={dialogs.completionChoiceOpen}
+        sessionCount={dialogs.completionChoiceSessionCount}
+        onChoice={choice => dialogs.handleCompletionChoice(choice, setEvents)}
+        onCancel={() => dialogs.setCompletionChoiceOpen(false)}
       />
       <TaskEditDialogForm
         task={selectedTask}

@@ -3,6 +3,7 @@
 import { useMemo, useState } from 'react';
 import { Check, Circle } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { fireConfetti } from '@/utils/confetti';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -56,12 +57,14 @@ export function TaskCompletionDot({
       return;
     }
 
+    if (nextCompleted) fireConfetti();
     await onToggle(nextCompleted);
   };
 
   const handleConfirmComplete = async () => {
     try {
       setIsSubmitting(true);
+      fireConfetti();
       await onToggle(true);
       setConfirmOpen(false);
     } finally {

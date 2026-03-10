@@ -14,6 +14,7 @@ import { TaskCompletionDot } from '@/components/Tasks/TaskCompletionDot';
 import { TaskEditDialogForm } from '@/components/Tasks/forms/TaskEditDialogForm';
 import CalendarEditDialog from '@/components/Calendar/CalendarEditDialog';
 import { Calendar } from 'lucide-react';
+import { fireConfetti } from '@/utils/confetti';
 
 function ZenTaskItem({
   task,
@@ -203,6 +204,7 @@ export function ZenModeView({ onExit }: ZenModeViewProps) {
   const handleToggleComplete = useCallback(
     async (task: Task, nextCompleted: boolean) => {
       try {
+        if (nextCompleted) fireConfetti();
         const updated = await taskService.setTaskCompleted(task, nextCompleted);
         setTasks(prev => prev.map(t => (t.id === updated.id ? updated : t)));
       } catch {
