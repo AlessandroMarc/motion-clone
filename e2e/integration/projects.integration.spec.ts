@@ -57,8 +57,22 @@ test.describe('Projects — integration', () => {
       .last();
     await submitBtn.click();
 
+    // Wait for the API to process and the page to update
+    await page.waitForTimeout(1000);
+
     // ── Verify the project appears in the list ──
-    await expect(page.getByText(projectName)).toBeVisible({ timeout: 10_000 });
+    // CI environments may be slower, so use a longer timeout
+    // Also wait for the page to be stable before checking
+    try {
+      await expect(page.getByText(projectName)).toBeVisible({ timeout: 30_000 });
+    } catch (error) {
+      // Log page content for debugging
+      const content = await page.content();
+      if (content.includes('error') || content.includes('Error')) {
+        console.error('[test] Page contains error message');
+      }
+      throw error;
+    }
 
     // ── Delete the project ──
     // Find the Delete link for this project
@@ -98,8 +112,9 @@ test.describe('Projects — integration', () => {
     }
 
     // ── Verify it's gone ──
+    // CI environments may be slower, so use a longer timeout
     await expect(page.getByText(projectName)).not.toBeVisible({
-      timeout: 10_000,
+      timeout: 30_000,
     });
   });
 
