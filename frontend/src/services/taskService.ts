@@ -192,6 +192,24 @@ class TaskService {
       : 0;
     return this.updateTask(task.id, { actualDurationMinutes });
   }
+
+  /** Complete a task AND mark all its linked calendar events as completed. */
+  async completeTaskWithEvents(task: Task): Promise<Task> {
+    const events = await calendarService.getCalendarEventsByTaskId(task.id);
+    const incompleteEvents = events.filter(e => !e.completed_at);
+
+    if (incompleteEvents.length > 0) {
+      await Promise.all(
+        incompleteEvents.map(e =>
+          calendarService.updateCalendarEvent(e.id, {
+            completed_at: new Date().toISOString(),
+          })
+        )
+      );
+    }
+
+    return this.setTaskCompleted(task, true);
+  }
 }
 
 export const taskService = new TaskService();
