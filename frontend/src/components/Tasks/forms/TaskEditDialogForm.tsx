@@ -319,14 +319,24 @@ export function TaskEditDialogForm({
     setIsSubmitting(true);
     try {
       if (!taskCompleted) {
-        fireConfetti();
         const updatedTask = await taskService.completeTaskWithEvents(task);
         onTaskUpdated(updatedTask);
+        fireConfetti();
         toast.success('Task completed');
+        captureEvent('task_completed', {
+          task_id: task.id,
+          priority: task.priority,
+          has_project: !!task.project_id,
+          planned_duration_minutes: task.planned_duration_minutes,
+        });
       } else {
         const updatedTask = await taskService.setTaskCompleted(task, false);
         onTaskUpdated(updatedTask);
         toast.success('Task reopened');
+        captureEvent('task_reopened', {
+          task_id: task.id,
+          priority: task.priority,
+        });
       }
       onOpenChange(false);
     } catch (error) {

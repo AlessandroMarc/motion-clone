@@ -1,7 +1,9 @@
 import React from 'react';
 import { render, screen, act } from '@testing-library/react';
+import '@testing-library/jest-dom';
 import userEvent from '@testing-library/user-event';
 import CalendarEditDialog from '../CalendarEditDialog';
+import { fireConfetti } from '@/utils/confetti';
 
 jest.mock('@/utils/confetti', () => ({
   fireConfetti: jest.fn(),
@@ -70,11 +72,13 @@ describe('CalendarEditDialog — task completion', () => {
     });
 
     expect(onCompletedChange).toHaveBeenCalledWith(true);
+    // CalendarEditDialog delegates confetti to the parent (useCalendarDialogs)
+    expect(fireConfetti).not.toHaveBeenCalled();
   });
 
   it('shows "Task completed" text when already completed', () => {
     render(<CalendarEditDialog {...baseProps} completed={true} />);
 
-    expect(screen.getByText(/task completed/i)).toBeTruthy();
+    expect(screen.getByText(/task completed/i)).toBeInTheDocument();
   });
 });
