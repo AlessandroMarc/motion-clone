@@ -99,8 +99,21 @@ jobs:
         node-version: [20.x]
 
     steps:
-      - name: Checkout code
+      - name: Checkout base branch code (for trusted workflow)
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.base_ref }}
+
+      - name: Checkout PR code (for testing)
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+          path: pr-code
+
+      - name: Merge PR code into base
+        run: |
+          cp -r pr-code/* .
+          rm -rf pr-code
 
       - name: Setup Node.js ${{ matrix.node-version }}
         uses: actions/setup-node@v4
