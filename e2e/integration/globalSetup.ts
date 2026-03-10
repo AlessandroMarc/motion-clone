@@ -15,7 +15,11 @@ import { createClient } from '@supabase/supabase-js';
 import { chromium, type FullConfig } from '@playwright/test';
 import path from 'path';
 import fs from 'fs';
+import { fileURLToPath } from 'url';
 import { cleanupTestUser } from './helpers/cleanup';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 /** Path where the authenticated browser state is stored between runs. */
 export const STORAGE_STATE_PATH = path.resolve(
