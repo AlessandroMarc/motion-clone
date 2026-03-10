@@ -64,7 +64,9 @@ test.describe('Projects — integration', () => {
     // CI environments may be slower, so use a longer timeout
     // Also wait for the page to be stable before checking
     try {
-      await expect(page.getByText(projectName)).toBeVisible({ timeout: 30_000 });
+      await expect(page.getByText(projectName)).toBeVisible({
+        timeout: 30_000,
+      });
     } catch (error) {
       // Log page content for debugging
       const content = await page.content();
@@ -98,7 +100,10 @@ test.describe('Projects — integration', () => {
       for (let i = 0; i < (await allDeletes.count()); i++) {
         const deleteElem = allDeletes.nth(i);
         const parent = deleteElem.locator('..');
-        const hasProjectName = await parent.getByText(projectName).isVisible().catch(() => false);
+        const hasProjectName = await parent
+          .getByText(projectName)
+          .isVisible()
+          .catch(() => false);
         if (hasProjectName) {
           await deleteElem.click();
           await page.waitForTimeout(500);

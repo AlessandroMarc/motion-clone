@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { FormProvider, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { CheckCircle2, Copy, RotateCcw, Save } from 'lucide-react';
 import { toast } from 'sonner';
 
 import {
@@ -11,30 +10,18 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
 import { taskService } from '@/services/taskService';
 import { calendarService } from '@/services/calendarService';
 import type { Task, CalendarEventTask } from '@/types';
 import { taskSchema, type TaskFormData } from '@/hooks/useTaskForm';
 import {
-  formatDate,
   normalizeToMidnight,
   parseLocalDate,
   toLocalDateString,
 } from '@/utils/dateUtils';
-import { TaskTitleField } from './TaskTitleField';
-import { TaskDescriptionField } from './TaskDescriptionField';
-import { TaskDueDateField } from './TaskDueDateField';
-import { TaskStartDateField } from './TaskStartDateField';
-import { TaskPriorityField } from './TaskPriorityField';
-import { TaskProjectField } from './TaskProjectField';
-import { TaskScheduleField } from './TaskScheduleField';
-import { TaskBlockedByField } from './TaskBlockedByField';
-import { TaskDurationFields } from './TaskDurationFields';
-import { TaskRecurrenceFields } from './TaskRecurrenceFields';
-import { TaskFormActions } from './TaskFormActions';
-import { formatEventTime } from '@/utils/calendarUtils';
+import { TaskFormFields } from './TaskFormFields';
+import { LinkedEventsSection } from './LinkedEventsSection';
+import { TaskActionButtons } from './TaskActionButtons';
 import { captureEvent, captureException } from '@/lib/analytics';
 import { isTaskCompleted } from '@/utils/taskUtils';
 import { fireConfetti } from '@/utils/confetti';
@@ -108,27 +95,14 @@ export function TaskEditDialogForm({
   });
 
   const {
-    register,
     handleSubmit,
-    formState: { errors, isDirty, isValid },
+    formState: { errors },
     reset,
-    setValue,
-    watch,
   } = form;
-
-  const priority = watch('priority');
-  const isRecurring = watch('is_recurring');
-  const recurrencePattern = watch('recurrence_pattern');
-  const recurrenceInterval = watch('recurrence_interval');
-  const recurrenceStartDate = watch('recurrenceStartDate');
 
   useEffect(() => {
     reset(initialValues);
   }, [initialValues, reset]);
-
-  const handlePriorityChange = (value: 'low' | 'medium' | 'high') => {
-    setValue('priority', value, { shouldDirty: true, shouldValidate: true });
-  };
 
   useEffect(() => {
     if (!task || !open) {
@@ -387,7 +361,6 @@ export function TaskEditDialogForm({
               console.log(
                 '📋 [TaskEditDialogForm] Form submit event triggered'
               );
-              console.log('Form state:', { isDirty, isValid, errors });
               if (Object.keys(errors).length > 0) {
                 console.error('❌ Form validation errors:', errors);
                 toast.error(
@@ -397,182 +370,21 @@ export function TaskEditDialogForm({
               handleSubmit(onSubmit)(e);
             }}
           >
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 min-w-0">
-              <div className="md:col-span-2">
-                <TaskTitleField register={register} errors={errors} />
-              </div>
-              <div className="md:col-span-2">
-                <TaskDescriptionField register={register} errors={errors} />
-              </div>
-              {!isRecurring && (
-                <TaskDueDateField register={register} errors={errors} />
-              )}
-              <TaskStartDateField register={register} errors={errors} />
-              <TaskPriorityField
-                value={priority}
-                onValueChange={handlePriorityChange}
-                errors={errors}
-              />
-              <TaskProjectField errors={errors} />
-              <TaskScheduleField errors={errors} />
-              <TaskBlockedByField errors={errors} currentTaskId={task?.id} />
-              <div className="md:col-span-2">
-                <TaskDurationFields
-                  errors={errors}
-                  hideActualDuration={isRecurring}
-                />
-              </div>
-              <div className="md:col-span-2">
-                <TaskRecurrenceFields
-                  isRecurring={isRecurring}
-                  onIsRecurringChange={checked => {
-                    setValue('is_recurring', checked, {
-                      shouldDirty: true,
-                      shouldValidate: true,
-                    });
-                    if (checked) {
-                      // Clear conflicting fields when enabling recurrence
-                      setValue('dueDate', undefined, {
-                        shouldDirty: true,
-                        shouldValidate: true,
-                      });
-                      setValue('actual_duration_minutes', 0, {
-                        shouldDirty: true,
-                        shouldValidate: true,
-                      });
-                    }
-                  }}
-                  recurrencePattern={recurrencePattern}
-                  onPatternChange={value =>
-                    setValue('recurrence_pattern', value, {
-                      shouldDirty: true,
-                      shouldValidate: true,
-                    })
-                  }
-                  recurrenceInterval={recurrenceInterval}
-                  onIntervalChange={value =>
-                    setValue('recurrence_interval', value, {
-                      shouldDirty: true,
-                      shouldValidate: true,
-                    })
-                  }
-                  recurrenceStartDate={recurrenceStartDate}
-                  onRecurrenceStartDateChange={value =>
-                    setValue('recurrenceStartDate', value, {
-                      shouldDirty: true,
-                      shouldValidate: true,
-                    })
-                  }
-                  errors={errors}
-                />
-              </div>
-            </div>
+            <TaskFormFields currentTaskId={task?.id} errors={errors} />
 
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <h3 className="text-sm font-medium">
-                  {!areEventsLoading && !eventsError && linkedEvents.length > 0
-                    ? `${linkedEvents.length} `
-                    : ''}
-                  Linked calendar events
-                </h3>
-                {areEventsLoading && (
-                  <Badge variant="outline" className="text-[10px] uppercase">
-                    Loading...
-                  </Badge>
-                )}
-              </div>
-              {eventsError && (
-                <p className="text-sm text-destructive">{eventsError}</p>
-              )}
-              {!areEventsLoading &&
-                !eventsError &&
-                linkedEvents.length === 0 && (
-                  <p className="text-sm text-muted-foreground">
-                    This task is not linked to any calendar events.
-                  </p>
-                )}
-              {linkedEvents.length > 0 && (
-                <ul className="space-y-2 max-h-[200px] overflow-y-auto pr-2">
-                  {linkedEvents.map(event => (
-                    <li
-                      key={event.id}
-                      className="rounded-md border border-muted bg-muted/40 p-3"
-                    >
-                      <div className="flex items-start justify-between gap-3 min-w-0">
-                        <div className="space-y-1 min-w-0 flex-1">
-                          <div className="flex flex-col sm:flex-row sm:items-baseline gap-1 sm:gap-2 min-w-0">
-                            <p className="text-sm font-medium leading-snug">
-                              {event.title}
-                            </p>
-                            <p className="text-xs text-muted-foreground break-words">
-                              {formatDate(event.start_time)}
-                              {' - '}
-                              {formatEventTime(
-                                event.start_time,
-                                event.end_time
-                              )}
-                            </p>
-                          </div>
-                          {event.description && (
-                            <p className="text-xs text-muted-foreground line-clamp-2">
-                              {event.description}
-                            </p>
-                          )}
-                        </div>
-                        <Badge
-                          variant="secondary"
-                          className="shrink-0 text-[11px]"
-                        >
-                          Linked
-                        </Badge>
-                      </div>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </div>
+            <LinkedEventsSection
+              events={linkedEvents}
+              isLoading={areEventsLoading}
+              error={eventsError}
+            />
 
-            <div className="flex flex-col sm:flex-row sm:items-center gap-2 min-w-0">
-              <Button
-                type="button"
-                variant={taskCompleted ? 'outline' : 'default'}
-                onClick={handleToggleCompletion}
-                disabled={isSubmitting}
-                className="w-full sm:w-auto gap-2"
-              >
-                {taskCompleted ? (
-                  <>
-                    <RotateCcw className="h-4 w-4" />
-                    Reopen Task
-                  </>
-                ) : (
-                  <>
-                    <CheckCircle2 className="h-4 w-4" />
-                    Complete Task
-                  </>
-                )}
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={handleCloneTask}
-                disabled={isSubmitting}
-                className="w-full sm:w-auto"
-              >
-                <Copy className="mr-2 h-4 w-4" />
-                Clone Task
-              </Button>
-              <TaskFormActions
-                isSubmitting={isSubmitting}
-                onCancel={handleCancel}
-                submitText="Save Changes"
-                submittingText="Saving..."
-                submitIcon={<Save className="mr-2 h-4 w-4" />}
-                cancelText="Close"
-                className="w-full sm:w-auto sm:ml-auto max-sm:flex-col [&>button]:max-sm:w-full [&>button]:max-sm:justify-center"
-              />
-            </div>
+            <TaskActionButtons
+              taskCompleted={taskCompleted}
+              isSubmitting={isSubmitting}
+              onComplete={handleToggleCompletion}
+              onClone={handleCloneTask}
+              onCancel={handleCancel}
+            />
           </form>
         </FormProvider>
       </DialogContent>

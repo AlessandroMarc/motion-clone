@@ -138,7 +138,10 @@ export default async function globalSetup(config: FullConfig) {
   const page = await context.newPage();
 
   // Visit the magic link — Supabase will verify and redirect (possibly to a different domain)
-  console.log('[globalSetup] Navigating to magic link:', actionLink.substring(0, 80) + '...');
+  console.log(
+    '[globalSetup] Navigating to magic link:',
+    actionLink.substring(0, 80) + '...'
+  );
   await page.goto(actionLink, { waitUntil: 'domcontentloaded' });
 
   const finalUrl = page.url();
@@ -156,12 +159,16 @@ export default async function globalSetup(config: FullConfig) {
     );
   }
 
-  console.log('[globalSetup] Extracted access token and refresh token from URL hash');
+  console.log(
+    '[globalSetup] Extracted access token and refresh token from URL hash'
+  );
 
   // Instead of navigating to localhost directly, construct a URL with auth parameters
   // This lets the Supabase client process the auth naturally
 
-  console.log('[globalSetup] Navigating to base URL and setting session in localStorage…');
+  console.log(
+    '[globalSetup] Navigating to base URL and setting session in localStorage…'
+  );
 
   // First navigate to the base URL
   await page.goto(baseURL, { waitUntil: 'domcontentloaded' });
@@ -202,7 +209,9 @@ export default async function globalSetup(config: FullConfig) {
   await page.waitForTimeout(1000);
 
   // Reload the page so the Supabase client picks up the session from localStorage
-  console.log('[globalSetup] Reloading page to let Supabase client pick up session…');
+  console.log(
+    '[globalSetup] Reloading page to let Supabase client pick up session…'
+  );
   await page.reload({ waitUntil: 'domcontentloaded' });
 
   // Wait for the page to fully render with auth
