@@ -1,6 +1,7 @@
 import { Badge } from '@/components/ui/badge';
 import type { CalendarEventTask } from '@/types';
-import { formatDate, formatEventTime } from '@/utils/calendarUtils';
+import {  formatEventTime } from '@/utils/calendarUtils';
+import { formatDate } from '@/utils/dateUtils';
 
 interface LinkedEventsSectionProps {
   events: CalendarEventTask[];
