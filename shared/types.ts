@@ -130,7 +130,7 @@ interface Schedule {
   name: string;
   working_hours_start: number; // 0-23 (legacy fallback, used when working_days is absent)
   working_hours_end: number; // 0-23 (legacy fallback, used when working_days is absent)
-  working_days?: Record<DayOfWeek, DaySchedule | null>; // per-day overrides: key = day-of-week (0=Sun…6=Sat), null = not a working day
+  working_days?: Partial<Record<DayOfWeek, DaySchedule | null>>; // per-day overrides: key = day-of-week (0=Sun…6=Sat), null = not a working day
   is_default: boolean;
   created_at: Date;
   updated_at: Date;

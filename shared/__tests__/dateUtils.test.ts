@@ -54,6 +54,16 @@ describe('toLocalDateString', () => {
     const d = String(expectedLocalDate.getDate()).padStart(2, '0');
     expect(toLocalDateString(utcTimestamp)).toBe(`${y}-${m}-${d}`);
   });
+
+  it('handles timezone edge cases with deterministic UTC timestamp', () => {
+    // Use a deterministic ISO timestamp to avoid timezone shifts
+    const isoString = '2025-06-15T10:00:00Z';
+    const date = new Date(isoString);
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, '0');
+    const d = String(date.getDate()).padStart(2, '0');
+    expect(toLocalDateString(isoString)).toBe(`${y}-${m}-${d}`);
+  });
 });
 
 describe('parseLocalDate', () => {

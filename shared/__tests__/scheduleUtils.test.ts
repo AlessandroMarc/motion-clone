@@ -59,7 +59,7 @@ describe('getScheduleDayHours', () => {
     const schedule = makeSchedule({
       working_days: {
         1: { start: 10, end: 18 },
-      } as Schedule['working_days'],
+      },
     });
     // Day 1 is defined
     expect(getScheduleDayHours(schedule, 1)).toEqual({ start: 10, end: 18 });
