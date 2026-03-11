@@ -32,6 +32,7 @@ describe('GoogleCalendarSettings', () => {
     (googleCalendarService.getStatus as jest.Mock).mockResolvedValue({
       connected: true,
       last_synced_at: null,
+      isExpired: false,
     });
     (googleCalendarService.sync as jest.Mock).mockResolvedValue({
       synced: 0,
@@ -46,16 +47,16 @@ describe('GoogleCalendarSettings', () => {
     const syncButton = await waitFor(() => getByText(/sync now/i));
     fireEvent.click(syncButton);
 
-    // dialog should appear
+    // dialog should appear - look for the Dismiss button which is unique to the dialog
     await waitFor(() => {
-      expect(getByText(/authorization expired/i)).toBeInTheDocument();
+      expect(getByText(/dismiss/i)).toBeInTheDocument();
     });
 
     // clicking dismiss should close it
     const dismiss = getByText(/dismiss/i);
     fireEvent.click(dismiss);
     await waitFor(() => {
-      expect(queryByText(/authorization expired/i)).not.toBeInTheDocument();
+      expect(queryByText(/dismiss/i)).not.toBeInTheDocument();
     });
   });
 });
