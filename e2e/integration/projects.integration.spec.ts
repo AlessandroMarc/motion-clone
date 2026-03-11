@@ -55,26 +55,36 @@ test.describe('Projects — integration', () => {
     const submitBtn = page
       .getByRole('button', { name: /create project/i })
       .last();
+    
+    // Set up response watcher before clicking submit
+    const createResponsePromise = page.waitForResponse(
+      response =>
+        response.url().includes('/api/projects') &&
+        response.request().method() === 'POST' &&
+        response.status() === 200,
+      { timeout: 15000 }
+    );
+    
     await submitBtn.click();
 
-    // Wait for the API to process and the page to update
-    await page.waitForTimeout(1000);
+    // Wait for the API response to confirm creation
+    try {
+      await createResponsePromise;
+    } catch {
+      // If response watcher times out, fall back to a delay
+      await page.waitForTimeout(2000);
+    }
+
+    // Additional wait for UI to update after API response
+    await page.waitForTimeout(500);
 
     // ── Verify the project appears in the list ──
     // CI environments may be slower, so use a longer timeout
     // Also wait for the page to be stable before checking
-    try {
-      await expect(page.getByText(projectName)).toBeVisible({
-        timeout: 30_000,
-      });
-    } catch (error) {
-      // Log page content for debugging
-      const content = await page.content();
-      if (content.includes('error') || content.includes('Error')) {
-        console.error('[test] Page contains error message');
-      }
-      throw error;
-    }
+    await expect(async () => {
+      const projectText = page.getByText(projectName);
+      await expect(projectText).toBeVisible({ timeout: 5000 });
+    }).toPass({ timeout: 30000 });
 
     // ── Delete the project ──
     // Find the Delete link for this project
@@ -118,9 +128,10 @@ test.describe('Projects — integration', () => {
 
     // ── Verify it's gone ──
     // CI environments may be slower, so use a longer timeout
-    await expect(page.getByText(projectName)).not.toBeVisible({
-      timeout: 30_000,
-    });
+    await expect(async () => {
+      const projectText = page.getByText(projectName);
+      await expect(projectText).not.toBeVisible({ timeout: 5000 });
+    }).toPass({ timeout: 30000 });
   });
 
   test('navigate to tasks page from sidebar', async ({ page }) => {
