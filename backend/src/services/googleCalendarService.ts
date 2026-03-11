@@ -703,7 +703,7 @@ export class GoogleCalendarService {
             .delete()
             .eq('user_id', userId);
         } catch {
-          // ignore failures
+          console.warn('[GoogleCalendarService] Failed to delete expired tokens for user:', userId);  
         }
         // Use sentinel error string for detection
         return {

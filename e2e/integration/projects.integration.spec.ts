@@ -63,13 +63,27 @@ test.describe('Projects — integration', () => {
       page.getByRole('heading', { name: /create new project/i })
     ).not.toBeVisible({ timeout: 15000 });
 
-    // Wait for the page to update with new data
-    await page.waitForTimeout(1000);
+    // Wait for toast notification and UI update
+    await page.waitForTimeout(2000);
 
-    // ── Verify the project appears in the list ──
-    // Look for the project name in an h3 element (as rendered by ProjectItem)
+    // Check for success toast (indicates project was created)
+    const successToast = page.getByText(/project created successfully/i);
+    if (await successToast.isVisible().catch(() => false)) {
+      console.log('[test] Success toast found');
+    }
+
+    // Check for error toast
+    const errorToast = page.getByText(/failed to create project/i);
+    if (await errorToast.isVisible().catch(() => false)) {
+      console.log('[test] Error toast found - project creation failed');
+    }
+
+    // Wait for the project list to refresh and show the new project
+    // Use toPass for retry logic as the list may take time to update
     const projectLink = page.getByRole('link', { name: projectName });
-    await expect(projectLink).toBeVisible({ timeout: 30000 });
+    await expect(async () => {
+      await expect(projectLink).toBeVisible();
+    }).toPass({ timeout: 30000, intervals: [1000, 2000, 4000, 8000] });
 
     // ── Delete the project ──
     // Find the project card by the link that contains the project name
