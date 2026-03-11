@@ -452,12 +452,6 @@ export function WeekCalendarContainer({
         workingHoursStart={activeSchedule?.working_hours_start}
         workingHoursEnd={activeSchedule?.working_hours_end}
       />
-      <CalendarCompletionDialog
-        open={dialogs.completionChoiceOpen}
-        sessionCount={dialogs.completionChoiceSessionCount}
-        onChoice={choice => dialogs.handleCompletionChoice(choice, setEvents)}
-        onCancel={() => dialogs.setCompletionChoiceOpen(false)}
-      />
       <TaskEditDialogForm
         task={selectedTask}
         open={taskEditOpen}
