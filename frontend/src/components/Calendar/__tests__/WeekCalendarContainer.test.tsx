@@ -61,7 +61,7 @@ jest.mock('../hooks', () => ({
   useExternalTaskDrop: jest.fn(() => ({})),
 }));
 
-jest.mock('../useWeekCalendarNavigation', () => ({
+jest.mock('..', () => ({
   useWeekCalendarNavigation: jest.fn(() => ({
     currentDay: new Date(),
     currentDateKey: new Date().toISOString().slice(0, 10),

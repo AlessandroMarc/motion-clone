@@ -3,10 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { googleCalendarService } from '@/services/googleCalendarService';
-import type {
-  GoogleCalendarStatus,
-  SyncResult,
-} from '@/services/googleCalendarService';
+import type { GoogleCalendarStatus } from '@/services/googleCalendarService';
 import { useOnboarding } from '@/hooks/useOnboarding';
 import {
   Card,
@@ -62,11 +59,14 @@ export function GoogleCalendarSettings() {
       setLoading(true);
       const statusData = await googleCalendarService.getStatus(user.id);
       setStatus(statusData);
+      // Clear reconnect dialog on successful status load
+      setShowReconnectDialog(false);
+      setReconnectMessage('');
     } catch (error) {
       console.error('Failed to load Google Calendar status:', error);
       toast.error('Failed to load Google Calendar status');
       // Set default status on error
-      setStatus({ connected: false, last_synced_at: null });
+      setStatus({ connected: false, last_synced_at: null, isExpired: false });
     } finally {
       setLoading(false);
     }
@@ -135,6 +135,8 @@ export function GoogleCalendarSettings() {
           result.errors[1] || 'Your Google Calendar authorization has expired.'
         );
         setShowReconnectDialog(true);
+        // Also update status to reflect expired state
+        setStatus({ connected: false, last_synced_at: null, isExpired: true });
         return;
       }
 
@@ -189,6 +191,7 @@ export function GoogleCalendarSettings() {
   }
 
   const isConnected = status?.connected ?? false;
+  const isExpired = status?.isExpired ?? false;
   const lastSynced = status?.last_synced_at
     ? new Date(status.last_synced_at)
     : null;
@@ -259,7 +262,7 @@ export function GoogleCalendarSettings() {
                 </Button>
               </div>
             </div>
-          ) : (
+          ) : isExpired ? (
             <div className="space-y-4">
               <div className="flex items-center gap-3 p-4 border rounded-lg bg-muted/30 sm:gap-4 sm:p-5">
                 <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-yellow-500 text-white sm:h-12 sm:w-12">
@@ -286,6 +289,30 @@ export function GoogleCalendarSettings() {
                 className="w-full sm:w-auto"
               >
                 Reconnect Google Calendar
+              </Button>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              <div className="flex items-center gap-3 p-4 border rounded-lg bg-muted/30 sm:gap-4 sm:p-5">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-muted text-foreground sm:h-12 sm:w-12">
+                  <Calendar className="h-5 w-5 sm:h-6 sm:w-6" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="flex flex-wrap items-center gap-2 mb-1">
+                    <h3 className="font-semibold text-base">Google Calendar</h3>
+                    <Badge variant="secondary">Not Connected</Badge>
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    Connect your Google Calendar to sync events.
+                  </p>
+                </div>
+              </div>
+              <Button
+                variant="outline"
+                onClick={handleConnect}
+                className="w-full sm:w-auto"
+              >
+                Connect Google Calendar
               </Button>
             </div>
           )}

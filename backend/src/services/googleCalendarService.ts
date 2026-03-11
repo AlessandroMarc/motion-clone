@@ -249,7 +249,6 @@ export class GoogleCalendarService {
         reason: 'free' | 'declined';
       }>;
     };
-    // errorCode removed, not part of declared type
   }> {
     const existingSync = GoogleCalendarService.inFlightSyncs.get(userId);
     if (existingSync) {
@@ -753,11 +752,25 @@ export class GoogleCalendarService {
   async getConnectionStatus(userId: string): Promise<{
     connected: boolean;
     last_synced_at: string | null;
+    isExpired: boolean;
   }> {
     const tokens = await this.getTokens(userId);
+    if (!tokens) {
+      return {
+        connected: false,
+        last_synced_at: null,
+        isExpired: false,
+      };
+    }
+
+    const expiresAt = new Date(tokens.expires_at);
+    const now = new Date();
+    const isExpired = expiresAt.getTime() <= now.getTime();
+
     return {
       connected: tokens !== null,
       last_synced_at: tokens?.last_synced_at || null,
+      isExpired,
     };
   }
 }

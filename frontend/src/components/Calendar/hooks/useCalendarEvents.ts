@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useRef } from 'react';
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { CalendarEventUnion } from '@/types';
 import { calendarService } from '@/services/calendarService';
 import { isSameDay } from '@/utils/calendarUtils';
@@ -19,7 +19,7 @@ export function useCalendarEvents(weekDates: Date[]) {
 
   const weekKeyRef = useRef<string>('');
 
-  const getWeekRangeIso = () => {
+  const getWeekRangeIso = useCallback(() => {
     if (weekDates.length === 0) {
       return { startIso: '', endIso: '' };
     }
@@ -31,7 +31,7 @@ export function useCalendarEvents(weekDates: Date[]) {
       startIso: startDate.toISOString(),
       endIso: lastDate.toISOString(),
     };
-  };
+  }, [weekDates]);
 
   // Fetch events for the current week
   useEffect(() => {
@@ -83,7 +83,7 @@ export function useCalendarEvents(weekDates: Date[]) {
     fetchEvents().catch(() => {
       // Already handled in try-catch, this prevents unhandled rejection
     });
-  }, [weekKey, getWeekRangeIso]);
+  }, [weekKey, getWeekRangeIso, weekKeyRef]);
 
   // Group events by day for easier rendering
   const eventsByDay = useMemo(() => {
