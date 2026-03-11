@@ -1,6 +1,5 @@
 import React from 'react';
 import { render, fireEvent, waitFor } from '@testing-library/react';
-import '@testing-library/jest-dom/extend-expect';
 import { GoogleCalendarSettings } from '../GoogleCalendarSettings';
 import { googleCalendarService } from '@/services/googleCalendarService';
 import { useAuth } from '@/contexts/AuthContext';
@@ -43,25 +42,20 @@ describe('GoogleCalendarSettings', () => {
 
     const { getByText, queryByText } = render(<GoogleCalendarSettings />);
 
-    // Wait for status load
-    await waitFor(() => {
-      expect(googleCalendarService.getStatus).toHaveBeenCalledWith('user-1');
-    });
-
-    // click sync button
-    const syncButton = getByText(/sync now/i);
+    // Wait for status load and sync button to appear
+    const syncButton = await waitFor(() => getByText(/sync now/i));
     fireEvent.click(syncButton);
 
     // dialog should appear
     await waitFor(() => {
-      expect((getByText(/authorization expired/i) as any).toBeInTheDocument());
+      expect(getByText(/authorization expired/i)).toBeInTheDocument();
     });
 
     // clicking dismiss should close it
     const dismiss = getByText(/dismiss/i);
     fireEvent.click(dismiss);
     await waitFor(() => {
-      expect((queryByText(/authorization expired/i) as any).not.toBeInTheDocument());
+      expect(queryByText(/authorization expired/i)).not.toBeInTheDocument();
     });
   });
 });

@@ -27,7 +27,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Calendar, Loader2 } from 'lucide-react';
+import { Calendar, Loader2, RefreshCw, LogOut } from 'lucide-react';
 import { toast } from 'sonner';
 
 /**
@@ -48,7 +48,9 @@ export function GoogleCalendarSettings() {
   const { advanceToNextStep, status: onboardingStatus } = useOnboarding();
   const [status, setStatus] = useState<GoogleCalendarStatus | null>(null);
   const [loading, setLoading] = useState(true);
-// states previously used for sync/disconnect buttons; now handled elsewhere
+  const [syncing, setSyncing] = useState(false);
+  const [disconnecting, setDisconnecting] = useState(false);
+  const [showDisconnectConfirm, setShowDisconnectConfirm] = useState(false);
 
   const loadStatus = useCallback(async () => {
     if (!user?.id) {
@@ -118,7 +120,54 @@ export function GoogleCalendarSettings() {
     window.location.href = authUrl;
   };
 
-  // previous sync/disconnect handlers removed, logic moved elsewhere
+  const handleSync = async () => {
+    if (!user?.id) return;
+
+    try {
+      setSyncing(true);
+      const result = await googleCalendarService.sync(user.id);
+
+      if (
+        result.errors.length > 0 &&
+        result.errors[0] === 'google_calendar_invalid_grant'
+      ) {
+        setReconnectMessage(
+          result.errors[1] || 'Your Google Calendar authorization has expired.'
+        );
+        setShowReconnectDialog(true);
+        return;
+      }
+
+      if (result.errors.length > 0) {
+        toast.error(`Sync completed with errors: ${result.errors[0]}`);
+      } else {
+        toast.success(`Successfully synced ${result.synced} events`);
+      }
+      await loadStatus();
+    } catch (error) {
+      console.error('Failed to sync Google Calendar:', error);
+      toast.error('Failed to sync Google Calendar');
+    } finally {
+      setSyncing(false);
+    }
+  };
+
+  const handleDisconnect = async () => {
+    if (!user?.id) return;
+
+    try {
+      setDisconnecting(true);
+      await googleCalendarService.disconnect(user.id);
+      toast.success('Google Calendar disconnected successfully');
+      await loadStatus();
+    } catch (error) {
+      console.error('Failed to disconnect Google Calendar:', error);
+      toast.error('Failed to disconnect Google Calendar');
+    } finally {
+      setDisconnecting(false);
+      setShowDisconnectConfirm(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -185,7 +234,30 @@ export function GoogleCalendarSettings() {
                   )}
                 </div>
               </div>
-              {/* ...existing sync/disconnect buttons and dialogs... */}
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleSync}
+                  disabled={syncing}
+                >
+                  {syncing ? (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  ) : (
+                    <RefreshCw className="mr-2 h-4 w-4" />
+                  )}
+                  Sync Now
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setShowDisconnectConfirm(true)}
+                  className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                >
+                  <LogOut className="mr-2 h-4 w-4" />
+                  Disconnect
+                </Button>
+              </div>
             </div>
           ) : (
             <div className="space-y-4">
@@ -237,6 +309,36 @@ export function GoogleCalendarSettings() {
             </AlertDialogCancel>
             <AlertDialogAction onClick={handleConnect}>
               Reconnect
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Disconnect Confirmation Dialog */}
+      <AlertDialog
+        open={showDisconnectConfirm}
+        onOpenChange={setShowDisconnectConfirm}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Disconnect Google Calendar?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will stop syncing your events. You can reconnect at any time.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={disconnecting}>
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDisconnect}
+              disabled={disconnecting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {disconnecting ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : null}
+              Disconnect
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

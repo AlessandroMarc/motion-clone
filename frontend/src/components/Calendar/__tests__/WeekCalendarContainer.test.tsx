@@ -7,6 +7,9 @@ import { toast } from 'sonner';
 
 jest.mock('@/services/googleCalendarService');
 jest.mock('@/contexts/AuthContext');
+jest.mock('@/hooks/use-mobile', () => ({
+  useIsMobile: jest.fn(() => false),
+}));
 jest.mock('sonner', () => ({
   toast: {
     error: jest.fn(),
@@ -25,8 +28,26 @@ const mockStatus = { connected: true, last_synced_at: null };
 
 // stub out various calendar hooks used by the component
 jest.mock('../hooks', () => ({
-  useAutoSchedule: jest.fn(() => ({})),
-  useCalendarDialogs: jest.fn(() => ({})),
+  useAutoSchedule: jest.fn(() => ({
+    tasksMap: new Map(),
+    handleAutoScheduleClick: jest.fn(),
+    isRefreshing: false,
+  })),
+  useCalendarDialogs: jest.fn(() => ({
+    editOpen: false,
+    setEditOpen: jest.fn(),
+    editTitle: '',
+    editDescription: '',
+    editStartTime: '',
+    editEndTime: '',
+    editEvent: null,
+    editCompleted: false,
+    handleUpdateCompletion: jest.fn(),
+    completionChoiceOpen: false,
+    setCompletionChoiceOpen: jest.fn(),
+    completionChoiceSessionCount: 0,
+    handleCompletionChoice: jest.fn(),
+  })),
   useCalendarEvents: jest.fn(() => ({
     events: [],
     setEvents: jest.fn(),
@@ -40,7 +61,7 @@ jest.mock('../hooks', () => ({
   useExternalTaskDrop: jest.fn(() => ({})),
 }));
 
-jest.mock('./useWeekCalendarNavigation', () => ({
+jest.mock('../useWeekCalendarNavigation', () => ({
   useWeekCalendarNavigation: jest.fn(() => ({
     currentDay: new Date(),
     currentDateKey: new Date().toISOString().slice(0, 10),
