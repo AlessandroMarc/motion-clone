@@ -56,27 +56,29 @@ test.describe('Projects — integration', () => {
       .getByRole('button', { name: /create project/i })
       .last();
 
+    // Set up response watcher BEFORE clicking submit
+    const createResponsePromise = page.waitForResponse(
+      response =>
+        response.url().includes('projects') &&
+        response.request().method() === 'POST' &&
+        (response.status() === 200 || response.status() === 201),
+      { timeout: 30000 }
+    );
+
     await submitBtn.click();
 
-    // Wait for the dialog to close (indicates successful submission)
+    // Wait for the API response
+    // Note: Backend returns 201 Created for successful project creation
+    const createResponse = await createResponsePromise;
+    const createJson = await createResponse.json().catch(() => null);
+    if (createJson) {
+      console.log('[test] Project created:', createJson);
+    }
+
+    // Wait for the dialog to close
     await expect(
       page.getByRole('heading', { name: /create new project/i })
-    ).not.toBeVisible({ timeout: 15000 });
-
-    // Wait for toast notification and UI update
-    await page.waitForTimeout(2000);
-
-    // Check for success toast (indicates project was created)
-    const successToast = page.getByText(/project created successfully/i);
-    if (await successToast.isVisible().catch(() => false)) {
-      console.log('[test] Success toast found');
-    }
-
-    // Check for error toast
-    const errorToast = page.getByText(/failed to create project/i);
-    if (await errorToast.isVisible().catch(() => false)) {
-      console.log('[test] Error toast found - project creation failed');
-    }
+    ).not.toBeVisible({ timeout: 10000 });
 
     // Wait for the project list to refresh and show the new project
     // Use toPass for retry logic as the list may take time to update
