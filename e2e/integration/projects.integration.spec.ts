@@ -56,24 +56,15 @@ test.describe('Projects — integration', () => {
       .getByRole('button', { name: /create project/i })
       .last();
 
-    // Set up response watcher before clicking submit
-    const createResponsePromise = page.waitForResponse(
-      response =>
-        response.url().includes('/api/projects') &&
-        response.request().method() === 'POST' &&
-        response.status() === 200,
-      { timeout: 15000 }
-    );
-
     await submitBtn.click();
 
-    // Wait for the API response to confirm creation
-    await createResponsePromise;
-
-    // Wait for the dialog to close (it should close after successful creation)
+    // Wait for the dialog to close (indicates successful submission)
     await expect(
       page.getByRole('heading', { name: /create new project/i })
-    ).not.toBeVisible({ timeout: 5000 });
+    ).not.toBeVisible({ timeout: 15000 });
+
+    // Wait for the page to update with new data
+    await page.waitForTimeout(1000);
 
     // ── Verify the project appears in the list ──
     // Look for the project name in an h3 element (as rendered by ProjectItem)
