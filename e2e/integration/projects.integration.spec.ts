@@ -55,72 +55,75 @@ test.describe('Projects — integration', () => {
     const submitBtn = page
       .getByRole('button', { name: /create project/i })
       .last();
+
+    // Set up response watcher BEFORE clicking submit
+    const createResponsePromise = page.waitForResponse(
+      response =>
+        response.url().includes('projects') &&
+        response.request().method() === 'POST' &&
+        (response.status() === 200 || response.status() === 201),
+      { timeout: 30000 }
+    );
+
     await submitBtn.click();
 
-    // Wait for the API to process and the page to update
-    await page.waitForTimeout(1000);
-
-    // ── Verify the project appears in the list ──
-    // CI environments may be slower, so use a longer timeout
-    // Also wait for the page to be stable before checking
-    try {
-      await expect(page.getByText(projectName)).toBeVisible({
-        timeout: 30_000,
-      });
-    } catch (error) {
-      // Log page content for debugging
-      const content = await page.content();
-      if (content.includes('error') || content.includes('Error')) {
-        console.error('[test] Page contains error message');
-      }
-      throw error;
+    // Wait for the API response
+    // Note: Backend returns 201 Created for successful project creation
+    const createResponse = await createResponsePromise;
+    const createJson = await createResponse.json().catch(() => null);
+    if (createJson) {
+      console.log('[test] Project created:', createJson);
     }
 
+    // Wait for the dialog to close
+    await expect(
+      page.getByRole('heading', { name: /create new project/i })
+    ).not.toBeVisible({ timeout: 10000 });
+
+    // Wait for the project list to refresh and show the new project
+    // Use toPass for retry logic as the list may take time to update
+    const projectLink = page.getByRole('link', { name: projectName });
+    await expect(async () => {
+      await expect(projectLink).toBeVisible();
+    }).toPass({ timeout: 30000, intervals: [1000, 2000, 4000, 8000] });
+
     // ── Delete the project ──
-    // Find the Delete link for this project
-    // The project name is displayed in an h3, and Delete link is nearby
-    const projectHeading = page.locator('h3', { hasText: projectName });
-    const projectCard = projectHeading.locator('..');
-    const deleteLink = projectCard.getByRole('link', { name: 'Delete' });
+    // Find the project card by the link that contains the project name
+    const projectCard = page.getByRole('link', { name: projectName }).locator('..').locator('..');
+    const deleteButton = projectCard.getByRole('button', { name: /delete/i });
 
-    if (await deleteLink.isVisible().catch(() => false)) {
-      await deleteLink.click();
-
-      // Wait for confirmation dialog
-      await page.waitForTimeout(500);
-
-      // Confirm deletion in the alert dialog
-      const confirmBtn = page.getByRole('button', { name: /^delete$/i });
-      if (await confirmBtn.isVisible().catch(() => false)) {
-        await confirmBtn.click();
-      }
+    if (await deleteButton.isVisible().catch(() => false)) {
+      await deleteButton.click();
     } else {
-      // Fallback: just look for any Delete element containing this project's text
-      const allDeletes = page.getByText('Delete');
+      // Fallback: find the delete button by looking for any delete button
+      // and checking if it's in a card with this project's name
+      const allDeletes = page.getByRole('button', { name: /delete/i });
       for (let i = 0; i < (await allDeletes.count()); i++) {
         const deleteElem = allDeletes.nth(i);
-        const parent = deleteElem.locator('..');
+        const parent = deleteElem.locator('..').locator('..').locator('..');
         const hasProjectName = await parent
           .getByText(projectName)
           .isVisible()
           .catch(() => false);
         if (hasProjectName) {
           await deleteElem.click();
-          await page.waitForTimeout(500);
-          const confirmBtn = page.getByRole('button', { name: /^delete$/i });
-          if (await confirmBtn.isVisible().catch(() => false)) {
-            await confirmBtn.click();
-          }
           break;
         }
       }
     }
 
+    // Wait for confirmation dialog
+    await page.waitForTimeout(500);
+
+    // Confirm deletion in the alert dialog
+    const confirmBtn = page.getByRole('button', { name: /^delete$/i });
+    if (await confirmBtn.isVisible().catch(() => false)) {
+      await confirmBtn.click();
+    }
+
     // ── Verify it's gone ──
-    // CI environments may be slower, so use a longer timeout
-    await expect(page.getByText(projectName)).not.toBeVisible({
-      timeout: 30_000,
-    });
+    // The project link should no longer be visible
+    await expect(projectLink).not.toBeVisible({ timeout: 30000 });
   });
 
   test('navigate to tasks page from sidebar', async ({ page }) => {

@@ -687,10 +687,37 @@ export class GoogleCalendarService {
       };
     } catch (error) {
       const durationMs = Date.now() - startTime;
+      let errorMsg =
+        error instanceof Error ? error.message : 'Unknown sync error';
+      // Detect Google OAuth invalid_grant error
+      if (
+        errorMsg.includes('invalid_grant') ||
+        errorMsg.includes('Token has been expired or revoked') ||
+        errorMsg.includes('refresh token is not set')
+      ) {
+        errorMsg = 'Google Calendar authorization expired. Please reconnect.';
+        // delete tokens so status becomes disconnected
+        try {
+          await serviceRoleSupabase
+            .from('google_calendar_tokens')
+            .delete()
+            .eq('user_id', userId);
+        } catch {
+          console.warn('[GoogleCalendarService] Failed to delete expired tokens for user:', userId);  
+        }
+        // Use sentinel error string for detection
+        return {
+          success: false,
+          synced: 0,
+          errors: ['google_calendar_invalid_grant', errorMsg],
+          durationMs,
+          filtered: { count: 0, events: [] },
+        };
+      }
       return {
         success: false,
         synced: 0,
-        errors: [error instanceof Error ? error.message : 'Unknown sync error'],
+        errors: [errorMsg],
         durationMs,
         filtered: { count: 0, events: [] },
       };
@@ -725,11 +752,25 @@ export class GoogleCalendarService {
   async getConnectionStatus(userId: string): Promise<{
     connected: boolean;
     last_synced_at: string | null;
+    isExpired: boolean;
   }> {
     const tokens = await this.getTokens(userId);
+    if (!tokens) {
+      return {
+        connected: false,
+        last_synced_at: null,
+        isExpired: false,
+      };
+    }
+
+    const expiresAt = new Date(tokens.expires_at);
+    const now = new Date();
+    const isExpired = expiresAt.getTime() <= now.getTime();
+
     return {
       connected: tokens !== null,
       last_synced_at: tokens?.last_synced_at || null,
+      isExpired,
     };
   }
 }

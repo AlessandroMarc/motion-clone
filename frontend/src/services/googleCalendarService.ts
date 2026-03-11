@@ -3,6 +3,7 @@ import { getApiBaseUrl, request } from './apiClient';
 export interface GoogleCalendarStatus {
   connected: boolean;
   last_synced_at: string | null;
+  isExpired?: boolean;
 }
 
 export interface FilteredGoogleEvent {
@@ -54,8 +55,30 @@ class GoogleCalendarService {
       body: JSON.stringify({ user_id: userId }),
     });
 
-    if (!response.success || !response.data) {
+    // handle invalid_grant case where backend returns auth expired error
+    if (!response.success) {
+      const errorMsg = response.error || '';
+      if (
+        errorMsg.includes('authorization expired') ||
+        errorMsg.includes('invalid_grant') ||
+        errorMsg.includes('Token has been expired')
+      ) {
+        // construct a SyncResult with sentinel error so callers can react
+        return {
+          synced: 0,
+          errors: [
+            'google_calendar_invalid_grant',
+            response.error || 'Authorization expired',
+          ],
+          durationMs: 0,
+          filtered: { count: 0, events: [] },
+        };
+      }
       throw new Error(response.error || 'Failed to sync events');
+    }
+
+    if (!response.data) {
+      throw new Error('Failed to sync events');
     }
 
     return response.data;
