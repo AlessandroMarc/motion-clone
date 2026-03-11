@@ -54,8 +54,22 @@ class GoogleCalendarService {
       body: JSON.stringify({ user_id: userId }),
     });
 
-    if (!response.success || !response.data) {
+    // handle invalid_grant case where backend returns a 401 error
+    if (!response.success) {
+      if (response.error?.includes('authorization expired')) {
+        // construct a SyncResult with sentinel error so callers can react
+        return {
+          synced: 0,
+          errors: ['google_calendar_invalid_grant', response.error],
+          durationMs: 0,
+          filtered: { count: 0, events: [] },
+        };
+      }
       throw new Error(response.error || 'Failed to sync events');
+    }
+
+    if (!response.data) {
+      throw new Error('Failed to sync events');
     }
 
     return response.data;

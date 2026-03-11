@@ -83,7 +83,7 @@ export function useCalendarEvents(weekDates: Date[]) {
     fetchEvents().catch(() => {
       // Already handled in try-catch, this prevents unhandled rejection
     });
-  }, [weekKey]);
+  }, [weekKey, getWeekRangeIso]);
 
   // Group events by day for easier rendering
   const eventsByDay = useMemo(() => {

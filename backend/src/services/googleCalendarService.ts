@@ -249,6 +249,7 @@ export class GoogleCalendarService {
         reason: 'free' | 'declined';
       }>;
     };
+    // errorCode removed, not part of declared type
   }> {
     const existingSync = GoogleCalendarService.inFlightSyncs.get(userId);
     if (existingSync) {
@@ -687,10 +688,37 @@ export class GoogleCalendarService {
       };
     } catch (error) {
       const durationMs = Date.now() - startTime;
+      let errorMsg =
+        error instanceof Error ? error.message : 'Unknown sync error';
+      // Detect Google OAuth invalid_grant error
+      if (
+        errorMsg.includes('invalid_grant') ||
+        errorMsg.includes('Token has been expired or revoked') ||
+        errorMsg.includes('refresh token is not set')
+      ) {
+        errorMsg = 'Google Calendar authorization expired. Please reconnect.';
+        // delete tokens so status becomes disconnected
+        try {
+          await serviceRoleSupabase
+            .from('google_calendar_tokens')
+            .delete()
+            .eq('user_id', userId);
+        } catch {
+          // ignore failures
+        }
+        // Use sentinel error string for detection
+        return {
+          success: false,
+          synced: 0,
+          errors: ['google_calendar_invalid_grant', errorMsg],
+          durationMs,
+          filtered: { count: 0, events: [] },
+        };
+      }
       return {
         success: false,
         synced: 0,
-        errors: [error instanceof Error ? error.message : 'Unknown sync error'],
+        errors: [errorMsg],
         durationMs,
         filtered: { count: 0, events: [] },
       };
