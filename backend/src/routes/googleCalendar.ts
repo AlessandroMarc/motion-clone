@@ -148,6 +148,17 @@ router.post('/sync', authMiddleware, async (req: Request, res: Response) => {
         },
         `Successfully synced ${result.synced} events in ${result.durationMs}ms`
       );
+    } else if (
+      Array.isArray(result.errors) &&
+      result.errors[0] === 'google_calendar_invalid_grant'
+    ) {
+      ResponseHelper.error(
+        res,
+        result.errors[1] ||
+          'Google Calendar authorization expired. Please reconnect.',
+        401,
+        'Google Calendar authorization expired. Please reconnect.'
+      );
     } else {
       ResponseHelper.internalError(
         res,
