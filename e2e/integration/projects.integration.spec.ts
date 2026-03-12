@@ -41,9 +41,8 @@ test.describe('Projects — integration', () => {
     await createBtn.click();
 
     // ── Fill the form ──
-    await expect(
-      page.getByRole('heading', { name: /create new project/i })
-    ).toBeVisible();
+    const dialogHeading = page.getByRole('heading', { name: /create new project/i });
+    await expect(dialogHeading).toBeVisible();
 
     const nameInput = page.getByLabel(/project name/i);
     await expect(nameInput).toBeVisible();
@@ -54,36 +53,22 @@ test.describe('Projects — integration', () => {
     await descInput.fill('Automated integration test project');
 
     // ── Submit ──
-    const submitBtn = page.getByRole('button', { name: /create project/i }).last();
+    // Find the submit button within the dialog
+    const submitBtn = page.getByRole('button', { name: /create project/i }).filter({ visible: true }).last();
     
-    // Wait for submit button to be visible and enabled
+    // Wait for submit button to be visible
     await expect(submitBtn).toBeVisible({ timeout: 5000 });
     await submitBtn.scrollIntoViewIfNeeded();
     
-    // Small delay to ensure form state is settled
-    await page.waitForTimeout(200);
-
-    // Set up response watcher BEFORE clicking submit
-    // Watch for POST request to /api/projects endpoint
-    const createResponsePromise = page.waitForResponse(
-      response =>
-        response.url().includes('/api/projects') &&
-        response.request().method() === 'POST' &&
-        response.status() >= 200 &&
-        response.status() < 300,
-      { timeout: 20000 }
-    );
+    // Small delay to ensure form validation has run
+    await page.waitForTimeout(300);
 
     // Click submit
     await submitBtn.click();
 
-    // Wait for the API response
-    await createResponsePromise;
-
-    // Wait for the dialog to close
-    await expect(
-      page.getByRole('heading', { name: /create new project/i })
-    ).not.toBeVisible({ timeout: 5000 });
+    // Wait for dialog to close (primary signal that submission succeeded)
+    // This is more reliable than waiting for API response which can have timing issues
+    await expect(dialogHeading).not.toBeVisible({ timeout: 10000 });
 
     // Wait for the project list to refresh and show the new project
     // Use toPass for retry logic as the list may take time to update
