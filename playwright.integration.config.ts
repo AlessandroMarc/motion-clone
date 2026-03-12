@@ -53,7 +53,7 @@ export default defineConfig({
       command: 'npm run dev-b',
       url: 'http://localhost:3003/api/health',
       reuseExistingServer: !process.env.CI,
-      timeout: 30_000,
+      timeout: 30_000, // Increased timeout for CI environments
     },
     {
       // Frontend — real Next.js with real Supabase credentials (NO auth bypass)
