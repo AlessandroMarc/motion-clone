@@ -33,6 +33,16 @@ jest.unstable_mockModule('../../config/supabase.js', () => ({
   getAuthenticatedSupabase: jest.fn().mockReturnValue(mockClient),
 }));
 
+// Mock autoScheduleTriggerQueue to prevent actual scheduling during tests
+jest.unstable_mockModule('../autoScheduleTriggerQueue.js', () => ({
+  autoScheduleTriggerQueue: {
+    trigger: jest.fn(),
+    triggerAndWait: jest.fn().mockResolvedValue(undefined),
+    cancel: jest.fn(),
+    cancelAll: jest.fn(),
+  },
+}));
+
 const { ProjectService } = await import('../projectService.js');
 
 const makeProject = (overrides: Partial<Project> = {}): Project => ({
