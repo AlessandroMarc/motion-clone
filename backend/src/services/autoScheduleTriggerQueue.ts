@@ -14,7 +14,7 @@
 
 import type {
   AutoScheduleService,
-  AutoScheduleRunResult,
+  
 } from './autoScheduleService.js';
 
 interface PendingTrigger {
