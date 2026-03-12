@@ -29,5 +29,8 @@
   ],
   "editor.codeActionsOnSave": {
     "source.fixAll.eslint": "explicit"
-  }
+  },
+  // Playwright Test Runner configuration for integration tests
+  // Uses local config for faster startup (no globalSetup delay)
+  "playwright.test.configFile": "playwright.local.config.ts"
 }

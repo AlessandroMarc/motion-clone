@@ -8,23 +8,13 @@ They use a dedicated Google test account so production user data is never touche
 1. **Dedicated test Google account** — sign in to the app with it at least once so the user exists in Supabase.
 
 2. **Add required env vars to your root `.env`**:
-   <<<<<<< HEAD
-
-=======
-
-> > > > > > > origin/main
 
 ```
 E2E_TEST_USER_EMAIL=your-test@gmail.com
 E2E_TEST_USER_IS_TEST=true
 ```
 
-<<<<<<< HEAD
-
-=======
-
-> > > > > > > origin/main
-> > > > > > > The Supabase keys are already there (`SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`).
+The Supabase keys are already there (`SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`).
 
 ⚠️ **Safety marker**: `E2E_TEST_USER_IS_TEST=true` is required to prevent accidental deletion of real user data during cleanup.
 
@@ -40,10 +30,33 @@ No new auth methods are added. Google remains the only way to register/login. Th
 
 ## Running
 
+### Full Integration Tests (with globalSetup)
+
+Use this for CI or when you need a fresh auth session:
+
 ```bash
 # From repo root
 npm run test:e2e:integration
 ```
+
+### Local Testing with VS Code Test Runner
+
+For faster local development, use the local config which skips the slow globalSetup:
+
+```bash
+# Command line
+npm run test:e2e:local
+
+# Or with Playwright directly
+npx playwright test --config playwright.local.config.ts
+```
+
+**VS Code Test Runner:** The workspace is already configured to use `playwright.local.config.ts` for the Playwright Test Runner extension. Tests will appear in the Testing sidebar and can be run individually.
+
+> **Note:** Before using the local config or Test Runner, run the full integration tests once to generate the `storageState.json` file:
+> ```bash
+> npm run test:e2e:integration
+> ```
 
 ## Adding tests
 
