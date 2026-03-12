@@ -4,11 +4,14 @@ import { cn } from '@/lib/utils';
 import DayColumn from './DayColumn';
 import TimeColumn from './TimeColumn';
 import type { CalendarEventUnion, Task } from '@/types';
-import { getDayAbbreviation, getMonthDay } from '@/utils/calendarUtils';
+import type { FilteredGoogleEvent } from '@/services/googleCalendarService';
+import { getDayAbbreviation, getMonthDay, isSameDay } from '@/utils/calendarUtils';
 
 interface WeekScrollableGridProps {
   weekDates: Date[];
   eventsByDay: { [key: string]: CalendarEventUnion[] };
+  allDayEvents?: FilteredGoogleEvent[];
+  onBannerEventClick?: (event: FilteredGoogleEvent) => void;
   onGridCellClick: (date: Date, hour: number, minute: number) => void;
   onEventMouseDown: (
     e: React.MouseEvent,
@@ -37,6 +40,8 @@ interface WeekScrollableGridProps {
 function WeekScrollableGrid({
   weekDates,
   eventsByDay,
+  allDayEvents = [],
+  onBannerEventClick,
   onGridCellClick,
   onEventMouseDown,
   draggingEventId,
@@ -57,18 +62,18 @@ function WeekScrollableGrid({
   today.setHours(0, 0, 0, 0);
 
   return (
-    <div className="rounded-xl bg-card border border-border/50 overflow-hidden h-[calc(100vh-120px)]">
+    <div className="rounded-xl bg-card border border-border/50 overflow-hidden h-[calc(100vh-120px)] flex flex-col">
       {/* Day Headers */}
       <div
         className={cn(
-          'grid border-b border-border/50',
+          'grid border-b border-border/50 shrink-0',
           isMobile ? 'grid-cols-2' : 'grid-cols-8'
         )}
       >
         {/* Time column header */}
         <div className="p-2 text-[10px] font-medium text-muted-foreground/60 text-right pr-3"></div>
         {weekDates.map((date, index) => {
-          const isToday = date.getTime() === today.getTime();
+          const isToday = isSameDay(date, today);
           return (
             <div key={index} className="p-2 text-center">
               <div className="text-[10px] font-medium text-muted-foreground/70 uppercase tracking-wider">
@@ -90,10 +95,59 @@ function WeekScrollableGrid({
         })}
       </div>
 
+      {/* All-day events row */}
+      <div
+        className={cn(
+          'grid border-b border-border/50 bg-muted/20 min-h-[32px] shrink-0',
+          isMobile ? 'grid-cols-2' : 'grid-cols-8'
+        )}
+      >
+        <div className="p-1 text-[9px] font-medium text-muted-foreground/50 text-right pr-3 flex items-center justify-end uppercase tracking-tighter">
+          banner
+        </div>
+        {weekDates.map((date, index) => {
+          const dayAllDayEvents = allDayEvents.filter(ev =>
+            isSameDay(new Date(ev.start_time), date)
+          );
+
+          return (
+            <div
+              key={index}
+              className="p-1 border-l border-border/20 first:border-l-0 flex flex-col gap-1 overflow-hidden"
+            >
+              {dayAllDayEvents.map((ev, i) => {
+                const start = new Date(ev.start_time);
+                const end = new Date(ev.end_time);
+                const timeStr = !ev.isAllDay
+                  ? `${start.getHours()}:${start.getMinutes().toString().padStart(2, '0')}-${end.getHours()}:${end.getMinutes().toString().padStart(2, '0')}`
+                  : null;
+
+                return (
+                  <button
+                    key={i}
+                    type="button"
+                    onClick={() => onBannerEventClick?.(ev)}
+                    className="px-2 py-0.5 text-[10px] font-medium bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 rounded border border-blue-200 dark:border-blue-800/60 truncate cursor-pointer hover:bg-blue-200 dark:hover:bg-blue-800/60 transition-colors text-left"
+                    title={`${ev.title}${timeStr ? ` (${timeStr})` : ''}`}
+                  >
+                    {timeStr && (
+                      <span className="text-[8px] opacity-70 mr-1 font-mono">
+                        {timeStr}
+                      </span>
+                    )}
+                    {ev.title}
+                  </button>
+                );
+              })}
+            </div>
+          );
+        })}
+      </div>
+
       {/* Scrollable Grid */}
       <div
         ref={gridRef}
-        className="h-[calc(100%-60px)] overflow-y-auto"
+        className="flex-1 overflow-y-auto"
         onDragOver={e => {
           if (onExternalTaskDrop) {
             e.preventDefault();

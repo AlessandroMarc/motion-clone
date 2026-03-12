@@ -3,7 +3,8 @@
 import React, { useRef, useCallback } from 'react';
 import type { CalendarEventUnion, Task } from '@/types';
 import { isCalendarEventTask } from '@/types';
-import { formatEventTime } from '@/utils/calendarUtils';
+import type { FilteredGoogleEvent } from '@/services/googleCalendarService';
+import { formatEventTime, isSameDay } from '@/utils/calendarUtils';
 import { formatDateLong } from '@/utils/dateUtils';
 import { CheckCircle2, Sparkles, Circle, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -12,7 +13,9 @@ import { Button } from '@/components/ui/button';
 interface MobileDayScrollViewProps {
   dates: Date[];
   eventsByDay: Record<string, CalendarEventUnion[]>;
+  allDayEvents?: FilteredGoogleEvent[];
   onEventClick: (event: CalendarEventUnion) => void;
+  onBannerEventClick?: (event: FilteredGoogleEvent) => void;
   tasksMap: Map<string, Task>;
   onToday: () => void;
   onAutoSchedule?: () => void;
@@ -27,7 +30,9 @@ function formatEventTimeSafe(start: string | Date, end: string | Date): string {
 export function MobileDayScrollView({
   dates,
   eventsByDay,
+  allDayEvents = [],
   onEventClick,
+  onBannerEventClick,
   tasksMap,
   onToday,
   onAutoSchedule,
@@ -123,7 +128,34 @@ export function MobileDayScrollView({
                 )}
               </h2>
 
-              {dayEvents.length === 0 ? (
+              {/* All-day / Banner events */}
+              {allDayEvents.filter(ev => isSameDay(new Date(ev.start_time), date))
+                .length > 0 && (
+                <div className="mb-3 space-y-1.5">
+                  {allDayEvents
+                    .filter(ev => isSameDay(new Date(ev.start_time), date))
+                    .map((ev, i) => (
+                      <button
+                        key={i}
+                        type="button"
+                        onClick={() => onBannerEventClick?.(ev)}
+                        className="w-full text-left px-4 py-2 text-xs font-medium bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 rounded-lg border border-blue-200 dark:border-blue-800/60 hover:bg-blue-200 dark:hover:bg-blue-800/60 transition-colors flex items-center"
+                      >
+                        <span className="text-[10px] uppercase opacity-60 mr-2 font-bold tracking-tight shrink-0">
+                          {ev.isAllDay ? 'all-day' : 'free'}
+                        </span>
+                        {!ev.isAllDay && (
+                          <span className="text-[10px] opacity-70 mr-2 font-mono shrink-0">
+                            {formatEventTimeSafe(ev.start_time, ev.end_time)}
+                          </span>
+                        )}
+                        <span className="truncate flex-1">{ev.title}</span>
+                      </button>
+                    ))}
+                </div>
+              )}
+
+              {dayEvents.length === 0 && allDayEvents.filter(ev => isSameDay(new Date(ev.start_time), date)).length === 0 ? (
                 <p className="text-sm text-muted-foreground font-body">
                   No events
                 </p>
