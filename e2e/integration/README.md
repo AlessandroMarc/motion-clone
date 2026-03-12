@@ -54,6 +54,7 @@ npx playwright test --config playwright.local.config.ts
 **VS Code Test Runner:** The workspace is already configured to use `playwright.local.config.ts` for the Playwright Test Runner extension. Tests will appear in the Testing sidebar and can be run individually.
 
 > **Note:** Before using the local config or Test Runner, run the full integration tests once to generate the `storageState.json` file:
+>
 > ```bash
 > npm run test:e2e:integration
 > ```

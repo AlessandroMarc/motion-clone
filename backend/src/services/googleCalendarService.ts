@@ -48,7 +48,7 @@ export class GoogleCalendarService {
           start_time: string;
           end_time: string;
           reason: 'free' | 'declined';
-          isAllDay?: boolean;
+          isAllDay?: boolean | undefined;
         }>;
       };
     }>
@@ -248,7 +248,7 @@ export class GoogleCalendarService {
         start_time: string;
         end_time: string;
         reason: 'free' | 'declined';
-        isAllDay?: boolean;
+        isAllDay?: boolean | undefined;
       }>;
     };
   }> {
@@ -304,7 +304,7 @@ export class GoogleCalendarService {
         start_time: string;
         end_time: string;
         reason: 'free' | 'declined';
-        isAllDay?: boolean;
+        isAllDay?: boolean | undefined;
       }>;
     };
   }> {
@@ -350,11 +350,11 @@ export class GoogleCalendarService {
       let synced = 0;
       const filteredEvents: Array<{
         title: string;
-        description?: string;
+        description?: string | undefined;
         start_time: string;
         end_time: string;
         reason: 'free' | 'declined';
-        isAllDay?: boolean;
+        isAllDay?: boolean | undefined;
       }> = [];
       const eventsToDeleteIds: string[] = [];
 
@@ -712,7 +712,10 @@ export class GoogleCalendarService {
             .delete()
             .eq('user_id', userId);
         } catch {
-          console.warn('[GoogleCalendarService] Failed to delete expired tokens for user:', userId);  
+          console.warn(
+            '[GoogleCalendarService] Failed to delete expired tokens for user:',
+            userId
+          );
         }
         // Use sentinel error string for detection
         return {

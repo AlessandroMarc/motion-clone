@@ -5,7 +5,11 @@ import DayColumn from './DayColumn';
 import TimeColumn from './TimeColumn';
 import type { CalendarEventUnion, Task } from '@/types';
 import type { FilteredGoogleEvent } from '@/services/googleCalendarService';
-import { getDayAbbreviation, getMonthDay, isSameDay } from '@/utils/calendarUtils';
+import {
+  getDayAbbreviation,
+  getMonthDay,
+  isSameDay,
+} from '@/utils/calendarUtils';
 import { startOfDay, endOfDay } from 'date-fns';
 
 interface WeekScrollableGridProps {
