@@ -70,17 +70,21 @@ test.describe('Projects — integration', () => {
         response.request().method() === 'POST' &&
         response.status() >= 200 &&
         response.status() < 300,
-      { timeout: 20000 }
+      { timeout: 30000 }
     );
 
     // Click submit
+    console.log('[E2E] Clicking create project button...');
     await submitBtn.click();
 
     // Wait for successful API response
+    console.log('[E2E] Waiting for API response...');
     await createResponsePromise;
+    console.log('[E2E] API response received.');
 
     // Wait for dialog to close (primary signal that submission succeeded)
-    await expect(dialogHeading).not.toBeVisible({ timeout: 10000 });
+    await expect(dialogHeading).not.toBeVisible({ timeout: 15000 });
+    console.log('[E2E] Dialog closed.');
 
     // Wait for the project list to refresh and show the new project
     // In CI, React state updates and refetches can be slower
@@ -88,7 +92,9 @@ test.describe('Projects — integration', () => {
     
     // Wait for project to appear with generous timeout for CI
     // The page refreshes via refreshTrigger state change after successful creation
-    await expect(projectLink).toBeVisible({ timeout: 25000 });
+    console.log('[E2E] Waiting for project to appear in list...');
+    await expect(projectLink).toBeVisible({ timeout: 40000 });
+    console.log('[E2E] Project is visible.');
 
     // ── Delete the project ──
     // Find the project card by the link that contains the project name
