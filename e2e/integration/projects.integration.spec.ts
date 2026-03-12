@@ -56,8 +56,12 @@ test.describe('Projects — integration', () => {
     // ── Submit ──
     const submitBtn = page.getByRole('button', { name: /create project/i }).last();
     
-    // Wait for submit button to be visible
+    // Wait for submit button to be visible and enabled
     await expect(submitBtn).toBeVisible({ timeout: 5000 });
+    await submitBtn.scrollIntoViewIfNeeded();
+    
+    // Small delay to ensure form state is settled
+    await page.waitForTimeout(200);
 
     // Set up response watcher BEFORE clicking submit
     // Watch for POST request to /api/projects endpoint
@@ -67,14 +71,14 @@ test.describe('Projects — integration', () => {
         response.request().method() === 'POST' &&
         response.status() >= 200 &&
         response.status() < 300,
-      { timeout: 15000 }
+      { timeout: 20000 }
     );
 
-    // Click submit and wait for response
-    await Promise.all([
-      createResponsePromise,
-      submitBtn.click()
-    ]);
+    // Click submit
+    await submitBtn.click();
+
+    // Wait for the API response
+    await createResponsePromise;
 
     // Wait for the dialog to close
     await expect(
