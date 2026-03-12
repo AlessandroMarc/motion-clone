@@ -19,24 +19,6 @@ test.describe('Projects — integration', () => {
     // ── Navigate to projects page ──
     await page.goto('/projects');
 
-    // Wait for the backend to be healthy before proceeding
-    // This ensures the backend server is ready to accept requests
-    try {
-      const healthResponse = await page.request.get(
-        'http://localhost:3003/api/health'
-      );
-      if (!healthResponse.ok()) {
-        console.warn(
-          '[test] Backend health check failed:',
-          healthResponse.status()
-        );
-      } else {
-        console.log('[test] Backend health check passed');
-      }
-    } catch (error) {
-      console.warn('[test] Backend health check error:', error);
-    }
-
     // Wait for the AuthContext to load the session from storageState
     // The session should be in localStorage and cookies from globalSetup
     await page.waitForFunction(
@@ -64,31 +46,18 @@ test.describe('Projects — integration', () => {
     ).toBeVisible();
 
     const nameInput = page.getByLabel(/project name/i);
+    await expect(nameInput).toBeVisible();
     await nameInput.fill(projectName);
 
     const descInput = page.getByLabel(/description/i);
+    await expect(descInput).toBeVisible();
     await descInput.fill('Automated integration test project');
 
-    // Small delay to ensure form state is fully settled before submit
-    await page.waitForTimeout(300);
-
     // ── Submit ──
-    const submitBtn = page
-      .getByRole('button', { name: /create project/i })
-      .last();
-
-    // Set up request/response monitoring for debugging
-    page.on('request', request => {
-      if (request.url().includes('/api/projects') && request.method() === 'POST') {
-        console.log('[test] POST request detected:', request.url());
-      }
-    });
-
-    page.on('response', response => {
-      if (response.url().includes('/api/projects') && response.request().method() === 'POST') {
-        console.log('[test] POST response received:', response.status(), response.url());
-      }
-    });
+    const submitBtn = page.getByRole('button', { name: /create project/i }).last();
+    
+    // Wait for submit button to be visible
+    await expect(submitBtn).toBeVisible({ timeout: 5000 });
 
     // Set up response watcher BEFORE clicking submit
     // Watch for POST request to /api/projects endpoint
@@ -101,25 +70,13 @@ test.describe('Projects — integration', () => {
       { timeout: 15000 }
     );
 
-    await submitBtn.click();
+    // Click submit and wait for response
+    await Promise.all([
+      createResponsePromise,
+      submitBtn.click()
+    ]);
 
-    // Wait for the API response
-    // Note: Backend returns 201 Created for successful project creation
-    let createJson: any = null;
-    try {
-      const createResponse = await createResponsePromise;
-      createJson = await createResponse.json().catch(() => null);
-      if (createJson) {
-        console.log('[test] Project created:', createJson);
-      }
-    } catch (error) {
-      // If response watcher times out, wait for dialog to close as fallback
-      console.warn(
-        '[test] Response watcher timed out, waiting for dialog to close as fallback'
-      );
-    }
-
-    // Wait for the dialog to close (works even if response watcher missed it)
+    // Wait for the dialog to close
     await expect(
       page.getByRole('heading', { name: /create new project/i })
     ).not.toBeVisible({ timeout: 5000 });
