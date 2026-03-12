@@ -495,13 +495,22 @@ export class TaskService {
         input.start_date !== undefined ||
         input.blockedBy !== undefined ||
         input.planned_duration_minutes !== undefined ||
+        input.actual_duration_minutes !== undefined ||
+        input.priority !== undefined ||
         input.is_recurring !== undefined ||
         input.schedule_id !== undefined)
     ) {
       const userId = input.user_id ?? existingTask.user_id;
       // Wait for auto-schedule to complete to prevent race conditions
       // where frontend refreshes before deduplication happens
-      await autoScheduleTriggerQueue.triggerAndWait(userId, authToken);
+      try {
+        await autoScheduleTriggerQueue.triggerAndWait(userId, authToken);
+      } catch (err) {
+        console.error(
+          `[TaskService] Auto-schedule trigger failed for user ${userId}:`,
+          err
+        );
+      }
     }
 
     return data;
@@ -541,7 +550,17 @@ export class TaskService {
     // Trigger auto-schedule and wait for completion
     // This ensures the calendar is properly rescheduled before the frontend refreshes
     if (authToken) {
-      await autoScheduleTriggerQueue.triggerAndWait(existingTask.user_id, authToken);
+      try {
+        await autoScheduleTriggerQueue.triggerAndWait(
+          existingTask.user_id,
+          authToken
+        );
+      } catch (err) {
+        console.error(
+          `[TaskService] Auto-schedule trigger failed for user ${existingTask.user_id}:`,
+          err
+        );
+      }
     }
 
     return true;

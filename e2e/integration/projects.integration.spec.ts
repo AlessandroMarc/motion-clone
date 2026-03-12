@@ -63,19 +63,32 @@ test.describe('Projects — integration', () => {
     // Small delay to ensure form validation has run
     await page.waitForTimeout(300);
 
+    // Set up watcher for successful project creation response
+    const createResponsePromise = page.waitForResponse(
+      response =>
+        response.url().includes('/api/projects') &&
+        response.request().method() === 'POST' &&
+        response.status() >= 200 &&
+        response.status() < 300,
+      { timeout: 20000 }
+    );
+
     // Click submit
     await submitBtn.click();
 
+    // Wait for successful API response
+    await createResponsePromise;
+
     // Wait for dialog to close (primary signal that submission succeeded)
-    // This is more reliable than waiting for API response which can have timing issues
     await expect(dialogHeading).not.toBeVisible({ timeout: 10000 });
 
     // Wait for the project list to refresh and show the new project
-    // Use toPass for retry logic as the list may take time to update
+    // In CI, React state updates and refetches can be slower
     const projectLink = page.getByRole('link', { name: projectName });
-    await expect(async () => {
-      await expect(projectLink).toBeVisible();
-    }).toPass({ timeout: 30000, intervals: [1000, 2000, 4000, 8000] });
+    
+    // Wait for project to appear with generous timeout for CI
+    // The page refreshes via refreshTrigger state change after successful creation
+    await expect(projectLink).toBeVisible({ timeout: 25000 });
 
     // ── Delete the project ──
     // Find the project card by the link that contains the project name

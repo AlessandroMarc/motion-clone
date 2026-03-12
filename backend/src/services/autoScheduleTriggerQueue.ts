@@ -42,8 +42,10 @@ async function getAutoScheduleService(): Promise<any> {
 
 class AutoScheduleTriggerQueueImpl {
   private pendingTriggers = new Map<string, PendingTrigger>();
-  // Track in-flight synchronous runs to prevent duplicate triggers
-  private runningSyncTriggers = new Set<string>();
+  // Track in-flight synchronous runs and their promises
+  private runningSyncPromises = new Map<string, Promise<void>>();
+  // Track if a rerun is needed because a mutation occurred during a run
+  private needsRerun = new Set<string>();
 
   /**
    * Queue an auto-schedule trigger for the given user.
@@ -54,6 +56,11 @@ class AutoScheduleTriggerQueueImpl {
    * @param authToken Auth token for API calls
    */
   trigger(userId: string, authToken: string): void {
+    // If a sync run is in flight, mark that we need a rerun after it finishes
+    if (this.runningSyncPromises.has(userId)) {
+      this.needsRerun.add(userId);
+    }
+
     // Cancel existing timer if present
     const existing = this.pendingTriggers.get(userId);
     if (existing) {
@@ -79,10 +86,12 @@ class AutoScheduleTriggerQueueImpl {
    * @returns Promise that resolves when auto-schedule completes
    */
   async triggerAndWait(userId: string, authToken: string): Promise<void> {
-    // If a sync run is already in flight for this user, wait for it
-    const syncKey = `sync-${userId}`;
-    if (this.runningSyncTriggers.has(syncKey)) {
-      // Already running, just return (caller will see the result eventually)
+    // If a sync run is already in flight for this user, join it and return
+    const existingPromise = this.runningSyncPromises.get(userId);
+    if (existingPromise) {
+      // Mark that we need another run after this one finishes because a new mutation just happened
+      this.needsRerun.add(userId);
+      await existingPromise;
       return;
     }
 
@@ -93,14 +102,28 @@ class AutoScheduleTriggerQueueImpl {
       this.pendingTriggers.delete(userId);
     }
 
+    // Create a recursive runner to handle reruns
+    const run = async (): Promise<void> => {
+      try {
+        const service = await getAutoScheduleService();
+        await service.run(userId, authToken);
+      } finally {
+        // If a rerun was requested while this run was active, start another one
+        if (this.needsRerun.has(userId)) {
+          this.needsRerun.delete(userId);
+          await run();
+        }
+      }
+    };
+
     // Mark as running and execute
-    this.runningSyncTriggers.add(syncKey);
-    try {
-      const service = await getAutoScheduleService();
-      await service.run(userId, authToken);
-    } finally {
-      this.runningSyncTriggers.delete(syncKey);
-    }
+    const promise = run().finally(() => {
+      this.runningSyncPromises.delete(userId);
+      this.needsRerun.delete(userId);
+    });
+
+    this.runningSyncPromises.set(userId, promise);
+    await promise;
   }
 
   /**
