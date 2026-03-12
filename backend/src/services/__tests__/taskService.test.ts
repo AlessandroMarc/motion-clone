@@ -28,6 +28,16 @@ jest.unstable_mockModule('../../config/supabase.js', () => ({
   serviceRoleSupabase: mockClient,
 }));
 
+// Mock autoScheduleTriggerQueue to prevent actual scheduling during tests
+jest.unstable_mockModule('../autoScheduleTriggerQueue.js', () => ({
+  autoScheduleTriggerQueue: {
+    trigger: jest.fn(),
+    triggerAndWait: jest.fn().mockResolvedValue(undefined),
+    cancel: jest.fn(),
+    cancelAll: jest.fn(),
+  },
+}));
+
 const { TaskService } = await import('../taskService.js');
 
 const makeTask = (overrides: Partial<Task> = {}): Task => {
