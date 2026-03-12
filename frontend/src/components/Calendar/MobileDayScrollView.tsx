@@ -108,6 +108,10 @@ export function MobileDayScrollView({
             date.getMonth() === today.getMonth() &&
             date.getDate() === today.getDate();
 
+          const dayBannerEvents = allDayEvents.filter(ev =>
+            isSameDay(new Date(ev.start_time), date)
+          );
+
           return (
             <section
               key={dayKey}
@@ -129,33 +133,30 @@ export function MobileDayScrollView({
               </h2>
 
               {/* All-day / Banner events */}
-              {allDayEvents.filter(ev => isSameDay(new Date(ev.start_time), date))
-                .length > 0 && (
+              {dayBannerEvents.length > 0 && (
                 <div className="mb-3 space-y-1.5">
-                  {allDayEvents
-                    .filter(ev => isSameDay(new Date(ev.start_time), date))
-                    .map((ev, i) => (
-                      <button
-                        key={i}
-                        type="button"
-                        onClick={() => onBannerEventClick?.(ev)}
-                        className="w-full text-left px-4 py-2 text-xs font-medium bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 rounded-lg border border-blue-200 dark:border-blue-800/60 hover:bg-blue-200 dark:hover:bg-blue-800/60 transition-colors flex items-center"
-                      >
-                        <span className="text-[10px] uppercase opacity-60 mr-2 font-bold tracking-tight shrink-0">
-                          {ev.isAllDay ? 'all-day' : 'free'}
+                  {dayBannerEvents.map(ev => (
+                    <button
+                      key={ev.id}
+                      type="button"
+                      onClick={() => onBannerEventClick?.(ev)}
+                      className="w-full text-left px-4 py-2 text-xs font-medium bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 rounded-lg border border-blue-200 dark:border-blue-800/60 hover:bg-blue-200 dark:hover:bg-blue-800/60 transition-colors flex items-center"
+                    >
+                      <span className="text-[10px] uppercase opacity-60 mr-2 font-bold tracking-tight shrink-0">
+                        {ev.isAllDay ? 'all-day' : 'free'}
+                      </span>
+                      {!ev.isAllDay && (
+                        <span className="text-[10px] opacity-70 mr-2 font-mono shrink-0">
+                          {formatEventTimeSafe(ev.start_time, ev.end_time)}
                         </span>
-                        {!ev.isAllDay && (
-                          <span className="text-[10px] opacity-70 mr-2 font-mono shrink-0">
-                            {formatEventTimeSafe(ev.start_time, ev.end_time)}
-                          </span>
-                        )}
-                        <span className="truncate flex-1">{ev.title}</span>
-                      </button>
-                    ))}
+                      )}
+                      <span className="truncate flex-1">{ev.title}</span>
+                    </button>
+                  ))}
                 </div>
               )}
 
-              {dayEvents.length === 0 && allDayEvents.filter(ev => isSameDay(new Date(ev.start_time), date)).length === 0 ? (
+              {dayEvents.length === 0 && dayBannerEvents.length === 0 ? (
                 <p className="text-sm text-muted-foreground font-body">
                   No events
                 </p>

@@ -6,6 +6,7 @@ import TimeColumn from './TimeColumn';
 import type { CalendarEventUnion, Task } from '@/types';
 import type { FilteredGoogleEvent } from '@/services/googleCalendarService';
 import { getDayAbbreviation, getMonthDay, isSameDay } from '@/utils/calendarUtils';
+import { startOfDay, endOfDay } from 'date-fns';
 
 interface WeekScrollableGridProps {
   weekDates: Date[];
@@ -106,16 +107,18 @@ function WeekScrollableGrid({
           banner
         </div>
         {weekDates.map((date, index) => {
-          const dayAllDayEvents = allDayEvents.filter(ev =>
-            isSameDay(new Date(ev.start_time), date)
-          );
+          const dayAllDayEvents = allDayEvents.filter(ev => {
+            const start = startOfDay(new Date(ev.start_time));
+            const end = endOfDay(new Date(ev.end_time));
+            return date >= start && date <= end;
+          });
 
           return (
             <div
               key={index}
               className="p-1 border-l border-border/20 first:border-l-0 flex flex-col gap-1 overflow-hidden"
             >
-              {dayAllDayEvents.map((ev, i) => {
+              {dayAllDayEvents.map(ev => {
                 const start = new Date(ev.start_time);
                 const end = new Date(ev.end_time);
                 const timeStr = !ev.isAllDay
@@ -124,7 +127,7 @@ function WeekScrollableGrid({
 
                 return (
                   <button
-                    key={i}
+                    key={ev.id}
                     type="button"
                     onClick={() => onBannerEventClick?.(ev)}
                     className="px-2 py-0.5 text-[10px] font-medium bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 rounded border border-blue-200 dark:border-blue-800/60 truncate cursor-pointer hover:bg-blue-200 dark:hover:bg-blue-800/60 transition-colors text-left"

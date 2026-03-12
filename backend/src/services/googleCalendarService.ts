@@ -350,6 +350,7 @@ export class GoogleCalendarService {
       let synced = 0;
       const filteredEvents: Array<{
         title: string;
+        description?: string;
         start_time: string;
         end_time: string;
         reason: 'free' | 'declined';
