@@ -42,6 +42,8 @@ async function getAutoScheduleService(): Promise<any> {
 
 class AutoScheduleTriggerQueueImpl {
   private pendingTriggers = new Map<string, PendingTrigger>();
+  // Track in-flight synchronous runs to prevent duplicate triggers
+  private runningSyncTriggers = new Set<string>();
 
   /**
    * Queue an auto-schedule trigger for the given user.
@@ -65,6 +67,40 @@ class AutoScheduleTriggerQueueImpl {
     }, DEBOUNCE_MS);
 
     this.pendingTriggers.set(userId, { userId, authToken, timer });
+  }
+
+  /**
+   * Trigger auto-schedule and wait for completion (synchronous mode).
+   * Used when the caller needs to ensure scheduling is complete before proceeding.
+   * Debounces rapid calls but waits for the scheduled run to finish.
+   *
+   * @param userId User ID
+   * @param authToken Auth token for API calls
+   * @returns Promise that resolves when auto-schedule completes
+   */
+  async triggerAndWait(userId: string, authToken: string): Promise<void> {
+    // If a sync run is already in flight for this user, wait for it
+    const syncKey = `sync-${userId}`;
+    if (this.runningSyncTriggers.has(syncKey)) {
+      // Already running, just return (caller will see the result eventually)
+      return;
+    }
+
+    // Cancel any pending async trigger for this user
+    const existing = this.pendingTriggers.get(userId);
+    if (existing) {
+      clearTimeout(existing.timer);
+      this.pendingTriggers.delete(userId);
+    }
+
+    // Mark as running and execute
+    this.runningSyncTriggers.add(syncKey);
+    try {
+      const service = await getAutoScheduleService();
+      await service.run(userId, authToken);
+    } finally {
+      this.runningSyncTriggers.delete(syncKey);
+    }
   }
 
   /**
