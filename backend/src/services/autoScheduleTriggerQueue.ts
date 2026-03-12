@@ -12,6 +12,11 @@
  * triggers fire within the debounce window.
  */
 
+import type {
+  AutoScheduleService,
+  AutoScheduleRunResult,
+} from './autoScheduleService.js';
+
 interface PendingTrigger {
   userId: string;
   authToken: string;
@@ -22,9 +27,9 @@ interface PendingTrigger {
 const DEBOUNCE_MS = 500;
 
 // Module-scoped service instance (lazy initialization)
-let autoScheduleServiceInstance: any = null;
+let autoScheduleServiceInstance: AutoScheduleService | null = null;
 
-async function getAutoScheduleService(): Promise<any> {
+async function getAutoScheduleService(): Promise<AutoScheduleService> {
   if (!autoScheduleServiceInstance) {
     try {
       const module = await import('./autoScheduleService.js');
@@ -37,7 +42,7 @@ async function getAutoScheduleService(): Promise<any> {
       throw error;
     }
   }
-  return autoScheduleServiceInstance;
+  return autoScheduleServiceInstance!;
 }
 
 class AutoScheduleTriggerQueueImpl {
@@ -133,8 +138,8 @@ class AutoScheduleTriggerQueueImpl {
   private runAutoScheduleAsync(userId: string, authToken: string): void {
     // Fire-and-forget: don't await at call site, but handle errors internally
     getAutoScheduleService()
-      .then((service: any) => service.run(userId, authToken))
-      .then((result: any) => {
+      .then((service: AutoScheduleService) => service.run(userId, authToken))
+      .then((result: AutoScheduleRunResult) => {
         console.log(
           `[AutoScheduleTrigger] Auto-schedule run complete for user ${userId}:`,
           {
@@ -145,7 +150,7 @@ class AutoScheduleTriggerQueueImpl {
           }
         );
       })
-      .catch((error: any) => {
+      .catch((error: unknown) => {
         console.error(
           `[AutoScheduleTrigger] Auto-schedule run failed for user ${userId}:`,
           error instanceof Error ? error.message : error
