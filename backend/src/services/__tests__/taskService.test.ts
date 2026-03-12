@@ -28,6 +28,18 @@ jest.unstable_mockModule('../../config/supabase.js', () => ({
   serviceRoleSupabase: mockClient,
 }));
 
+const mockAutoScheduleTriggerQueue = {
+  trigger: jest.fn(),
+  triggerAndWait: jest.fn().mockResolvedValue(undefined),
+  cancel: jest.fn(),
+  cancelAll: jest.fn(),
+};
+
+// Mock autoScheduleTriggerQueue to prevent actual scheduling during tests
+jest.unstable_mockModule('../autoScheduleTriggerQueue.js', () => ({
+  autoScheduleTriggerQueue: mockAutoScheduleTriggerQueue,
+}));
+
 const { TaskService } = await import('../taskService.js');
 
 const makeTask = (overrides: Partial<Task> = {}): Task => {
@@ -174,6 +186,21 @@ describe('TaskService', () => {
       expect(result).toEqual(task);
     });
 
+    test('should trigger auto-schedule asynchronously when created with token', async () => {
+      const task = makeTask({ user_id: 'user-1' });
+      mockClient.single.mockResolvedValue({ data: task, error: null });
+
+      await service.createTask(
+        { title: 'Task', user_id: 'user-1', planned_duration_minutes: 60 },
+        'token'
+      );
+
+      expect(mockAutoScheduleTriggerQueue.trigger).toHaveBeenCalledWith(
+        'user-1',
+        'token'
+      );
+    });
+
     test('should set status to in-progress when 0 < actual < planned', async () => {
       const task = makeTask({
         status: 'in-progress',
@@ -313,6 +340,26 @@ describe('TaskService', () => {
       expect(result?.title).toBe('Updated');
     });
 
+    test('should trigger auto-schedule synchronously when update affects scheduling', async () => {
+      const existingTask = makeTask({ user_id: 'user-1' });
+      const updatedTask = makeTask({ due_date: '2025-01-01' as any });
+
+      mockClient.single
+        .mockResolvedValueOnce({ data: existingTask, error: null }) // getTaskById
+        .mockResolvedValueOnce({ data: updatedTask, error: null }); // update result
+
+      await service.updateTask(
+        'task-1',
+        { due_date: new Date('2025-01-01'), user_id: 'user-1' },
+        'token'
+      );
+
+      expect(mockAutoScheduleTriggerQueue.triggerAndWait).toHaveBeenCalledWith(
+        'user-1',
+        'token'
+      );
+    });
+
     test('should throw when task not found during update', async () => {
       mockClient.single.mockResolvedValueOnce({
         data: null,
@@ -392,6 +439,40 @@ describe('TaskService', () => {
       expect(taskEqMock).toHaveBeenCalledWith('id', 'task-1');
 
       expect(result).toBe(true);
+    });
+
+    test('should trigger auto-schedule synchronously when deleted with token', async () => {
+      const existingTask = makeTask({ user_id: 'user-1', id: 'task-1' });
+
+      // getTaskById mock
+      const selectMock = jest.fn().mockReturnValue({
+        eq: jest.fn().mockReturnValue({
+          single: jest.fn().mockResolvedValue({ data: existingTask, error: null }),
+        }),
+      });
+
+      // calendar deletion mock
+      const calendarDeleteMock = jest.fn().mockReturnValue({
+        eq: jest.fn().mockResolvedValue({ error: null }),
+      });
+
+      // task deletion mock
+      const taskDeleteMock = jest.fn().mockReturnValue({
+        eq: jest.fn().mockResolvedValue({ error: null }),
+      });
+
+      mockClient.from.mockImplementation((tableName: string) => {
+        if (tableName === 'calendar_events') return { delete: calendarDeleteMock };
+        if (tableName === 'tasks') return { select: selectMock, delete: taskDeleteMock };
+        return mockClient;
+      });
+
+      await service.deleteTask('task-1', 'token');
+
+      expect(mockAutoScheduleTriggerQueue.triggerAndWait).toHaveBeenCalledWith(
+        'user-1',
+        'token'
+      );
     });
 
     test('should throw if calendar event deletion fails', async () => {

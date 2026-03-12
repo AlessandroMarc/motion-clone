@@ -101,7 +101,8 @@ export class ProjectService {
   async updateProject(
     id: string,
     input: UpdateProjectInput,
-    client: SupabaseClient = serviceRoleSupabase
+    client: SupabaseClient = serviceRoleSupabase,
+    authToken?: string
   ): Promise<Project> {
     const updateData: {
       updated_at: string;
@@ -131,6 +132,19 @@ export class ProjectService {
 
     if (error) {
       throw new Error(`Failed to update project: ${error.message}`);
+    }
+
+    // Trigger auto-schedule if scheduling-relevant fields changed (deadline)
+    if (authToken && input.deadline !== undefined) {
+      try {
+        // We need the user_id for the trigger; it's in the returned data
+        await autoScheduleTriggerQueue.triggerAndWait(data.user_id, authToken);
+      } catch (err) {
+        console.error(
+          `[ProjectService] Auto-schedule trigger failed for user ${data.user_id}:`,
+          err
+        );
+      }
     }
 
     return data;
@@ -170,7 +184,14 @@ export class ProjectService {
 
       // Trigger auto-schedule if we have userId and authToken
       if (userId && authToken) {
-        autoScheduleTriggerQueue.trigger(userId, authToken);
+        try {
+          await autoScheduleTriggerQueue.triggerAndWait(userId, authToken);
+        } catch (err) {
+          console.error(
+            `[ProjectService] Auto-schedule trigger failed for user ${userId}:`,
+            err
+          );
+        }
       }
 
       return true;

@@ -15,6 +15,19 @@ export interface ChangelogEntry {
 
 export const changelogEntries: ChangelogEntry[] = [
   {
+    version: '1.8.1',
+    date: 'March 2026',
+    title: 'Bug Fixes',
+    description:
+      'Fixes a race condition that caused duplicate task blocks in the calendar.',
+    items: [
+      {
+        type: 'fixed',
+        text: 'Fixed duplicate task blocks appearing in calendar after editing a task — auto-scheduler now completes before the calendar refreshes.',
+      },
+    ],
+  },
+  {
     version: '1.8.0',
     date: 'March 2026',
     title: 'Task Completion Management',

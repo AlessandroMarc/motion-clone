@@ -41,51 +41,60 @@ test.describe('Projects — integration', () => {
     await createBtn.click();
 
     // ── Fill the form ──
-    await expect(
-      page.getByRole('heading', { name: /create new project/i })
-    ).toBeVisible();
+    const dialogHeading = page.getByRole('heading', { name: /create new project/i });
+    await expect(dialogHeading).toBeVisible();
 
     const nameInput = page.getByLabel(/project name/i);
+    await expect(nameInput).toBeVisible();
     await nameInput.fill(projectName);
 
     const descInput = page.getByLabel(/description/i);
+    await expect(descInput).toBeVisible();
     await descInput.fill('Automated integration test project');
 
     // ── Submit ──
-    const submitBtn = page
-      .getByRole('button', { name: /create project/i })
-      .last();
+    // Find the submit button within the dialog
+    const submitBtn = page.getByRole('button', { name: /create project/i }).filter({ visible: true }).last();
+    
+    // Wait for submit button to be visible
+    await expect(submitBtn).toBeVisible({ timeout: 5000 });
+    await submitBtn.scrollIntoViewIfNeeded();
+    
+    // Small delay to ensure form validation has run
+    await page.waitForTimeout(300);
 
-    // Set up response watcher BEFORE clicking submit
+    // Set up watcher for successful project creation response
     const createResponsePromise = page.waitForResponse(
       response =>
-        response.url().includes('projects') &&
+        response.url().includes('/api/projects') &&
         response.request().method() === 'POST' &&
-        (response.status() === 200 || response.status() === 201),
+        response.status() >= 200 &&
+        response.status() < 300,
       { timeout: 30000 }
     );
 
+    // Click submit
+    console.log('[E2E] Clicking create project button...');
     await submitBtn.click();
 
-    // Wait for the API response
-    // Note: Backend returns 201 Created for successful project creation
-    const createResponse = await createResponsePromise;
-    const createJson = await createResponse.json().catch(() => null);
-    if (createJson) {
-      console.log('[test] Project created:', createJson);
-    }
+    // Wait for successful API response
+    console.log('[E2E] Waiting for API response...');
+    await createResponsePromise;
+    console.log('[E2E] API response received.');
 
-    // Wait for the dialog to close
-    await expect(
-      page.getByRole('heading', { name: /create new project/i })
-    ).not.toBeVisible({ timeout: 10000 });
+    // Wait for dialog to close (primary signal that submission succeeded)
+    await expect(dialogHeading).not.toBeVisible({ timeout: 15000 });
+    console.log('[E2E] Dialog closed.');
 
     // Wait for the project list to refresh and show the new project
-    // Use toPass for retry logic as the list may take time to update
+    // In CI, React state updates and refetches can be slower
     const projectLink = page.getByRole('link', { name: projectName });
-    await expect(async () => {
-      await expect(projectLink).toBeVisible();
-    }).toPass({ timeout: 30000, intervals: [1000, 2000, 4000, 8000] });
+    
+    // Wait for project to appear with generous timeout for CI
+    // The page refreshes via refreshTrigger state change after successful creation
+    console.log('[E2E] Waiting for project to appear in list...');
+    await expect(projectLink).toBeVisible({ timeout: 40000 });
+    console.log('[E2E] Project is visible.');
 
     // ── Delete the project ──
     // Find the project card by the link that contains the project name

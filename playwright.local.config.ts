@@ -2,43 +2,45 @@ import { defineConfig, devices } from '@playwright/test';
 import dotenv from 'dotenv';
 
 /**
- * Playwright config for INTEGRATION tests.
+ * Playwright config for LOCAL integration testing with Test Runner extension.
  *
- * Unlike the default E2E config, this:
- *  - Does NOT set NEXT_PUBLIC_AUTH_BYPASS (real auth via Supabase session)
- *  - Points at the REAL Supabase instance (env vars from root .env)
- *  - Starts BOTH frontend and backend servers
- *  - Runs globalSetup/globalTeardown to authenticate and clean up
- *  - Uses saved storageState so every test is already logged in
+ * This config is optimized for VS Code Test Runner:
+ * - Uses pre-existing storageState (no globalSetup delay)
+ * - Faster startup for iterative development
+ * - Same tests as playwright.integration.config.ts
+ *
+ * IMPORTANT: Run globalSetup once manually before using this config:
+ *   npx playwright test --config playwright.integration.config.ts --list
+ *
+ * Then use this config for Test Runner:
+ *   npx playwright test --config playwright.local.config.ts
  */
 
 // Load env vars from root .env
-// (already has SUPABASE_URL, SUPABASE_ANON_KEY, SUPABASE_SERVICE_ROLE_KEY, E2E_TEST_USER_EMAIL)
 dotenv.config({ path: '.env' });
 
 export default defineConfig({
   testDir: './e2e/integration',
   testMatch: '**/*.integration.spec.ts',
-  timeout: 90_000, // 90s for integration tests (real backend is slower)
+  timeout: 90_000,
   expect: {
     timeout: 10_000,
   },
   fullyParallel: false,
   forbidOnly: !!process.env.CI,
-  retries: process.env.CI ? 1 : 0,
+  retries: 0, // No retries for local dev
   workers: 1,
-  reporter: process.env.CI
-    ? [['list'], ['html', { open: 'never' }], ['json', { outputFile: 'playwright-report/results.json' }]]
-    : [['list'], ['json', { outputFile: 'playwright-report/results.json' }]],
+  reporter: [['list'], ['json', { outputFile: 'playwright-report/results.json' }]],
 
-  globalSetup: './e2e/integration/globalSetup.ts',
-  globalTeardown: './e2e/integration/globalTeardown.ts',
+  // No globalSetup - assumes storageState already exists from manual setup
+  globalSetup: undefined,
+  globalTeardown: undefined,
 
   use: {
     baseURL: 'http://localhost:3000',
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
-    // Reuse the authenticated session from globalSetup
+    // Use existing storageState from previous globalSetup run
     storageState: './e2e/integration/.auth/storageState.json',
   },
 
@@ -54,14 +56,14 @@ export default defineConfig({
       // Backend — real Express server on port 3003
       command: 'npm run dev-b',
       url: 'http://localhost:3003/api/health',
-      reuseExistingServer: !process.env.CI,
-      timeout: 30_000, // Increased timeout for CI environments
+      reuseExistingServer: true,
+      timeout: 60_000,
     },
     {
-      // Frontend — real Next.js with real Supabase credentials (NO auth bypass)
+      // Frontend — real Next.js with real Supabase credentials
       command: 'npm --prefix frontend run dev',
       url: 'http://localhost:3000',
-      reuseExistingServer: !process.env.CI,
+      reuseExistingServer: true,
       timeout: 120_000,
       env: {
         NEXT_PUBLIC_SUPABASE_URL:
@@ -74,7 +76,6 @@ export default defineConfig({
           '',
         NEXT_PUBLIC_API_URL: 'http://localhost:3003/api',
         NODE_ENV: 'development',
-        // Explicitly NOT setting NEXT_PUBLIC_AUTH_BYPASS
       },
     },
   ],
