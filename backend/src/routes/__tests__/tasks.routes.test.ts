@@ -64,10 +64,7 @@ describe('GET /api/tasks', () => {
       .get('/api/tasks?project_id=p1')
       .set(AUTH_HEADER);
     expect(res.status).toBe(200);
-    expect(mockTaskService.getTasksByProjectId).toHaveBeenCalledWith(
-      'p1',
-      {}
-    );
+    expect(mockTaskService.getTasksByProjectId).toHaveBeenCalledWith('p1', {});
   });
 
   test('filters by status', async () => {

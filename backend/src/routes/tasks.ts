@@ -87,7 +87,11 @@ router.post('/', async (req: Request, res: Response) => {
       user_id: authReq.userId, // Override with authenticated user ID
     };
     console.log('Backend received task input:', input);
-    const task = await taskService.createTask(input, authReq.supabaseClient, authReq.authToken);
+    const task = await taskService.createTask(
+      input,
+      authReq.supabaseClient,
+      authReq.authToken
+    );
     console.log('Backend created task:', task);
     ResponseHelper.created(res, task, 'Task created successfully');
   } catch (error) {
@@ -114,7 +118,12 @@ router.put('/:id', async (req: Request, res: Response) => {
       ...req.body,
       blockedBy: req.body.blocked_by,
     };
-    const task = await taskService.updateTask(id, input, authReq.supabaseClient, authReq.authToken);
+    const task = await taskService.updateTask(
+      id,
+      input,
+      authReq.supabaseClient,
+      authReq.authToken
+    );
     ResponseHelper.updated(res, task, 'Task updated successfully');
   } catch (error) {
     ResponseHelper.badRequest(

@@ -2,7 +2,10 @@ import React from 'react';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { FormProvider, useForm } from 'react-hook-form';
-import { ProjectScheduleField, PERSONAL_SCHEDULE_TOKEN } from '../ProjectScheduleField';
+import {
+  ProjectScheduleField,
+  PERSONAL_SCHEDULE_TOKEN,
+} from '../ProjectScheduleField';
 
 // Mock AuthContext
 jest.mock('@/contexts/AuthContext', () => ({
@@ -85,9 +88,7 @@ describe('ProjectScheduleField', () => {
         <ProjectScheduleField />
       </Wrapper>
     );
-    expect(
-      screen.getByText('Project schedule (optional)')
-    ).toBeInTheDocument();
+    expect(screen.getByText('Project schedule (optional)')).toBeInTheDocument();
   });
 
   it('calls onValueChange with the schedule id when a schedule is selected', async () => {

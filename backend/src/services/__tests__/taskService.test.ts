@@ -411,8 +411,12 @@ describe('TaskService', () => {
         planned_duration_minutes: 90,
       });
 
-      const recurringEventStart = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
-      const expectedEndTime = new Date(new Date(recurringEventStart).getTime() + 90 * 60000).toISOString();
+      const recurringEventStart = new Date(
+        Date.now() + 7 * 24 * 60 * 60 * 1000
+      ).toISOString();
+      const expectedEndTime = new Date(
+        new Date(recurringEventStart).getTime() + 90 * 60000
+      ).toISOString();
 
       mockClient.single
         .mockResolvedValueOnce({ data: existingTask, error: null })
@@ -627,7 +631,10 @@ describe('TaskService', () => {
     test('should return empty array when no tasks in project', async () => {
       mockClient.order.mockResolvedValue({ data: null, error: null });
 
-      const result = await service.getTasksByProjectId('proj-empty', mockClient);
+      const result = await service.getTasksByProjectId(
+        'proj-empty',
+        mockClient
+      );
 
       expect(result).toEqual([]);
     });
@@ -638,9 +645,9 @@ describe('TaskService', () => {
         error: { message: 'Query failed' },
       });
 
-      await expect(service.getTasksByProjectId('proj-1', mockClient)).rejects.toThrow(
-        'Failed to fetch tasks by project: Query failed'
-      );
+      await expect(
+        service.getTasksByProjectId('proj-1', mockClient)
+      ).rejects.toThrow('Failed to fetch tasks by project: Query failed');
     });
   });
 
@@ -662,9 +669,9 @@ describe('TaskService', () => {
         error: { message: 'Status query failed' },
       });
 
-      await expect(service.getTasksByStatus('completed', mockClient)).rejects.toThrow(
-        'Failed to fetch tasks by status: Status query failed'
-      );
+      await expect(
+        service.getTasksByStatus('completed', mockClient)
+      ).rejects.toThrow('Failed to fetch tasks by status: Status query failed');
     });
   });
 
@@ -722,7 +729,10 @@ describe('TaskService', () => {
           data: { schedule_id: 'project-schedule' },
           error: null,
         })
-        .mockResolvedValueOnce({ data: { id: 'project-schedule' }, error: null }) // schedule ownership check
+        .mockResolvedValueOnce({
+          data: { id: 'project-schedule' },
+          error: null,
+        }) // schedule ownership check
         .mockResolvedValueOnce({ data: task, error: null });
 
       await service.createTask(

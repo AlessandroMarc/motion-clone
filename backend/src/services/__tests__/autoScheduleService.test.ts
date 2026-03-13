@@ -36,6 +36,11 @@ const mockExpandRecurringTasks =
     ) => CalendarEventTask[]
   >();
 
+jest.unstable_mockModule('../../config/supabase.js', () => ({
+  getAuthenticatedSupabase: jest.fn().mockReturnValue({}),
+  serviceRoleSupabase: {},
+}));
+
 jest.unstable_mockModule('../taskService.js', () => ({
   TaskService: jest.fn().mockImplementation(() => ({
     getAllTasks: mockGetAllTasks,

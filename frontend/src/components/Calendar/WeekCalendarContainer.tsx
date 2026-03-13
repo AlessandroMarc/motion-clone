@@ -282,7 +282,10 @@ export function WeekCalendarContainer({
   };
 
   const handleTaskCreate = async (
-    taskData: Omit<Task, 'id' | 'created_at' | 'updated_at' | 'status' | 'dependencies'>
+    taskData: Omit<
+      Task,
+      'id' | 'created_at' | 'updated_at' | 'status' | 'dependencies'
+    >
   ) => {
     await taskService.createTask({
       title: taskData.title,
