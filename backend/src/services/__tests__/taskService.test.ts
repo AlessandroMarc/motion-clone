@@ -698,5 +698,33 @@ describe('TaskService', () => {
       expect(result.schedule_id).toBeDefined();
       expect(mockClient.insert).toHaveBeenCalled();
     });
+
+    test('should resolve schedule_id from linked project if provided, when schedule_id is missing', async () => {
+      const task = makeTask({ schedule_id: 'project-schedule' });
+
+      // First call to single() is for project lookup, second is for insert
+      mockClient.single
+        .mockResolvedValueOnce({
+          data: { schedule_id: 'project-schedule' },
+          error: null,
+        })
+        .mockResolvedValueOnce({ data: task, error: null });
+
+      await service.createTask(
+        {
+          title: 'Task',
+          priority: 'medium',
+          user_id: 'user-1',
+          project_id: 'project-1',
+          planned_duration_minutes: 60,
+        },
+        'token'
+      );
+
+      const insertCall = mockClient.insert.mock?.calls?.[0]?.[0] as
+        | any[]
+        | undefined;
+      expect(insertCall?.[0]?.schedule_id).toBe('project-schedule');
+    });
   });
 });

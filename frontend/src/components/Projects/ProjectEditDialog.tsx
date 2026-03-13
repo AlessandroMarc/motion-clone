@@ -33,11 +33,19 @@ import {
 } from '@/utils/dateUtils';
 
 // Helper function to format date for input field
-const formatDateForInput = (date: Date | string | null): string => {
+export const formatDateForInput = (date: Date | string | null): string => {
   if (!date) return '';
-  return toLocalDateString(
-    typeof date === 'string' ? parseLocalDate(date) : date
-  );
+
+  if (typeof date === 'string') {
+    // Data may come back from the API as a full ISO datetime (e.g. 2026-06-29T00:00:00+00:00).
+    // The date input expects YYYY-MM-DD.
+    // Use parseLocalDate only when the string is already in date-only format.
+    const isoDateOnlyMatch = /^\d{4}-\d{2}-\d{2}$/.test(date);
+    const parsed = isoDateOnlyMatch ? parseLocalDate(date) : new Date(date);
+    return toLocalDateString(parsed);
+  }
+
+  return toLocalDateString(date);
 };
 
 interface ProjectEditDialogProps {

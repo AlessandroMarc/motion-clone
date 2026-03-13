@@ -110,6 +110,7 @@ export class ProjectService {
       name?: string;
       description?: string;
       deadline?: string | null;
+      schedule_id?: string | null;
       status?: 'not-started' | 'in-progress' | 'completed';
     } = {
       updated_at: new Date().toISOString(),

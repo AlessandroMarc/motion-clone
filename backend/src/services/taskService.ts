@@ -166,6 +166,10 @@ export class TaskService {
     // Normalize start_date (earliest scheduling date)
     const startDateString = toOptionalDateOnly(input.start_date);
 
+    const client = authToken
+      ? getAuthenticatedSupabase(authToken)
+      : serviceRoleSupabase;
+
     // Resolve schedule_id: use provided value, else use project default schedule if configured,
     // otherwise fall back to user's active/default schedule.
     // Uses a single optimized query instead of 4 sequential queries.
@@ -306,9 +310,6 @@ export class TaskService {
         toDateOnly(new Date()))
       : null;
 
-    const client = authToken
-      ? getAuthenticatedSupabase(authToken)
-      : serviceRoleSupabase;
     const { data, error } = await client
       .from('tasks')
       .insert([

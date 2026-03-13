@@ -14,6 +14,8 @@ import type { FieldErrors } from 'react-hook-form';
 import type { Schedule } from '@/types';
 import type { ProjectFormData } from '@/hooks/useProjectForm';
 
+export const PERSONAL_SCHEDULE_TOKEN = '__personal_schedule__';
+
 interface ProjectScheduleFieldProps {
   errors?: FieldErrors<ProjectFormData>;
   id?: string;
@@ -80,6 +82,12 @@ export function ProjectScheduleField({
         shouldDirty: false,
         shouldValidate: true,
       });
+    } else {
+      // Use a sentinel value to represent "use personal default" in the select
+      setValue('scheduleId', PERSONAL_SCHEDULE_TOKEN, {
+        shouldDirty: false,
+        shouldValidate: true,
+      });
     }
   }, [activeSchedule?.id, schedules, selectedScheduleId, setValue]);
 
@@ -87,19 +95,25 @@ export function ProjectScheduleField({
     <div className="space-y-2">
       <Label htmlFor={id}>Project schedule (optional)</Label>
       <Select
-        value={selectedScheduleId || ''}
+        value={selectedScheduleId || PERSONAL_SCHEDULE_TOKEN}
         onValueChange={value =>
-          setValue('scheduleId', value, {
-            shouldDirty: true,
-            shouldValidate: true,
-          })
+          setValue(
+            'scheduleId',
+            value === PERSONAL_SCHEDULE_TOKEN ? undefined : value,
+            {
+              shouldDirty: true,
+              shouldValidate: true,
+            }
+          )
         }
       >
         <SelectTrigger id={id} className="w-full">
           <SelectValue placeholder="Use your personal default schedule" />
         </SelectTrigger>
         <SelectContent>
-          <SelectItem value="">Use personal default schedule</SelectItem>
+          <SelectItem value={PERSONAL_SCHEDULE_TOKEN}>
+            Use personal default schedule
+          </SelectItem>
           {isLoading && (
             <SelectItem value="__loading" disabled>
               Loading schedules...
