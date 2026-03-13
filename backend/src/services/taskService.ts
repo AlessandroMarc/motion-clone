@@ -2,6 +2,7 @@ import {
   getAuthenticatedSupabase,
   serviceRoleSupabase,
 } from '../config/supabase.js';
+import type { SupabaseClient } from '@supabase/supabase-js';
 import type { CreateTaskInput, UpdateTaskInput } from '../types/database.js';
 import type { Task } from '../types/database.js';
 import { autoScheduleTriggerQueue } from './autoScheduleTriggerQueue.js';
@@ -75,6 +76,51 @@ export class TaskService {
     }
 
     return 'in-progress';
+  }
+
+  /**
+   * Update the duration of all pending calendar events that are linked to a recurring task.
+   *
+   * Only non-completed events are updated (completed sessions should remain as-recorded).
+   */
+  private async updateRecurringTaskEventDurations(
+    taskId: string,
+    plannedDurationMinutes: number,
+    client: SupabaseClient
+  ): Promise<void> {
+    if (plannedDurationMinutes <= 0) return;
+
+    const nowIso = new Date().toISOString();
+
+    const { data: events, error } = await client
+      .from('calendar_events')
+      .select('id, start_time')
+      .eq('linked_task_id', taskId)
+      .is('completed_at', null)
+      .gte('start_time', nowIso);
+
+    if (error) {
+      console.error(
+        `[TaskService] Failed to fetch calendar events for task ${taskId}: ${error.message}`
+      );
+      return;
+    }
+
+    if (!events || events.length === 0) return;
+
+    await Promise.all(
+      events.map((event: { id: string; start_time: string }) => {
+        const start = new Date(event.start_time);
+        const end = new Date(start.getTime() + plannedDurationMinutes * 60000);
+        return client
+          .from('calendar_events')
+          .update({
+            end_time: end.toISOString(),
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', event.id);
+      })
+    );
   }
 
   // Create a new task
@@ -486,6 +532,19 @@ export class TaskService {
           `Failed to propagate title change to calendar events: ${calendarError.message}`
         );
       }
+    }
+
+    // When a recurring task's planned duration changes, update all future linked sessions so they match the new duration.
+    const plannedDurationChanged =
+      input.planned_duration_minutes !== undefined &&
+      input.planned_duration_minutes !== existingTask.planned_duration_minutes;
+
+    if (plannedDurationChanged && resultingIsRecurring) {
+      await this.updateRecurringTaskEventDurations(
+        id,
+        normalizedPlanned,
+        client
+      );
     }
 
     // Trigger auto-schedule if scheduling-relevant fields changed

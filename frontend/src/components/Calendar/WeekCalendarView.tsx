@@ -205,6 +205,7 @@ export function WeekCalendarView({
           dialogs.handleUpdateCompletion(completed, setEvents)
         }
         onLinkClick={openTaskEditForm}
+        onDelete={() => dialogs.handleDeleteEdit(setEvents)}
       />
       <CalendarCompletionDialog
         open={dialogs.completionChoiceOpen}

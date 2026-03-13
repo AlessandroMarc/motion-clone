@@ -388,6 +388,52 @@ describe('TaskService', () => {
 
       expect(result?.schedule_id).toBe('schedule-2');
     });
+
+    test('should update future linked recurring session durations when planned duration changes', async () => {
+      const existingTask = makeTask({
+        id: 'task-1',
+        is_recurring: true,
+        planned_duration_minutes: 60,
+      });
+      const updatedTask = makeTask({
+        id: 'task-1',
+        is_recurring: true,
+        planned_duration_minutes: 90,
+      });
+
+      const recurringEventStart = '2026-03-15T10:00:00.000Z';
+
+      mockClient.single
+        .mockResolvedValueOnce({ data: existingTask, error: null })
+        .mockResolvedValueOnce({ data: updatedTask, error: null });
+
+      // Mock the query chain used to fetch future recurring events
+      mockClient.is = jest.fn().mockReturnValue(mockClient);
+      mockClient.gte = jest.fn();
+      mockClient.gte.mockResolvedValueOnce({
+        data: [{ id: 'event-1', start_time: recurringEventStart }],
+        error: null,
+      });
+
+      mockClient.eq
+        .mockImplementationOnce(() => mockClient) // getTaskById
+        .mockImplementationOnce(() => mockClient) // update task
+        .mockImplementationOnce(() => mockClient) // select recurring events
+        .mockResolvedValueOnce({ data: [], error: null }); // update event
+
+      await service.updateTask(
+        'task-1',
+        { planned_duration_minutes: 90 },
+        'token'
+      );
+
+      expect(mockClient.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          end_time: '2026-03-15T11:30:00.000Z',
+          updated_at: expect.any(String),
+        })
+      );
+    });
   });
 
   // ─── deleteTask ──────────────────────────────────────────────────────────────

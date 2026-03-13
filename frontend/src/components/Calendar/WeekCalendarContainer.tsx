@@ -403,6 +403,7 @@ export function WeekCalendarContainer({
             dialogs.handleUpdateCompletion(completed, setEvents)
           }
           onLinkClick={openTaskEditForm}
+          onDelete={() => dialogs.handleDeleteEdit(setEvents)}
         />
         <CalendarCompletionDialog
           open={dialogs.completionChoiceOpen}

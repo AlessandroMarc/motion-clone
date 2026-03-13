@@ -122,16 +122,22 @@ function WeekScrollableGrid({
               key={index}
               className="p-1 border-l border-border/20 first:border-l-0 flex flex-col gap-1 overflow-hidden"
             >
-              {dayAllDayEvents.map(ev => {
+              {dayAllDayEvents.map((ev, idx) => {
                 const start = new Date(ev.start_time);
                 const end = new Date(ev.end_time);
                 const timeStr = !ev.isAllDay
-                  ? `${start.getHours()}:${start.getMinutes().toString().padStart(2, '0')}-${end.getHours()}:${end.getMinutes().toString().padStart(2, '0')}`
+                  ? `${start.getHours()}:${start
+                      .getMinutes()
+                      .toString()
+                      .padStart(2, '0')}-${end.getHours()}:${end
+                      .getMinutes()
+                      .toString()
+                      .padStart(2, '0')}`
                   : null;
 
                 return (
                   <button
-                    key={ev.id}
+                    key={ev.id ?? `${date.toISOString()}-${idx}`}
                     type="button"
                     onClick={() => onBannerEventClick?.(ev)}
                     className="px-2 py-0.5 text-[10px] font-medium bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 rounded border border-blue-200 dark:border-blue-800/60 truncate cursor-pointer hover:bg-blue-200 dark:hover:bg-blue-800/60 transition-colors text-left"
