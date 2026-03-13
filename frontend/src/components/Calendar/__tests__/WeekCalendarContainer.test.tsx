@@ -7,6 +7,9 @@ import { toast } from 'sonner';
 
 jest.mock('@/services/googleCalendarService');
 jest.mock('@/contexts/AuthContext');
+jest.mock('@/components/Tasks/forms/TaskCreateDialogForm', () => ({
+  TaskCreateDialogForm: () => null,
+}));
 jest.mock('@/hooks/use-mobile', () => ({
   useIsMobile: jest.fn(() => false),
 }));
