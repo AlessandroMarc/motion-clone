@@ -144,12 +144,15 @@ function GoogleEventDetails({
             >
               🔗
             </Button>
-            <Button
-              variant="destructive"
-              onClick={handleDeleteClick}
-              className="w-full sm:w-auto"
-            >
-              ⌫             </Button>
+            {onDelete && (
+              <Button
+                variant="destructive"
+                onClick={handleDeleteClick}
+                className="w-full sm:w-auto"
+              >
+                ⌫
+              </Button>
+            )}
           </>
         )}
         <Button

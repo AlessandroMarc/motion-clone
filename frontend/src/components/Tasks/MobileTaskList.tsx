@@ -11,6 +11,7 @@ import {
   TASK_COMPLETED_CLASS,
 } from '@/utils/taskUtils';
 import { PriorityDot, ScheduleBadge, DueDateDisplay } from './listComponents';
+import { calendarService } from '@/services/calendarService';
 import { TaskCompletionDot } from './TaskCompletionDot';
 import { TaskCreateDialogForm } from './forms/TaskCreateDialogForm';
 
@@ -22,12 +23,14 @@ interface MobileTaskListRowProps {
   task: Task;
   onSelect: (task: Task) => void;
   onToggleTaskCompletion: (task: Task, nextCompleted: boolean) => Promise<void>;
+  nextSessionDate?: Date | null;
 }
 
 function MobileTaskListRow({
   task,
   onSelect,
   onToggleTaskCompletion,
+  nextSessionDate,
 }: MobileTaskListRowProps): React.ReactElement {
   const isCompleted = isTaskCompleted(task);
   const [isPreviewingComplete, setIsPreviewingComplete] = useState(false);
@@ -50,11 +53,18 @@ function MobileTaskListRow({
         type="button"
         onClick={() => onSelect(task)}
         className={cn(
-          'flex-1 min-w-0 font-medium text-sm truncate',
+          'flex-1 min-w-0 font-medium text-sm truncate text-left',
           (isCompleted || isPreviewingComplete) && TASK_COMPLETED_CLASS
         )}
       >
-        {task.title}
+        <div>{task.title}</div>
+        <div className="text-xs text-muted-foreground">
+          <DueDateDisplay
+            task={task}
+            nextSessionDate={nextSessionDate}
+            startDate={task.start_date ?? null}
+          />
+        </div>
       </button>
     </div>
   );
@@ -68,13 +78,15 @@ interface DesktopTaskListRowProps {
   task: Task;
   onSelect: (task: Task) => void;
   onToggleTaskCompletion: (task: Task, nextCompleted: boolean) => Promise<void>;
+  nextSessionDate?: Date | null;
 }
 
 function DesktopTaskListRow({
   task,
   onSelect,
   onToggleTaskCompletion,
-}: DesktopTaskListRowProps): React.ReactElement {
+  nextSessionDate,
+}: DesktopTaskListRowProps & { nextSessionDate?: Date | null }): React.ReactElement {
   const isCompleted = isTaskCompleted(task);
   const [isPreviewingComplete, setIsPreviewingComplete] = useState(false);
 
@@ -109,7 +121,11 @@ function DesktopTaskListRow({
 
       {/* Due Date */}
       <div className="w-48 text-muted-foreground">
-        <DueDateDisplay task={task} />
+        <DueDateDisplay
+          task={task}
+          nextSessionDate={nextSessionDate}
+          startDate={task.start_date ?? null}
+        />
       </div>
 
       {/* Schedule */}
@@ -153,6 +169,53 @@ export function MobileTaskList({
   const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(
     new Set()
   );
+  const [nextSessionByTask, setNextSessionByTask] = useState<
+    Record<string, Date | null>
+  >({});
+
+  // Fetch the next scheduled session for each task (if any)
+  React.useEffect(() => {
+    if (tasks.length === 0) {
+      setNextSessionByTask({});
+      return;
+    }
+
+    let cancelled = false;
+
+    const loadSessions = async () => {
+      try {
+        const entries = await Promise.all(
+          tasks.map(async task => {
+            try {
+              const events = await calendarService.getCalendarEventsByTaskId(
+                task.id
+              );
+              const future = events
+                .map(e => new Date(e.start_time))
+                .filter(d => d.getTime() >= Date.now())
+                .sort((a, b) => a.getTime() - b.getTime());
+              return [task.id, future[0] ?? null] as const;
+            } catch {
+              return [task.id, null] as const;
+            }
+          })
+        );
+
+        if (!cancelled) {
+          setNextSessionByTask(Object.fromEntries(entries));
+        }
+      } catch {
+        // ignore failures; just don’t show session date
+        if (!cancelled) setNextSessionByTask({});
+      }
+    };
+
+    void loadSessions();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [tasks]);
 
   const groups = useMemo((): TaskGroup[] => {
     const { unassigned, byProject } = groupTasksByProject(tasks, projects);
@@ -256,6 +319,7 @@ export function MobileTaskList({
                     task={task}
                     onSelect={onSelectTask}
                     onToggleTaskCompletion={onToggleTaskCompletion}
+                    nextSessionDate={nextSessionByTask[task.id] ?? null}
                   />
                 ))}
               </div>
