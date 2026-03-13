@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -21,6 +22,7 @@ interface CalendarEditDialogProps {
   completed?: boolean;
   onCompletedChange: (completed: boolean) => Promise<void> | void;
   onLinkClick: () => void;
+  onDelete?: () => Promise<void> | void;
 }
 
 function formatDisplayTime(isoLocalString: string): string {
@@ -46,6 +48,7 @@ function GoogleEventDetails({
   onCompletedChange,
   onClose,
   onLinkClick,
+  onDelete,
 }: {
   title: string;
   description: string;
@@ -56,7 +59,9 @@ function GoogleEventDetails({
   onCompletedChange: (completed: boolean) => Promise<void> | void;
   onClose: () => void;
   onLinkClick: () => void;
+  onDelete?: () => Promise<void> | void;
 }): React.ReactElement {
+  const [deleteError, setDeleteError] = useState<string | null>(null);
   const handleCompleteClick = async () => {
     const newCompletedState = !completed;
 
@@ -66,6 +71,31 @@ function GoogleEventDetails({
       await onCompletedChange?.(newCompletedState);
     } catch (error) {
       console.error('Failed to update task completion:', error);
+    }
+  };
+
+  const handleDeleteClick = async () => {
+    if (!onDelete) return;
+
+    const confirmed = window.confirm(
+      'Delete this scheduled session? This cannot be undone.'
+    );
+    if (!confirmed) return;
+
+    try {
+      await onDelete();
+      onClose();
+      setDeleteError(null);
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : 'Unknown error deleting session';
+      setDeleteError(message);
+      console.error(
+        `[CalendarEditDialog] delete failed (onDelete=${Boolean(
+          onDelete
+        )}, onClose=${Boolean(onClose)}):`,
+        err
+      );
     }
   };
 
@@ -118,6 +148,16 @@ function GoogleEventDetails({
             >
               🔗
             </Button>
+            {onDelete && (
+              <Button
+                variant="destructive"
+                onClick={handleDeleteClick}
+                className="w-full sm:w-auto"
+                aria-label="Delete session"
+              >
+                ⌫
+              </Button>
+            )}
           </>
         )}
         <Button
@@ -127,6 +167,11 @@ function GoogleEventDetails({
         >
           Close
         </Button>
+        {deleteError ? (
+          <p className="text-sm text-destructive mt-2 w-full" role="alert">
+            {deleteError}
+          </p>
+        ) : null}
       </DialogFooter>
     </>
   );
@@ -143,6 +188,7 @@ function CalendarEditDialog({
   completed = false,
   onCompletedChange,
   onLinkClick,
+  onDelete,
 }: CalendarEditDialogProps): React.ReactElement {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -157,6 +203,7 @@ function CalendarEditDialog({
           onCompletedChange={onCompletedChange}
           onClose={() => onOpenChange(false)}
           onLinkClick={onLinkClick}
+          onDelete={onDelete}
         />
       </DialogContent>
     </Dialog>

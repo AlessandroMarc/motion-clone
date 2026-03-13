@@ -252,6 +252,7 @@ export function useCalendarDialogs(
       setEditOpen(false);
     } catch (err) {
       console.error('Failed to delete calendar event:', err);
+      throw err;
     }
   };
 

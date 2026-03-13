@@ -30,6 +30,7 @@ export class ProjectService {
           name: input.name,
           description: input.description,
           deadline: input.deadline ? normalizeToMidnight(input.deadline) : null,
+          schedule_id: input.schedule_id ?? null,
           status: input.status || 'not-started',
           user_id: input.user_id,
         },
@@ -107,6 +108,7 @@ export class ProjectService {
       name?: string;
       description?: string;
       deadline?: string | null;
+      schedule_id?: string | null;
       status?: 'not-started' | 'in-progress' | 'completed';
     } = {
       updated_at: new Date().toISOString(),
@@ -119,6 +121,8 @@ export class ProjectService {
       updateData.deadline = input.deadline
         ? normalizeToMidnight(input.deadline)
         : null;
+    if (input.schedule_id !== undefined)
+      updateData.schedule_id = input.schedule_id;
     if (input.status !== undefined) updateData.status = input.status;
 
     const { data, error } = await client
@@ -132,8 +136,11 @@ export class ProjectService {
       throw new Error(`Failed to update project: ${error.message}`);
     }
 
-    // Trigger auto-schedule if scheduling-relevant fields changed (deadline)
-    if (authToken && input.deadline !== undefined) {
+    // Trigger auto-schedule if scheduling-relevant fields changed (deadline or schedule)
+    if (
+      authToken &&
+      (input.deadline !== undefined || input.schedule_id !== undefined)
+    ) {
       try {
         // We need the user_id for the trigger; it's in the returned data
         await autoScheduleTriggerQueue.triggerAndWait(data.user_id, authToken);

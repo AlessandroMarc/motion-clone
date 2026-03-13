@@ -31,6 +31,7 @@ export const projectSchema = z.object({
     )
     .optional(),
   deadline: z.string().optional(),
+  scheduleId: z.string().optional(),
 });
 
 export type ProjectFormData = z.infer<typeof projectSchema>;
@@ -58,6 +59,7 @@ export function useProjectForm(
       name: '',
       description: '',
       deadline: '',
+      scheduleId: '',
     },
   });
 
@@ -83,6 +85,7 @@ export function useProjectForm(
         deadline: data.deadline
           ? normalizeToMidnight(parseLocalDate(data.deadline))
           : null,
+        schedule_id: data.scheduleId || undefined,
         status: 'not-started' as WorkItemStatus,
         user_id: user.id,
       };

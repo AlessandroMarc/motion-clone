@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useFormContext } from 'react-hook-form';
 import {
   Command,
@@ -31,8 +31,12 @@ export function TaskProjectField({ errors }: TaskProjectFieldProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [searchValue, setSearchValue] = useState('');
 
-  const { setValue, watch } = useFormContext();
+  const { setValue, watch } = useFormContext<TaskFormData>();
   const selectedProjectId = watch('project_id');
+
+  // True once we've auto-applied a project's schedule for the current project selection.
+  // Reset to false whenever the project changes so a new project always re-syncs its schedule.
+  const isScheduleAutoApplied = useRef(false);
 
   // Fetch projects on component mount
   useEffect(() => {
@@ -59,6 +63,25 @@ export function TaskProjectField({ errors }: TaskProjectFieldProps) {
   const selectedProject = projects.find(
     project => project.id === selectedProjectId
   );
+
+  // When the project changes, reset the flag so the new project's schedule gets applied.
+  useEffect(() => {
+    isScheduleAutoApplied.current = false;
+  }, [selectedProjectId]);
+
+  // Auto-apply the project's schedule once per project selection.
+  // The flag prevents re-applying after the user has manually changed the schedule:
+  // once isScheduleAutoApplied is true we stop touching scheduleId until the project changes.
+  useEffect(() => {
+    if (!selectedProject?.schedule_id) return;
+    if (isScheduleAutoApplied.current) return;
+
+    setValue('scheduleId', selectedProject.schedule_id, {
+      shouldDirty: true,
+      shouldValidate: true,
+    });
+    isScheduleAutoApplied.current = true;
+  }, [selectedProject?.schedule_id, selectedProjectId, setValue]);
 
   const handleSelect = (projectId: string) => {
     if (projectId === selectedProjectId) {
@@ -103,7 +126,10 @@ export function TaskProjectField({ errors }: TaskProjectFieldProps) {
             <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
           </Button>
         </PopoverTrigger>
-        <PopoverContent className="w-full p-0" align="start">
+        <PopoverContent
+          className="w-[--radix-popover-trigger-width] p-0"
+          align="start"
+        >
           <Command>
             <CommandInput
               placeholder="Search projects..."

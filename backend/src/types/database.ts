@@ -62,6 +62,7 @@ export interface CreateProjectInput {
   name: string;
   description?: string;
   deadline?: Date | string | null;
+  schedule_id?: string | null;
   status?: 'not-started' | 'in-progress' | 'completed';
   user_id: string;
 }
@@ -70,6 +71,7 @@ export interface UpdateProjectInput {
   name?: string;
   description?: string;
   deadline?: Date | string | null;
+  schedule_id?: string | null;
   status?: 'not-started' | 'in-progress' | 'completed';
   user_id?: string;
 }

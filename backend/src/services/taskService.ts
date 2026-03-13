@@ -1,7 +1,5 @@
-import {
-  getAuthenticatedSupabase,
-  serviceRoleSupabase,
-} from '../config/supabase.js';
+import { serviceRoleSupabase } from '../config/supabase.js';
+import type { SupabaseClient } from '@supabase/supabase-js';
 import type { CreateTaskInput, UpdateTaskInput } from '../types/database.js';
 import type { Task } from '../types/database.js';
 import { autoScheduleTriggerQueue } from './autoScheduleTriggerQueue.js';
@@ -56,8 +54,77 @@ export class TaskService {
     return 'in-progress';
   }
 
+  /**
+   * Update the duration of all pending calendar events that are linked to a recurring task.
+   *
+   * Only non-completed events are updated (completed sessions should remain as-recorded).
+   */
+  private async updateRecurringTaskEventDurations(
+    taskId: string,
+    plannedDurationMinutes: number,
+    client: SupabaseClient
+  ): Promise<void> {
+    if (plannedDurationMinutes < 0) return;
+
+    const nowIso = new Date().toISOString();
+
+    const { data: events, error } = await client
+      .from('calendar_events')
+      .select('id, start_time')
+      .eq('linked_task_id', taskId)
+      .is('completed_at', null)
+      .gte('start_time', nowIso);
+
+    if (error) {
+      console.error(
+        `[TaskService] Failed to fetch calendar events for task ${taskId}: ${error.message}`
+      );
+      throw new Error(
+        `Failed to fetch calendar events for recurring task: ${error.message}`
+      );
+    }
+
+    if (!events || events.length === 0) return;
+
+    const failures: Array<{ id: string; error: Error }> = [];
+
+    await Promise.all(
+      events.map(async (event: { id: string; start_time: string }) => {
+        const start = new Date(event.start_time);
+        const end = new Date(start.getTime() + plannedDurationMinutes * 60000);
+        const { error: updateError } = await client
+          .from('calendar_events')
+          .update({
+            end_time: end.toISOString(),
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', event.id);
+
+        if (updateError) {
+          failures.push({
+            id: event.id,
+            error: new Error(updateError.message || 'Unknown error'),
+          });
+        }
+      })
+    );
+
+    if (failures.length > 0) {
+      const messages = failures
+        .map(f => `${f.id}: ${f.error.message}`)
+        .join('; ');
+      throw new Error(
+        `Failed to update one or more recurring task events: ${messages}`
+      );
+    }
+  }
+
   // Create a new task
-  async createTask(input: CreateTaskInput, authToken?: string): Promise<Task> {
+  async createTask(
+    input: CreateTaskInput,
+    client: SupabaseClient,
+    authToken?: string
+  ): Promise<Task> {
     const startTime = Date.now();
     const isRecurring = input.is_recurring ?? false;
     const rawPlanned = input.planned_duration_minutes;
@@ -79,10 +146,35 @@ export class TaskService {
     // Normalize start_date (earliest scheduling date)
     const startDateString = toOptionalDateOnly(input.start_date);
 
-    // Resolve schedule_id: use provided value, then fall back to user's active/default schedule
-    // Uses a single optimized query instead of 4 sequential queries
+    // Resolve schedule_id: use provided value, else use project default schedule if configured,
+    // otherwise fall back to user's active/default schedule.
+    // Uses a single optimized query instead of 4 sequential queries.
     const scheduleStart = Date.now();
     let scheduleId = input.schedule_id;
+
+    if (!scheduleId && input.project_id) {
+      try {
+        const { data: project, error: projectError } = await client
+          .from('projects')
+          .select('schedule_id')
+          .eq('id', input.project_id)
+          .single();
+
+        if (projectError) {
+          console.error(
+            `[TaskService] Failed to fetch project schedule for project ${input.project_id}:`,
+            projectError
+          );
+        } else if (project?.schedule_id) {
+          scheduleId = project.schedule_id;
+        }
+      } catch (err) {
+        console.error(
+          `[TaskService] Failed to fetch project schedule for project ${input.project_id}:`,
+          err
+        );
+      }
+    }
 
     if (scheduleId) {
       // Verify the provided schedule belongs to this user before using it
@@ -199,9 +291,6 @@ export class TaskService {
         toLocalDateString(new Date()))
       : null;
 
-    const client = authToken
-      ? getAuthenticatedSupabase(authToken)
-      : serviceRoleSupabase;
     const { data, error } = await client
       .from('tasks')
       .insert([
@@ -252,11 +341,8 @@ export class TaskService {
   }
 
   // Get all tasks
-  async getAllTasks(authToken?: string): Promise<Task[]> {
+  async getAllTasks(client: SupabaseClient): Promise<Task[]> {
     const startTime = Date.now();
-    const client = authToken
-      ? getAuthenticatedSupabase(authToken)
-      : serviceRoleSupabase;
     const { data, error } = await client
       .from('tasks')
       .select('*')
@@ -276,10 +362,7 @@ export class TaskService {
   }
 
   // Get task by ID
-  async getTaskById(id: string, authToken?: string): Promise<Task | null> {
-    const client = authToken
-      ? getAuthenticatedSupabase(authToken)
-      : serviceRoleSupabase;
+  async getTaskById(id: string, client: SupabaseClient): Promise<Task | null> {
     const { data, error } = await client
       .from('tasks')
       .select('*')
@@ -300,9 +383,10 @@ export class TaskService {
   async updateTask(
     id: string,
     input: UpdateTaskInput,
+    client: SupabaseClient,
     authToken?: string
   ): Promise<Task> {
-    const existingTask = await this.getTaskById(id, authToken);
+    const existingTask = await this.getTaskById(id, client);
 
     if (!existingTask) {
       throw new Error('Task not found');
@@ -439,9 +523,6 @@ export class TaskService {
       normalizedActual
     );
 
-    const client = authToken
-      ? getAuthenticatedSupabase(authToken)
-      : serviceRoleSupabase;
     const { data, error } = await client
       .from('tasks')
       .update(updateData)
@@ -465,6 +546,19 @@ export class TaskService {
           `Failed to propagate title change to calendar events: ${calendarError.message}`
         );
       }
+    }
+
+    // When a recurring task's planned duration changes, update all future linked sessions so they match the new duration.
+    const plannedDurationChanged =
+      input.planned_duration_minutes !== undefined &&
+      input.planned_duration_minutes !== existingTask.planned_duration_minutes;
+
+    if (plannedDurationChanged && resultingIsRecurring) {
+      await this.updateRecurringTaskEventDurations(
+        id,
+        normalizedPlanned,
+        client
+      );
     }
 
     // Trigger auto-schedule if scheduling-relevant fields changed
@@ -496,13 +590,13 @@ export class TaskService {
   }
 
   // Delete task
-  async deleteTask(id: string, authToken?: string): Promise<boolean> {
-    const client = authToken
-      ? getAuthenticatedSupabase(authToken)
-      : serviceRoleSupabase;
-
+  async deleteTask(
+    id: string,
+    client: SupabaseClient,
+    authToken?: string
+  ): Promise<boolean> {
     // Get the task first to extract userId
-    const existingTask = await this.getTaskById(id, authToken);
+    const existingTask = await this.getTaskById(id, client);
     if (!existingTask) {
       throw new Error('Task not found');
     }
@@ -548,11 +642,8 @@ export class TaskService {
   // Get tasks by project ID
   async getTasksByProjectId(
     projectId: string,
-    authToken?: string
+    client: SupabaseClient
   ): Promise<Task[]> {
-    const client = authToken
-      ? getAuthenticatedSupabase(authToken)
-      : serviceRoleSupabase;
     const { data, error } = await client
       .from('tasks')
       .select('*')
@@ -569,11 +660,8 @@ export class TaskService {
   // Get tasks by status
   async getTasksByStatus(
     status: 'not-started' | 'in-progress' | 'completed',
-    authToken?: string
+    client: SupabaseClient
   ): Promise<Task[]> {
-    const client = authToken
-      ? getAuthenticatedSupabase(authToken)
-      : serviceRoleSupabase;
     const { data, error } = await client
       .from('tasks')
       .select('*')

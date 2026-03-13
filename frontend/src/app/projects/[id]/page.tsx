@@ -196,19 +196,19 @@ export default function ProjectDetailPage({ params }: ProjectDetailPageProps) {
 
   return (
     <ProtectedRoute>
-      <div className="flex-1 p-6 animate-in fade-in duration-300">
-        <div className="max-w-4xl mx-auto">
+      <div className="flex-1 px-4 py-6 animate-in fade-in duration-300">
+        <div className="max-w-3xl mx-auto">
           {/* Header with Back Button */}
-          <div className="mb-8">
+          <div className="mb-6">
             <Button
               variant="ghost"
               onClick={handleBack}
-              className="mb-4 hover:bg-accent"
+              className="mb-2 hover:bg-accent"
             >
               <ArrowLeft className="h-4 w-4 mr-2" />
               Back to Projects
             </Button>
-            <h1 className="text-4xl font-title text-foreground mb-2">
+            <h1 className="text-3xl font-title text-foreground mb-1">
               {project.name}
             </h1>
             <p className="font-body text-muted-foreground">
@@ -217,7 +217,7 @@ export default function ProjectDetailPage({ params }: ProjectDetailPageProps) {
           </div>
 
           {/* Main Content */}
-          <div className="space-y-8">
+          <div className="space-y-6">
             <ProjectDetailView
               project={project}
               onProjectUpdate={handleProjectUpdate}

@@ -19,8 +19,7 @@ import {
   parseLocalDate,
   toLocalDateString,
 } from '@/utils/dateUtils';
-import { TaskFormFields } from './TaskFormFields';
-import { LinkedEventsSection } from './LinkedEventsSection';
+import { TaskFormContent } from './TaskFormContent';
 import { TaskActionButtons } from './TaskActionButtons';
 import { captureEvent, captureException } from '@/lib/analytics';
 import { isTaskCompleted } from '@/utils/taskUtils';
@@ -319,9 +318,9 @@ export function TaskEditDialogForm({
     setIsSubmitting(true);
     try {
       if (!taskCompleted) {
+        fireConfetti();
         const updatedTask = await taskService.completeTaskWithEvents(task);
         onTaskUpdated(updatedTask);
-        fireConfetti();
         toast.success('Task completed');
         captureEvent('task_completed', {
           task_id: task.id,
@@ -380,20 +379,21 @@ export function TaskEditDialogForm({
               handleSubmit(onSubmit)(e);
             }}
           >
-            <TaskFormFields currentTaskId={task?.id} errors={errors} />
-
-            <LinkedEventsSection
-              events={linkedEvents}
-              isLoading={areEventsLoading}
-              error={eventsError}
-            />
-
-            <TaskActionButtons
-              taskCompleted={taskCompleted}
-              isSubmitting={isSubmitting}
-              onComplete={handleToggleCompletion}
-              onClone={handleCloneTask}
-              onCancel={handleCancel}
+            <TaskFormContent
+              currentTaskId={task?.id}
+              errors={errors}
+              linkedEvents={linkedEvents}
+              areEventsLoading={areEventsLoading}
+              eventsError={eventsError}
+              actions={
+                <TaskActionButtons
+                  taskCompleted={taskCompleted}
+                  isSubmitting={isSubmitting}
+                  onComplete={handleToggleCompletion}
+                  onClone={handleCloneTask}
+                  onCancel={handleCancel}
+                />
+              }
             />
           </form>
         </FormProvider>

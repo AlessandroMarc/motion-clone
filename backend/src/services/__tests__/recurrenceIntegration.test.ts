@@ -117,16 +117,19 @@ describe('TaskService - Recurrence integration', () => {
       return mockClient;
     });
 
-    await service.createTask({
-      title: 'Weekly standup',
-      priority: 'high',
-      user_id: '22222222-2222-2222-2222-222222222222',
-      planned_duration_minutes: 30,
-      due_date: new Date('2026-03-15'),
-      is_recurring: true,
-      recurrence_pattern: 'weekly',
-      recurrence_interval: 2,
-    });
+    await service.createTask(
+      {
+        title: 'Weekly standup',
+        priority: 'high',
+        user_id: '22222222-2222-2222-2222-222222222222',
+        planned_duration_minutes: 30,
+        due_date: new Date('2026-03-15'),
+        is_recurring: true,
+        recurrence_pattern: 'weekly',
+        recurrence_interval: 2,
+      },
+      mockClient as any
+    );
 
     const insertPayload = mockClient.insert.mock.calls[0][0][0];
     expect(insertPayload.is_recurring).toBe(true);
@@ -177,13 +180,16 @@ describe('TaskService - Recurrence integration', () => {
       return mockClient;
     });
 
-    await service.createTask({
-      title: 'One-off',
-      priority: 'medium',
-      user_id: '22222222-2222-2222-2222-222222222222',
-      planned_duration_minutes: 45,
-      is_recurring: false,
-    });
+    await service.createTask(
+      {
+        title: 'One-off',
+        priority: 'medium',
+        user_id: '22222222-2222-2222-2222-222222222222',
+        planned_duration_minutes: 45,
+        is_recurring: false,
+      },
+      mockClient as any
+    );
 
     const insertPayload = mockClient.insert.mock.calls[0][0][0];
     expect(insertPayload.is_recurring).toBe(false);
@@ -203,12 +209,16 @@ describe('TaskService - Recurrence integration', () => {
         error: null,
       });
 
-    await service.updateTask('11111111-1111-1111-1111-111111111111', {
-      is_recurring: true,
-      recurrence_pattern: 'daily',
-      recurrence_interval: 1,
-      due_date: new Date('2026-03-20'),
-    });
+    await service.updateTask(
+      '11111111-1111-1111-1111-111111111111',
+      {
+        is_recurring: true,
+        recurrence_pattern: 'daily',
+        recurrence_interval: 1,
+        due_date: new Date('2026-03-20'),
+      },
+      mockClient as any
+    );
 
     const updatePayload = mockClient.update.mock.calls[0][0];
     expect(updatePayload.is_recurring).toBe(true);
@@ -234,9 +244,11 @@ describe('TaskService - Recurrence integration', () => {
         error: null,
       });
 
-    await service.updateTask('11111111-1111-1111-1111-111111111111', {
-      is_recurring: false,
-    });
+    await service.updateTask(
+      '11111111-1111-1111-1111-111111111111',
+      { is_recurring: false },
+      mockClient as any
+    );
 
     const updatePayload = mockClient.update.mock.calls[0][0];
     expect(updatePayload.is_recurring).toBe(false);

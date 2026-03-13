@@ -14,6 +14,7 @@ import { useForm, FormProvider } from 'react-hook-form';
 import { ProjectNameField } from '@/components/Projects/forms/ProjectNameField';
 import { ProjectDescriptionField } from '@/components/Projects/forms/ProjectDescriptionField';
 import { ProjectDeadlineField } from '@/components/Projects/forms/ProjectDeadlineField';
+import { ProjectScheduleField } from '@/components/Projects/forms/ProjectScheduleField';
 import { ProjectFormActions } from '@/components/Projects/forms/ProjectFormActions';
 import {
   Select,
@@ -32,11 +33,19 @@ import {
 } from '@/utils/dateUtils';
 
 // Helper function to format date for input field
-const formatDateForInput = (date: Date | string | null): string => {
+export const formatDateForInput = (date: Date | string | null): string => {
   if (!date) return '';
-  return toLocalDateString(
-    typeof date === 'string' ? parseLocalDate(date) : date
-  );
+
+  if (typeof date === 'string') {
+    // Data may come back from the API as a full ISO datetime (e.g. 2026-06-29T00:00:00+00:00).
+    // The date input expects YYYY-MM-DD.
+    // Use parseLocalDate only when the string is already in date-only format.
+    const isoDateOnlyMatch = /^\d{4}-\d{2}-\d{2}$/.test(date);
+    const parsed = isoDateOnlyMatch ? parseLocalDate(date) : new Date(date);
+    return toLocalDateString(parsed);
+  }
+
+  return toLocalDateString(date);
 };
 
 interface ProjectEditDialogProps {
@@ -68,6 +77,7 @@ export function ProjectEditDialog({
         name: project.name,
         description: project.description || '',
         deadline: formatDateForInput(project.deadline),
+        scheduleId: project.schedule_id ?? undefined,
       });
       setStatus(project.status);
     }
@@ -82,6 +92,7 @@ export function ProjectEditDialog({
         deadline: data.deadline
           ? normalizeToMidnight(parseLocalDate(data.deadline))
           : null,
+        scheduleId: data.scheduleId || null,
         status: status as 'not-started' | 'in-progress' | 'completed',
       };
 
@@ -125,6 +136,7 @@ export function ProjectEditDialog({
                 <ProjectNameField />
                 <ProjectDescriptionField />
                 <ProjectDeadlineField />
+                <ProjectScheduleField />
 
                 {/* Status Field */}
                 <div className="space-y-2">

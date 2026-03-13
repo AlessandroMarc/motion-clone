@@ -35,6 +35,7 @@ class ProjectService {
                 : parseLocalDate(data.deadline)
             ).toISOString()
           : null,
+        schedule_id: data.scheduleId || null,
       }),
     });
 
@@ -60,6 +61,7 @@ class ProjectService {
                 : parseLocalDate(data.deadline)
             ).toISOString()
           : null,
+        schedule_id: data.scheduleId || null,
       }),
     });
 

@@ -55,7 +55,7 @@ describe('GET /api/tasks', () => {
     expect(res.status).toBe(200);
     expect(res.body.success).toBe(true);
     expect(res.body.data).toHaveLength(1);
-    expect(mockTaskService.getAllTasks).toHaveBeenCalledWith('fake-test-token');
+    expect(mockTaskService.getAllTasks).toHaveBeenCalledWith({});
   });
 
   test('filters by project_id', async () => {
@@ -64,10 +64,7 @@ describe('GET /api/tasks', () => {
       .get('/api/tasks?project_id=p1')
       .set(AUTH_HEADER);
     expect(res.status).toBe(200);
-    expect(mockTaskService.getTasksByProjectId).toHaveBeenCalledWith(
-      'p1',
-      'fake-test-token'
-    );
+    expect(mockTaskService.getTasksByProjectId).toHaveBeenCalledWith('p1', {});
   });
 
   test('filters by status', async () => {
@@ -78,7 +75,7 @@ describe('GET /api/tasks', () => {
     expect(res.status).toBe(200);
     expect(mockTaskService.getTasksByStatus).toHaveBeenCalledWith(
       'not-started',
-      'fake-test-token'
+      {}
     );
   });
 
@@ -155,6 +152,7 @@ describe('POST /api/tasks', () => {
         schedule_id: 'schedule-1',
         user_id: 'user-1',
       }),
+      {},
       'fake-test-token'
     );
   });
@@ -193,6 +191,7 @@ describe('PUT /api/tasks/:id', () => {
     expect(mockTaskService.updateTask).toHaveBeenCalledWith(
       't1',
       expect.objectContaining({ schedule_id: 'schedule-2' }),
+      {},
       'fake-test-token'
     );
   });

@@ -76,6 +76,7 @@ export function ZenModeView({ onExit }: ZenModeViewProps) {
   const [loading, setLoading] = useState(true);
   const [calendarDialogItem, setCalendarDialogItem] = useState<{
     task: Task;
+    taskEventId: string;
     startTime: Date;
     endTime: Date;
   } | null>(null);
@@ -89,31 +90,31 @@ export function ZenModeView({ onExit }: ZenModeViewProps) {
   }, []);
 
   // Fetch tasks and events for the next 4 days (today + 3 days)
-  useEffect(() => {
-    const loadData = async () => {
-      try {
-        setLoading(true);
-        const startDate = today.toISOString();
-        const endDate = new Date(
-          today.getTime() + 4 * 24 * 60 * 60 * 1000
-        ).toISOString();
+  const loadData = useCallback(async () => {
+    try {
+      setLoading(true);
+      const startDate = today.toISOString();
+      const endDate = new Date(
+        today.getTime() + 4 * 24 * 60 * 60 * 1000
+      ).toISOString();
 
-        const [allTasks, allEvents] = await Promise.all([
-          taskService.getAllTasks(),
-          calendarService.getCalendarEventsByDateRange(startDate, endDate),
-        ]);
+      const [allTasks, allEvents] = await Promise.all([
+        taskService.getAllTasks(),
+        calendarService.getCalendarEventsByDateRange(startDate, endDate),
+      ]);
 
-        console.log('ZenModeView loaded tasks:', allTasks);
-        setTasks(allTasks);
-        setEvents(allEvents);
-      } catch (error) {
-        console.error('Failed to load zen mode data:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-    loadData();
+      setTasks(allTasks);
+      setEvents(allEvents);
+    } catch (error) {
+      console.error('Failed to load zen mode data:', error);
+    } finally {
+      setLoading(false);
+    }
   }, [today]);
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
 
   // Task-linked events for all 4 days (grouped by task ID, keeping first occurrence per task per day)
   const taskMap = useMemo(() => {
@@ -220,6 +221,19 @@ export function ZenModeView({ onExit }: ZenModeViewProps) {
     );
   }, []);
 
+  const handleDeleteCalendarSession = useCallback(async () => {
+    if (!calendarDialogItem) return;
+
+    try {
+      await calendarService.deleteCalendarEvent(calendarDialogItem.taskEventId);
+      await loadData();
+      setCalendarDialogItem(null);
+    } catch (error) {
+      console.error('Failed to delete calendar session:', error);
+      throw error;
+    }
+  }, [calendarDialogItem, loadData]);
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -285,6 +299,7 @@ export function ZenModeView({ onExit }: ZenModeViewProps) {
                             onRowClick={() =>
                               setCalendarDialogItem({
                                 task,
+                                taskEventId,
                                 startTime,
                                 endTime,
                               })
@@ -345,6 +360,7 @@ export function ZenModeView({ onExit }: ZenModeViewProps) {
             setCalendarDialogItem(null);
             setTaskEditTask(task);
           }}
+          onDelete={handleDeleteCalendarSession}
         />
       )}
       <TaskEditDialogForm

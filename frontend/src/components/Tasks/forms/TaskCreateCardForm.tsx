@@ -10,35 +10,18 @@ import {
 import { Button } from '@/components/ui/button';
 import { Plus } from 'lucide-react';
 import {
-  TaskFormData,
   useTaskForm,
   type TaskCreateFormProps,
+  type TaskFormData,
 } from '@/hooks/useTaskForm';
-import { TaskTitleField } from './TaskTitleField';
-import { TaskDescriptionField } from './TaskDescriptionField';
-import { TaskDueDateField } from './TaskDueDateField';
-import { TaskStartDateField } from './TaskStartDateField';
-import { TaskPriorityField } from './TaskPriorityField';
-import { TaskProjectField } from './TaskProjectField';
-import { TaskScheduleField } from './TaskScheduleField';
-import { TaskBlockedByField } from './TaskBlockedByField';
-import { TaskDurationFields } from './TaskDurationFields';
+import { TaskFormContent } from './TaskFormContent';
 import { TaskFormActions } from './TaskFormActions';
 
 export function TaskCreateCardForm({ onTaskCreate }: TaskCreateFormProps) {
   const [isExpanded, setIsExpanded] = useState(false);
 
-  const {
-    form,
-    register,
-    handleSubmit,
-    errors,
-    priority,
-    isSubmitting,
-    onSubmit,
-    handleCancel,
-    setPriority,
-  } = useTaskForm(onTaskCreate);
+  const { form, handleSubmit, errors, isSubmitting, onSubmit, handleCancel } =
+    useTaskForm(onTaskCreate);
 
   const handleFormSubmit = async (data: TaskFormData) => {
     const success = await onSubmit(data);
@@ -79,54 +62,14 @@ export function TaskCreateCardForm({ onTaskCreate }: TaskCreateFormProps) {
         <FormProvider {...form}>
           {/* @ts-ignore - react-hook-form type inference issue with complex form data */}
           <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-4">
-            <div className="space-y-4">
-              <TaskTitleField
-                register={register}
-                errors={errors}
-                id="quick-title"
-                placeholder="Enter task title..."
-              />
-              <TaskDescriptionField
-                register={register}
-                errors={errors}
-                id="quick-description"
-                rows={2}
-              />
-
-              <div className="grid grid-cols-2 gap-4">
-                <TaskDueDateField
-                  register={register}
-                  errors={errors}
-                  id="quick-dueDate"
+            <TaskFormContent
+              errors={errors}
+              actions={
+                <TaskFormActions
+                  isSubmitting={isSubmitting}
+                  onCancel={handleFormCancel}
                 />
-                <TaskPriorityField
-                  value={priority}
-                  onValueChange={setPriority}
-                  errors={errors}
-                  id="quick-priority"
-                  placeholder="Select priority"
-                />
-              </div>
-
-              <TaskStartDateField
-                register={register}
-                errors={errors}
-                id="quick-startDate"
-              />
-
-              <TaskProjectField errors={errors} />
-              <TaskScheduleField errors={errors} id="quick-scheduleId" />
-              <TaskBlockedByField errors={errors} />
-              <TaskDurationFields
-                errors={errors}
-                plannedId="quick-planned-duration"
-                actualId="quick-actual-duration"
-              />
-            </div>
-
-            <TaskFormActions
-              isSubmitting={isSubmitting}
-              onCancel={handleFormCancel}
+              }
             />
           </form>
         </FormProvider>

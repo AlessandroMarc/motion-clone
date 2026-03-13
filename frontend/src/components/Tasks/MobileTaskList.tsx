@@ -11,6 +11,7 @@ import {
   TASK_COMPLETED_CLASS,
 } from '@/utils/taskUtils';
 import { PriorityDot, ScheduleBadge, DueDateDisplay } from './listComponents';
+import { calendarService } from '@/services/calendarService';
 import { TaskCompletionDot } from './TaskCompletionDot';
 import { TaskCreateDialogForm } from './forms/TaskCreateDialogForm';
 
@@ -22,12 +23,14 @@ interface MobileTaskListRowProps {
   task: Task;
   onSelect: (task: Task) => void;
   onToggleTaskCompletion: (task: Task, nextCompleted: boolean) => Promise<void>;
+  nextSessionDate?: Date | null;
 }
 
 function MobileTaskListRow({
   task,
   onSelect,
   onToggleTaskCompletion,
+  nextSessionDate,
 }: MobileTaskListRowProps): React.ReactElement {
   const isCompleted = isTaskCompleted(task);
   const [isPreviewingComplete, setIsPreviewingComplete] = useState(false);
@@ -50,11 +53,18 @@ function MobileTaskListRow({
         type="button"
         onClick={() => onSelect(task)}
         className={cn(
-          'flex-1 min-w-0 font-medium text-sm truncate',
+          'flex-1 min-w-0 font-medium text-sm truncate text-left',
           (isCompleted || isPreviewingComplete) && TASK_COMPLETED_CLASS
         )}
       >
-        {task.title}
+        <div>{task.title}</div>
+        <div className="text-xs text-muted-foreground">
+          <DueDateDisplay
+            task={task}
+            nextSessionDate={nextSessionDate}
+            startDate={task.start_date ?? null}
+          />
+        </div>
       </button>
     </div>
   );
@@ -68,12 +78,14 @@ interface DesktopTaskListRowProps {
   task: Task;
   onSelect: (task: Task) => void;
   onToggleTaskCompletion: (task: Task, nextCompleted: boolean) => Promise<void>;
+  nextSessionDate?: Date | null;
 }
 
 function DesktopTaskListRow({
   task,
   onSelect,
   onToggleTaskCompletion,
+  nextSessionDate,
 }: DesktopTaskListRowProps): React.ReactElement {
   const isCompleted = isTaskCompleted(task);
   const [isPreviewingComplete, setIsPreviewingComplete] = useState(false);
@@ -109,7 +121,11 @@ function DesktopTaskListRow({
 
       {/* Due Date */}
       <div className="w-48 text-muted-foreground">
-        <DueDateDisplay task={task} />
+        <DueDateDisplay
+          task={task}
+          nextSessionDate={nextSessionDate}
+          startDate={task.start_date ?? null}
+        />
       </div>
 
       {/* Schedule */}
@@ -153,6 +169,63 @@ export function MobileTaskList({
   const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(
     new Set()
   );
+  const [nextSessionByTask, setNextSessionByTask] = useState<
+    Record<string, Date | null>
+  >({});
+
+  // Fetch the next scheduled session for each task (if any)
+  const taskIds = useMemo(() => tasks.map(t => t.id), [tasks]);
+
+  React.useEffect(() => {
+    if (taskIds.length === 0) {
+      setNextSessionByTask({});
+      return;
+    }
+
+    let cancelled = false;
+
+    const loadSessions = async () => {
+      try {
+        const concurrency = 4;
+        const entries: Array<readonly [string, Date | null]> = [];
+
+        const idsCopy = [...taskIds];
+        while (idsCopy.length > 0) {
+          const batch = idsCopy.splice(0, concurrency);
+          const batchResults = await Promise.all(
+            batch.map(async taskId => {
+              try {
+                const events =
+                  await calendarService.getCalendarEventsByTaskId(taskId);
+                const future = events
+                  .map(e => e.start_time)
+                  .filter((d): d is Date => Boolean(d))
+                  .filter(d => d.getTime() >= Date.now())
+                  .sort((a, b) => a.getTime() - b.getTime());
+                return [taskId, future[0] ?? null] as const;
+              } catch {
+                return [taskId, null] as const;
+              }
+            })
+          );
+          entries.push(...batchResults);
+        }
+
+        if (!cancelled) {
+          setNextSessionByTask(Object.fromEntries(entries));
+        }
+      } catch {
+        // ignore failures; just don’t show session date
+        if (!cancelled) setNextSessionByTask({});
+      }
+    };
+
+    void loadSessions();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [taskIds]);
 
   const groups = useMemo((): TaskGroup[] => {
     const { unassigned, byProject } = groupTasksByProject(tasks, projects);
@@ -256,6 +329,7 @@ export function MobileTaskList({
                     task={task}
                     onSelect={onSelectTask}
                     onToggleTaskCompletion={onToggleTaskCompletion}
+                    nextSessionDate={nextSessionByTask[task.id] ?? null}
                   />
                 ))}
               </div>

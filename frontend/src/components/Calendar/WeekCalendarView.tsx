@@ -7,6 +7,7 @@ import {
   type Task,
 } from '@/types';
 import type { FilteredGoogleEvent } from '@/services/googleCalendarService';
+import type { TaskCreateFormProps } from '@/hooks/useTaskForm';
 import { CalendarHeader, CalendarLegend } from './CalendarHeader';
 import WeekScrollableGrid from './WeekScrollableGrid';
 import CalendarEditDialog from './CalendarEditDialog';
@@ -105,6 +106,7 @@ interface WeekCalendarViewProps {
 
   handleAutoScheduleClick: () => Promise<void>;
   isAutoScheduleRefreshing?: boolean;
+  onTaskCreate?: TaskCreateFormProps['onTaskCreate'];
 
   workingHoursStart?: number;
   workingHoursEnd?: number;
@@ -142,6 +144,7 @@ export function WeekCalendarView({
   openTaskEditForm,
   handleAutoScheduleClick,
   isAutoScheduleRefreshing,
+  onTaskCreate,
   workingHoursStart,
   workingHoursEnd,
 }: WeekCalendarViewProps) {
@@ -160,6 +163,7 @@ export function WeekCalendarView({
         onAutoSchedule={handleAutoScheduleClick}
         isAutoScheduleRefreshing={isAutoScheduleRefreshing}
         onZenMode={onZenMode}
+        onTaskCreate={onTaskCreate}
         currentDay={isMobile ? currentDay : undefined}
         onPreviousDay={isMobile ? onPreviousDay : undefined}
         onNextDay={isMobile ? onNextDay : undefined}
@@ -205,6 +209,7 @@ export function WeekCalendarView({
           dialogs.handleUpdateCompletion(completed, setEvents)
         }
         onLinkClick={openTaskEditForm}
+        onDelete={() => dialogs.handleDeleteEdit(setEvents)}
       />
       <CalendarCompletionDialog
         open={dialogs.completionChoiceOpen}
