@@ -73,25 +73,18 @@ function GoogleEventDetails({
   };
 
   const handleDeleteClick = async () => {
-    console.log('Delete clicked');
-    if (!onDelete) {
-      console.warn('Delete function not provided');
-      return;
-    }
+    if (!onDelete) return;
 
     const confirmed = window.confirm(
       'Delete this scheduled session? This cannot be undone.'
     );
-    if (!confirmed) {
-      console.log('Delete cancelled');
-      return;
-    }
+    if (!confirmed) return;
 
     try {
       await onDelete();
       onClose();
-    } catch (error) {
-      console.error('Failed to delete calendar event:', error);
+    } catch {
+      // Let caller decide how to handle failures. Do not close dialog.
     }
   };
 
@@ -149,6 +142,7 @@ function GoogleEventDetails({
                 variant="destructive"
                 onClick={handleDeleteClick}
                 className="w-full sm:w-auto"
+                aria-label="Delete session"
               >
                 ⌫
               </Button>

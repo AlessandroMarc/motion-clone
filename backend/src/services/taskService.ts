@@ -108,19 +108,37 @@ export class TaskService {
 
     if (!events || events.length === 0) return;
 
+    const failures: Array<{ id: string; error: Error }> = [];
+
     await Promise.all(
-      events.map((event: { id: string; start_time: string }) => {
+      events.map(async (event: { id: string; start_time: string }) => {
         const start = new Date(event.start_time);
         const end = new Date(start.getTime() + plannedDurationMinutes * 60000);
-        return client
+        const { error: updateError } = await client
           .from('calendar_events')
           .update({
             end_time: end.toISOString(),
             updated_at: new Date().toISOString(),
           })
           .eq('id', event.id);
+
+        if (updateError) {
+          failures.push({
+            id: event.id,
+            error: new Error(updateError.message || 'Unknown error'),
+          });
+        }
       })
     );
+
+    if (failures.length > 0) {
+      const messages = failures
+        .map(f => `${f.id}: ${f.error.message}`)
+        .join('; ');
+      throw new Error(
+        `Failed to update one or more recurring task events: ${messages}`
+      );
+    }
   }
 
   // Create a new task

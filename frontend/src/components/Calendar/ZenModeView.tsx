@@ -103,7 +103,6 @@ export function ZenModeView({ onExit }: ZenModeViewProps) {
         calendarService.getCalendarEventsByDateRange(startDate, endDate),
       ]);
 
-      console.log('ZenModeView loaded tasks:', allTasks);
       setTasks(allTasks);
       setEvents(allEvents);
     } catch (error) {
@@ -231,6 +230,7 @@ export function ZenModeView({ onExit }: ZenModeViewProps) {
       setCalendarDialogItem(null);
     } catch (error) {
       console.error('Failed to delete calendar session:', error);
+      throw error;
     }
   }, [calendarDialogItem, loadData]);
 

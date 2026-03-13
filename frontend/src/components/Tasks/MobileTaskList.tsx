@@ -184,22 +184,30 @@ export function MobileTaskList({
 
     const loadSessions = async () => {
       try {
-        const entries = await Promise.all(
-          tasks.map(async task => {
-            try {
-              const events = await calendarService.getCalendarEventsByTaskId(
-                task.id
-              );
-              const future = events
-                .map(e => new Date(e.start_time))
-                .filter(d => d.getTime() >= Date.now())
-                .sort((a, b) => a.getTime() - b.getTime());
-              return [task.id, future[0] ?? null] as const;
-            } catch {
-              return [task.id, null] as const;
-            }
-          })
-        );
+        const concurrency = 4;
+        const entries: Array<readonly [string, Date | null]> = [];
+
+        const tasksCopy = [...tasks];
+        while (tasksCopy.length > 0) {
+          const batch = tasksCopy.splice(0, concurrency);
+          const batchResults = await Promise.all(
+            batch.map(async task => {
+              try {
+                const events = await calendarService.getCalendarEventsByTaskId(
+                  task.id
+                );
+                const future = events
+                  .map(e => new Date(e.start_time))
+                  .filter(d => d.getTime() >= Date.now())
+                  .sort((a, b) => a.getTime() - b.getTime());
+                return [task.id, future[0] ?? null] as const;
+              } catch {
+                return [task.id, null] as const;
+              }
+            })
+          );
+          entries.push(...batchResults);
+        }
 
         if (!cancelled) {
           setNextSessionByTask(Object.fromEntries(entries));

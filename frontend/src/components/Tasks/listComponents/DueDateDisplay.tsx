@@ -2,6 +2,7 @@ import React from 'react';
 import { AlertCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { isTaskCompleted } from '@/utils/taskUtils';
+import { parseLocalDate } from '@/utils/dateUtils';
 import type { Task } from '@/types';
 
 interface DueDateDisplayProps {
@@ -53,7 +54,11 @@ export function DueDateDisplay({
   nextSessionDate,
   startDate,
 }: DueDateDisplayProps): React.ReactElement {
-  const dueDate = task.due_date ? new Date(task.due_date) : null;
+  const dueDate = task.due_date
+    ? typeof task.due_date === 'string'
+      ? parseLocalDate(task.due_date)
+      : new Date(task.due_date)
+    : null;
   const today = getLocalDayStart(new Date());
   const dueDateStart = dueDate ? getLocalDayStart(dueDate) : null;
   const isCompleted = isTaskCompleted(task);
