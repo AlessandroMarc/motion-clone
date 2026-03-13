@@ -17,6 +17,7 @@ import type {
   Schedule,
   CreateCalendarEventInput,
 } from '../types/database.js';
+import { getAuthenticatedSupabase } from '../config/supabase.js';
 import { TaskService } from './taskService.js';
 import { CalendarEventService } from './calendarEventService.js';
 import { UserSettingsService } from './userSettingsService.js';
@@ -134,7 +135,8 @@ export class AutoScheduleService {
    */
   async run(userId: string, authToken: string): Promise<AutoScheduleRunResult> {
     // 1. Fetch tasks
-    const allTasks = await this.taskService.getAllTasks(authToken);
+    const taskClient = getAuthenticatedSupabase(authToken);
+    const allTasks = await this.taskService.getAllTasks(taskClient);
     console.log(`[AutoSchedule] fetched ${allTasks.length} tasks`);
 
     if (allTasks.length === 0) {

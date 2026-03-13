@@ -77,7 +77,7 @@ export function ProjectEditDialog({
         name: project.name,
         description: project.description || '',
         deadline: formatDateForInput(project.deadline),
-        scheduleId: project.schedule_id ?? '',
+        scheduleId: project.schedule_id ?? undefined,
       });
       setStatus(project.status);
     }

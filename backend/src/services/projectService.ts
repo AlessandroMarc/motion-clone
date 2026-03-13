@@ -136,8 +136,8 @@ export class ProjectService {
       throw new Error(`Failed to update project: ${error.message}`);
     }
 
-    // Trigger auto-schedule if scheduling-relevant fields changed (deadline)
-    if (authToken && input.deadline !== undefined) {
+    // Trigger auto-schedule if scheduling-relevant fields changed (deadline or schedule)
+    if (authToken && (input.deadline !== undefined || input.schedule_id !== undefined)) {
       try {
         // We need the user_id for the trigger; it's in the returned data
         await autoScheduleTriggerQueue.triggerAndWait(data.user_id, authToken);

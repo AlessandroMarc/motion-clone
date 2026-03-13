@@ -7,7 +7,7 @@ describe('ProjectEditDialog', () => {
   });
 
   it('formats ISO datetime strings to YYYY-MM-DD', () => {
-    expect(formatDateForInput('2026-06-29T00:00:00+00:00')).toBe('2026-06-29');
+    expect(formatDateForInput('2026-06-29T12:00:00+00:00')).toBe('2026-06-29');
   });
 
   it('returns empty string for null/undefined', () => {

@@ -68,8 +68,9 @@ export function ProjectScheduleField({
   }, [user?.id]);
 
   useEffect(() => {
-    // If the form has not yet selected a schedule, default to the user's active schedule
-    if (selectedScheduleId) return;
+    // If the form has not yet selected a schedule, default to the user's active schedule.
+    // Use strict empty-string check so that undefined (explicit "personal default" choice) is not overridden.
+    if (selectedScheduleId !== '') return;
     if (activeSchedule?.id) {
       setValue('scheduleId', activeSchedule.id, {
         shouldDirty: false,

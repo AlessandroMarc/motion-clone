@@ -105,7 +105,7 @@ describe('TaskService', () => {
       const tasks = [makeTask({ id: 'task-1' }), makeTask({ id: 'task-2' })];
       mockClient.order.mockResolvedValue({ data: tasks, error: null });
 
-      const result = await service.getAllTasks('token');
+      const result = await service.getAllTasks(mockClient);
 
       expect(mockClient.from).toHaveBeenCalledWith('tasks');
       expect(result).toEqual(tasks);
@@ -114,7 +114,7 @@ describe('TaskService', () => {
     test('should return empty array when no tasks', async () => {
       mockClient.order.mockResolvedValue({ data: null, error: null });
 
-      const result = await service.getAllTasks();
+      const result = await service.getAllTasks(mockClient);
 
       expect(result).toEqual([]);
     });
@@ -125,7 +125,7 @@ describe('TaskService', () => {
         error: { message: 'DB error' },
       });
 
-      await expect(service.getAllTasks()).rejects.toThrow(
+      await expect(service.getAllTasks(mockClient)).rejects.toThrow(
         'Failed to fetch tasks: DB error'
       );
     });
@@ -137,7 +137,7 @@ describe('TaskService', () => {
       const task = makeTask();
       mockClient.single.mockResolvedValue({ data: task, error: null });
 
-      const result = await service.getTaskById('task-1', 'token');
+      const result = await service.getTaskById('task-1', mockClient);
 
       expect(mockClient.eq).toHaveBeenCalledWith('id', 'task-1');
       expect(result).toEqual(task);
@@ -149,7 +149,7 @@ describe('TaskService', () => {
         error: { code: 'PGRST116', message: 'Not found' },
       });
 
-      const result = await service.getTaskById('missing', 'token');
+      const result = await service.getTaskById('missing', mockClient);
 
       expect(result).toBeNull();
     });
@@ -160,7 +160,7 @@ describe('TaskService', () => {
         error: { code: 'OTHER', message: 'Connection failed' },
       });
 
-      await expect(service.getTaskById('task-1')).rejects.toThrow(
+      await expect(service.getTaskById('task-1', mockClient)).rejects.toThrow(
         'Failed to fetch task: Connection failed'
       );
     });
@@ -179,6 +179,7 @@ describe('TaskService', () => {
           user_id: 'user-1',
           planned_duration_minutes: 60,
         },
+        mockClient,
         'token'
       );
 
@@ -192,6 +193,7 @@ describe('TaskService', () => {
 
       await service.createTask(
         { title: 'Task', user_id: 'user-1', planned_duration_minutes: 60 },
+        mockClient,
         'token'
       );
 
@@ -216,6 +218,7 @@ describe('TaskService', () => {
           planned_duration_minutes: 60,
           actual_duration_minutes: 30,
         },
+        mockClient,
         'token'
       );
 
@@ -237,6 +240,7 @@ describe('TaskService', () => {
           planned_duration_minutes: 60,
           actual_duration_minutes: 60,
         },
+        mockClient,
         'token'
       );
 
@@ -254,6 +258,7 @@ describe('TaskService', () => {
           user_id: 'user-1',
           planned_duration_minutes: -10,
         },
+        mockClient,
         'token'
       );
 
@@ -287,6 +292,7 @@ describe('TaskService', () => {
             user_id: 'user-1',
             planned_duration_minutes: 60,
           },
+          mockClient,
           'token'
         )
       ).rejects.toThrow();
@@ -312,6 +318,7 @@ describe('TaskService', () => {
           schedule_id: 'schedule-2',
           planned_duration_minutes: 60,
         },
+        mockClient,
         'token'
       );
 
@@ -334,6 +341,7 @@ describe('TaskService', () => {
       const result = await service.updateTask(
         'task-1',
         { title: 'Updated' },
+        mockClient,
         'token'
       );
 
@@ -351,6 +359,7 @@ describe('TaskService', () => {
       await service.updateTask(
         'task-1',
         { due_date: new Date('2025-01-01'), user_id: 'user-1' },
+        mockClient,
         'token'
       );
 
@@ -367,7 +376,7 @@ describe('TaskService', () => {
       });
 
       await expect(
-        service.updateTask('missing', { title: 'x' })
+        service.updateTask('missing', { title: 'x' }, mockClient)
       ).rejects.toThrow('Task not found');
     });
 
@@ -383,6 +392,7 @@ describe('TaskService', () => {
       const result = await service.updateTask(
         'task-1',
         { schedule_id: 'schedule-2', user_id: 'user-1' },
+        mockClient,
         'token'
       );
 
@@ -401,7 +411,8 @@ describe('TaskService', () => {
         planned_duration_minutes: 90,
       });
 
-      const recurringEventStart = '2026-03-15T10:00:00.000Z';
+      const recurringEventStart = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
+      const expectedEndTime = new Date(new Date(recurringEventStart).getTime() + 90 * 60000).toISOString();
 
       mockClient.single
         .mockResolvedValueOnce({ data: existingTask, error: null })
@@ -424,12 +435,13 @@ describe('TaskService', () => {
       await service.updateTask(
         'task-1',
         { planned_duration_minutes: 90 },
+        mockClient,
         'token'
       );
 
       expect(mockClient.update).toHaveBeenCalledWith(
         expect.objectContaining({
-          end_time: '2026-03-15T11:30:00.000Z',
+          end_time: expectedEndTime,
           updated_at: expect.any(String),
         })
       );
@@ -472,7 +484,7 @@ describe('TaskService', () => {
         return mockClient;
       });
 
-      const result = await service.deleteTask('task-1', 'token');
+      const result = await service.deleteTask('task-1', mockClient, 'token');
 
       // Verify calendar events were deleted first
       expect(mockClient.from).toHaveBeenCalledWith('calendar_events');
@@ -517,7 +529,7 @@ describe('TaskService', () => {
         return mockClient;
       });
 
-      await service.deleteTask('task-1', 'token');
+      await service.deleteTask('task-1', mockClient, 'token');
 
       expect(mockAutoScheduleTriggerQueue.triggerAndWait).toHaveBeenCalledWith(
         'user-1',
@@ -554,7 +566,7 @@ describe('TaskService', () => {
         return mockClient;
       });
 
-      await expect(service.deleteTask('task-1')).rejects.toThrow(
+      await expect(service.deleteTask('task-1', mockClient)).rejects.toThrow(
         'Failed to delete related calendar events: Calendar delete failed'
       );
     });
@@ -594,7 +606,7 @@ describe('TaskService', () => {
         return mockClient;
       });
 
-      await expect(service.deleteTask('task-1')).rejects.toThrow(
+      await expect(service.deleteTask('task-1', mockClient)).rejects.toThrow(
         'Failed to delete task: Task delete failed'
       );
     });
@@ -606,7 +618,7 @@ describe('TaskService', () => {
       const tasks = [makeTask({ project_id: 'proj-1' })];
       mockClient.order.mockResolvedValue({ data: tasks, error: null });
 
-      const result = await service.getTasksByProjectId('proj-1', 'token');
+      const result = await service.getTasksByProjectId('proj-1', mockClient);
 
       expect(mockClient.eq).toHaveBeenCalledWith('project_id', 'proj-1');
       expect(result).toEqual(tasks);
@@ -615,7 +627,7 @@ describe('TaskService', () => {
     test('should return empty array when no tasks in project', async () => {
       mockClient.order.mockResolvedValue({ data: null, error: null });
 
-      const result = await service.getTasksByProjectId('proj-empty');
+      const result = await service.getTasksByProjectId('proj-empty', mockClient);
 
       expect(result).toEqual([]);
     });
@@ -626,7 +638,7 @@ describe('TaskService', () => {
         error: { message: 'Query failed' },
       });
 
-      await expect(service.getTasksByProjectId('proj-1')).rejects.toThrow(
+      await expect(service.getTasksByProjectId('proj-1', mockClient)).rejects.toThrow(
         'Failed to fetch tasks by project: Query failed'
       );
     });
@@ -638,7 +650,7 @@ describe('TaskService', () => {
       const tasks = [makeTask({ status: 'not-started' })];
       mockClient.order.mockResolvedValue({ data: tasks, error: null });
 
-      const result = await service.getTasksByStatus('not-started', 'token');
+      const result = await service.getTasksByStatus('not-started', mockClient);
 
       expect(mockClient.eq).toHaveBeenCalledWith('status', 'not-started');
       expect(result).toEqual(tasks);
@@ -650,7 +662,7 @@ describe('TaskService', () => {
         error: { message: 'Status query failed' },
       });
 
-      await expect(service.getTasksByStatus('completed')).rejects.toThrow(
+      await expect(service.getTasksByStatus('completed', mockClient)).rejects.toThrow(
         'Failed to fetch tasks by status: Status query failed'
       );
     });
@@ -670,6 +682,7 @@ describe('TaskService', () => {
           schedule_id: 'provided-schedule-1',
           planned_duration_minutes: 60,
         },
+        mockClient,
         'token'
       );
 
@@ -691,6 +704,7 @@ describe('TaskService', () => {
           user_id: 'user-1',
           planned_duration_minutes: 60,
         },
+        mockClient,
         'token'
       );
 
@@ -702,12 +716,13 @@ describe('TaskService', () => {
     test('should resolve schedule_id from linked project if provided, when schedule_id is missing', async () => {
       const task = makeTask({ schedule_id: 'project-schedule' });
 
-      // First call to single() is for project lookup, second is for insert
+      // First call to single() is for project lookup, second is for schedule ownership check, third is for insert
       mockClient.single
         .mockResolvedValueOnce({
           data: { schedule_id: 'project-schedule' },
           error: null,
         })
+        .mockResolvedValueOnce({ data: { id: 'project-schedule' }, error: null }) // schedule ownership check
         .mockResolvedValueOnce({ data: task, error: null });
 
       await service.createTask(
@@ -718,6 +733,7 @@ describe('TaskService', () => {
           project_id: 'project-1',
           planned_duration_minutes: 60,
         },
+        mockClient,
         'token'
       );
 

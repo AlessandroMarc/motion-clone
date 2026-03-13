@@ -341,7 +341,7 @@ export class MotionMigrationService {
           nextoUserId,
           nextoProjectId
         );
-        await this.taskService.createTask(input, nextoAuthToken);
+        await this.taskService.createTask(input, supabaseClient, nextoAuthToken);
         summary.tasksImported++;
       } catch (err) {
         summary.errors.push(
@@ -363,7 +363,7 @@ export class MotionMigrationService {
           nextoProjectId,
           true
         );
-        await this.taskService.createTask(input, nextoAuthToken);
+        await this.taskService.createTask(input, supabaseClient, nextoAuthToken);
         summary.recurringTasksImported++;
       } catch (err) {
         summary.errors.push(

@@ -55,7 +55,7 @@ export class CalendarEventService {
     skipLogging = false
   ): Promise<void> {
     try {
-      const task = await this.taskService.getTaskById(taskId);
+      const task = await this.taskService.getTaskById(taskId, serviceRoleSupabase);
       if (!task) {
         if (!skipLogging) {
           console.warn(
@@ -77,7 +77,7 @@ export class CalendarEventService {
 
       await this.taskService.updateTask(taskId, {
         actual_duration_minutes: newActual,
-      });
+      }, serviceRoleSupabase);
 
       if (!skipLogging) {
         console.log(

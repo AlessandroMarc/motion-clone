@@ -1,7 +1,4 @@
-import {
-  getAuthenticatedSupabase,
-  serviceRoleSupabase,
-} from '../config/supabase.js';
+import { serviceRoleSupabase } from '../config/supabase.js';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { CreateTaskInput, UpdateTaskInput } from '../types/database.js';
 import type { Task } from '../types/database.js';
@@ -67,7 +64,7 @@ export class TaskService {
     plannedDurationMinutes: number,
     client: SupabaseClient
   ): Promise<void> {
-    if (plannedDurationMinutes <= 0) return;
+    if (plannedDurationMinutes < 0) return;
 
     const nowIso = new Date().toISOString();
 
@@ -123,7 +120,11 @@ export class TaskService {
   }
 
   // Create a new task
-  async createTask(input: CreateTaskInput, authToken?: string): Promise<Task> {
+  async createTask(
+    input: CreateTaskInput,
+    client: SupabaseClient,
+    authToken?: string
+  ): Promise<Task> {
     const startTime = Date.now();
     const isRecurring = input.is_recurring ?? false;
     const rawPlanned = input.planned_duration_minutes;
@@ -145,10 +146,6 @@ export class TaskService {
     // Normalize start_date (earliest scheduling date)
     const startDateString = toOptionalDateOnly(input.start_date);
 
-    const client = authToken
-      ? getAuthenticatedSupabase(authToken)
-      : serviceRoleSupabase;
-
     // Resolve schedule_id: use provided value, else use project default schedule if configured,
     // otherwise fall back to user's active/default schedule.
     // Uses a single optimized query instead of 4 sequential queries.
@@ -157,13 +154,18 @@ export class TaskService {
 
     if (!scheduleId && input.project_id) {
       try {
-        const { data: project } = await client
+        const { data: project, error: projectError } = await client
           .from('projects')
           .select('schedule_id')
           .eq('id', input.project_id)
           .single();
 
-        if (project?.schedule_id) {
+        if (projectError) {
+          console.error(
+            `[TaskService] Failed to fetch project schedule for project ${input.project_id}:`,
+            projectError
+          );
+        } else if (project?.schedule_id) {
           scheduleId = project.schedule_id;
         }
       } catch (err) {
@@ -339,11 +341,8 @@ export class TaskService {
   }
 
   // Get all tasks
-  async getAllTasks(authToken?: string): Promise<Task[]> {
+  async getAllTasks(client: SupabaseClient): Promise<Task[]> {
     const startTime = Date.now();
-    const client = authToken
-      ? getAuthenticatedSupabase(authToken)
-      : serviceRoleSupabase;
     const { data, error } = await client
       .from('tasks')
       .select('*')
@@ -363,10 +362,7 @@ export class TaskService {
   }
 
   // Get task by ID
-  async getTaskById(id: string, authToken?: string): Promise<Task | null> {
-    const client = authToken
-      ? getAuthenticatedSupabase(authToken)
-      : serviceRoleSupabase;
+  async getTaskById(id: string, client: SupabaseClient): Promise<Task | null> {
     const { data, error } = await client
       .from('tasks')
       .select('*')
@@ -387,9 +383,10 @@ export class TaskService {
   async updateTask(
     id: string,
     input: UpdateTaskInput,
+    client: SupabaseClient,
     authToken?: string
   ): Promise<Task> {
-    const existingTask = await this.getTaskById(id, authToken);
+    const existingTask = await this.getTaskById(id, client);
 
     if (!existingTask) {
       throw new Error('Task not found');
@@ -526,9 +523,6 @@ export class TaskService {
       normalizedActual
     );
 
-    const client = authToken
-      ? getAuthenticatedSupabase(authToken)
-      : serviceRoleSupabase;
     const { data, error } = await client
       .from('tasks')
       .update(updateData)
@@ -596,13 +590,13 @@ export class TaskService {
   }
 
   // Delete task
-  async deleteTask(id: string, authToken?: string): Promise<boolean> {
-    const client = authToken
-      ? getAuthenticatedSupabase(authToken)
-      : serviceRoleSupabase;
-
+  async deleteTask(
+    id: string,
+    client: SupabaseClient,
+    authToken?: string
+  ): Promise<boolean> {
     // Get the task first to extract userId
-    const existingTask = await this.getTaskById(id, authToken);
+    const existingTask = await this.getTaskById(id, client);
     if (!existingTask) {
       throw new Error('Task not found');
     }
@@ -648,11 +642,8 @@ export class TaskService {
   // Get tasks by project ID
   async getTasksByProjectId(
     projectId: string,
-    authToken?: string
+    client: SupabaseClient
   ): Promise<Task[]> {
-    const client = authToken
-      ? getAuthenticatedSupabase(authToken)
-      : serviceRoleSupabase;
     const { data, error } = await client
       .from('tasks')
       .select('*')
@@ -669,11 +660,8 @@ export class TaskService {
   // Get tasks by status
   async getTasksByStatus(
     status: 'not-started' | 'in-progress' | 'completed',
-    authToken?: string
+    client: SupabaseClient
   ): Promise<Task[]> {
-    const client = authToken
-      ? getAuthenticatedSupabase(authToken)
-      : serviceRoleSupabase;
     const { data, error } = await client
       .from('tasks')
       .select('*')

@@ -21,16 +21,17 @@ router.get('/', async (req: Request, res: Response) => {
       return ResponseHelper.unauthorized(res);
     }
 
+    const authReqClient = (req as AuthRequest).supabaseClient;
     let tasks;
     if (project_id && typeof project_id === 'string') {
-      tasks = await taskService.getTasksByProjectId(project_id, token);
+      tasks = await taskService.getTasksByProjectId(project_id, authReqClient);
     } else if (status && typeof status === 'string') {
       tasks = await taskService.getTasksByStatus(
         status as WorkItemStatus,
-        token
+        authReqClient
       );
     } else {
-      tasks = await taskService.getAllTasks(token);
+      tasks = await taskService.getAllTasks(authReqClient);
     }
 
     ResponseHelper.list(
@@ -58,7 +59,7 @@ router.get('/:id', async (req: Request, res: Response) => {
         'Task ID is required and must be a string'
       );
     }
-    const task = await taskService.getTaskById(id, authReq.authToken);
+    const task = await taskService.getTaskById(id, authReq.supabaseClient);
 
     if (!task) {
       return ResponseHelper.notFound(res, 'Task');
@@ -86,7 +87,7 @@ router.post('/', async (req: Request, res: Response) => {
       user_id: authReq.userId, // Override with authenticated user ID
     };
     console.log('Backend received task input:', input);
-    const task = await taskService.createTask(input, authReq.authToken);
+    const task = await taskService.createTask(input, authReq.supabaseClient, authReq.authToken);
     console.log('Backend created task:', task);
     ResponseHelper.created(res, task, 'Task created successfully');
   } catch (error) {
@@ -113,7 +114,7 @@ router.put('/:id', async (req: Request, res: Response) => {
       ...req.body,
       blockedBy: req.body.blocked_by,
     };
-    const task = await taskService.updateTask(id, input, authReq.authToken);
+    const task = await taskService.updateTask(id, input, authReq.supabaseClient, authReq.authToken);
     ResponseHelper.updated(res, task, 'Task updated successfully');
   } catch (error) {
     ResponseHelper.badRequest(
@@ -134,7 +135,7 @@ router.delete('/:id', async (req: Request, res: Response) => {
         'Task ID is required and must be a string'
       );
     }
-    await taskService.deleteTask(id, authReq.authToken);
+    await taskService.deleteTask(id, authReq.supabaseClient, authReq.authToken);
     ResponseHelper.deleted(res, 'Task deleted successfully');
   } catch (error) {
     ResponseHelper.internalError(
