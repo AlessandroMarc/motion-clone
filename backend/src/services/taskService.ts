@@ -103,7 +103,9 @@ export class TaskService {
       console.error(
         `[TaskService] Failed to fetch calendar events for task ${taskId}: ${error.message}`
       );
-      return;
+      throw new Error(
+        `Failed to fetch calendar events for recurring task: ${error.message}`
+      );
     }
 
     if (!events || events.length === 0) return;
@@ -164,10 +166,30 @@ export class TaskService {
     // Normalize start_date (earliest scheduling date)
     const startDateString = toOptionalDateOnly(input.start_date);
 
-    // Resolve schedule_id: use provided value, then fall back to user's active/default schedule
-    // Uses a single optimized query instead of 4 sequential queries
+    // Resolve schedule_id: use provided value, else use project default schedule if configured,
+    // otherwise fall back to user's active/default schedule.
+    // Uses a single optimized query instead of 4 sequential queries.
     const scheduleStart = Date.now();
     let scheduleId = input.schedule_id;
+
+    if (!scheduleId && input.project_id) {
+      try {
+        const { data: project } = await client
+          .from('projects')
+          .select('schedule_id')
+          .eq('id', input.project_id)
+          .single();
+
+        if (project?.schedule_id) {
+          scheduleId = project.schedule_id;
+        }
+      } catch (err) {
+        console.error(
+          `[TaskService] Failed to fetch project schedule for project ${input.project_id}:`,
+          err
+        );
+      }
+    }
 
     if (scheduleId) {
       // Verify the provided schedule belongs to this user before using it

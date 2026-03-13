@@ -43,6 +43,7 @@ export interface CreateProjectData {
   name: string;
   description?: string;
   deadline?: Date | null;
+  scheduleId?: string;
   user_id: string;
 }
 
@@ -51,6 +52,7 @@ export interface UpdateProjectData {
   name?: string;
   description?: string;
   deadline?: Date | null;
+  scheduleId?: string | null;
   status?: 'not-started' | 'in-progress' | 'completed';
 }
 

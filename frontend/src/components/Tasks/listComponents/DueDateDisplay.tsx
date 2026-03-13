@@ -83,9 +83,7 @@ export function DueDateDisplay({
   }
 
   return (
-    <span
-      className={cn('text-xs', isOverdue && 'text-red-600 font-medium')}
-    >
+    <span className={cn('text-xs', isOverdue && 'text-red-600 font-medium')}>
       {isOverdue && <AlertCircle className="h-3 w-3 inline mr-1" />}
       {parts.join(', ')}
     </span>

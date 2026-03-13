@@ -10,6 +10,7 @@ CREATE TABLE projects (
     name VARCHAR(255) NOT NULL,
     description TEXT,
     deadline TIMESTAMP WITH TIME ZONE,
+    schedule_id UUID,
     status VARCHAR(20) NOT NULL DEFAULT 'not-started' CHECK (status IN ('not-started', 'in-progress', 'completed')),
     user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),

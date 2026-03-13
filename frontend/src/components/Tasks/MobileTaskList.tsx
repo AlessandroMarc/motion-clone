@@ -86,7 +86,7 @@ function DesktopTaskListRow({
   onSelect,
   onToggleTaskCompletion,
   nextSessionDate,
-}: DesktopTaskListRowProps & { nextSessionDate?: Date | null }): React.ReactElement {
+}: DesktopTaskListRowProps): React.ReactElement {
   const isCompleted = isTaskCompleted(task);
   const [isPreviewingComplete, setIsPreviewingComplete] = useState(false);
 
@@ -174,8 +174,10 @@ export function MobileTaskList({
   >({});
 
   // Fetch the next scheduled session for each task (if any)
+  const taskIds = useMemo(() => tasks.map(t => t.id), [tasks]);
+
   React.useEffect(() => {
-    if (tasks.length === 0) {
+    if (taskIds.length === 0) {
       setNextSessionByTask({});
       return;
     }
@@ -187,22 +189,22 @@ export function MobileTaskList({
         const concurrency = 4;
         const entries: Array<readonly [string, Date | null]> = [];
 
-        const tasksCopy = [...tasks];
-        while (tasksCopy.length > 0) {
-          const batch = tasksCopy.splice(0, concurrency);
+        const idsCopy = [...taskIds];
+        while (idsCopy.length > 0) {
+          const batch = idsCopy.splice(0, concurrency);
           const batchResults = await Promise.all(
-            batch.map(async task => {
+            batch.map(async taskId => {
               try {
-                const events = await calendarService.getCalendarEventsByTaskId(
-                  task.id
-                );
+                const events =
+                  await calendarService.getCalendarEventsByTaskId(taskId);
                 const future = events
-                  .map(e => new Date(e.start_time))
+                  .map(e => e.start_time)
+                  .filter((d): d is Date => Boolean(d))
                   .filter(d => d.getTime() >= Date.now())
                   .sort((a, b) => a.getTime() - b.getTime());
-                return [task.id, future[0] ?? null] as const;
+                return [taskId, future[0] ?? null] as const;
               } catch {
-                return [task.id, null] as const;
+                return [taskId, null] as const;
               }
             })
           );
@@ -223,7 +225,7 @@ export function MobileTaskList({
     return () => {
       cancelled = true;
     };
-  }, [tasks]);
+  }, [taskIds]);
 
   const groups = useMemo((): TaskGroup[] => {
     const { unassigned, byProject } = groupTasksByProject(tasks, projects);

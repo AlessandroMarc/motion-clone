@@ -57,6 +57,9 @@ interface Project {
   name: string;
   description?: string;
   deadline: Date | null;
+  // Optional schedule override for tasks created within this project.
+  // If set, tasks will default to this schedule when no schedule is explicitly chosen.
+  schedule_id?: string | null;
   milestones: Milestone[];
   status: WorkItemStatus;
   user_id: string; // owner of the project

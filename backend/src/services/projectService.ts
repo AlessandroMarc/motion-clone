@@ -32,6 +32,7 @@ export class ProjectService {
           name: input.name,
           description: input.description,
           deadline: input.deadline ? normalizeToMidnight(input.deadline) : null,
+          schedule_id: input.schedule_id ?? null,
           status: input.status || 'not-started',
           user_id: input.user_id,
         },
@@ -121,6 +122,8 @@ export class ProjectService {
       updateData.deadline = input.deadline
         ? normalizeToMidnight(input.deadline)
         : null;
+    if (input.schedule_id !== undefined)
+      updateData.schedule_id = input.schedule_id;
     if (input.status !== undefined) updateData.status = input.status;
 
     const { data, error } = await client

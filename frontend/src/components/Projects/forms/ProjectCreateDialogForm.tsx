@@ -18,6 +18,7 @@ import {
 import { ProjectNameField } from './ProjectNameField';
 import { ProjectDescriptionField } from './ProjectDescriptionField';
 import { ProjectDeadlineField } from './ProjectDeadlineField';
+import { ProjectScheduleField } from './ProjectScheduleField';
 import { ProjectFormActions } from './ProjectFormActions';
 
 export function ProjectCreateDialogForm({
@@ -64,6 +65,7 @@ export function ProjectCreateDialogForm({
               <ProjectNameField />
               <ProjectDescriptionField />
               <ProjectDeadlineField />
+              <ProjectScheduleField />
             </div>
 
             <ProjectFormActions

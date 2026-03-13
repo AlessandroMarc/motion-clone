@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -60,6 +61,7 @@ function GoogleEventDetails({
   onLinkClick: () => void;
   onDelete?: () => Promise<void> | void;
 }): React.ReactElement {
+  const [deleteError, setDeleteError] = useState<string | null>(null);
   const handleCompleteClick = async () => {
     const newCompletedState = !completed;
 
@@ -83,8 +85,17 @@ function GoogleEventDetails({
     try {
       await onDelete();
       onClose();
-    } catch {
-      // Let caller decide how to handle failures. Do not close dialog.
+      setDeleteError(null);
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : 'Unknown error deleting session';
+      setDeleteError(message);
+      console.error(
+        `[CalendarEditDialog] delete failed (onDelete=${Boolean(
+          onDelete
+        )}, onClose=${Boolean(onClose)}):`,
+        err
+      );
     }
   };
 
@@ -156,6 +167,11 @@ function GoogleEventDetails({
         >
           Close
         </Button>
+        {deleteError ? (
+          <p className="text-sm text-destructive mt-2 w-full" role="alert">
+            {deleteError}
+          </p>
+        ) : null}
       </DialogFooter>
     </>
   );

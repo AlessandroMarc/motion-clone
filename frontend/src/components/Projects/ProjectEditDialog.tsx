@@ -14,6 +14,7 @@ import { useForm, FormProvider } from 'react-hook-form';
 import { ProjectNameField } from '@/components/Projects/forms/ProjectNameField';
 import { ProjectDescriptionField } from '@/components/Projects/forms/ProjectDescriptionField';
 import { ProjectDeadlineField } from '@/components/Projects/forms/ProjectDeadlineField';
+import { ProjectScheduleField } from '@/components/Projects/forms/ProjectScheduleField';
 import { ProjectFormActions } from '@/components/Projects/forms/ProjectFormActions';
 import {
   Select,
@@ -68,6 +69,7 @@ export function ProjectEditDialog({
         name: project.name,
         description: project.description || '',
         deadline: formatDateForInput(project.deadline),
+        scheduleId: project.schedule_id ?? '',
       });
       setStatus(project.status);
     }
@@ -82,6 +84,7 @@ export function ProjectEditDialog({
         deadline: data.deadline
           ? normalizeToMidnight(parseLocalDate(data.deadline))
           : null,
+        scheduleId: data.scheduleId || null,
         status: status as 'not-started' | 'in-progress' | 'completed',
       };
 
@@ -125,6 +128,7 @@ export function ProjectEditDialog({
                 <ProjectNameField />
                 <ProjectDescriptionField />
                 <ProjectDeadlineField />
+                <ProjectScheduleField />
 
                 {/* Status Field */}
                 <div className="space-y-2">

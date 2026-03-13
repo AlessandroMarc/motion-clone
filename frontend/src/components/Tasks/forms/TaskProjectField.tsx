@@ -17,6 +17,7 @@ import { Button } from '@/components/ui/button';
 import { Check, ChevronsUpDown, Folder } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { projectService } from '@/services/projectService';
+import { useAuth } from '@/contexts/AuthContext';
 import type { Project } from '@/types';
 import type { FieldErrors } from 'react-hook-form';
 import type { TaskFormData } from '@/hooks/useTaskForm';
@@ -31,8 +32,10 @@ export function TaskProjectField({ errors }: TaskProjectFieldProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [searchValue, setSearchValue] = useState('');
 
-  const { setValue, watch } = useFormContext();
+  const { setValue, watch } = useFormContext<TaskFormData>();
   const selectedProjectId = watch('project_id');
+  const selectedScheduleId = watch('scheduleId');
+  const { activeSchedule } = useAuth();
 
   // Fetch projects on component mount
   useEffect(() => {
@@ -59,6 +62,27 @@ export function TaskProjectField({ errors }: TaskProjectFieldProps) {
   const selectedProject = projects.find(
     project => project.id === selectedProjectId
   );
+
+  useEffect(() => {
+    if (!selectedProject?.schedule_id) return;
+
+    // Prefer the project's schedule if the user hasn't explicitly chosen a different one.
+    // We treat empty / unset as not explicitly chosen.
+    const usingDefaultSchedule =
+      !selectedScheduleId || selectedScheduleId === activeSchedule?.id;
+
+    if (usingDefaultSchedule) {
+      setValue('scheduleId', selectedProject.schedule_id, {
+        shouldDirty: true,
+        shouldValidate: true,
+      });
+    }
+  }, [
+    selectedProject?.schedule_id,
+    selectedScheduleId,
+    activeSchedule?.id,
+    setValue,
+  ]);
 
   const handleSelect = (projectId: string) => {
     if (projectId === selectedProjectId) {
