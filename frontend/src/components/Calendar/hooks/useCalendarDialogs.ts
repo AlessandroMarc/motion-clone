@@ -10,6 +10,7 @@ import { taskService } from '@/services/taskService';
 import { formatDateTimeLocal } from '@/utils/dateUtils';
 import { toast } from 'sonner';
 import { fireConfetti } from '@/utils/confetti';
+import type { FilteredGoogleEvent } from '@/services/googleCalendarService';
 
 export function useCalendarDialogs(
   user: { id: string } | null,
@@ -87,6 +88,17 @@ export function useCalendarDialogs(
       isCalendarEventTask(event) && event.completed_at ? true : false
     );
     setEditEvent(event);
+    setEditOpen(true);
+  };
+
+  const openBannerEventDialog = (event: FilteredGoogleEvent) => {
+    setEditEventId(null);
+    setEditTitle(event.title);
+    setEditDescription(event.description || '');
+    setEditStartTime(formatDateTimeLocal(new Date(event.start_time)));
+    setEditEndTime(formatDateTimeLocal(new Date(event.end_time)));
+    setEditCompleted(false);
+    setEditEvent(null);
     setEditOpen(true);
   };
 
@@ -273,6 +285,7 @@ export function useCalendarDialogs(
     setEditCompleted,
     editEvent,
     openEditDialog,
+    openBannerEventDialog,
     handleSaveEdit,
     handleDeleteEdit,
     handleUpdateCompletion,

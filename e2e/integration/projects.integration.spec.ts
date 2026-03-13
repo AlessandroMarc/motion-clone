@@ -41,86 +41,106 @@ test.describe('Projects — integration', () => {
     await createBtn.click();
 
     // ── Fill the form ──
-    await expect(
-      page.getByRole('heading', { name: /create new project/i })
-    ).toBeVisible();
+    const dialogHeading = page.getByRole('heading', {
+      name: /create new project/i,
+    });
+    await expect(dialogHeading).toBeVisible();
 
     const nameInput = page.getByLabel(/project name/i);
+    await expect(nameInput).toBeVisible();
     await nameInput.fill(projectName);
 
     const descInput = page.getByLabel(/description/i);
+    await expect(descInput).toBeVisible();
     await descInput.fill('Automated integration test project');
 
     // ── Submit ──
+    // Find the submit button within the dialog
     const submitBtn = page
       .getByRole('button', { name: /create project/i })
+      .filter({ visible: true })
       .last();
+
+    // Wait for submit button to be visible
+    await expect(submitBtn).toBeVisible({ timeout: 5000 });
+    await submitBtn.scrollIntoViewIfNeeded();
+
+    // Small delay to ensure form validation has run
+    await page.waitForTimeout(300);
+
+    // Set up watcher for successful project creation response
+    const createResponsePromise = page.waitForResponse(
+      response =>
+        response.url().includes('/api/projects') &&
+        response.request().method() === 'POST' &&
+        response.status() >= 200 &&
+        response.status() < 300,
+      { timeout: 30000 }
+    );
+
+    // Click submit
+    console.log('[E2E] Clicking create project button...');
     await submitBtn.click();
 
-    // Wait for the API to process and the page to update
-    await page.waitForTimeout(1000);
+    // Wait for successful API response
+    console.log('[E2E] Waiting for API response...');
+    await createResponsePromise;
+    console.log('[E2E] API response received.');
 
-    // ── Verify the project appears in the list ──
-    // CI environments may be slower, so use a longer timeout
-    // Also wait for the page to be stable before checking
-    try {
-      await expect(page.getByText(projectName)).toBeVisible({
-        timeout: 30_000,
-      });
-    } catch (error) {
-      // Log page content for debugging
-      const content = await page.content();
-      if (content.includes('error') || content.includes('Error')) {
-        console.error('[test] Page contains error message');
-      }
-      throw error;
-    }
+    // Wait for dialog to close (primary signal that submission succeeded)
+    await expect(dialogHeading).not.toBeVisible({ timeout: 15000 });
+    console.log('[E2E] Dialog closed.');
+
+    // Wait for the project list to refresh and show the new project
+    // In CI, React state updates and refetches can be slower
+    const projectLink = page.getByRole('link', { name: projectName });
+
+    // Wait for project to appear with generous timeout for CI
+    // The page refreshes via refreshTrigger state change after successful creation
+    console.log('[E2E] Waiting for project to appear in list...');
+    await expect(projectLink).toBeVisible({ timeout: 40000 });
+    console.log('[E2E] Project is visible.');
 
     // ── Delete the project ──
-    // Find the Delete link for this project
-    // The project name is displayed in an h3, and Delete link is nearby
-    const projectHeading = page.locator('h3', { hasText: projectName });
-    const projectCard = projectHeading.locator('..');
-    const deleteLink = projectCard.getByRole('link', { name: 'Delete' });
+    // Find the project card by the link that contains the project name
+    const projectCard = page
+      .getByRole('link', { name: projectName })
+      .locator('..')
+      .locator('..');
+    const deleteButton = projectCard.getByRole('button', { name: /delete/i });
 
-    if (await deleteLink.isVisible().catch(() => false)) {
-      await deleteLink.click();
-
-      // Wait for confirmation dialog
-      await page.waitForTimeout(500);
-
-      // Confirm deletion in the alert dialog
-      const confirmBtn = page.getByRole('button', { name: /^delete$/i });
-      if (await confirmBtn.isVisible().catch(() => false)) {
-        await confirmBtn.click();
-      }
+    if (await deleteButton.isVisible().catch(() => false)) {
+      await deleteButton.click();
     } else {
-      // Fallback: just look for any Delete element containing this project's text
-      const allDeletes = page.getByText('Delete');
+      // Fallback: find the delete button by looking for any delete button
+      // and checking if it's in a card with this project's name
+      const allDeletes = page.getByRole('button', { name: /delete/i });
       for (let i = 0; i < (await allDeletes.count()); i++) {
         const deleteElem = allDeletes.nth(i);
-        const parent = deleteElem.locator('..');
+        const parent = deleteElem.locator('..').locator('..').locator('..');
         const hasProjectName = await parent
           .getByText(projectName)
           .isVisible()
           .catch(() => false);
         if (hasProjectName) {
           await deleteElem.click();
-          await page.waitForTimeout(500);
-          const confirmBtn = page.getByRole('button', { name: /^delete$/i });
-          if (await confirmBtn.isVisible().catch(() => false)) {
-            await confirmBtn.click();
-          }
           break;
         }
       }
     }
 
+    // Wait for confirmation dialog
+    await page.waitForTimeout(500);
+
+    // Confirm deletion in the alert dialog
+    const confirmBtn = page.getByRole('button', { name: /^delete$/i });
+    if (await confirmBtn.isVisible().catch(() => false)) {
+      await confirmBtn.click();
+    }
+
     // ── Verify it's gone ──
-    // CI environments may be slower, so use a longer timeout
-    await expect(page.getByText(projectName)).not.toBeVisible({
-      timeout: 30_000,
-    });
+    // The project link should no longer be visible
+    await expect(projectLink).not.toBeVisible({ timeout: 30000 });
   });
 
   test('navigate to tasks page from sidebar', async ({ page }) => {

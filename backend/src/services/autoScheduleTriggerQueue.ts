@@ -12,6 +12,8 @@
  * triggers fire within the debounce window.
  */
 
+import type { AutoScheduleService } from './autoScheduleService.js';
+
 interface PendingTrigger {
   userId: string;
   authToken: string;
@@ -22,9 +24,9 @@ interface PendingTrigger {
 const DEBOUNCE_MS = 500;
 
 // Module-scoped service instance (lazy initialization)
-let autoScheduleServiceInstance: any = null;
+let autoScheduleServiceInstance: AutoScheduleService | null = null;
 
-async function getAutoScheduleService(): Promise<any> {
+async function getAutoScheduleService(): Promise<AutoScheduleService> {
   if (!autoScheduleServiceInstance) {
     try {
       const module = await import('./autoScheduleService.js');
@@ -37,11 +39,15 @@ async function getAutoScheduleService(): Promise<any> {
       throw error;
     }
   }
-  return autoScheduleServiceInstance;
+  return autoScheduleServiceInstance!;
 }
 
 class AutoScheduleTriggerQueueImpl {
   private pendingTriggers = new Map<string, PendingTrigger>();
+  // Track in-flight synchronous runs and their promises
+  private runningSyncPromises = new Map<string, Promise<void>>();
+  // Track if a rerun is needed because a mutation occurred during a run
+  private needsRerun = new Set<string>();
 
   /**
    * Queue an auto-schedule trigger for the given user.
@@ -52,6 +58,12 @@ class AutoScheduleTriggerQueueImpl {
    * @param authToken Auth token for API calls
    */
   trigger(userId: string, authToken: string): void {
+    // If a sync run is already in flight, mark that we need a rerun after it finishes
+    if (this.runningSyncPromises.has(userId)) {
+      this.needsRerun.add(userId);
+      return;
+    }
+
     // Cancel existing timer if present
     const existing = this.pendingTriggers.get(userId);
     if (existing) {
@@ -61,21 +73,34 @@ class AutoScheduleTriggerQueueImpl {
     // Schedule new debounced trigger
     const timer = setTimeout(() => {
       this.pendingTriggers.delete(userId);
-      this.runAutoScheduleAsync(userId, authToken);
+      // Fire-and-forget: use the internal run logic but don't await it
+      this.executeRun(userId, authToken).catch(error => {
+        console.error(
+          `[AutoScheduleTrigger] Async run failed for user ${userId}:`,
+          error instanceof Error ? error.message : error
+        );
+      });
     }, DEBOUNCE_MS);
 
     this.pendingTriggers.set(userId, { userId, authToken, timer });
   }
 
   /**
-   * Run auto-schedule asynchronously without blocking the caller.
-   * Errors are logged but not thrown.
+   * Internal runner that handles promise tracking and reruns.
    */
-  private runAutoScheduleAsync(userId: string, authToken: string): void {
-    // Fire-and-forget: don't await at call site, but handle errors internally
-    getAutoScheduleService()
-      .then((service: any) => service.run(userId, authToken))
-      .then((result: any) => {
+  private async executeRun(userId: string, authToken: string): Promise<void> {
+    // Check if a run is already in flight
+    const existingPromise = this.runningSyncPromises.get(userId);
+    if (existingPromise) {
+      this.needsRerun.add(userId);
+      return existingPromise;
+    }
+
+    // Create a recursive runner to handle reruns
+    const run = async (): Promise<void> => {
+      try {
+        const service = await getAutoScheduleService();
+        const result = await service.run(userId, authToken);
         console.log(
           `[AutoScheduleTrigger] Auto-schedule run complete for user ${userId}:`,
           {
@@ -85,13 +110,59 @@ class AutoScheduleTriggerQueueImpl {
             violations: result.violations,
           }
         );
-      })
-      .catch((error: any) => {
-        console.error(
-          `[AutoScheduleTrigger] Auto-schedule run failed for user ${userId}:`,
-          error instanceof Error ? error.message : error
-        );
-      });
+      } finally {
+        // If a rerun was requested while this run was active, start another one
+        if (this.needsRerun.has(userId)) {
+          this.needsRerun.delete(userId);
+          await run();
+        }
+      }
+    };
+
+    // Mark as running and execute
+    const promise = run().finally(() => {
+      this.runningSyncPromises.delete(userId);
+      this.needsRerun.delete(userId);
+    });
+
+    this.runningSyncPromises.set(userId, promise);
+    await promise;
+  }
+
+  /**
+   * Trigger auto-schedule and wait for completion (synchronous mode).
+   * Used when the caller needs to ensure scheduling is complete before proceeding.
+   * Debounces rapid calls but waits for the scheduled run to finish.
+   *
+   * @param userId User ID
+   * @param authToken Auth token for API calls
+   * @returns Promise that resolves when auto-schedule completes
+   */
+  async triggerAndWait(userId: string, authToken: string): Promise<void> {
+    // Cancel any pending async trigger for this user
+    const existing = this.pendingTriggers.get(userId);
+    if (existing) {
+      clearTimeout(existing.timer);
+      this.pendingTriggers.delete(userId);
+    }
+
+    // Join or start a run and wait for it
+    await this.executeRun(userId, authToken);
+  }
+
+  /**
+   * Run auto-schedule asynchronously without blocking the caller.
+   * Errors are logged but not thrown.
+   *
+   * @deprecated Internal runner 'executeRun' is used instead.
+   */
+  private runAutoScheduleAsync(userId: string, authToken: string): void {
+    this.executeRun(userId, authToken).catch(error => {
+      console.error(
+        `[AutoScheduleTrigger] runAutoScheduleAsync failed for user ${userId}:`,
+        error instanceof Error ? error.message : error
+      );
+    });
   }
 
   /**

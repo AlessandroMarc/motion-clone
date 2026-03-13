@@ -132,13 +132,9 @@ class TaskService {
       JSON.parse(JSON.stringify(updatedTask))
     );
 
-    // Trigger auto-schedule asynchronously (fire-and-forget)
-    calendarService.runAutoSchedule().catch(err => {
-      console.debug(
-        '[TaskService] Auto-schedule triggered after update',
-        err?.message
-      );
-    });
+    // Auto-schedule is now handled synchronously by the backend
+    // The backend waits for auto-schedule to complete before returning,
+    // ensuring the calendar is deduplicated when the frontend refreshes
 
     return updatedTask;
   }
@@ -152,13 +148,9 @@ class TaskService {
       throw new Error(response.error || 'Failed to delete task');
     }
 
-    // Trigger auto-schedule asynchronously (fire-and-forget)
-    calendarService.runAutoSchedule().catch(err => {
-      console.debug(
-        '[TaskService] Auto-schedule triggered after delete',
-        err?.message
-      );
-    });
+    // Auto-schedule is now handled synchronously by the backend
+    // The backend waits for auto-schedule to complete before returning,
+    // ensuring the calendar is deduplicated when the frontend refreshes
   }
 
   async getTasksByProject(projectId: string): Promise<Task[]> {

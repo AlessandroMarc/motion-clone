@@ -107,7 +107,8 @@ router.put('/:id', async (req: Request, res: Response) => {
     const project = await projectService.updateProject(
       id,
       input,
-      authReq.supabaseClient
+      authReq.supabaseClient,
+      authReq.authToken
     );
     ResponseHelper.updated(res, project, 'Project updated successfully');
   } catch (error) {

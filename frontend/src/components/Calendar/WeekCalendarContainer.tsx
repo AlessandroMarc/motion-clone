@@ -34,6 +34,7 @@ import {
   googleCalendarService,
   type FilteredGoogleEvent,
 } from '@/services/googleCalendarService';
+import { toast } from 'sonner';
 import { userSettingsService } from '@/services/userSettingsService';
 import { HiddenEventsIndicator } from './HiddenEventsIndicator';
 
@@ -62,12 +63,32 @@ export function WeekCalendarContainer({
       if (typeof window === 'undefined') return [];
       try {
         const stored = localStorage.getItem('nexto_hidden_gcal_events');
-        return stored ? (JSON.parse(stored) as FilteredGoogleEvent[]) : [];
+        const events = stored
+          ? (JSON.parse(stored) as FilteredGoogleEvent[])
+          : [];
+        const futureEvents = events.filter(
+          ev =>
+            ev.start_time &&
+            ev.title &&
+            ev.start_time > new Date().toISOString()
+        );
+        return futureEvents;
       } catch {
         return [];
       }
     }
   );
+
+  const { visibleHiddenEvents, bannerEvents } = useMemo(() => {
+    return {
+      visibleHiddenEvents: hiddenEvents.filter(
+        ev => !ev.isAllDay && ev.reason !== 'free'
+      ),
+      bannerEvents: hiddenEvents.filter(
+        ev => ev.isAllDay || ev.reason === 'free'
+      ),
+    };
+  }, [hiddenEvents]);
 
   // Initial Google Calendar sync on land
   useEffect(() => {
@@ -83,22 +104,42 @@ export function WeekCalendarContainer({
         if (status.connected) {
           logger.info('[WeekCalendarContainer] Syncing Google Calendar...');
           const result = await googleCalendarService.sync(user.id);
-          logger.info('[WeekCalendarContainer] Google Calendar sync complete');
 
-          // Persist filtered (free/declined) events for the indicator
-          const filtered = result.filtered?.events ?? [];
-          setHiddenEvents(filtered);
-          try {
-            localStorage.setItem(
-              'nexto_hidden_gcal_events',
-              JSON.stringify(filtered)
+          // handle expired authorization (invalid_grant) from backend
+          if (
+            Array.isArray(result.errors) &&
+            result.errors[0] === 'google_calendar_invalid_grant'
+          ) {
+            // show toast guiding user to profile page
+            toast.error(
+              <span>
+                Google Calendar authorization expired.{' '}
+                <a href="/profile" className="underline">
+                  Reconnect in your profile
+                </a>
+                .
+              </span>
             );
-          } catch {
-            // localStorage might be unavailable in some contexts
-          }
+          } else {
+            logger.info(
+              '[WeekCalendarContainer] Google Calendar sync complete'
+            );
 
-          // Refresh events to show newly synced ones and refresh global events
-          await Promise.all([refreshEvents(), refreshAllEvents()]);
+            // Persist filtered (free/declined) events for the indicator
+            const filtered = result.filtered?.events ?? [];
+            setHiddenEvents(filtered);
+            try {
+              localStorage.setItem(
+                'nexto_hidden_gcal_events',
+                JSON.stringify(filtered)
+              );
+            } catch {
+              // localStorage might be unavailable in some contexts
+            }
+
+            // Refresh events to show newly synced ones and refresh global events
+            await Promise.all([refreshEvents(), refreshAllEvents()]);
+          }
         }
       } catch (err) {
         // Silent fail - don't block the UI if Google sync fails
@@ -332,12 +373,14 @@ export function WeekCalendarContainer({
   if (isMobile) {
     return (
       <div className="space-y-4 flex flex-col min-h-0 flex-1">
-        <HiddenEventsIndicator events={hiddenEvents} />
+        <HiddenEventsIndicator events={visibleHiddenEvents} />
         <DeadlineViolationsBar events={allEvents} tasksMap={tasksMap} />
         <MobileDayScrollView
           dates={weekDates}
           eventsByDay={eventsByDay as Record<string, CalendarEventUnion[]>}
+          allDayEvents={bannerEvents}
           onEventClick={dialogs.openEditDialog}
+          onBannerEventClick={dialogs.openBannerEventDialog}
           tasksMap={tasksMap}
           onToday={navigation.goCurrentWeek}
           onAutoSchedule={handleAutoScheduleClick}
@@ -385,7 +428,7 @@ export function WeekCalendarContainer({
 
   return (
     <>
-      <HiddenEventsIndicator events={hiddenEvents} />
+      <HiddenEventsIndicator events={visibleHiddenEvents} />
       <WeekCalendarView
         isMobile={isMobile}
         weekDates={weekDates}
@@ -394,6 +437,7 @@ export function WeekCalendarContainer({
           displayEventsByDay as Record<string, CalendarEventUnion[]>
         }
         events={events}
+        allDayEvents={bannerEvents}
         // Full event set for DeadlineViolationsBar to detect violations across weeks
         violationEvents={allEvents}
         setEvents={setEvents}
@@ -416,6 +460,7 @@ export function WeekCalendarContainer({
         onNextDay={navigation.goNextDay}
         onZenMode={onZenMode}
         dialogs={dialogs}
+        onBannerEventClick={dialogs.openBannerEventDialog}
         openTaskEditForm={openTaskEditForm}
         handleAutoScheduleClick={handleAutoScheduleClick}
         isAutoScheduleRefreshing={isRefreshing || !initialSyncComplete}

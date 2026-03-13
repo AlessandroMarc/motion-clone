@@ -264,6 +264,7 @@ export class TaskService {
     }
 
     // Trigger auto-schedule asynchronously (fire-and-forget)
+    // For task creation, we don't need to wait since there are no existing events to deduplicate
     if (authToken) {
       autoScheduleTriggerQueue.trigger(input.user_id, authToken);
     }
@@ -494,11 +495,22 @@ export class TaskService {
         input.start_date !== undefined ||
         input.blockedBy !== undefined ||
         input.planned_duration_minutes !== undefined ||
+        input.actual_duration_minutes !== undefined ||
+        input.priority !== undefined ||
         input.is_recurring !== undefined ||
         input.schedule_id !== undefined)
     ) {
       const userId = input.user_id ?? existingTask.user_id;
-      autoScheduleTriggerQueue.trigger(userId, authToken);
+      // Wait for auto-schedule to complete to prevent race conditions
+      // where frontend refreshes before deduplication happens
+      try {
+        await autoScheduleTriggerQueue.triggerAndWait(userId, authToken);
+      } catch (err) {
+        console.error(
+          `[TaskService] Auto-schedule trigger failed for user ${userId}:`,
+          err
+        );
+      }
     }
 
     return data;
@@ -535,9 +547,20 @@ export class TaskService {
       throw new Error(`Failed to delete task: ${error.message}`);
     }
 
-    // Trigger auto-schedule asynchronously
+    // Trigger auto-schedule and wait for completion
+    // This ensures the calendar is properly rescheduled before the frontend refreshes
     if (authToken) {
-      autoScheduleTriggerQueue.trigger(existingTask.user_id, authToken);
+      try {
+        await autoScheduleTriggerQueue.triggerAndWait(
+          existingTask.user_id,
+          authToken
+        );
+      } catch (err) {
+        console.error(
+          `[TaskService] Auto-schedule trigger failed for user ${existingTask.user_id}:`,
+          err
+        );
+      }
     }
 
     return true;

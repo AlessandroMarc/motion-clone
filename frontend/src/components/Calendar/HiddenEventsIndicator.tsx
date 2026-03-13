@@ -33,7 +33,7 @@ export function HiddenEventsIndicator({ events }: HiddenEventsIndicatorProps) {
 
       {/* Popover panel */}
       {open && (
-        <div className="fixed bottom-12 left-4 z-50 w-72 rounded-xl border border-border bg-popover shadow-xl p-3">
+        <div className="fixed bottom-12 right-4 z-50 w-72 rounded-xl border border-border bg-popover shadow-xl p-3">
           <div className="flex items-center justify-between mb-2">
             <span className="text-xs font-semibold text-foreground">
               Hidden Google events

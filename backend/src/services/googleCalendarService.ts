@@ -48,6 +48,7 @@ export class GoogleCalendarService {
           start_time: string;
           end_time: string;
           reason: 'free' | 'declined';
+          isAllDay?: boolean | undefined;
         }>;
       };
     }>
@@ -247,6 +248,7 @@ export class GoogleCalendarService {
         start_time: string;
         end_time: string;
         reason: 'free' | 'declined';
+        isAllDay?: boolean | undefined;
       }>;
     };
   }> {
@@ -302,6 +304,7 @@ export class GoogleCalendarService {
         start_time: string;
         end_time: string;
         reason: 'free' | 'declined';
+        isAllDay?: boolean | undefined;
       }>;
     };
   }> {
@@ -347,9 +350,11 @@ export class GoogleCalendarService {
       let synced = 0;
       const filteredEvents: Array<{
         title: string;
+        description?: string | undefined;
         start_time: string;
         end_time: string;
         reason: 'free' | 'declined';
+        isAllDay?: boolean | undefined;
       }> = [];
       const eventsToDeleteIds: string[] = [];
 
@@ -419,6 +424,8 @@ export class GoogleCalendarService {
             continue;
           }
 
+          const isAllDay = !!googleEvent.start.date;
+
           // Check if event already exists using Map lookup (O(1) instead of query)
           const existingEvent = googleEvent.id
             ? existingEventsMap.get(googleEvent.id)
@@ -437,9 +444,11 @@ export class GoogleCalendarService {
             skipped++;
             filteredEvents.push({
               title: googleEvent.summary || 'Untitled Event',
+              description: googleEvent.description || undefined,
               start_time: new Date(startTime).toISOString(),
               end_time: new Date(endTime).toISOString(),
               reason: isDeclined ? 'declined' : 'free',
+              isAllDay,
             });
             // If it was previously synced, delete it from DB
             if (existingEvent) {
@@ -687,10 +696,40 @@ export class GoogleCalendarService {
       };
     } catch (error) {
       const durationMs = Date.now() - startTime;
+      let errorMsg =
+        error instanceof Error ? error.message : 'Unknown sync error';
+      // Detect Google OAuth invalid_grant error
+      if (
+        errorMsg.includes('invalid_grant') ||
+        errorMsg.includes('Token has been expired or revoked') ||
+        errorMsg.includes('refresh token is not set')
+      ) {
+        errorMsg = 'Google Calendar authorization expired. Please reconnect.';
+        // delete tokens so status becomes disconnected
+        try {
+          await serviceRoleSupabase
+            .from('google_calendar_tokens')
+            .delete()
+            .eq('user_id', userId);
+        } catch {
+          console.warn(
+            '[GoogleCalendarService] Failed to delete expired tokens for user:',
+            userId
+          );
+        }
+        // Use sentinel error string for detection
+        return {
+          success: false,
+          synced: 0,
+          errors: ['google_calendar_invalid_grant', errorMsg],
+          durationMs,
+          filtered: { count: 0, events: [] },
+        };
+      }
       return {
         success: false,
         synced: 0,
-        errors: [error instanceof Error ? error.message : 'Unknown sync error'],
+        errors: [errorMsg],
         durationMs,
         filtered: { count: 0, events: [] },
       };
@@ -725,11 +764,25 @@ export class GoogleCalendarService {
   async getConnectionStatus(userId: string): Promise<{
     connected: boolean;
     last_synced_at: string | null;
+    isExpired: boolean;
   }> {
     const tokens = await this.getTokens(userId);
+    if (!tokens) {
+      return {
+        connected: false,
+        last_synced_at: null,
+        isExpired: false,
+      };
+    }
+
+    const expiresAt = new Date(tokens.expires_at);
+    const now = new Date();
+    const isExpired = expiresAt.getTime() <= now.getTime();
+
     return {
       connected: tokens !== null,
       last_synced_at: tokens?.last_synced_at || null,
+      isExpired,
     };
   }
 }

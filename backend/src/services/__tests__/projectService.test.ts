@@ -33,6 +33,18 @@ jest.unstable_mockModule('../../config/supabase.js', () => ({
   getAuthenticatedSupabase: jest.fn().mockReturnValue(mockClient),
 }));
 
+const mockAutoScheduleTriggerQueue = {
+  trigger: jest.fn(),
+  triggerAndWait: jest.fn().mockResolvedValue(undefined),
+  cancel: jest.fn(),
+  cancelAll: jest.fn(),
+};
+
+// Mock autoScheduleTriggerQueue to prevent actual scheduling during tests
+jest.unstable_mockModule('../autoScheduleTriggerQueue.js', () => ({
+  autoScheduleTriggerQueue: mockAutoScheduleTriggerQueue,
+}));
+
 const { ProjectService } = await import('../projectService.js');
 
 const makeProject = (overrides: Partial<Project> = {}): Project => ({
@@ -151,6 +163,22 @@ describe('ProjectService', () => {
       expect(result).toEqual(project);
     });
 
+    test('should trigger auto-schedule asynchronously when authToken is provided', async () => {
+      const project = makeProject({ user_id: 'user-1' });
+      mockClient.single.mockResolvedValue({ data: project, error: null });
+
+      await service.createProject(
+        { name: 'New Project', user_id: 'user-1' },
+        mockClient as any,
+        'test-token'
+      );
+
+      expect(mockAutoScheduleTriggerQueue.trigger).toHaveBeenCalledWith(
+        'user-1',
+        'test-token'
+      );
+    });
+
     test('should respect provided status', async () => {
       const project = makeProject({ status: 'in-progress' });
       mockClient.single.mockResolvedValue({ data: project, error: null });
@@ -222,6 +250,23 @@ describe('ProjectService', () => {
       expect(result).toEqual(updated);
     });
 
+    test('should trigger auto-schedule synchronously when authToken and deadline are provided', async () => {
+      const updated = makeProject({ user_id: 'user-1' });
+      mockClient.single.mockResolvedValue({ data: updated, error: null });
+
+      await service.updateProject(
+        'proj-1',
+        { deadline: new Date() },
+        mockClient as any,
+        'test-token'
+      );
+
+      expect(mockAutoScheduleTriggerQueue.triggerAndWait).toHaveBeenCalledWith(
+        'user-1',
+        'test-token'
+      );
+    });
+
     test('should only include provided fields in update payload', async () => {
       const updated = makeProject({ description: 'New desc' });
       mockClient.single.mockResolvedValue({ data: updated, error: null });
@@ -271,6 +316,25 @@ describe('ProjectService', () => {
         p_project_id: 'proj-1',
       });
       expect(result).toBe(true);
+    });
+
+    test('should trigger auto-schedule synchronously when userId and authToken are provided', async () => {
+      mockClient.rpc = jest.fn().mockResolvedValue({
+        data: [{ success: true, message: 'Deleted' }],
+        error: null,
+      });
+
+      await service.deleteProject(
+        'proj-1',
+        mockClient as any,
+        'user-1',
+        'test-token'
+      );
+
+      expect(mockAutoScheduleTriggerQueue.triggerAndWait).toHaveBeenCalledWith(
+        'user-1',
+        'test-token'
+      );
     });
 
     test('should throw an error if RPC call fails', async () => {

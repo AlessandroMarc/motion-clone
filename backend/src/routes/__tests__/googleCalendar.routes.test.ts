@@ -206,6 +206,21 @@ describe('POST /api/google-calendar/sync', () => {
     expect(res.body.success).toBe(false);
   });
 
+  test('returns 401 when authorization expired (invalid_grant)', async () => {
+    mockGoogleCalendarService.syncEventsFromGoogle.mockResolvedValue({
+      success: false,
+      synced: 0,
+      errors: ['google_calendar_invalid_grant', 'expired'],
+    });
+    const res = await supertest(app)
+      .post('/api/google-calendar/sync')
+      .set(AUTH_HEADER)
+      .send({ user_id: 'user-1' });
+    expect(res.status).toBe(401);
+    expect(res.body.success).toBe(false);
+    expect(res.body.error).toContain('expired');
+  });
+
   test('returns 400 when user_id is missing', async () => {
     const res = await supertest(app)
       .post('/api/google-calendar/sync')
