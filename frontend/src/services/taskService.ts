@@ -187,20 +187,30 @@ class TaskService {
 
   /** Complete a task AND mark all its linked calendar events as completed. */
   async completeTaskWithEvents(task: Task): Promise<Task> {
+    // Complete the task first — it's the authoritative record
+    const updatedTask = await this.setTaskCompleted(task, true);
+
+    // Then best-effort update all linked calendar events
     const events = await calendarService.getCalendarEventsByTaskId(task.id);
     const incompleteEvents = events.filter(e => !e.completed_at);
 
     if (incompleteEvents.length > 0) {
-      await Promise.all(
+      const results = await Promise.allSettled(
         incompleteEvents.map(e =>
           calendarService.updateCalendarEvent(e.id, {
             completed_at: new Date().toISOString(),
           })
         )
       );
+      const failures = results.filter(r => r.status === 'rejected');
+      if (failures.length > 0) {
+        console.warn(
+          `[TaskService] ${failures.length}/${incompleteEvents.length} event completions failed`
+        );
+      }
     }
 
-    return this.setTaskCompleted(task, true);
+    return updatedTask;
   }
 }
 

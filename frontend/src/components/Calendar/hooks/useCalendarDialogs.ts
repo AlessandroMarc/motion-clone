@@ -36,9 +36,6 @@ export function useCalendarDialogs(
   const [completionChoiceOpen, setCompletionChoiceOpen] = useState(false);
   const [completionChoiceSessionCount, setCompletionChoiceSessionCount] =
     useState(0);
-  const [pendingSetEvents, setPendingSetEvents] = useState<React.Dispatch<
-    React.SetStateAction<CalendarEventUnion[]>
-  > | null>(null);
 
   const openCreateDialog = (date: Date, hour: number, minute: number) => {
     const start = new Date(date);
@@ -127,9 +124,8 @@ export function useCalendarDialogs(
       );
 
       if (otherIncomplete.length > 0) {
-        // Multiple sessions — ask the user
-        setCompletionChoiceSessionCount(allEvents.length);
-        setPendingSetEvents(() => setEvents);
+        // Multiple incomplete sessions — ask the user (count = this + other incomplete)
+        setCompletionChoiceSessionCount(otherIncomplete.length + 1);
         setCompletionChoiceOpen(true);
       } else {
         // Only session — just complete it
@@ -178,10 +174,10 @@ export function useCalendarDialogs(
     if (!editEvent || !isCalendarEventTask(editEvent)) return;
 
     setCompletionChoiceOpen(false);
-    fireConfetti();
 
     if (choice === 'session') {
       await completeSingleEvent(true, setEvents);
+      fireConfetti();
     } else {
       // Complete entire task + all linked events
       try {
@@ -190,6 +186,7 @@ export function useCalendarDialogs(
         await refreshEvents();
         setEditOpen(false);
         onTaskDropped?.();
+        fireConfetti();
         toast.success('Task completed');
       } catch (err) {
         console.error('Failed to complete entire task:', err);
@@ -297,6 +294,5 @@ export function useCalendarDialogs(
     setCompletionChoiceOpen,
     completionChoiceSessionCount,
     handleCompletionChoice,
-    pendingSetEvents,
   };
 }
