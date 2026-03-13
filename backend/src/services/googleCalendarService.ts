@@ -48,6 +48,7 @@ export class GoogleCalendarService {
           start_time: string;
           end_time: string;
           reason: 'free' | 'declined';
+          isAllDay?: boolean | undefined;
         }>;
       };
     }>
@@ -247,6 +248,7 @@ export class GoogleCalendarService {
         start_time: string;
         end_time: string;
         reason: 'free' | 'declined';
+        isAllDay?: boolean | undefined;
       }>;
     };
   }> {
@@ -302,6 +304,7 @@ export class GoogleCalendarService {
         start_time: string;
         end_time: string;
         reason: 'free' | 'declined';
+        isAllDay?: boolean | undefined;
       }>;
     };
   }> {
@@ -347,9 +350,11 @@ export class GoogleCalendarService {
       let synced = 0;
       const filteredEvents: Array<{
         title: string;
+        description?: string | undefined;
         start_time: string;
         end_time: string;
         reason: 'free' | 'declined';
+        isAllDay?: boolean | undefined;
       }> = [];
       const eventsToDeleteIds: string[] = [];
 
@@ -419,6 +424,8 @@ export class GoogleCalendarService {
             continue;
           }
 
+          const isAllDay = !!googleEvent.start.date;
+
           // Check if event already exists using Map lookup (O(1) instead of query)
           const existingEvent = googleEvent.id
             ? existingEventsMap.get(googleEvent.id)
@@ -437,9 +444,11 @@ export class GoogleCalendarService {
             skipped++;
             filteredEvents.push({
               title: googleEvent.summary || 'Untitled Event',
+              description: googleEvent.description || undefined,
               start_time: new Date(startTime).toISOString(),
               end_time: new Date(endTime).toISOString(),
               reason: isDeclined ? 'declined' : 'free',
+              isAllDay,
             });
             // If it was previously synced, delete it from DB
             if (existingEvent) {
@@ -703,7 +712,10 @@ export class GoogleCalendarService {
             .delete()
             .eq('user_id', userId);
         } catch {
-          console.warn('[GoogleCalendarService] Failed to delete expired tokens for user:', userId);  
+          console.warn(
+            '[GoogleCalendarService] Failed to delete expired tokens for user:',
+            userId
+          );
         }
         // Use sentinel error string for detection
         return {

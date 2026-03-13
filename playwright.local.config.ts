@@ -30,7 +30,10 @@ export default defineConfig({
   forbidOnly: !!process.env.CI,
   retries: 0, // No retries for local dev
   workers: 1,
-  reporter: [['list'], ['json', { outputFile: 'playwright-report/results.json' }]],
+  reporter: [
+    ['list'],
+    ['json', { outputFile: 'playwright-report/results.json' }],
+  ],
 
   // No globalSetup - assumes storageState already exists from manual setup
   globalSetup: undefined,

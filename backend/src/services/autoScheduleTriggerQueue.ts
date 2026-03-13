@@ -12,10 +12,7 @@
  * triggers fire within the debounce window.
  */
 
-import type {
-  AutoScheduleService,
-  
-} from './autoScheduleService.js';
+import type { AutoScheduleService } from './autoScheduleService.js';
 
 interface PendingTrigger {
   userId: string;

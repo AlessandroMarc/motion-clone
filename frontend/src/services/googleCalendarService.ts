@@ -5,12 +5,14 @@ export interface GoogleCalendarStatus {
   last_synced_at: string | null;
   isExpired?: boolean;
 }
-
 export interface FilteredGoogleEvent {
+  id?: string;
   title: string;
+  description?: string;
   start_time: string;
   end_time: string;
   reason: 'free' | 'declined';
+  isAllDay?: boolean;
 }
 
 export interface SyncResult {

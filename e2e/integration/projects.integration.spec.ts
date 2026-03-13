@@ -41,7 +41,9 @@ test.describe('Projects — integration', () => {
     await createBtn.click();
 
     // ── Fill the form ──
-    const dialogHeading = page.getByRole('heading', { name: /create new project/i });
+    const dialogHeading = page.getByRole('heading', {
+      name: /create new project/i,
+    });
     await expect(dialogHeading).toBeVisible();
 
     const nameInput = page.getByLabel(/project name/i);
@@ -54,12 +56,15 @@ test.describe('Projects — integration', () => {
 
     // ── Submit ──
     // Find the submit button within the dialog
-    const submitBtn = page.getByRole('button', { name: /create project/i }).filter({ visible: true }).last();
-    
+    const submitBtn = page
+      .getByRole('button', { name: /create project/i })
+      .filter({ visible: true })
+      .last();
+
     // Wait for submit button to be visible
     await expect(submitBtn).toBeVisible({ timeout: 5000 });
     await submitBtn.scrollIntoViewIfNeeded();
-    
+
     // Small delay to ensure form validation has run
     await page.waitForTimeout(300);
 
@@ -89,7 +94,7 @@ test.describe('Projects — integration', () => {
     // Wait for the project list to refresh and show the new project
     // In CI, React state updates and refetches can be slower
     const projectLink = page.getByRole('link', { name: projectName });
-    
+
     // Wait for project to appear with generous timeout for CI
     // The page refreshes via refreshTrigger state change after successful creation
     console.log('[E2E] Waiting for project to appear in list...');
@@ -98,7 +103,10 @@ test.describe('Projects — integration', () => {
 
     // ── Delete the project ──
     // Find the project card by the link that contains the project name
-    const projectCard = page.getByRole('link', { name: projectName }).locator('..').locator('..');
+    const projectCard = page
+      .getByRole('link', { name: projectName })
+      .locator('..')
+      .locator('..');
     const deleteButton = projectCard.getByRole('button', { name: /delete/i });
 
     if (await deleteButton.isVisible().catch(() => false)) {

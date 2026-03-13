@@ -79,6 +79,17 @@ export function WeekCalendarContainer({
     }
   );
 
+  const { visibleHiddenEvents, bannerEvents } = useMemo(() => {
+    return {
+      visibleHiddenEvents: hiddenEvents.filter(
+        ev => !ev.isAllDay && ev.reason !== 'free'
+      ),
+      bannerEvents: hiddenEvents.filter(
+        ev => ev.isAllDay || ev.reason === 'free'
+      ),
+    };
+  }, [hiddenEvents]);
+
   // Initial Google Calendar sync on land
   useEffect(() => {
     if (!user?.id) return;
@@ -362,12 +373,14 @@ export function WeekCalendarContainer({
   if (isMobile) {
     return (
       <div className="space-y-4 flex flex-col min-h-0 flex-1">
-        <HiddenEventsIndicator events={hiddenEvents} />
+        <HiddenEventsIndicator events={visibleHiddenEvents} />
         <DeadlineViolationsBar events={allEvents} tasksMap={tasksMap} />
         <MobileDayScrollView
           dates={weekDates}
           eventsByDay={eventsByDay as Record<string, CalendarEventUnion[]>}
+          allDayEvents={bannerEvents}
           onEventClick={dialogs.openEditDialog}
+          onBannerEventClick={dialogs.openBannerEventDialog}
           tasksMap={tasksMap}
           onToday={navigation.goCurrentWeek}
           onAutoSchedule={handleAutoScheduleClick}
@@ -415,7 +428,7 @@ export function WeekCalendarContainer({
 
   return (
     <>
-      <HiddenEventsIndicator events={hiddenEvents} />
+      <HiddenEventsIndicator events={visibleHiddenEvents} />
       <WeekCalendarView
         isMobile={isMobile}
         weekDates={weekDates}
@@ -424,6 +437,7 @@ export function WeekCalendarContainer({
           displayEventsByDay as Record<string, CalendarEventUnion[]>
         }
         events={events}
+        allDayEvents={bannerEvents}
         // Full event set for DeadlineViolationsBar to detect violations across weeks
         violationEvents={allEvents}
         setEvents={setEvents}
@@ -446,6 +460,7 @@ export function WeekCalendarContainer({
         onNextDay={navigation.goNextDay}
         onZenMode={onZenMode}
         dialogs={dialogs}
+        onBannerEventClick={dialogs.openBannerEventDialog}
         openTaskEditForm={openTaskEditForm}
         handleAutoScheduleClick={handleAutoScheduleClick}
         isAutoScheduleRefreshing={isRefreshing || !initialSyncComplete}

@@ -6,6 +6,7 @@ import {
   type CalendarEventUnion,
   type Task,
 } from '@/types';
+import type { FilteredGoogleEvent } from '@/services/googleCalendarService';
 import { CalendarHeader, CalendarLegend } from './CalendarHeader';
 import WeekScrollableGrid from './WeekScrollableGrid';
 import CalendarEditDialog from './CalendarEditDialog';
@@ -65,6 +66,8 @@ interface WeekCalendarViewProps {
   displayDates: Date[];
   displayEventsByDay: Record<string, CalendarEventUnion[]>;
   events: CalendarEventUnion[];
+  allDayEvents?: FilteredGoogleEvent[];
+  onBannerEventClick?: (event: FilteredGoogleEvent) => void;
   // Optional full event set (across all weeks) for components that need global visibility
   violationEvents?: CalendarEventUnion[];
   setEvents: React.Dispatch<React.SetStateAction<CalendarEventUnion[]>>;
@@ -113,6 +116,8 @@ export function WeekCalendarView({
   displayDates,
   displayEventsByDay,
   events,
+  allDayEvents = [],
+  onBannerEventClick,
   setEvents,
   draggingEventId,
   dragPreview,
@@ -165,6 +170,8 @@ export function WeekCalendarView({
       <WeekScrollableGrid
         weekDates={displayDates}
         eventsByDay={displayEventsByDay}
+        allDayEvents={allDayEvents}
+        onBannerEventClick={onBannerEventClick}
         onGridCellClick={() => {}}
         onEventMouseDown={onEventMouseDown}
         draggingEventId={draggingEventId}

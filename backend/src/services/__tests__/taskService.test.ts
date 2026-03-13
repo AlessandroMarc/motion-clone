@@ -447,7 +447,9 @@ describe('TaskService', () => {
       // getTaskById mock
       const selectMock = jest.fn().mockReturnValue({
         eq: jest.fn().mockReturnValue({
-          single: jest.fn().mockResolvedValue({ data: existingTask, error: null }),
+          single: jest
+            .fn()
+            .mockResolvedValue({ data: existingTask, error: null }),
         }),
       });
 
@@ -462,8 +464,10 @@ describe('TaskService', () => {
       });
 
       mockClient.from.mockImplementation((tableName: string) => {
-        if (tableName === 'calendar_events') return { delete: calendarDeleteMock };
-        if (tableName === 'tasks') return { select: selectMock, delete: taskDeleteMock };
+        if (tableName === 'calendar_events')
+          return { delete: calendarDeleteMock };
+        if (tableName === 'tasks')
+          return { select: selectMock, delete: taskDeleteMock };
         return mockClient;
       });
 
