@@ -54,8 +54,8 @@ const makeProject = (overrides: Partial<Project> = {}): Project => ({
   deadline: null,
   status: 'not-started',
   user_id: 'user-1',
-  createdAt: new Date(),
-  updatedAt: new Date(),
+  created_at: new Date(),
+  updated_at: new Date(),
   milestones: [],
   ...overrides,
 });

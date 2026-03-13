@@ -53,7 +53,7 @@ export function HiddenEventsIndicator({ events }: HiddenEventsIndicatorProps) {
           <ul className="space-y-1.5 max-h-60 overflow-y-auto">
             {events.map((ev, i) => (
               <li
-                key={i}
+                key={`${ev.start_time}-${ev.title}-${i}`}
                 className="text-xs rounded-md bg-muted/50 px-2 py-1.5"
               >
                 <p className="font-medium text-foreground truncate">

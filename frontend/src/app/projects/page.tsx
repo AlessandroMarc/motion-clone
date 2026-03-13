@@ -16,7 +16,7 @@ export default function ProjectsPage() {
   const handleProjectCreate = async (
     projectData: Omit<
       Project,
-      'id' | 'createdAt' | 'updatedAt' | 'milestones' | 'status'
+      'id' | 'created_at' | 'updated_at' | 'milestones' | 'status'
     >
   ) => {
     setIsCreatingProject(true);

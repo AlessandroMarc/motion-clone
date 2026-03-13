@@ -6,16 +6,14 @@ import type {
 } from '../types/database.js';
 import type { Project } from '../types/database.js';
 import { autoScheduleTriggerQueue } from './autoScheduleTriggerQueue.js';
+import { normalizeToMidnight as normalizeToMidnightDate } from '../../../shared/dateUtils.js';
 
 /**
- * Normalize a date to midnight (00:00:00.000) in local time
- * Used for deadlines to ensure consistent date-only comparison
+ * Normalize a date to midnight ISO string.
  */
 function normalizeToMidnight(date: Date | string): string {
   const dateObj = typeof date === 'string' ? new Date(date) : date;
-  const normalized = new Date(dateObj);
-  normalized.setHours(0, 0, 0, 0);
-  return normalized.toISOString();
+  return normalizeToMidnightDate(dateObj).toISOString();
 }
 
 export class ProjectService {
