@@ -46,5 +46,10 @@
     "skipLibCheck": true
   },
   "include": ["src/**/*", "../shared/**/*"],
-  "exclude": ["src/**/__tests__/**", "src/**/*.test.ts"]
+  "exclude": [
+    "src/**/__tests__/**",
+    "src/**/*.test.ts",
+    "../shared/**/__tests__/**",
+    "../shared/**/*.test.ts"
+  ]
 }

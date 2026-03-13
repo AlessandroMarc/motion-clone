@@ -15,15 +15,8 @@ import {
   generateOccurrenceDates,
   get90DayHorizon,
 } from './recurrenceCalculator.js';
-
-// ---------------------------------------------------------------------------
-// Priority rank (mirrors frontend/src/utils/taskUtils.ts)
-// ---------------------------------------------------------------------------
-const TASK_PRIORITY_RANK: Record<'low' | 'medium' | 'high', number> = {
-  high: 3,
-  medium: 2,
-  low: 1,
-};
+import { TASK_PRIORITY_RANK } from '../../../shared/taskPriority.js';
+import { parseLocalDate } from '../../../shared/dateUtils.js';
 
 // ---------------------------------------------------------------------------
 // Config
@@ -125,14 +118,12 @@ export function calculateRemainingDurationMinutes(
 
 // ---------------------------------------------------------------------------
 // Parse a date-only string (YYYY-MM-DD) in local time.
-// new Date("2026-03-10") parses as UTC midnight, which in UTC+1 becomes
-// March 9 at 23:00 local — one day early. Splitting avoids that.
+// Delegates to shared/dateUtils.parseLocalDate; passes Date objects through.
 // ---------------------------------------------------------------------------
 
 export function parseDateLocal(date: string | Date): Date {
   if (date instanceof Date) return date;
-  const [year, month, day] = date.split('-').map(Number);
-  return new Date(year!, month! - 1, day!);
+  return parseLocalDate(date);
 }
 
 // ---------------------------------------------------------------------------

@@ -86,11 +86,12 @@ export function validateEnvOrThrow(): void {
       '  - NEXT_PUBLIC_SUPABASE_ANON_KEY',
     ].join('\n');
 
-    // In CI environments (GitHub Actions, etc.), only warn but don't fail the build
-    // This allows CI to test that code compiles without requiring real env vars
-    // In production deployments (Vercel), we want to fail fast if env vars are missing
-    const isCI =
-      process.env.CI === 'true' || process.env.GITHUB_ACTIONS === 'true';
+    // Next.js statically replaces process.env.FOO at build time for non-NEXT_PUBLIC_
+    // variables, so direct access like process.env.CI gets inlined as undefined.
+    // Using bracket notation on the process.env object prevents static replacement,
+    // allowing us to read CI and GITHUB_ACTIONS at actual runtime (including prerender).
+    const env = process.env;
+    const isCI = env['CI'] === 'true' || env['GITHUB_ACTIONS'] === 'true';
 
     if (isCI) {
       console.warn(

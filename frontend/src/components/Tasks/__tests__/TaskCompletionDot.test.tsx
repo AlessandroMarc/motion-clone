@@ -27,6 +27,13 @@ jest.mock('@/components/ui/alert-dialog', () => ({
   ),
 }));
 
+// The component reads NEXT_PUBLIC_CONFIRM_TASK_COMPLETION at module scope.
+// Default is confirmation enabled (not '0'), which matches the component default.
+// We explicitly set it here for clarity.
+beforeAll(() => {
+  process.env.NEXT_PUBLIC_CONFIRM_TASK_COMPLETION = '1';
+});
+
 describe('TaskCompletionDot — confetti', () => {
   beforeEach(() => {
     jest.clearAllMocks();
