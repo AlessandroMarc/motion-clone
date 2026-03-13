@@ -27,6 +27,7 @@ import { DeadlineViolationsBar } from './DeadlineViolationsBar';
 import CalendarEditDialog from './CalendarEditDialog';
 import { CalendarCompletionDialog } from './CalendarCompletionDialog';
 import { TaskEditDialogForm } from '@/components/Tasks/forms/TaskEditDialogForm';
+import { taskService } from '@/services/taskService';
 import type { Task } from '@/types';
 import { HOUR_PX } from './dayColumnLayout';
 import { logger } from '@/lib/logger';
@@ -280,6 +281,27 @@ export function WeekCalendarContainer({
     }
   };
 
+  const handleTaskCreate = async (
+    taskData: Omit<Task, 'id' | 'created_at' | 'updated_at' | 'status' | 'dependencies'>
+  ) => {
+    await taskService.createTask({
+      title: taskData.title,
+      description: taskData.description,
+      dueDate: taskData.due_date,
+      priority: taskData.priority,
+      scheduleId: taskData.schedule_id,
+      project_id: taskData.project_id,
+      plannedDurationMinutes: taskData.planned_duration_minutes,
+      actualDurationMinutes: taskData.actual_duration_minutes,
+      isRecurring: taskData.is_recurring,
+      recurrencePattern: taskData.recurrence_pattern,
+      recurrenceInterval: taskData.recurrence_interval,
+      recurrenceStartDate: taskData.recurrence_start_date,
+    });
+    await refreshEvents();
+    onTaskDropped?.();
+  };
+
   const displayEventsByDay = useMemo(() => {
     if (!isMobile) return eventsByDay;
 
@@ -467,6 +489,7 @@ export function WeekCalendarContainer({
         isAutoScheduleRefreshing={isRefreshing || !initialSyncComplete}
         workingHoursStart={activeSchedule?.working_hours_start}
         workingHoursEnd={activeSchedule?.working_hours_end}
+        onTaskCreate={handleTaskCreate}
       />
       <TaskEditDialogForm
         task={selectedTask}

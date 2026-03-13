@@ -6,6 +6,7 @@ import {
   Sparkles,
   Circle,
   Loader2,
+  Plus,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -15,6 +16,8 @@ import {
 } from '@/utils/calendarUtils';
 import { formatDate, formatDateDisplay } from '@/utils/dateUtils';
 import { useIsMobile } from '@/hooks/use-mobile';
+import type { TaskCreateFormProps } from '@/hooks/useTaskForm';
+import { TaskCreateDialogForm } from '@/components/Tasks/forms/TaskCreateDialogForm';
 
 interface CalendarHeaderProps {
   weekDates: Date[];
@@ -24,6 +27,7 @@ interface CalendarHeaderProps {
   onAutoSchedule?: () => void;
   isAutoScheduleRefreshing?: boolean;
   onZenMode?: () => void;
+  onTaskCreate?: TaskCreateFormProps['onTaskCreate'];
   // Mobile-specific props
   currentDay?: Date;
   onPreviousDay?: () => void;
@@ -38,6 +42,7 @@ export function CalendarHeader({
   onAutoSchedule,
   isAutoScheduleRefreshing,
   onZenMode,
+  onTaskCreate,
   currentDay,
   onPreviousDay,
   onNextDay,
@@ -90,6 +95,17 @@ export function CalendarHeader({
                 <Circle className="h-3 w-3" />
                 Zen
               </Button>
+            )}
+            {onTaskCreate && (
+              <TaskCreateDialogForm
+                onTaskCreate={onTaskCreate}
+                trigger={
+                  <Button size="sm" className="text-xs h-8 px-3 gap-1.5">
+                    <Plus className="h-3 w-3" />
+                    New Task
+                  </Button>
+                }
+              />
             )}
           </div>
         </div>
@@ -162,6 +178,17 @@ export function CalendarHeader({
             <Circle className="h-3 w-3" />
             Zen
           </Button>
+        )}
+        {onTaskCreate && (
+          <TaskCreateDialogForm
+            onTaskCreate={onTaskCreate}
+            trigger={
+              <Button size="sm" className="text-xs h-7 px-2.5 gap-1.5">
+                <Plus className="h-3 w-3" />
+                New Task
+              </Button>
+            }
+          />
         )}
       </div>
 
