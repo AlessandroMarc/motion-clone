@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useFormContext } from 'react-hook-form';
 import {
   Command,
@@ -17,7 +17,6 @@ import { Button } from '@/components/ui/button';
 import { Check, ChevronsUpDown, Folder } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { projectService } from '@/services/projectService';
-import { useAuth } from '@/contexts/AuthContext';
 import type { Project } from '@/types';
 import type { FieldErrors } from 'react-hook-form';
 import type { TaskFormData } from '@/hooks/useTaskForm';
@@ -34,8 +33,10 @@ export function TaskProjectField({ errors }: TaskProjectFieldProps) {
 
   const { setValue, watch } = useFormContext<TaskFormData>();
   const selectedProjectId = watch('project_id');
-  const selectedScheduleId = watch('scheduleId');
-  const { activeSchedule } = useAuth();
+
+  // True once we've auto-applied a project's schedule for the current project selection.
+  // Reset to false whenever the project changes so a new project always re-syncs its schedule.
+  const isScheduleAutoApplied = useRef(false);
 
   // Fetch projects on component mount
   useEffect(() => {
@@ -63,26 +64,24 @@ export function TaskProjectField({ errors }: TaskProjectFieldProps) {
     project => project.id === selectedProjectId
   );
 
+  // When the project changes, reset the flag so the new project's schedule gets applied.
+  useEffect(() => {
+    isScheduleAutoApplied.current = false;
+  }, [selectedProjectId]);
+
+  // Auto-apply the project's schedule once per project selection.
+  // The flag prevents re-applying after the user has manually changed the schedule:
+  // once isScheduleAutoApplied is true we stop touching scheduleId until the project changes.
   useEffect(() => {
     if (!selectedProject?.schedule_id) return;
+    if (isScheduleAutoApplied.current) return;
 
-    // Prefer the project's schedule if the user hasn't explicitly chosen a different one.
-    // We treat empty / unset as not explicitly chosen.
-    const usingDefaultSchedule =
-      !selectedScheduleId || selectedScheduleId === activeSchedule?.id;
-
-    if (usingDefaultSchedule) {
-      setValue('scheduleId', selectedProject.schedule_id, {
-        shouldDirty: true,
-        shouldValidate: true,
-      });
-    }
-  }, [
-    selectedProject?.schedule_id,
-    selectedScheduleId,
-    activeSchedule?.id,
-    setValue,
-  ]);
+    setValue('scheduleId', selectedProject.schedule_id, {
+      shouldDirty: true,
+      shouldValidate: true,
+    });
+    isScheduleAutoApplied.current = true;
+  }, [selectedProject?.schedule_id, selectedProjectId, setValue]);
 
   const handleSelect = (projectId: string) => {
     if (projectId === selectedProjectId) {
