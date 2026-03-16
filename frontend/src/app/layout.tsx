@@ -4,6 +4,8 @@ import { AuthProvider } from '@/contexts/AuthContext';
 import { ThemeProvider } from '@/components/ThemeProvider';
 import { LayoutWrapper } from '@/components/LayoutWrapper';
 import { OnboardingProvider } from '@/components/Onboarding/OnboardingProvider';
+import { MotionProvider } from '@/components/MotionProvider';
+import { NavigationProgress } from '@/components/shared/NavigationProgress';
 import './globals.css';
 import * as Sentry from '@sentry/nextjs';
 
@@ -31,7 +33,10 @@ export default function RootLayout({ children }: RootLayoutProps) {
         >
           <AuthProvider>
             <OnboardingProvider>
-              <LayoutWrapper>{children}</LayoutWrapper>
+              <MotionProvider>
+                <NavigationProgress />
+                <LayoutWrapper>{children}</LayoutWrapper>
+              </MotionProvider>
               <Toaster
                 position="bottom-right"
                 richColors

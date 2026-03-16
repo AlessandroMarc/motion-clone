@@ -2,6 +2,7 @@
 
 import { usePathname } from 'next/navigation';
 import { Sidebar } from '@/components/Sidebar';
+import { PageTransition } from '@/components/PageTransition';
 
 interface LayoutWrapperProps {
   children: React.ReactNode;
@@ -21,7 +22,7 @@ export function LayoutWrapper({ children }: LayoutWrapperProps) {
     <div className="flex h-screen">
       <Sidebar />
       <main className="flex-1 overflow-auto pt-14 pb-24 md:pt-0 md:pb-0">
-        {children}
+        <PageTransition>{children}</PageTransition>
       </main>
     </div>
   );

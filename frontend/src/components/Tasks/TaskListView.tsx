@@ -2,9 +2,11 @@
 
 import { toast } from 'sonner';
 import { Card, CardContent } from '@/components/ui/card';
+import { motion } from 'framer-motion';
 import { Circle, LayoutList, Columns3 } from 'lucide-react';
 import type { Project, Task } from '@/types';
 import { ErrorState, LoadingState } from '@/components/shared';
+import { fadeInScale } from '@/lib/animations';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Button } from '@/components/ui/button';
 import { MobileTaskList } from './MobileTaskList';
@@ -78,18 +80,29 @@ export function TaskListView({
 
   if (tasks.length === 0 && projects.length === 0) {
     return (
-      <Card className="border-dashed border-2 border-muted-foreground/25">
-        <CardContent className="flex flex-col items-center justify-center p-8 text-center">
-          <Circle className="h-12 w-12 text-muted-foreground/50 mb-4" />
-          <h3 className="text-lg font-subheading text-muted-foreground mb-2">
-            No tasks yet
-          </h3>
-          <p className="text-sm font-body text-muted-foreground">
-            Create your first task to get started with your productivity
-            journey.
-          </p>
-        </CardContent>
-      </Card>
+      <motion.div
+        variants={fadeInScale}
+        initial="initial"
+        animate="animate"
+      >
+        <Card className="border-dashed border-2 border-muted-foreground/25">
+          <CardContent className="flex flex-col items-center justify-center p-8 text-center">
+            <motion.div
+              animate={{ rotate: [0, 10, -10, 0] }}
+              transition={{ delay: 2, duration: 0.5, ease: 'easeInOut' }}
+            >
+              <Circle className="h-12 w-12 text-muted-foreground/50 mb-4" />
+            </motion.div>
+            <h3 className="text-lg font-subheading text-muted-foreground mb-2">
+              No tasks yet
+            </h3>
+            <p className="text-sm font-body text-muted-foreground">
+              Create your first task to get started with your productivity
+              journey.
+            </p>
+          </CardContent>
+        </Card>
+      </motion.div>
     );
   }
 
