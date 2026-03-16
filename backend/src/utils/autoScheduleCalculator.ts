@@ -133,9 +133,6 @@ export function calculateAutoSchedule(params: {
 
   const scheduleMap = new Map<string, Schedule>(schedules.map(s => [s.id, s]));
 
-  const completedTaskEvents = allCalendarEvents.filter(
-    event => isCalendarEventTask(event) && event.completed_at !== null
-  );
   const regularEvents = allCalendarEvents.filter(
     event => !isCalendarEventTask(event)
   );
@@ -150,9 +147,11 @@ export function calculateAutoSchedule(params: {
   // past their due date.  Instead, each task's proposed events are added to the
   // pool dynamically as it is processed (in deadline-first sort order), so
   // higher-priority / deadline tasks always get first pick of available slots.
+  //
+  // Completed task events are also excluded: once a task is done its time slots
+  // should be freed up so other tasks can be scheduled there.
   const accumulatedScheduledEvents: CalendarEventUnion[] = [
     ...regularEvents,
-    ...completedTaskEvents,
     ...syntheticEvents,
   ];
 
@@ -260,9 +259,13 @@ export function calculateAutoSchedule(params: {
       ? [...futureValidEvents, ...completedEventsForTask]
       : [];
 
-    // Add kept future events as blockers BEFORE generating new events so new
-    // slots won't overlap with them.
+    // Add kept future events (excluding completed) as blockers BEFORE
+    // generating new events so new slots won't overlap with them.
+    // Completed events stay in lockedFutureEvents only to prevent duplicate
+    // recurring occurrences inside prepareTaskEvents, but they should NOT
+    // block other tasks from using those time slots.
     for (const evt of lockedFutureEvents) {
+      if (isCalendarEventTask(evt) && evt.completed_at !== null) continue;
       accumulatedScheduledEvents.push(evt);
     }
 
@@ -312,11 +315,14 @@ export function calculateAutoSchedule(params: {
       taskStartTime
     );
 
-    // Combine kept future events with newly generated events
-    const keptSlots = lockedFutureEvents.map(e => ({
-      start_time: new Date(e.start_time),
-      end_time: new Date(e.end_time),
-    }));
+    // Combine kept future events (excluding completed) with newly generated events.
+    // Completed events are already persisted and should not be re-proposed.
+    const keptSlots = lockedFutureEvents
+      .filter(e => !(isCalendarEventTask(e) && e.completed_at !== null))
+      .map(e => ({
+        start_time: new Date(e.start_time),
+        end_time: new Date(e.end_time),
+      }));
     const finalEvents = [...keptSlots, ...events].sort(
       (a, b) => a.start_time.getTime() - b.start_time.getTime()
     );
