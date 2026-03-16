@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { waitForAuth } from './helpers/testUtils';
 
 /**
  * Integration tests for sidebar navigation between pages.
@@ -6,17 +7,6 @@ import { test, expect } from '@playwright/test';
  * These tests run against the REAL backend + Supabase database.
  * Auth is handled via storageState (set up in globalSetup).
  */
-
-/** Helper: wait for auth to complete (past the sign-in screen). */
-async function waitForAuth(page: import('@playwright/test').Page) {
-  await page.waitForFunction(
-    () => {
-      const heading = document.querySelector('h1, h2, h3');
-      return heading && !heading.textContent?.includes('Sign in');
-    },
-    { timeout: 15000 }
-  );
-}
 
 test.describe('Navigation — integration', () => {
   test('navigate through all main pages via sidebar', async ({ page }) => {

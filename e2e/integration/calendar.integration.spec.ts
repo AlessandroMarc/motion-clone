@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { waitForAuth } from './helpers/testUtils';
 
 /**
  * Integration tests for the Calendar page.
@@ -7,17 +8,6 @@ import { test, expect } from '@playwright/test';
  * Auth is handled via storageState (set up in globalSetup).
  * Data is wiped before and after the suite via globalSetup/globalTeardown.
  */
-
-/** Helper: wait for auth to complete (past the sign-in screen). */
-async function waitForAuth(page: import('@playwright/test').Page) {
-  await page.waitForFunction(
-    () => {
-      const heading = document.querySelector('h1, h2, h3');
-      return heading && !heading.textContent?.includes('Sign in');
-    },
-    { timeout: 15000 }
-  );
-}
 
 test.describe('Calendar — integration', () => {
   test('calendar page loads and shows week view', async ({ page }) => {
@@ -63,8 +53,10 @@ test.describe('Calendar — integration', () => {
     await newTaskBtn.click();
 
     // Verify the create task dialog opens
-    const dialogHeading = page.getByText('Create New Task');
-    await expect(dialogHeading).toBeVisible({ timeout: 5000 });
+    const dialogHeading = page.getByRole('heading', {
+      name: /create new task/i,
+    });
+    await expect(dialogHeading).toBeVisible({ timeout: 10000 });
   });
 
   test('navigate between calendar and tasks via sidebar', async ({ page }) => {

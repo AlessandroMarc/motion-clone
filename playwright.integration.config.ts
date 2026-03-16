@@ -17,6 +17,20 @@ import dotenv from 'dotenv';
 dotenv.config({ path: '.env' });
 dotenv.config({ path: 'backend/.env.development.local', override: true });
 
+// Ensure aliases so globalSetup and webServer env blocks can read either name
+if (process.env.SUPABASE_URL && !process.env.NEXT_PUBLIC_SUPABASE_URL) {
+  process.env.NEXT_PUBLIC_SUPABASE_URL = process.env.SUPABASE_URL;
+}
+if (process.env.NEXT_PUBLIC_SUPABASE_URL && !process.env.SUPABASE_URL) {
+  process.env.SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
+}
+if (process.env.SUPABASE_ANON_KEY && !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY;
+}
+if (process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY && !process.env.SUPABASE_ANON_KEY) {
+  process.env.SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+}
+
 export default defineConfig({
   testDir: './e2e/integration',
   testMatch: '**/*.integration.spec.ts',

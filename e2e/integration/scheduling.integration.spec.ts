@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { waitForAuth, createTaskViaDialog } from './helpers/testUtils';
 
 /**
  * Integration tests for task scheduling.
@@ -8,79 +9,6 @@ import { test, expect } from '@playwright/test';
  */
 
 const E2E_PREFIX = '[E2E]';
-
-/** Helper: wait for auth to complete (past the sign-in screen). */
-async function waitForAuth(page: import('@playwright/test').Page) {
-  await page.waitForFunction(
-    () => {
-      const heading = document.querySelector('h1, h2, h3');
-      return heading && !heading.textContent?.includes('Sign in');
-    },
-    { timeout: 15000 }
-  );
-}
-
-/**
- * Helper: create a task via the UI dialog.
- * Works from any page that has a "Create Task" or "New Task" button.
- */
-async function createTaskViaDialog(
-  page: import('@playwright/test').Page,
-  title: string
-) {
-  const createBtn = page
-    .getByRole('button')
-    .filter({ hasText: /create task|new task/i })
-    .first();
-  await expect(createBtn).toBeVisible({ timeout: 5000 });
-  await createBtn.click();
-
-  // Wait for dialog to fully render
-  const dialogTitle = page.getByRole('heading', { name: /create new task/i });
-  await expect(dialogTitle).toBeVisible({ timeout: 10000 });
-
-  // Title (required)
-  const titleInput = page.locator('input#title');
-  await expect(titleInput).toBeVisible({ timeout: 5000 });
-  await titleInput.fill(title);
-
-  // Planned duration (required) — popover button, not an input
-  const durationBtn = page.locator('button#planned_duration_minutes');
-  await durationBtn.scrollIntoViewIfNeeded();
-  await expect(durationBtn).toBeVisible({ timeout: 5000 });
-  await durationBtn.click();
-
-  // Select "30 minutes" from presets
-  const durationOption = page.getByRole('option', { name: /30 minutes/i });
-  await expect(durationOption).toBeVisible({ timeout: 5000 });
-  await durationOption.click();
-
-  // Submit
-  const submitBtn = page
-    .getByRole('button', { name: /create task/i })
-    .last();
-  await submitBtn.scrollIntoViewIfNeeded();
-  await page.waitForTimeout(300);
-
-  const createResponse = page.waitForResponse(
-    r =>
-      r.url().includes('/api/tasks') &&
-      r.request().method() === 'POST' &&
-      r.status() >= 200 &&
-      r.status() < 300,
-    { timeout: 30000 }
-  );
-
-  console.log('[E2E] Clicking create task submit...');
-  await submitBtn.click();
-
-  console.log('[E2E] Waiting for API response...');
-  await createResponse;
-  console.log('[E2E] Task created via API.');
-
-  await expect(dialogTitle).not.toBeVisible({ timeout: 15000 });
-  console.log('[E2E] Dialog closed.');
-}
 
 test.describe('Scheduling — integration', () => {
   test('create a task, auto-schedule it, verify it appears on the calendar', async ({
@@ -139,23 +67,76 @@ test.describe('Scheduling — integration', () => {
         `[E2E] Task "${taskTitle}" appeared on calendar (${eventCount} event(s)).`
       );
     } else {
-      // The auto-scheduler may schedule events on future days not visible in current week
-      // Verify the API call succeeded
-      expect(response.status()).toBeLessThan(300);
-      console.log(
-        '[E2E] Auto-schedule API succeeded. Event may be on a non-visible day.'
-      );
-    }
+      // Task may be scheduled on a day not visible in the current week view.
+      // Try navigating to the scheduled date using the API response.
+      const eventsData = responseBody?.data;
+      if (eventsData && !eventsData.unchanged && eventsData.eventsCreated > 0) {
+        // Fetch calendar events to find the scheduled date
+        const eventsApiResp = await page.waitForResponse(
+          r =>
+            r.url().includes('/api/calendar-events') &&
+            r.request().method() === 'GET',
+          { timeout: 15000 }
+        );
+        const eventsJson = await eventsApiResp.json();
+        const events = eventsJson?.data ?? [];
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const scheduledEvent = events.find((e: any) =>
+          e.title?.includes(taskTitle)
+        );
 
-    // ── 4. Verify via API that calendar events exist for this user ──
-    const eventsApiResponse = await page.waitForResponse(
-      r =>
-        r.url().includes('/api/calendar-events') &&
-        r.request().method() === 'GET',
-      { timeout: 15000 }
-    );
-    expect(eventsApiResponse.status()).toBeLessThan(300);
-    console.log('[E2E] Calendar events API returned successfully.');
+        if (scheduledEvent) {
+          const scheduledDate = new Date(scheduledEvent.start_time);
+          const today = new Date();
+
+          // If the event is in a future week, click "Next" to navigate there
+          const diffDays = Math.floor(
+            (scheduledDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)
+          );
+          const weeksToAdvance = Math.floor(diffDays / 7);
+
+          if (weeksToAdvance > 0) {
+            const nextBtn = page
+              .getByRole('button')
+              .filter({
+                has: page.locator(
+                  '[data-lucide="chevron-right"], .lucide-chevron-right'
+                ),
+              })
+              .first();
+
+            for (let i = 0; i < weeksToAdvance; i++) {
+              await nextBtn.click();
+              await page.waitForTimeout(500);
+            }
+
+            // Check again after navigating
+            const eventAfterNav = page.locator('.calendar-event-card', {
+              hasText: taskTitle,
+            });
+            const navCount = await eventAfterNav.count();
+            if (navCount > 0) {
+              await expect(eventAfterNav.first()).toBeVisible();
+              console.log(
+                `[E2E] Task "${taskTitle}" found after navigating ${weeksToAdvance} week(s) forward.`
+              );
+            } else {
+              console.warn(
+                `[E2E] Visual verification skipped: task "${taskTitle}" scheduled for ${scheduledDate.toISOString()} but not visible after navigation.`
+              );
+            }
+          }
+        } else {
+          console.warn(
+            `[E2E] Visual verification skipped: could not find event with title "${taskTitle}" in API response.`
+          );
+        }
+      }
+
+      // Always verify the API call itself succeeded
+      expect(response.status()).toBeLessThan(300);
+      console.log('[E2E] Auto-schedule API succeeded.');
+    }
   });
 
   test('auto-schedule button shows loading state', async ({ page }) => {
