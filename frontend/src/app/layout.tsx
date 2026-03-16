@@ -42,6 +42,10 @@ export default function RootLayout({ children }: RootLayoutProps) {
                 richColors
                 closeButton
                 duration={3000}
+                toastOptions={{
+                  className:
+                    'rounded-lg border shadow-lg backdrop-blur-sm',
+                }}
               />
             </OnboardingProvider>
           </AuthProvider>

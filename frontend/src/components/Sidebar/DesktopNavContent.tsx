@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { motion } from 'framer-motion';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
@@ -23,12 +24,19 @@ export function DesktopNavContent({
         {sidebarNavigation.map(item => {
           const isActive = pathname === item.href;
           return (
-            <Link key={item.name} href={item.href} onClick={onLinkClick}>
+            <Link key={item.name} href={item.href} onClick={onLinkClick} className="relative block">
+              {isActive && (
+                <motion.div
+                  layoutId="sidebar-active"
+                  className="absolute inset-0 rounded-md bg-secondary"
+                  transition={{ type: 'spring', stiffness: 350, damping: 30 }}
+                />
+              )}
               <Button
                 variant={isActive ? 'secondary' : 'ghost'}
                 className={cn(
-                  'w-full justify-start h-9 text-sm',
-                  isActive && 'bg-secondary text-secondary-foreground'
+                  'relative w-full justify-start h-9 text-sm',
+                  isActive && 'bg-transparent text-secondary-foreground'
                 )}
               >
                 <item.icon className="mr-2 h-4 w-4" />
@@ -42,12 +50,19 @@ export function DesktopNavContent({
         {supportNavigation.map(item => {
           const isActive = pathname === item.href;
           return (
-            <Link key={item.name} href={item.href} onClick={onLinkClick}>
+            <Link key={item.name} href={item.href} onClick={onLinkClick} className="relative block">
+              {isActive && (
+                <motion.div
+                  layoutId="sidebar-support-active"
+                  className="absolute inset-0 rounded-md bg-secondary"
+                  transition={{ type: 'spring', stiffness: 350, damping: 30 }}
+                />
+              )}
               <Button
                 variant={isActive ? 'secondary' : 'ghost'}
                 className={cn(
-                  'w-full justify-start h-9 text-sm',
-                  isActive && 'bg-secondary text-secondary-foreground'
+                  'relative w-full justify-start h-9 text-sm',
+                  isActive && 'bg-transparent text-secondary-foreground'
                 )}
               >
                 <item.icon className="mr-2 h-4 w-4" />

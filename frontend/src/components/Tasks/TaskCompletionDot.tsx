@@ -1,9 +1,11 @@
 'use client';
 
 import { useMemo, useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Check, Circle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { fireConfetti } from '@/utils/confetti';
+import { springSnappy } from '@/lib/animations';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -102,21 +104,31 @@ export function TaskCompletionDot({
           className
         )}
       >
-        <Circle
-          className={cn(
-            'h-4 w-4 text-muted-foreground',
-            completed && 'text-emerald-500',
-            iconClassName
-          )}
-        />
-        {!completed && (
-          <Check
+        <motion.div
+          animate={completed ? { scale: [1, 1.3, 1] } : { scale: 1 }}
+          transition={springSnappy}
+        >
+          <Circle
             className={cn(
-              'absolute inset-0 m-auto h-3 w-3 text-muted-foreground transition-opacity',
-              isPreviewingComplete ? 'opacity-100' : 'opacity-0'
+              'h-4 w-4 text-muted-foreground',
+              completed && 'text-emerald-500',
+              iconClassName
             )}
           />
-        )}
+        </motion.div>
+        <AnimatePresence>
+          {!completed && isPreviewingComplete && (
+            <motion.div
+              className="absolute inset-0 flex items-center justify-center"
+              initial={{ opacity: 0, scale: 0.5 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.5 }}
+              transition={{ duration: 0.15 }}
+            >
+              <Check className={cn('h-3 w-3 text-muted-foreground', iconClassName)} />
+            </motion.div>
+          )}
+        </AnimatePresence>
       </button>
 
       <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
