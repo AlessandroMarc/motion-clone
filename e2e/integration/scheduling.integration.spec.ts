@@ -20,6 +20,68 @@ async function waitForAuth(page: import('@playwright/test').Page) {
   );
 }
 
+/**
+ * Helper: create a task via the UI dialog.
+ * Works from any page that has a "Create Task" or "New Task" button.
+ */
+async function createTaskViaDialog(
+  page: import('@playwright/test').Page,
+  title: string
+) {
+  const createBtn = page
+    .getByRole('button')
+    .filter({ hasText: /create task|new task/i })
+    .first();
+  await expect(createBtn).toBeVisible({ timeout: 5000 });
+  await createBtn.click();
+
+  // Wait for dialog to fully render
+  const dialogTitle = page.getByRole('heading', { name: /create new task/i });
+  await expect(dialogTitle).toBeVisible({ timeout: 10000 });
+
+  // Title (required)
+  const titleInput = page.locator('input#title');
+  await expect(titleInput).toBeVisible({ timeout: 5000 });
+  await titleInput.fill(title);
+
+  // Planned duration (required) — popover button, not an input
+  const durationBtn = page.locator('button#planned_duration_minutes');
+  await durationBtn.scrollIntoViewIfNeeded();
+  await expect(durationBtn).toBeVisible({ timeout: 5000 });
+  await durationBtn.click();
+
+  // Select "30 minutes" from presets
+  const durationOption = page.getByRole('option', { name: /30 minutes/i });
+  await expect(durationOption).toBeVisible({ timeout: 5000 });
+  await durationOption.click();
+
+  // Submit
+  const submitBtn = page
+    .getByRole('button', { name: /create task/i })
+    .last();
+  await submitBtn.scrollIntoViewIfNeeded();
+  await page.waitForTimeout(300);
+
+  const createResponse = page.waitForResponse(
+    r =>
+      r.url().includes('/api/tasks') &&
+      r.request().method() === 'POST' &&
+      r.status() >= 200 &&
+      r.status() < 300,
+    { timeout: 30000 }
+  );
+
+  console.log('[E2E] Clicking create task submit...');
+  await submitBtn.click();
+
+  console.log('[E2E] Waiting for API response...');
+  await createResponse;
+  console.log('[E2E] Task created via API.');
+
+  await expect(dialogTitle).not.toBeVisible({ timeout: 15000 });
+  console.log('[E2E] Dialog closed.');
+}
+
 test.describe('Scheduling — integration', () => {
   test('create a task, auto-schedule it, verify it appears on the calendar', async ({
     page,
@@ -34,46 +96,7 @@ test.describe('Scheduling — integration', () => {
       page.getByRole('heading', { name: /task manager/i })
     ).toBeVisible();
 
-    // Open create dialog
-    const createBtn = page
-      .getByRole('button')
-      .filter({ hasText: /create task/i })
-      .first();
-    await expect(createBtn).toBeVisible();
-    await createBtn.click();
-
-    // Fill form
-    await expect(page.getByText('Create New Task')).toBeVisible();
-
-    await page.locator('input#title').fill(taskTitle);
-    await page.locator('textarea#description').fill('Auto-schedule test');
-    await page.locator('input#planned_duration_minutes').fill('30 min');
-
-    // Submit and wait for API response
-    const submitBtn = page
-      .getByRole('button', { name: /create task/i })
-      .filter({ visible: true })
-      .last();
-    await submitBtn.scrollIntoViewIfNeeded();
-    await page.waitForTimeout(300);
-
-    const createResponse = page.waitForResponse(
-      r =>
-        r.url().includes('/api/tasks') &&
-        r.request().method() === 'POST' &&
-        r.status() >= 200 &&
-        r.status() < 300,
-      { timeout: 30000 }
-    );
-
-    await submitBtn.click();
-    await createResponse;
-
-    // Wait for dialog to close
-    await expect(page.getByText('Create New Task')).not.toBeVisible({
-      timeout: 15000,
-    });
-    console.log('[E2E] Task created.');
+    await createTaskViaDialog(page, taskTitle);
 
     // ── 2. Navigate to calendar and run Auto-Schedule ──
     await page.goto('/calendar');
@@ -109,7 +132,6 @@ test.describe('Scheduling — integration', () => {
       hasText: taskTitle,
     });
 
-    // The task should have been scheduled and appear as an event
     const eventCount = await eventCard.count();
     if (eventCount > 0) {
       await expect(eventCard.first()).toBeVisible();
@@ -117,14 +139,8 @@ test.describe('Scheduling — integration', () => {
         `[E2E] Task "${taskTitle}" appeared on calendar (${eventCount} event(s)).`
       );
     } else {
-      // If not visible by class, try finding by text anywhere on the calendar
-      const eventText = page.getByText(taskTitle);
-      const textCount = await eventText.count();
-      console.log(
-        `[E2E] Calendar event cards with class: ${eventCount}, text matches: ${textCount}`
-      );
       // The auto-scheduler may schedule events on future days not visible in current week
-      // So we just verify the API call succeeded
+      // Verify the API call succeeded
       expect(response.status()).toBeLessThan(300);
       console.log(
         '[E2E] Auto-schedule API succeeded. Event may be on a non-visible day.'
@@ -152,7 +168,6 @@ test.describe('Scheduling — integration', () => {
     await expect(autoScheduleBtn).toBeVisible({ timeout: 10000 });
     await expect(autoScheduleBtn).toBeEnabled();
 
-    // Click and verify button enters disabled/loading state
     await autoScheduleBtn.click();
 
     // Button should be disabled while scheduling is in progress

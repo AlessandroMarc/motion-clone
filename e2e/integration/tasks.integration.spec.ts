@@ -21,6 +21,71 @@ async function waitForAuth(page: import('@playwright/test').Page) {
   );
 }
 
+/**
+ * Helper: create a task via the UI dialog on the current page.
+ * Works from any page that has a "Create Task" or "New Task" button.
+ */
+async function createTaskViaDialog(
+  page: import('@playwright/test').Page,
+  title: string
+) {
+  // Find and click the create/new task button
+  const createBtn = page
+    .getByRole('button')
+    .filter({ hasText: /create task|new task/i })
+    .first();
+  await expect(createBtn).toBeVisible({ timeout: 5000 });
+  await createBtn.click();
+
+  // Wait for the dialog to fully render
+  const dialogTitle = page.getByRole('heading', { name: /create new task/i });
+  await expect(dialogTitle).toBeVisible({ timeout: 10000 });
+
+  // Title (required)
+  const titleInput = page.locator('input#title');
+  await expect(titleInput).toBeVisible({ timeout: 5000 });
+  await titleInput.fill(title);
+
+  // Planned duration (required) — it's a popover button, not a text input
+  const durationBtn = page.locator('button#planned_duration_minutes');
+  await durationBtn.scrollIntoViewIfNeeded();
+  await expect(durationBtn).toBeVisible({ timeout: 5000 });
+  await durationBtn.click();
+
+  // Select "30 minutes" from the preset list inside the popover
+  const durationOption = page.getByRole('option', { name: /30 minutes/i });
+  await expect(durationOption).toBeVisible({ timeout: 5000 });
+  await durationOption.click();
+
+  // Submit — get the last visible "Create Task" button (inside the dialog form)
+  const submitBtn = page
+    .getByRole('button', { name: /create task/i })
+    .last();
+  await submitBtn.scrollIntoViewIfNeeded();
+  await page.waitForTimeout(300);
+
+  // Watch for successful API response
+  const createResponse = page.waitForResponse(
+    r =>
+      r.url().includes('/api/tasks') &&
+      r.request().method() === 'POST' &&
+      r.status() >= 200 &&
+      r.status() < 300,
+    { timeout: 30000 }
+  );
+
+  console.log('[E2E] Clicking create task submit...');
+  await submitBtn.click();
+
+  console.log('[E2E] Waiting for API response...');
+  await createResponse;
+  console.log('[E2E] Task created via API.');
+
+  // Wait for dialog to close
+  await expect(dialogTitle).not.toBeVisible({ timeout: 15000 });
+  console.log('[E2E] Dialog closed.');
+}
+
 test.describe('Tasks — integration', () => {
   test('create a task, verify it appears, then delete it', async ({ page }) => {
     const taskTitle = `${E2E_PREFIX} Test Task ${Date.now()}`;
@@ -33,62 +98,8 @@ test.describe('Tasks — integration', () => {
       page.getByRole('heading', { name: /task manager/i })
     ).toBeVisible({ timeout: 5000 });
 
-    // ── Open the create dialog ──
-    const createBtn = page
-      .getByRole('button')
-      .filter({ hasText: /create task/i })
-      .first();
-    await expect(createBtn).toBeVisible();
-    await createBtn.click();
-
-    // ── Fill the form ──
-    const dialogHeading = page.getByText('Create New Task');
-    await expect(dialogHeading).toBeVisible();
-
-    // Title (required)
-    const titleInput = page.locator('input#title');
-    await expect(titleInput).toBeVisible();
-    await titleInput.fill(taskTitle);
-
-    // Description (optional)
-    const descInput = page.locator('textarea#description');
-    await expect(descInput).toBeVisible();
-    await descInput.fill('Automated integration test task');
-
-    // Planned duration (required) — e.g. "1 hr"
-    const durationInput = page.locator('input#planned_duration_minutes');
-    await expect(durationInput).toBeVisible();
-    await durationInput.fill('1 hr');
-
-    // ── Submit ──
-    const submitBtn = page
-      .getByRole('button', { name: /create task/i })
-      .filter({ visible: true })
-      .last();
-    await expect(submitBtn).toBeVisible({ timeout: 5000 });
-    await submitBtn.scrollIntoViewIfNeeded();
-    await page.waitForTimeout(300);
-
-    // Watch for successful API response
-    const createResponsePromise = page.waitForResponse(
-      response =>
-        response.url().includes('/api/tasks') &&
-        response.request().method() === 'POST' &&
-        response.status() >= 200 &&
-        response.status() < 300,
-      { timeout: 30000 }
-    );
-
-    console.log('[E2E] Clicking create task button...');
-    await submitBtn.click();
-
-    console.log('[E2E] Waiting for API response...');
-    await createResponsePromise;
-    console.log('[E2E] API response received.');
-
-    // Wait for dialog to close
-    await expect(dialogHeading).not.toBeVisible({ timeout: 15000 });
-    console.log('[E2E] Dialog closed.');
+    // ── Create task via dialog ──
+    await createTaskViaDialog(page, taskTitle);
 
     // ── Verify the task appears in the list ──
     console.log('[E2E] Waiting for task to appear in list...');
@@ -97,26 +108,21 @@ test.describe('Tasks — integration', () => {
     console.log('[E2E] Task is visible.');
 
     // ── Delete the task ──
-    // Click on the task to select it, then look for a delete option
     await taskElement.click();
 
-    // Look for a delete button — could be in a context menu, card actions, etc.
     const deleteButton = page.getByRole('button', { name: /delete/i });
     if (await deleteButton.first().isVisible({ timeout: 3000 }).catch(() => false)) {
       await deleteButton.first().click();
 
-      // Confirm deletion if a confirmation dialog appears
       await page.waitForTimeout(500);
       const confirmBtn = page.getByRole('button', { name: /^delete$/i });
       if (await confirmBtn.isVisible().catch(() => false)) {
         await confirmBtn.click();
       }
 
-      // Verify it's gone
       await expect(taskElement).not.toBeVisible({ timeout: 30000 });
       console.log('[E2E] Task deleted.');
     } else {
-      // If there's no direct delete button, the task was at least created and verified
       console.log('[E2E] No direct delete button found — task creation verified.');
     }
   });
@@ -125,22 +131,18 @@ test.describe('Tasks — integration', () => {
     await page.goto('/tasks');
     await waitForAuth(page);
 
-    // Verify main heading
     await expect(
       page.getByRole('heading', { name: /task manager/i })
     ).toBeVisible();
 
-    // Verify subtitle
     await expect(
       page.getByText(/organize your tasks and boost your productivity/i)
     ).toBeVisible();
 
-    // Verify the "Your Tasks" section
     await expect(
       page.getByRole('heading', { name: /your tasks/i })
     ).toBeVisible();
 
-    // Verify create button exists
     const createBtn = page
       .getByRole('button')
       .filter({ hasText: /create task/i })
