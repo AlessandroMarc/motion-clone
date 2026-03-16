@@ -8,15 +8,24 @@ let loaded = false;
  * - repoRoot/backend (so ../.env is repoRoot/.env)
  * - repoRoot (so ./.env is repoRoot/.env)
  *
+ * Also loads backend/.env.development.local (higher priority, last wins with
+ * `override: true`) so backend-specific secrets set per CLAUDE.md take effect.
+ *
  * In production (e.g. Vercel), env is provided by the platform so this is a no-op.
  */
 export function loadEnv(): void {
   if (loaded) return;
   loaded = true;
 
+  // 1. Try root .env (works whether cwd is repoRoot or repoRoot/backend)
   const fromBackendDir = path.join(process.cwd(), '..', '.env');
   const result = dotenv.config({ path: fromBackendDir });
   if (result.error) {
     dotenv.config({ path: path.join(process.cwd(), '.env') });
   }
+
+  // 2. Override with backend/.env.development.local (local dev secrets)
+  //    This is where CLAUDE.md says to put SUPABASE_JWT_SECRET etc.
+  const devLocal = path.join(process.cwd(), '.env.development.local');
+  dotenv.config({ path: devLocal, override: true });
 }
