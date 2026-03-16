@@ -337,7 +337,6 @@ export function MobileTaskList({
                       layout
                       variants={listItem}
                       initial="hidden"
-                      animate="visible"
                       exit="exit"
                     >
                       <RowComponent

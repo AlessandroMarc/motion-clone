@@ -1,7 +1,7 @@
 'use client';
 
-import { useMemo, useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { motion, AnimatePresence, useAnimationControls } from 'framer-motion';
 import { Check, Circle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { fireConfetti } from '@/utils/confetti';
@@ -40,6 +40,17 @@ export function TaskCompletionDot({
   const [isHovering, setIsHovering] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const controls = useAnimationControls();
+  const prevCompleted = useRef(completed);
+  useEffect(() => {
+    if (prevCompleted.current === false && completed === true) {
+      void controls.start({ scale: [1, 1.3, 1], transition: springSnappy });
+    } else {
+      controls.set({ scale: 1 });
+    }
+    prevCompleted.current = completed;
+  }, [completed, controls]);
 
   const isPreviewingComplete = !completed && isHovering;
 
@@ -104,10 +115,7 @@ export function TaskCompletionDot({
           className
         )}
       >
-        <motion.div
-          animate={completed ? { scale: [1, 1.3, 1] } : { scale: 1 }}
-          transition={springSnappy}
-        >
+        <motion.div animate={controls}>
           <Circle
             className={cn(
               'h-4 w-4 text-muted-foreground',

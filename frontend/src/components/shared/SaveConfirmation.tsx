@@ -13,6 +13,9 @@ export function SaveConfirmation({ show }: SaveConfirmationProps) {
     <AnimatePresence>
       {show && (
         <motion.div
+          role="status"
+          aria-live="polite"
+          aria-atomic="true"
           className="inline-flex items-center gap-1.5 text-sm text-green-600 dark:text-green-400"
           initial={{ scale: 0, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}

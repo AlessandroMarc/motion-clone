@@ -2,7 +2,7 @@
 
 import { usePathname } from 'next/navigation';
 import { Sidebar } from '@/components/Sidebar';
-import { PageTransition } from '@/components/PageTransition';
+import { PageTransition } from '@/components/shared/PageTransition';
 
 interface LayoutWrapperProps {
   children: React.ReactNode;

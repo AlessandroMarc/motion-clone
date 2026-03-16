@@ -389,11 +389,13 @@
   --lift: -4px;
 }
 
-[data-sonner-toaster] [data-sonner-toast]:hover {
-  transform: translateY(-2px) scale(1.01);
-  box-shadow:
-    0 8px 24px rgba(0, 0, 0, 0.12),
-    0 2px 8px rgba(0, 0, 0, 0.08);
+@media (prefers-reduced-motion: no-preference) {
+  [data-sonner-toaster] [data-sonner-toast]:hover {
+    transform: translateY(-2px) scale(1.01);
+    box-shadow:
+      0 8px 24px rgba(0, 0, 0, 0.12),
+      0 2px 8px rgba(0, 0, 0, 0.08);
+  }
 }
 
 /* Reduced motion support */
