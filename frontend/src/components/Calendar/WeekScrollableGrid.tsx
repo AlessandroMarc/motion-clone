@@ -1,6 +1,7 @@
 'use client';
 
 import { cn } from '@/lib/utils';
+import { useCallback } from 'react';
 import DayColumn from './DayColumn';
 import TimeColumn from './TimeColumn';
 import type { CalendarEventUnion, Task } from '@/types';
@@ -65,6 +66,15 @@ function WeekScrollableGrid({
   const timeSlots = Array.from({ length: 24 }, (_, i) => i);
   const today = new Date();
   today.setHours(0, 0, 0, 0);
+
+  // Memoize the ref callback to prevent infinite re-render loops with Radix UI
+  const createDayRefCallback = useCallback(
+    (dayIndex: number) =>
+      (el: HTMLDivElement | null) => {
+        setDayRef(dayIndex, el);
+      },
+    [setDayRef]
+  );
 
   return (
     <div className="rounded-xl bg-card border border-border/50 overflow-hidden h-[calc(100vh-120px)] flex flex-col">
@@ -191,7 +201,7 @@ function WeekScrollableGrid({
                 onEventMouseDown={onEventMouseDown}
                 draggingEventId={draggingEventId}
                 dragPreview={dragPreview}
-                setDayRef={el => setDayRef(dayIndex, el)}
+                setDayRef={createDayRefCallback(dayIndex)}
                 scrollSentinelRef={
                   dayIndex === 0 ? (scrollSentinelRef ?? undefined) : undefined
                 }
