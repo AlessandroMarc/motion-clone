@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useMemo, useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Folder, Inbox, ChevronDown, Plus } from 'lucide-react';
 import Link from 'next/link';
 import type { Task, Project } from '@/types';
@@ -14,6 +15,7 @@ import { PriorityDot, ScheduleBadge, DueDateDisplay } from './listComponents';
 import { calendarService } from '@/services/calendarService';
 import { TaskCompletionDot } from './TaskCompletionDot';
 import { TaskCreateDialogForm } from './forms/TaskCreateDialogForm';
+import { listItem, staggerContainer } from '@/lib/animations';
 
 // ============================================================================
 // Mobile Row
@@ -322,17 +324,31 @@ export function MobileTaskList({
             </button>
 
             {!isCollapsed && (
-              <div className="flex flex-col rounded-lg border border-border/50 overflow-hidden">
-                {group.tasks.map(task => (
-                  <RowComponent
-                    key={task.id}
-                    task={task}
-                    onSelect={onSelectTask}
-                    onToggleTaskCompletion={onToggleTaskCompletion}
-                    nextSessionDate={nextSessionByTask[task.id] ?? null}
-                  />
-                ))}
-              </div>
+              <motion.div
+                className="flex flex-col rounded-lg border border-border/50 overflow-hidden"
+                variants={staggerContainer}
+                initial="hidden"
+                animate="visible"
+              >
+                <AnimatePresence mode="popLayout">
+                  {group.tasks.map(task => (
+                    <motion.div
+                      key={task.id}
+                      layout
+                      variants={listItem}
+                      initial="hidden"
+                      exit="exit"
+                    >
+                      <RowComponent
+                        task={task}
+                        onSelect={onSelectTask}
+                        onToggleTaskCompletion={onToggleTaskCompletion}
+                        nextSessionDate={nextSessionByTask[task.id] ?? null}
+                      />
+                    </motion.div>
+                  ))}
+                </AnimatePresence>
+              </motion.div>
             )}
           </section>
         );
