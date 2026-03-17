@@ -22,9 +22,13 @@ test.describe('Calendar — integration', () => {
     await expect(todayBtn).toBeVisible({ timeout: 10000 });
 
     // Verify week navigation arrows exist
-    const prevBtn = page.getByRole('button', { name: /previous/i }).or(
-      page.locator('button').filter({ has: page.locator('[data-lucide="chevron-left"]') })
-    );
+    const prevBtn = page
+      .getByRole('button', { name: /previous/i })
+      .or(
+        page
+          .locator('button')
+          .filter({ has: page.locator('[data-lucide="chevron-left"]') })
+      );
     // At minimum, check there are navigation buttons in the header area
     const headerButtons = page.getByRole('button');
     expect(await headerButtons.count()).toBeGreaterThan(0);

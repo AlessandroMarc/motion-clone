@@ -230,9 +230,7 @@ describe('calculateAutoSchedule', () => {
       const result = calculateAutoSchedule({
         tasks: [taskToSchedule],
         existingEvents: [],
-        allCalendarEvents: [
-          completedRecurringOccurrence as CalendarEventUnion,
-        ],
+        allCalendarEvents: [completedRecurringOccurrence as CalendarEventUnion],
         activeSchedule: schedule,
         eventDuration: 60,
         schedules: [schedule],
