@@ -13,8 +13,6 @@ import type {
 } from '../types/database.js';
 import { isCalendarEventTask } from '../types/database.js';
 import { TaskService } from './taskService.js';
-import fs from 'fs';
-import path from 'path';
 
 const normalizeNullableDate = (
   value: string | Date | null | undefined
@@ -334,36 +332,6 @@ export class CalendarEventService {
             }
           }
 
-          // #region agent log
-          try {
-            const logPath = path.join(
-              process.cwd(),
-              '..',
-              '.cursor',
-              'debug.log'
-            );
-            const logEntry =
-              JSON.stringify({
-                location: 'calendarEventService.ts:350',
-                message: 'Batch insert successful',
-                data: {
-                  insertedCount: insertedEvents.length,
-                  validatedCount: validatedInputs.length,
-                },
-                timestamp: Date.now(),
-                sessionId: 'debug-session',
-                runId: 'run1',
-                hypothesisId: 'A',
-              }) + '\n';
-            fs.appendFileSync(logPath, logEntry);
-          } catch (logError) {
-            console.error(
-              '[CalendarEventService] Failed to write log:',
-              logError
-            );
-          }
-          // #endregion
-
           // Create success results for all inserted events
           validatedInputs.forEach(({ index }, arrayIndex) => {
             if (insertedEvents[arrayIndex]) {
@@ -399,32 +367,6 @@ export class CalendarEventService {
     // Sort results by index to maintain original order
     results.sort((a, b) => a.index - b.index);
 
-    // #region agent log
-    try {
-      const logPath = path.join(process.cwd(), '..', '.cursor', 'debug.log');
-      const logEntry =
-        JSON.stringify({
-          location: 'calendarEventService.ts:390',
-          message: 'Batch create completed',
-          data: {
-            totalEvents: inputs.length,
-            successful: results.filter(r => r.success).length,
-            failed: results.filter(r => !r.success).length,
-            failedOverlaps: results.filter(
-              r => !r.success && r.error?.includes('overlaps')
-            ).length,
-          },
-          timestamp: Date.now(),
-          sessionId: 'debug-session',
-          runId: 'run1',
-          hypothesisId: 'A',
-        }) + '\n';
-      fs.appendFileSync(logPath, logEntry);
-    } catch (logError) {
-      console.error('[CalendarEventService] Failed to write log:', logError);
-    }
-    // #endregion
-
     return results;
   }
 
@@ -441,35 +383,6 @@ export class CalendarEventService {
         input
       );
     }
-
-    // #region agent log
-    try {
-      const logPath = path.join(process.cwd(), '..', '.cursor', 'debug.log');
-      const logEntry =
-        JSON.stringify({
-          location: 'calendarEventService.ts:200',
-          message: 'Creating calendar event',
-          data: {
-            input: {
-              title: input.title,
-              start_time: input.start_time,
-              end_time: input.end_time,
-              user_id: input.user_id,
-              synced_from_google: input.synced_from_google,
-            },
-            excludeEventIds,
-            currentTime: new Date().toISOString(),
-          },
-          timestamp: Date.now(),
-          sessionId: 'debug-session',
-          runId: 'run1',
-          hypothesisId: 'B',
-        }) + '\n';
-      fs.appendFileSync(logPath, logEntry);
-    } catch (logError) {
-      console.error('[CalendarEventService] Failed to write log:', logError);
-    }
-    // #endregion
 
     // Skip overlap check for events synced from Google (they may overlap)
     if (!input.synced_from_google) {
@@ -567,16 +480,27 @@ export class CalendarEventService {
     return data;
   }
 
-  // Get all calendar events
+  // Get all calendar events within a scheduling-relevant window.
+  // Fetches events from 90 days ago to 180 days in the future — sufficient
+  // for the auto-scheduler (recurring completions + forward scheduling horizon)
+  // without doing a full-table scan.
   async getAllCalendarEvents(
     authToken?: string
   ): Promise<CalendarEventUnion[]> {
+    const now = new Date();
+    const windowStart = new Date(now);
+    windowStart.setDate(windowStart.getDate() - 90);
+    const windowEnd = new Date(now);
+    windowEnd.setDate(windowEnd.getDate() + 180);
+
     const client = authToken
       ? getAuthenticatedSupabase(authToken)
       : serviceRoleSupabase;
     const { data, error } = await client
       .from('calendar_events')
       .select('*')
+      .gte('start_time', windowStart.toISOString())
+      .lte('start_time', windowEnd.toISOString())
       .order('start_time', { ascending: true });
 
     if (error) {
@@ -819,28 +743,6 @@ export class CalendarEventService {
       return [];
     }
 
-    // #region agent log
-    try {
-      const logPath = path.join(process.cwd(), '..', '.cursor', 'debug.log');
-      const logEntry =
-        JSON.stringify({
-          location: 'calendarEventService.ts:810',
-          message: 'Starting batch delete with native Supabase batch delete',
-          data: {
-            totalEvents: ids.length,
-            eventIds: ids,
-          },
-          timestamp: Date.now(),
-          sessionId: 'debug-session',
-          runId: 'run1',
-          hypothesisId: 'A',
-        }) + '\n';
-      fs.appendFileSync(logPath, logEntry);
-    } catch (logError) {
-      console.error('[CalendarEventService] Failed to write log:', logError);
-    }
-    // #endregion
-
     // Step 1: Fetch all events to check for task duration updates
     const eventsToDelete: CalendarEventUnion[] = [];
     const eventsMap = new Map<string, CalendarEventUnion>();
@@ -947,28 +849,6 @@ export class CalendarEventService {
           error: `Batch delete failed: ${error.message}`,
         }));
       }
-
-      // #region agent log
-      try {
-        const logPath = path.join(process.cwd(), '..', '.cursor', 'debug.log');
-        const logEntry =
-          JSON.stringify({
-            location: 'calendarEventService.ts:890',
-            message: 'Batch delete successful',
-            data: {
-              deletedCount: ids.length,
-              eventIds: ids,
-            },
-            timestamp: Date.now(),
-            sessionId: 'debug-session',
-            runId: 'run1',
-            hypothesisId: 'A',
-          }) + '\n';
-        fs.appendFileSync(logPath, logEntry);
-      } catch (logError) {
-        console.error('[CalendarEventService] Failed to write log:', logError);
-      }
-      // #endregion
 
       // Return success for all deleted events
       return ids.map(id => ({

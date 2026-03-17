@@ -7,6 +7,7 @@ import {
   normalizeToMidnight as normalizeToMidnightDate,
   toLocalDateString,
 } from '../../../shared/dateUtils.js';
+import { PerfTracker } from '../utils/perfTracker.js';
 
 /**
  * Normalize a date to midnight ISO string.
@@ -125,7 +126,6 @@ export class TaskService {
     client: SupabaseClient,
     authToken?: string
   ): Promise<Task> {
-    const startTime = Date.now();
     const isRecurring = input.is_recurring ?? false;
     const rawPlanned = input.planned_duration_minutes;
     const normalizedPlanned = rawPlanned < 0 ? 0 : rawPlanned;
@@ -148,8 +148,9 @@ export class TaskService {
 
     // Resolve schedule_id: use provided value, else use project default schedule if configured,
     // otherwise fall back to user's active/default schedule.
-    // Uses a single optimized query instead of 4 sequential queries.
-    const scheduleStart = Date.now();
+    const perf = new PerfTracker('TaskService.createTask');
+    perf.start('total');
+    perf.start('scheduleResolution');
     let scheduleId = input.schedule_id;
 
     if (!scheduleId && input.project_id) {
@@ -256,12 +257,7 @@ export class TaskService {
         scheduleId = newSchedule.id;
       }
     }
-    const scheduleDuration = Date.now() - scheduleStart;
-    if (scheduleDuration > 100) {
-      console.warn(
-        `[TaskService] Schedule resolution took ${scheduleDuration}ms (should be <100ms)`
-      );
-    }
+    perf.end('scheduleResolution', 100);
 
     // Validate recurrence fields when is_recurring is true
     if (isRecurring) {
@@ -324,12 +320,7 @@ export class TaskService {
       throw new Error(`Failed to create task: ${error.message}`);
     }
 
-    const totalDuration = Date.now() - startTime;
-    if (totalDuration > 200) {
-      console.warn(
-        `[TaskService] Task creation took ${totalDuration}ms (schedule: ${scheduleDuration}ms)`
-      );
-    }
+    perf.end('total', 200);
 
     // Trigger auto-schedule asynchronously (fire-and-forget)
     // For task creation, we don't need to wait since there are no existing events to deduplicate
@@ -577,7 +568,11 @@ export class TaskService {
       // Wait for auto-schedule to complete to prevent race conditions
       // where frontend refreshes before deduplication happens
       try {
-        await autoScheduleTriggerQueue.triggerAndWait(userId, authToken);
+        await PerfTracker.measure(
+          'TaskService.updateTask › triggerAndWait',
+          () => autoScheduleTriggerQueue.triggerAndWait(userId, authToken!),
+          500
+        );
       } catch (err) {
         console.error(
           `[TaskService] Auto-schedule trigger failed for user ${userId}:`,
