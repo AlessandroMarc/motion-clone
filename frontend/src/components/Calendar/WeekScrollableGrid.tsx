@@ -122,7 +122,14 @@ function WeekScrollableGrid({
         {weekDates.map((date, index) => {
           const dayAllDayEvents = allDayEvents.filter(ev => {
             const start = startOfDay(new Date(ev.start_time));
-            const end = endOfDay(new Date(ev.end_time));
+            // For all-day events, Google's end date is exclusive (a 1-day event
+            // on Mar 17 has end="2026-03-18"). Subtract 1 day so we don't
+            // bleed into the next calendar column.
+            let endDate = new Date(ev.end_time);
+            if (ev.isAllDay) {
+              endDate = new Date(endDate.getTime() - 24 * 60 * 60 * 1000);
+            }
+            const end = endOfDay(endDate);
             return date >= start && date <= end;
           });
 
