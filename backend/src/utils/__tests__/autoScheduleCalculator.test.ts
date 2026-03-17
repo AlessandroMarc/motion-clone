@@ -23,7 +23,6 @@ function makeTask(overrides: Partial<Task> = {}): Task {
     updated_at: new Date('2026-03-01T10:00:00.000Z'),
     planned_duration_minutes: 60,
     actual_duration_minutes: 0,
-    schedule_id: null,
     start_date: null,
     is_recurring: false,
     recurrence_pattern: undefined,
@@ -195,16 +194,6 @@ describe('calculateAutoSchedule', () => {
     jest.setSystemTime(new Date('2026-03-16T09:30:00.000Z'));
 
     try {
-      // A recurring task (is_recurring: true)
-      const recurringTask = makeTask({
-        id: 'recurring-task-1',
-        title: 'Recurring Task',
-        is_recurring: true,
-        recurrence_pattern: 'daily',
-        recurrence_interval: 1,
-        planned_duration_minutes: 60,
-      });
-
       // A completed occurrence of the recurring task (10:00-11:00)
       // linked_task_id matches the recurring task id
       const completedRecurringOccurrence = makeTaskEvent({
