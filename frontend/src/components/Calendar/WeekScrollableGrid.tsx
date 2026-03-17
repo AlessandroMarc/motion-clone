@@ -69,10 +69,9 @@ function WeekScrollableGrid({
 
   // Memoize the ref callback to prevent infinite re-render loops with Radix UI
   const createDayRefCallback = useCallback(
-    (dayIndex: number) =>
-      (el: HTMLDivElement | null) => {
-        setDayRef(dayIndex, el);
-      },
+    (dayIndex: number) => (el: HTMLDivElement | null) => {
+      setDayRef(dayIndex, el);
+    },
     [setDayRef]
   );
 

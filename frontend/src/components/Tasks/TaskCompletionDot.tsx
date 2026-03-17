@@ -133,7 +133,9 @@ export function TaskCompletionDot({
               exit={{ opacity: 0, scale: 0.5 }}
               transition={{ duration: 0.15 }}
             >
-              <Check className={cn('h-3 w-3 text-muted-foreground', iconClassName)} />
+              <Check
+                className={cn('h-3 w-3 text-muted-foreground', iconClassName)}
+              />
             </motion.div>
           )}
         </AnimatePresence>

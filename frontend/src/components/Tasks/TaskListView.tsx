@@ -80,11 +80,7 @@ export function TaskListView({
 
   if (tasks.length === 0 && projects.length === 0) {
     return (
-      <motion.div
-        variants={fadeInScale}
-        initial="initial"
-        animate="animate"
-      >
+      <motion.div variants={fadeInScale} initial="initial" animate="animate">
         <Card className="border-dashed border-2 border-muted-foreground/25">
           <CardContent className="flex flex-col items-center justify-center p-8 text-center">
             <motion.div
