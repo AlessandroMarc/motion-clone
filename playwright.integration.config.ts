@@ -12,9 +12,24 @@ import dotenv from 'dotenv';
  *  - Uses saved storageState so every test is already logged in
  */
 
-// Load env vars from root .env
-// (already has SUPABASE_URL, SUPABASE_ANON_KEY, SUPABASE_SERVICE_ROLE_KEY, E2E_TEST_USER_EMAIL)
+// Load env vars — root .env first, then backend/.env.development.local overrides
+// (SUPABASE_URL, SUPABASE_ANON_KEY, SUPABASE_SERVICE_ROLE_KEY, SUPABASE_JWT_SECRET, E2E_TEST_USER_EMAIL)
 dotenv.config({ path: '.env' });
+dotenv.config({ path: 'backend/.env.development.local', override: true });
+
+// Ensure aliases so globalSetup and webServer env blocks can read either name
+if (process.env.SUPABASE_URL && !process.env.NEXT_PUBLIC_SUPABASE_URL) {
+  process.env.NEXT_PUBLIC_SUPABASE_URL = process.env.SUPABASE_URL;
+}
+if (process.env.NEXT_PUBLIC_SUPABASE_URL && !process.env.SUPABASE_URL) {
+  process.env.SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
+}
+if (process.env.SUPABASE_ANON_KEY && !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY;
+}
+if (process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY && !process.env.SUPABASE_ANON_KEY) {
+  process.env.SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+}
 
 export default defineConfig({
   testDir: './e2e/integration',
@@ -60,6 +75,17 @@ export default defineConfig({
       url: 'http://localhost:3003/api/health',
       reuseExistingServer: !process.env.CI,
       timeout: 30_000, // Increased timeout for CI environments
+      env: {
+        SUPABASE_URL:
+          process.env.SUPABASE_URL ?? process.env.NEXT_PUBLIC_SUPABASE_URL ?? '',
+        SUPABASE_ANON_KEY:
+          process.env.SUPABASE_ANON_KEY ??
+          process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ??
+          '',
+        SUPABASE_SERVICE_ROLE_KEY: process.env.SUPABASE_SERVICE_ROLE_KEY ?? '',
+        SUPABASE_JWT_SECRET: process.env.SUPABASE_JWT_SECRET ?? '',
+        NODE_ENV: 'development',
+      },
     },
     {
       // Frontend — real Next.js with real Supabase credentials (NO auth bypass)
