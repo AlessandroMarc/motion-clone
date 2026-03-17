@@ -58,6 +58,7 @@ CREATE TABLE calendar_events (
     completed_at TIMESTAMP WITH TIME ZONE,
     google_event_id TEXT,
     synced_from_google BOOLEAN DEFAULT false,
+    is_all_day BOOLEAN DEFAULT false,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );

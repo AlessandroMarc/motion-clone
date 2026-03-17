@@ -80,17 +80,6 @@ export function WeekCalendarContainer({
     }
   );
 
-  const { visibleHiddenEvents, bannerEvents } = useMemo(() => {
-    return {
-      visibleHiddenEvents: hiddenEvents.filter(
-        ev => !ev.isAllDay && ev.reason !== 'free'
-      ),
-      bannerEvents: hiddenEvents.filter(
-        ev => ev.isAllDay || ev.reason === 'free'
-      ),
-    };
-  }, [hiddenEvents]);
-
   // Initial Google Calendar sync on land
   useEffect(() => {
     if (!user?.id) return;
@@ -164,8 +153,45 @@ export function WeekCalendarContainer({
     return getWeekDates(dateToUse);
   }, [navigation.currentDateKey, isMobile, navigation.currentDay]);
 
-  const { events, setEvents, eventsByDay, loading, error, refreshEvents } =
-    useCalendarEvents(weekDates);
+  const {
+    events,
+    setEvents,
+    eventsByDay,
+    allDaySyncedEvents,
+    loading,
+    error,
+    refreshEvents,
+  } = useCalendarEvents(weekDates);
+
+  const { visibleHiddenEvents, bannerEvents } = useMemo(() => {
+    // Convert synced all-day events to banner format
+    const syncedAllDayBannerEvents: FilteredGoogleEvent[] =
+      allDaySyncedEvents.map(ev => ({
+        id: ev.id,
+        title: ev.title,
+        description: ev.description,
+        start_time:
+          typeof ev.start_time === 'string'
+            ? ev.start_time
+            : ev.start_time.toISOString(),
+        end_time:
+          typeof ev.end_time === 'string'
+            ? ev.end_time
+            : ev.end_time.toISOString(),
+        reason: 'synced' as const,
+        isAllDay: true,
+      }));
+
+    return {
+      visibleHiddenEvents: hiddenEvents.filter(
+        ev => !ev.isAllDay && ev.reason !== 'free'
+      ),
+      bannerEvents: [
+        ...syncedAllDayBannerEvents,
+        ...hiddenEvents.filter(ev => ev.isAllDay || ev.reason === 'free'),
+      ],
+    };
+  }, [hiddenEvents, allDaySyncedEvents]);
 
   // Fetch all calendar events (used by DeadlineViolationsBar to show violations across weeks)
   const [allEvents, setAllEvents] = useState<CalendarEventUnion[]>([]);
