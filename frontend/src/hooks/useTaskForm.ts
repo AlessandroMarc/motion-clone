@@ -59,13 +59,23 @@ export const taskSchema = z
       .optional(),
     recurrenceStartDate: z.string().optional(), // 'YYYY-MM-DD'; anchors day-of-week / day-of-month
     startDate: z.string().optional(), // 'YYYY-MM-DD'; earliest date the task may be scheduled
+    is_reminder: z.boolean(),
   })
   .superRefine((data, ctx) => {
-    if (data.actual_duration_minutes > data.planned_duration_minutes) {
+    if (!data.is_reminder && data.actual_duration_minutes > data.planned_duration_minutes) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         path: ['actual_duration_minutes'],
         message: 'Actual duration cannot exceed planned duration',
+      });
+    }
+
+    // Reminder tasks require a due date when not recurring
+    if (data.is_reminder && !data.is_recurring && !data.dueDate) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['dueDate'],
+        message: 'Due date is required for reminder tasks',
       });
     }
 
@@ -120,6 +130,7 @@ export function useTaskForm(onTaskCreate: TaskCreateFormProps['onTaskCreate']) {
       recurrence_interval: 1,
       recurrenceStartDate: undefined,
       startDate: undefined,
+      is_reminder: false,
     },
   });
 

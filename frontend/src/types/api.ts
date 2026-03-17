@@ -17,6 +17,7 @@ export interface CreateTaskInput {
   recurrenceInterval?: number;
   recurrenceStartDate?: Date | null;
   startDate?: Date | null; // earliest date this task may be scheduled
+  isReminder?: boolean;
 }
 
 /** Task update payload (frontend API shape). */
@@ -36,6 +37,7 @@ export interface UpdateTaskInput {
   recurrenceInterval?: number | null;
   recurrenceStartDate?: Date | null;
   startDate?: Date | null; // earliest date this task may be scheduled
+  isReminder?: boolean;
 }
 
 /** Project create payload (frontend API shape). */

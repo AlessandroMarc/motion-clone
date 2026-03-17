@@ -5,6 +5,7 @@ import {
   type CalendarEventUnion,
   isCalendarEventTask,
   type Schedule,
+  type Task,
 } from '@/types';
 import { getWeekDates, getDateRange } from '@/utils/calendarUtils';
 import { CalendarSkeleton } from './CalendarSkeleton';
@@ -258,6 +259,11 @@ export function WeekCalendarContainer({
     schedules
   );
 
+  const reminderTasks = useMemo<Task[]>(
+    () => [...tasksMap.values()].filter(t => t.is_reminder && t.status !== 'completed'),
+    [tasksMap]
+  );
+
   const displayDates = isMobile ? [navigation.currentDay] : weekDates;
 
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
@@ -300,6 +306,7 @@ export function WeekCalendarContainer({
       recurrencePattern: taskData.recurrence_pattern,
       recurrenceInterval: taskData.recurrence_interval,
       recurrenceStartDate: taskData.recurrence_start_date,
+      isReminder: taskData.is_reminder,
     });
     await refreshEvents();
     onTaskDropped?.();
@@ -464,6 +471,7 @@ export function WeekCalendarContainer({
         }
         events={events}
         allDayEvents={bannerEvents}
+        reminderTasks={reminderTasks}
         // Full event set for DeadlineViolationsBar to detect violations across weeks
         violationEvents={allEvents}
         setEvents={setEvents}
@@ -488,6 +496,10 @@ export function WeekCalendarContainer({
         dialogs={dialogs}
         onBannerEventClick={dialogs.openBannerEventDialog}
         openTaskEditForm={openTaskEditForm}
+        onReminderTaskClick={task => {
+          setSelectedTask(task);
+          setTaskEditOpen(true);
+        }}
         handleAutoScheduleClick={handleAutoScheduleClick}
         isAutoScheduleRefreshing={isRefreshing || !initialSyncComplete}
         workingHoursStart={activeSchedule?.working_hours_start}

@@ -33,6 +33,7 @@ class TaskService {
       start_date: input.startDate
         ? toLocalDateString(normalizeToMidnight(input.startDate))
         : null,
+      is_reminder: input.isReminder ?? false,
     };
 
     const response = await request<UnknownRecord>('/tasks', {
@@ -85,6 +86,7 @@ class TaskService {
       recurrencePattern,
       recurrenceInterval,
       startDate,
+      isReminder,
       ...rest
     } = input;
 
@@ -110,6 +112,7 @@ class TaskService {
             ? toLocalDateString(normalizeToMidnight(startDate))
             : null
           : undefined,
+      is_reminder: isReminder,
     };
 
     console.log('📤 [taskService.updateTask] Sending payload:', payload);

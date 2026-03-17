@@ -68,6 +68,7 @@ interface WeekCalendarViewProps {
   displayEventsByDay: Record<string, CalendarEventUnion[]>;
   events: CalendarEventUnion[];
   allDayEvents?: FilteredGoogleEvent[];
+  reminderTasks?: Task[];
   onBannerEventClick?: (event: FilteredGoogleEvent) => void;
   // Optional full event set (across all weeks) for components that need global visibility
   violationEvents?: CalendarEventUnion[];
@@ -103,6 +104,7 @@ interface WeekCalendarViewProps {
 
   dialogs: Dialogs;
   openTaskEditForm: () => void;
+  onReminderTaskClick?: (task: Task) => void;
 
   handleAutoScheduleClick: () => Promise<void>;
   isAutoScheduleRefreshing?: boolean;
@@ -119,6 +121,7 @@ export function WeekCalendarView({
   displayEventsByDay,
   events,
   allDayEvents = [],
+  reminderTasks = [],
   onBannerEventClick,
   setEvents,
   draggingEventId,
@@ -142,6 +145,7 @@ export function WeekCalendarView({
   onZenMode,
   dialogs,
   openTaskEditForm,
+  onReminderTaskClick,
   handleAutoScheduleClick,
   isAutoScheduleRefreshing,
   onTaskCreate,
@@ -175,7 +179,9 @@ export function WeekCalendarView({
         weekDates={displayDates}
         eventsByDay={displayEventsByDay}
         allDayEvents={allDayEvents}
+        reminderTasks={reminderTasks}
         onBannerEventClick={onBannerEventClick}
+        onReminderTaskClick={onReminderTaskClick}
         onGridCellClick={() => {}}
         onEventMouseDown={onEventMouseDown}
         draggingEventId={draggingEventId}

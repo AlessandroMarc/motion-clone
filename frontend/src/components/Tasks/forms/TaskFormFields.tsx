@@ -11,6 +11,7 @@ import { TaskScheduleField } from './TaskScheduleField';
 import { TaskBlockedByField } from './TaskBlockedByField';
 import { TaskDurationFields } from './TaskDurationFields';
 import { TaskRecurrenceFields } from './TaskRecurrenceFields';
+import { TaskReminderField } from './TaskReminderField';
 
 interface TaskFormFieldsProps {
   currentTaskId?: string;
@@ -22,6 +23,7 @@ export function TaskFormFields({ currentTaskId, errors }: TaskFormFieldsProps) {
 
   const priority = watch('priority');
   const isRecurring = watch('is_recurring');
+  const isReminder = watch('is_reminder');
   const recurrencePattern = watch('recurrence_pattern');
   const recurrenceInterval = watch('recurrence_interval');
   const recurrenceStartDate = watch('recurrenceStartDate');
@@ -39,24 +41,48 @@ export function TaskFormFields({ currentTaskId, errors }: TaskFormFieldsProps) {
         <div className="md:col-span-2">
           <TaskDescriptionField register={register} errors={errors} />
         </div>
+        <div className="md:col-span-2">
+          <TaskReminderField
+            isReminder={isReminder}
+            onIsReminderChange={checked => {
+              setValue('is_reminder', checked, {
+                shouldDirty: true,
+                shouldValidate: true,
+              });
+              if (checked) {
+                setValue('actual_duration_minutes', 0, {
+                  shouldDirty: true,
+                });
+                setValue('scheduleId', '', { shouldDirty: true });
+                setValue('blockedBy', [], { shouldDirty: true });
+              }
+            }}
+          />
+        </div>
         {!isRecurring && (
           <TaskDueDateField register={register} errors={errors} />
         )}
-        <TaskStartDateField register={register} errors={errors} />
+        {!isReminder && (
+          <TaskStartDateField register={register} errors={errors} />
+        )}
         <TaskPriorityField
           value={priority}
           onValueChange={handlePriorityChange}
           errors={errors}
         />
         <TaskProjectField errors={errors} />
-        <TaskScheduleField errors={errors} />
-        <TaskBlockedByField errors={errors} currentTaskId={currentTaskId} />
-        <div className="md:col-span-2">
-          <TaskDurationFields
-            errors={errors}
-            hideActualDuration={isRecurring}
-          />
-        </div>
+        {!isReminder && <TaskScheduleField errors={errors} />}
+        {!isReminder && (
+          <TaskBlockedByField errors={errors} currentTaskId={currentTaskId} />
+        )}
+        {!isReminder && (
+          <div className="md:col-span-2">
+            <TaskDurationFields
+              errors={errors}
+              hideActualDuration={isRecurring}
+            />
+          </div>
+        )}
         <div className="md:col-span-2">
           <TaskRecurrenceFields
             isRecurring={isRecurring}
