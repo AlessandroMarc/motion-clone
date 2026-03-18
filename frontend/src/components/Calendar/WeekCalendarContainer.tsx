@@ -5,7 +5,6 @@ import {
   type CalendarEventUnion,
   isCalendarEventTask,
   type Schedule,
-  type Task,
 } from '@/types';
 import { getWeekDates, getDateRange } from '@/utils/calendarUtils';
 import { CalendarSkeleton } from './CalendarSkeleton';
