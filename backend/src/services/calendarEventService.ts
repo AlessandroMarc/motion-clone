@@ -499,8 +499,8 @@ export class CalendarEventService {
     const { data, error } = await client
       .from('calendar_events')
       .select('*')
-      .gte('start_time', windowStart.toISOString())
       .lte('start_time', windowEnd.toISOString())
+      .gte('end_time', windowStart.toISOString())
       .order('start_time', { ascending: true });
 
     if (error) {

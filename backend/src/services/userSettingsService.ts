@@ -178,13 +178,18 @@ export class UserSettingsService {
       updated_at: new Date(s.updated_at),
     }));
 
-    // Populate cache (activeScheduleId unknown at this point — use null as placeholder;
-    // getActiveSchedule will overwrite with the real value on next call)
+    // Populate cache. Reuse a previously-cached activeScheduleId only if that
+    // entry is still within the TTL — otherwise fall back to null so a stale
+    // ID from an expired entry is never resurrected.
+    const prev = UserSettingsService.scheduleCache.get(userId);
+    const prevActiveScheduleId =
+      prev && UserSettingsService.isCacheValid(prev.timestamp)
+        ? prev.activeScheduleId
+        : null;
     UserSettingsService.enforceCacheBound();
     UserSettingsService.scheduleCache.set(userId, {
       schedules,
-      activeScheduleId:
-        UserSettingsService.scheduleCache.get(userId)?.activeScheduleId ?? null,
+      activeScheduleId: prevActiveScheduleId,
       timestamp: Date.now(),
     });
 
