@@ -467,6 +467,7 @@ export class GoogleCalendarService {
             user_id: string;
             google_event_id: string;
             synced_from_google: boolean;
+            is_all_day?: boolean;
           } = {
             title: googleEvent.summary || 'Untitled Event',
             start_time: new Date(startTime).toISOString(),
@@ -475,6 +476,10 @@ export class GoogleCalendarService {
             google_event_id: googleEvent.id,
             synced_from_google: true,
           };
+
+          if (isAllDay) {
+            eventData.is_all_day = true;
+          }
 
           if (incomingDescription !== undefined) {
             eventData.description = incomingDescription;
@@ -522,6 +527,12 @@ export class GoogleCalendarService {
                   synced_from_google?: boolean | null;
                 }
               ).synced_from_google ?? false;
+            const existingIsAllDay =
+              (
+                existingEvent as unknown as {
+                  is_all_day?: boolean | null;
+                }
+              ).is_all_day ?? false;
 
             const effectiveDescription =
               incomingDescription === undefined
@@ -533,7 +544,8 @@ export class GoogleCalendarService {
               existingStart === normalizeDate(eventData.start_time) &&
               existingEnd === normalizeDate(eventData.end_time) &&
               existingDescription === effectiveDescription &&
-              existingSyncedFromGoogle === true;
+              existingSyncedFromGoogle === true &&
+              existingIsAllDay === isAllDay;
 
             if (isUnchanged) {
               synced++;
@@ -547,6 +559,7 @@ export class GoogleCalendarService {
               end_time: string;
               description?: string;
               synced_from_google?: boolean;
+              is_all_day?: boolean;
             } = {
               title: eventData.title,
               start_time: eventData.start_time,
@@ -560,6 +573,9 @@ export class GoogleCalendarService {
             }
             if (!existingSyncedFromGoogle) {
               updateData.synced_from_google = true;
+            }
+            if (existingIsAllDay !== isAllDay) {
+              updateData.is_all_day = isAllDay;
             }
             eventsToUpdate.push({ id: existingEvent.id, data: updateData });
           } else {

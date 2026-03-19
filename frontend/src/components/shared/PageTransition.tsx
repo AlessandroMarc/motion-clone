@@ -1,7 +1,7 @@
 'use client';
 
 import { usePathname } from 'next/navigation';
-import { AnimatePresence, motion } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { fadeInUp } from '@/lib/animations';
 
 interface PageTransitionProps {
@@ -12,16 +12,14 @@ export function PageTransition({ children }: PageTransitionProps) {
   const pathname = usePathname();
 
   return (
-    <AnimatePresence mode="wait">
-      <motion.div
-        key={pathname}
-        variants={fadeInUp}
-        initial="initial"
-        animate="animate"
-        exit="exit"
-      >
-        {children}
-      </motion.div>
-    </AnimatePresence>
+    <motion.div
+      key={pathname}
+      className="flex flex-col flex-1 min-h-0"
+      variants={fadeInUp}
+      initial="initial"
+      animate="animate"
+    >
+      {children}
+    </motion.div>
   );
 }

@@ -108,9 +108,22 @@ export function MobileDayScrollView({
             date.getMonth() === today.getMonth() &&
             date.getDate() === today.getDate();
 
-          const dayBannerEvents = allDayEvents.filter(ev =>
-            isSameDay(new Date(ev.start_time), date)
-          );
+          const dayBannerEvents = allDayEvents.filter(ev => {
+            const start = new Date(ev.start_time);
+            let endDate = new Date(ev.end_time);
+            if (ev.isAllDay) {
+              endDate = new Date(endDate.getTime() - 24 * 60 * 60 * 1000);
+            }
+            const dayStart = new Date(date);
+            dayStart.setHours(0, 0, 0, 0);
+            const dayEnd = new Date(date);
+            dayEnd.setHours(23, 59, 59, 999);
+            const evStart = new Date(start);
+            evStart.setHours(0, 0, 0, 0);
+            const evEnd = new Date(endDate);
+            evEnd.setHours(23, 59, 59, 999);
+            return dayStart >= evStart && dayStart <= evEnd;
+          });
 
           return (
             <section

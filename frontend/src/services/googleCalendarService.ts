@@ -11,7 +11,7 @@ export interface FilteredGoogleEvent {
   description?: string;
   start_time: string;
   end_time: string;
-  reason: 'free' | 'declined';
+  reason: 'free' | 'declined' | 'synced';
   isAllDay?: boolean;
 }
 
