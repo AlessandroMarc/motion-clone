@@ -11,6 +11,7 @@ import {
   getMonthDay,
   isSameDay,
 } from '@/utils/calendarUtils';
+import { parseLocalDate } from '@/utils/dateUtils';
 import { startOfDay, endOfDay } from 'date-fns';
 
 /**
@@ -18,12 +19,16 @@ import { startOfDay, endOfDay } from 'date-fns';
  * Uses recurrence_start_date as anchor and applies pattern + interval.
  */
 function reminderOccursOnDate(task: Task, date: Date): boolean {
-  const anchor = task.recurrence_start_date
-    ? new Date(task.recurrence_start_date)
-    : task.due_date;
-  if (!anchor) return false;
+  const anchorRaw = task.recurrence_start_date ?? task.due_date;
+  if (!anchorRaw) return false;
 
-  const anchorDay = new Date(anchor);
+  const anchorDay =
+    typeof anchorRaw === 'string'
+      ? parseLocalDate(anchorRaw)
+      : anchorRaw instanceof Date
+        ? anchorRaw
+        : null;
+  if (!anchorDay) return false;
   anchorDay.setHours(0, 0, 0, 0);
   const checkDay = new Date(date);
   checkDay.setHours(0, 0, 0, 0);
@@ -186,7 +191,12 @@ function WeekScrollableGrid({
               return reminderOccursOnDate(task, date);
             }
             return task.due_date
-              ? isSameDay(new Date(task.due_date), date)
+              ? isSameDay(
+                  typeof task.due_date === 'string'
+                    ? parseLocalDate(task.due_date)
+                    : task.due_date,
+                  date
+                )
               : false;
           });
 

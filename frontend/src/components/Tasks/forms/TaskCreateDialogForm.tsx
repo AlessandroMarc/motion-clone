@@ -66,8 +66,9 @@ export function TaskCreateDialogForm({
     form.setValue('project_id', initialProjectId ?? null);
   }, [form, initialProjectId, isDialogOpen]);
 
-  const handleFormSubmit: SubmitHandler<TaskFormData> = async data => {
-    const success = await onSubmit(data);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const handleFormSubmit: SubmitHandler<any> = async data => {
+    const success = await onSubmit(data as TaskFormData);
     if (success) {
       setIsDialogOpen(false);
     }

@@ -513,9 +513,9 @@ export function WeekCalendarContainer({
         task={selectedTask}
         open={taskEditOpen}
         onOpenChange={setTaskEditOpen}
-        onTaskUpdated={_updatedTask => {
+        onTaskUpdated={async _updatedTask => {
           onTaskDropped?.();
-          Promise.all([refreshEvents(), loadTasks()]);
+          await Promise.all([refreshEvents(), loadTasks()]);
         }}
         onTaskCloned={() => {
           onTaskDropped?.();

@@ -59,7 +59,7 @@ export const taskSchema = z
       .optional(),
     recurrenceStartDate: z.string().optional(), // 'YYYY-MM-DD'; anchors day-of-week / day-of-month
     startDate: z.string().optional(), // 'YYYY-MM-DD'; earliest date the task may be scheduled
-    is_reminder: z.boolean(),
+    is_reminder: z.boolean().catch(false),
   })
   .superRefine((data, ctx) => {
     if (
