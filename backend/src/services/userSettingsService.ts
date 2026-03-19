@@ -14,10 +14,12 @@ import type {
 import { autoScheduleTriggerQueue } from './autoScheduleTriggerQueue.js';
 
 export class UserSettingsService {
-  // Schedule cache: Map<userId, Schedule[]>
+  // Schedule cache: Map<userId, { schedules, activeScheduleId, timestamp }>
+  // Caches both schedules and the user's active_schedule_id to avoid an extra
+  // user_settings query on every cache hit.
   private static scheduleCache = new Map<
     string,
-    { schedules: Schedule[]; timestamp: number }
+    { schedules: Schedule[]; activeScheduleId: string | null; timestamp: number }
   >();
   private static readonly CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
   private static readonly MAX_CACHE_ENTRIES = 10_000;
@@ -43,102 +45,90 @@ export class UserSettingsService {
     UserSettingsService.scheduleCache.delete(userId);
     console.log(`[UserSettingsService] Cache invalidated for user ${userId}`);
   }
-  // Get active schedule for a user (or default if none is active)
-  // ✅ PERFORMANCE: Uses cache to reduce from 3 queries to <1ms on cache hit
+  // Get active schedule for a user (or default if none is active).
+  // Cache hit: zero DB queries — both schedules and active_schedule_id are cached.
+  // Cache miss: fetches schedules + user_settings in parallel (2 queries → 1 round-trip).
   async getActiveSchedule(
     userId: string,
     token?: string
   ): Promise<Schedule | null> {
     const startTime = Date.now();
 
-    // Check cache first
+    // Cache hit — no DB queries needed
     const cached = UserSettingsService.scheduleCache.get(userId);
     if (cached && UserSettingsService.isCacheValid(cached.timestamp)) {
-      // Find the active schedule from cached list
-      const client = token ? getAuthenticatedSupabase(token) : supabase;
-      const { data: settings, error: settingsError } = await client
-        .from('user_settings')
-        .select('active_schedule_id')
-        .eq('user_id', userId)
-        .single();
-
-      if (settingsError && settingsError.code !== 'PGRST116') {
-        throw new Error(
-          `Failed to fetch user settings: ${settingsError.message}`
-        );
-      }
-
       let schedule = cached.schedules.find(
-        s => s.id === settings?.active_schedule_id
+        s => s.id === cached.activeScheduleId
       );
       if (!schedule) {
         schedule = cached.schedules.find(s => s.is_default);
       }
-
       if (schedule) {
         const duration = Date.now() - startTime;
-        console.log(
-          `[UserSettingsService] getActiveSchedule cache hit in ${duration}ms (cached ${cached.schedules.length} schedules)`
-        );
+        if (process.env.PERF_LOGGING === 'true') {
+          console.log(
+            `[PERF] UserSettingsService › getActiveSchedule (cache hit): ${duration}ms`
+          );
+        }
         return schedule;
       }
     }
 
-    // Cache miss or invalid - fetch from database
+    // Cache miss — fetch schedules + user_settings in parallel
     const client = token ? getAuthenticatedSupabase(token) : supabase;
 
-    // Fetch all schedules for this user at once (better than 3 separate queries)
-    const { data: allSchedules, error: schedulesError } = await client
-      .from('schedules')
-      .select('*')
-      .eq('user_id', userId)
-      .order('is_default', { ascending: false })
-      .order('created_at', { ascending: true });
+    const [schedulesResult, settingsResult] = await Promise.all([
+      client
+        .from('schedules')
+        .select('*')
+        .eq('user_id', userId)
+        .order('is_default', { ascending: false })
+        .order('created_at', { ascending: true }),
+      client
+        .from('user_settings')
+        .select('active_schedule_id')
+        .eq('user_id', userId)
+        .single(),
+    ]);
 
-    if (schedulesError) {
-      throw new Error(`Failed to fetch schedules: ${schedulesError.message}`);
-    }
-
-    // Get user settings to find active schedule
-    const { data: settings, error: settingsError } = await client
-      .from('user_settings')
-      .select('active_schedule_id')
-      .eq('user_id', userId)
-      .single();
-
-    if (settingsError && settingsError.code !== 'PGRST116') {
+    if (schedulesResult.error) {
       throw new Error(
-        `Failed to fetch user settings: ${settingsError.message}`
+        `Failed to fetch schedules: ${schedulesResult.error.message}`
+      );
+    }
+    if (
+      settingsResult.error &&
+      settingsResult.error.code !== 'PGRST116'
+    ) {
+      throw new Error(
+        `Failed to fetch user settings: ${settingsResult.error.message}`
       );
     }
 
-    const schedules = (allSchedules || []).map(s => ({
+    const schedules = (schedulesResult.data || []).map(s => ({
       ...s,
       created_at: new Date(s.created_at),
       updated_at: new Date(s.updated_at),
     }));
 
-    // Cache all schedules for this user
+    const activeScheduleId =
+      settingsResult.data?.active_schedule_id ?? null;
+
+    // Populate cache
     UserSettingsService.enforceCacheBound();
     UserSettingsService.scheduleCache.set(userId, {
       schedules,
+      activeScheduleId,
       timestamp: Date.now(),
     });
 
     let schedule: Schedule | null = null;
-
-    // Find active schedule
-    if (settings?.active_schedule_id) {
-      schedule =
-        schedules.find(s => s.id === settings.active_schedule_id) || null;
+    if (activeScheduleId) {
+      schedule = schedules.find(s => s.id === activeScheduleId) || null;
     }
-
-    // Fall back to default schedule
     if (!schedule) {
       schedule = schedules.find(s => s.is_default) || null;
     }
-
-    // Return default if no schedule found
     if (!schedule) {
       return {
         id: '',
@@ -155,15 +145,20 @@ export class UserSettingsService {
     const duration = Date.now() - startTime;
     if (duration > 200) {
       console.warn(
-        `[UserSettingsService] getActiveSchedule cache miss took ${duration}ms (fetched ${schedules.length} schedules)`
+        `[PERF] UserSettingsService › getActiveSchedule (cache miss): ${duration}ms ⚠️`
       );
     }
 
     return schedule;
   }
 
-  // Get all schedules for a user
+  // Get all schedules for a user — uses cache when warm.
   async getUserSchedules(userId: string, token?: string): Promise<Schedule[]> {
+    const cached = UserSettingsService.scheduleCache.get(userId);
+    if (cached && UserSettingsService.isCacheValid(cached.timestamp)) {
+      return cached.schedules;
+    }
+
     const startTime = Date.now();
     const client = token ? getAuthenticatedSupabase(token) : supabase;
     const { data, error } = await client
@@ -177,19 +172,35 @@ export class UserSettingsService {
       throw new Error(`Failed to fetch schedules: ${error.message}`);
     }
 
-    const duration = Date.now() - startTime;
-    const scheduleCount = data?.length || 0;
-    if (duration > 200) {
-      console.log(
-        `[UserSettingsService] Fetched ${scheduleCount} schedules in ${duration}ms`
-      );
-    }
-
-    return (data || []).map(s => ({
+    const schedules = (data || []).map(s => ({
       ...s,
       created_at: new Date(s.created_at),
       updated_at: new Date(s.updated_at),
     }));
+
+    // Populate cache. Reuse a previously-cached activeScheduleId only if that
+    // entry is still within the TTL — otherwise fall back to null so a stale
+    // ID from an expired entry is never resurrected.
+    const prev = UserSettingsService.scheduleCache.get(userId);
+    const prevActiveScheduleId =
+      prev && UserSettingsService.isCacheValid(prev.timestamp)
+        ? prev.activeScheduleId
+        : null;
+    UserSettingsService.enforceCacheBound();
+    UserSettingsService.scheduleCache.set(userId, {
+      schedules,
+      activeScheduleId: prevActiveScheduleId,
+      timestamp: Date.now(),
+    });
+
+    const duration = Date.now() - startTime;
+    if (duration > 200) {
+      console.warn(
+        `[PERF] UserSettingsService › getUserSchedules (cache miss): ${duration}ms ⚠️`
+      );
+    }
+
+    return schedules;
   }
 
   // Create a new schedule
@@ -438,6 +449,9 @@ export class UserSettingsService {
     if (error) {
       throw new Error(`Failed to update user settings: ${error.message}`);
     }
+
+    // Invalidate cache so the new active_schedule_id is picked up immediately
+    UserSettingsService.invalidateScheduleCache(userId);
 
     return {
       ...data,

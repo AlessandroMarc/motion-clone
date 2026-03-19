@@ -23,6 +23,7 @@ import { CalendarEventService } from './calendarEventService.js';
 import { UserSettingsService } from './userSettingsService.js';
 import { calculateAutoSchedule } from '../utils/autoScheduleCalculator.js';
 import { expandRecurringTasks } from '../utils/recurrenceCalculator.js';
+import { PerfTracker } from '../utils/perfTracker.js';
 
 const DEFAULT_EVENT_DURATION = 60; // minutes
 
@@ -134,12 +135,10 @@ export class AutoScheduleService {
    * Returns a summary of what was changed (or unchanged).
    */
   async run(userId: string, authToken: string): Promise<AutoScheduleRunResult> {
-    // 1. Fetch tasks
-    const taskClient = getAuthenticatedSupabase(authToken);
-    const allTasks = await this.taskService.getAllTasks(taskClient);
-    console.log(`[AutoSchedule] fetched ${allTasks.length} tasks`);
-
-    if (allTasks.length === 0) {
+    // Auto-scheduling relies on a persistent background process that cannot run
+    // on Vercel's serverless / edge runtime — bail out immediately.
+    if (process.env.VERCEL) {
+      console.log('[AutoSchedule] Skipping — running on Vercel');
       return {
         unchanged: true,
         eventsCreated: 0,
@@ -148,33 +147,51 @@ export class AutoScheduleService {
       };
     }
 
-    // 2. Fetch all calendar events for this user (full history + future)
-    const allEvents =
-      await this.calendarEventService.getAllCalendarEvents(authToken);
-    console.log(`[AutoSchedule] fetched ${allEvents.length} calendar events`);
+    const perf = new PerfTracker('AutoSchedule');
+    perf.start('total');
 
-    // 3. Enrich with full-horizon events for recurring tasks (fetch per-task if needed)
+    // 1. Fetch tasks + calendar events in parallel
+    perf.start('fetch');
+    const taskClient = getAuthenticatedSupabase(authToken);
+    const [allTasks, allEvents] = await Promise.all([
+      this.taskService.getAllTasks(taskClient),
+      this.calendarEventService.getAllCalendarEvents(authToken),
+    ]);
+    perf.end('fetch', 300);
+    console.log(
+      `[AutoSchedule] fetched ${allTasks.length} tasks, ${allEvents.length} events`
+    );
+
+    if (allTasks.length === 0) {
+      perf.end('total', 500);
+      return {
+        unchanged: true,
+        eventsCreated: 0,
+        eventsDeleted: 0,
+        violations: 0,
+      };
+    }
+
+    // 2. Enrich with full-horizon events for recurring tasks
     const enrichedEvents = await this.fetchFullHorizonEvents(
       allTasks,
       allEvents,
       authToken
     );
-    console.log(`[AutoSchedule] enriched to ${enrichedEvents.length} events`);
 
-    // 4. Fetch schedules
-    const schedules = await this.userSettingsService.getUserSchedules(
-      userId,
-      authToken
-    );
-    const activeSchedule = await this.userSettingsService.getActiveSchedule(
-      userId,
-      authToken
-    );
+    // 3. Fetch schedules in parallel (both benefit from the schedule cache)
+    perf.start('schedules');
+    const [schedules, activeSchedule] = await Promise.all([
+      this.userSettingsService.getUserSchedules(userId, authToken),
+      this.userSettingsService.getActiveSchedule(userId, authToken),
+    ]);
+    perf.end('schedules', 100);
     console.log(
       `[AutoSchedule] schedules: ${schedules.length}, active: ${activeSchedule?.id}`
     );
 
-    // 5. Compute proposed schedule
+    // 4. Compute proposed schedule
+    perf.start('calculate');
     const { eventsToCreate, existingTaskEvents, violations } =
       this.computeProposedSchedule(
         userId,
@@ -183,16 +200,17 @@ export class AutoScheduleService {
         activeSchedule,
         schedules
       );
-
     const uniqueEventsToCreate = dedupeProposedEvents(eventsToCreate);
+    perf.end('calculate', 200);
 
     console.log(
       `[AutoSchedule] proposed: ${eventsToCreate.length} events (${uniqueEventsToCreate.length} unique), existing: ${existingTaskEvents.length}`
     );
 
-    // 6. Compare
+    // 5. Compare
     if (isSameSchedule(existingTaskEvents, uniqueEventsToCreate)) {
       console.log('[AutoSchedule] schedule unchanged — skipping');
+      perf.end('total', 500);
       return {
         unchanged: true,
         eventsCreated: 0,
@@ -201,13 +219,16 @@ export class AutoScheduleService {
       };
     }
 
-    // 7. Apply diff
+    // 6. Apply diff
     console.log('[AutoSchedule] schedule differs — applying...');
+    perf.start('applyDiff');
     const { created, deleted } = await this.applyDiff(
       uniqueEventsToCreate,
       existingTaskEvents,
       authToken
     );
+    perf.end('applyDiff', 300);
+    perf.end('total', 500);
 
     return {
       unchanged: created === 0 && deleted === 0,
