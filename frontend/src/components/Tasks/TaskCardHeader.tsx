@@ -69,7 +69,7 @@ export function TaskCardHeader({
               e.stopPropagation();
               onSchedule(task);
             }}
-            className="opacity-0 group-hover:opacity-100 transition-opacity h-4 w-4 text-muted-foreground hover:text-primary hover:bg-primary/10"
+            className="h-4 w-4 text-muted-foreground hover:text-primary hover:bg-primary/10"
             title="Schedule task"
           >
             <CalendarPlus className="h-2.5 w-2.5" />
@@ -83,7 +83,7 @@ export function TaskCardHeader({
               e.stopPropagation();
               onDelete(task.id);
             }}
-            className="opacity-0 group-hover:opacity-100 transition-opacity h-4 w-4 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+            className="h-4 w-4 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
             title="Delete task"
           >
             <Trash2 className="h-2.5 w-2.5" />

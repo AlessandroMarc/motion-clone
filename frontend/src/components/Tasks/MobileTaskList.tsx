@@ -15,7 +15,6 @@ import { PriorityDot, ScheduleBadge, DueDateDisplay } from './listComponents';
 import { calendarService } from '@/services/calendarService';
 import { TaskCompletionDot } from './TaskCompletionDot';
 import { TaskCreateDialogForm } from './forms/TaskCreateDialogForm';
-import { listItem, staggerContainer } from '@/lib/animations';
 
 // ============================================================================
 // Mobile Row
@@ -324,20 +323,16 @@ export function MobileTaskList({
             </button>
 
             {!isCollapsed && (
-              <motion.div
-                className="flex flex-col rounded-lg border border-border/50 overflow-hidden"
-                variants={staggerContainer}
-                initial="hidden"
-                animate="visible"
-              >
+              <div className="flex flex-col rounded-lg border border-border/50 overflow-hidden">
                 <AnimatePresence mode="popLayout">
                   {group.tasks.map(task => (
                     <motion.div
                       key={task.id}
                       layout
-                      variants={listItem}
-                      initial="hidden"
-                      exit="exit"
+                      initial={{ opacity: 0, y: 8 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, x: -16 }}
+                      transition={{ duration: 0.18, ease: 'easeOut' }}
                     >
                       <RowComponent
                         task={task}
@@ -348,7 +343,7 @@ export function MobileTaskList({
                     </motion.div>
                   ))}
                 </AnimatePresence>
-              </motion.div>
+              </div>
             )}
           </section>
         );

@@ -83,14 +83,15 @@ export function TaskEditDialogForm({
   const [areEventsLoading, setAreEventsLoading] = useState(false);
   const [eventsError, setEventsError] = useState<string | null>(null);
 
-  const initialValues = useMemo(
+  const values = useMemo(
     () => (task ? mapTaskToFormValues(task) : emptyFormValues),
     [task]
   );
 
   const form = useForm<TaskFormData>({
     resolver: zodResolver(taskSchema),
-    defaultValues: initialValues,
+    defaultValues: emptyFormValues,
+    values,
   });
 
   const {
@@ -98,10 +99,6 @@ export function TaskEditDialogForm({
     formState: { errors },
     reset,
   } = form;
-
-  useEffect(() => {
-    reset(initialValues);
-  }, [initialValues, reset]);
 
   useEffect(() => {
     if (!task || !open) {
