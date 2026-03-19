@@ -233,6 +233,10 @@ export function CalendarLegend() {
         <span>Tasks (border = project)</span>
       </div>
       <div className="flex items-center gap-1">
+        <span className="inline-block h-2.5 w-2.5 rounded-sm bg-indigo-200 dark:bg-indigo-900/40 border border-indigo-300 dark:border-indigo-800/60" />
+        <span>Reminders</span>
+      </div>
+      <div className="flex items-center gap-1">
         <span className="inline-block h-2.5 w-2.5 rounded-sm bg-slate-500/70" />
         <span>External event</span>
       </div>

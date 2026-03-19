@@ -48,6 +48,7 @@ const emptyFormValues: TaskFormData = {
   recurrence_interval: 1,
   recurrenceStartDate: undefined,
   startDate: undefined,
+  is_reminder: false,
 };
 
 const mapTaskToFormValues = (task: Task): TaskFormData => ({
@@ -69,6 +70,7 @@ const mapTaskToFormValues = (task: Task): TaskFormData => ({
   startDate: task.start_date
     ? toLocalDateString(new Date(task.start_date))
     : undefined,
+  is_reminder: task.is_reminder ?? false,
 });
 
 export function TaskEditDialogForm({
@@ -196,6 +198,7 @@ export function TaskEditDialogForm({
         startDate: data.startDate
           ? normalizeToMidnight(parseLocalDate(data.startDate))
           : null,
+        isReminder: data.is_reminder,
       });
 
       console.log(
@@ -291,6 +294,7 @@ export function TaskEditDialogForm({
         startDate: data.startDate
           ? normalizeToMidnight(parseLocalDate(data.startDate))
           : null,
+        isReminder: data.is_reminder,
       });
 
       onTaskCloned?.(clonedTask);

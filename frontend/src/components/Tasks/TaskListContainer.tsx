@@ -143,6 +143,7 @@ export function TaskListContainer({
         recurrencePattern: taskData.recurrence_pattern,
         recurrenceInterval: taskData.recurrence_interval,
         recurrenceStartDate: taskData.recurrence_start_date,
+        isReminder: taskData.is_reminder,
       });
       await reload();
       onTaskUpdate?.();

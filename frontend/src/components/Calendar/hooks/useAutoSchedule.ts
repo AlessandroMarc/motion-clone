@@ -191,6 +191,7 @@ export function useAutoSchedule(
 
   return {
     tasksMap,
+    loadTasks,
     handleAutoScheduleClick,
     isRefreshing,
   };

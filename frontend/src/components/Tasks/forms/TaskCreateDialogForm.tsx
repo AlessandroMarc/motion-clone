@@ -26,6 +26,7 @@ import { TaskBlockedByField } from './TaskBlockedByField';
 import { TaskFormActions } from './TaskFormActions';
 import { TaskDurationFields } from './TaskDurationFields';
 import { TaskRecurrenceFields } from './TaskRecurrenceFields';
+import { TaskReminderField } from './TaskReminderField';
 
 interface TaskCreateDialogFormProps extends TaskCreateFormProps {
   trigger?: ReactNode;
@@ -52,6 +53,7 @@ export function TaskCreateDialogForm({
   } = useTaskForm(onTaskCreate);
 
   const isRecurring = form.watch('is_recurring');
+  const isReminder = form.watch('is_reminder');
   const recurrencePattern = form.watch('recurrence_pattern');
   const recurrenceInterval = form.watch('recurrence_interval');
   const recurrenceStartDate = form.watch('recurrenceStartDate');
@@ -64,8 +66,9 @@ export function TaskCreateDialogForm({
     form.setValue('project_id', initialProjectId ?? null);
   }, [form, initialProjectId, isDialogOpen]);
 
-  const handleFormSubmit: SubmitHandler<TaskFormData> = async data => {
-    const success = await onSubmit(data);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const handleFormSubmit: SubmitHandler<any> = async data => {
+    const success = await onSubmit(data as TaskFormData);
     if (success) {
       setIsDialogOpen(false);
     }
@@ -103,22 +106,37 @@ export function TaskCreateDialogForm({
             <div className="space-y-4">
               <TaskTitleField register={register} errors={errors} />
               <TaskDescriptionField register={register} errors={errors} />
+              <TaskReminderField
+                isReminder={isReminder}
+                onIsReminderChange={checked => {
+                  form.setValue('is_reminder', checked);
+                  if (checked) {
+                    form.setValue('actual_duration_minutes', 0);
+                    form.setValue('scheduleId', '');
+                    form.setValue('blockedBy', []);
+                  }
+                }}
+              />
               {!isRecurring && (
                 <TaskDueDateField register={register} errors={errors} />
               )}
-              <TaskStartDateField register={register} errors={errors} />
+              {!isReminder && (
+                <TaskStartDateField register={register} errors={errors} />
+              )}
               <TaskPriorityField
                 value={priority}
                 onValueChange={setPriority}
                 errors={errors}
               />
               <TaskProjectField errors={errors} />
-              <TaskScheduleField errors={errors} />
-              <TaskBlockedByField errors={errors} />
-              <TaskDurationFields
-                errors={errors}
-                hideActualDuration={isRecurring}
-              />
+              {!isReminder && <TaskScheduleField errors={errors} />}
+              {!isReminder && <TaskBlockedByField errors={errors} />}
+              {!isReminder && (
+                <TaskDurationFields
+                  errors={errors}
+                  hideActualDuration={isRecurring}
+                />
+              )}
               <TaskRecurrenceFields
                 isRecurring={isRecurring}
                 onIsRecurringChange={checked => {

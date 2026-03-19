@@ -274,14 +274,23 @@ export function WeekCalendarContainer({
     loadSchedules();
   }, [user?.id]);
 
-  const { tasksMap, handleAutoScheduleClick, isRefreshing } = useAutoSchedule(
-    user,
-    events,
-    refreshEvents,
-    onTaskDropped,
-    activeSchedule,
-    initialSyncComplete,
-    schedules
+  const { tasksMap, loadTasks, handleAutoScheduleClick, isRefreshing } =
+    useAutoSchedule(
+      user,
+      events,
+      refreshEvents,
+      onTaskDropped,
+      activeSchedule,
+      initialSyncComplete,
+      schedules
+    );
+
+  const reminderTasks = useMemo<Task[]>(
+    () =>
+      [...tasksMap.values()].filter(
+        t => t.is_reminder && t.status !== 'completed'
+      ),
+    [tasksMap]
   );
 
   const displayDates = isMobile ? [navigation.currentDay] : weekDates;
@@ -326,8 +335,9 @@ export function WeekCalendarContainer({
       recurrencePattern: taskData.recurrence_pattern,
       recurrenceInterval: taskData.recurrence_interval,
       recurrenceStartDate: taskData.recurrence_start_date,
+      isReminder: taskData.is_reminder,
     });
-    await refreshEvents();
+    await Promise.all([refreshEvents(), loadTasks()]);
     onTaskDropped?.();
   };
 
@@ -490,6 +500,7 @@ export function WeekCalendarContainer({
         }
         events={events}
         allDayEvents={bannerEvents}
+        reminderTasks={reminderTasks}
         // Full event set for DeadlineViolationsBar to detect violations across weeks
         violationEvents={allEvents}
         setEvents={setEvents}
@@ -514,6 +525,10 @@ export function WeekCalendarContainer({
         dialogs={dialogs}
         onBannerEventClick={dialogs.openBannerEventDialog}
         openTaskEditForm={openTaskEditForm}
+        onReminderTaskClick={task => {
+          setSelectedTask(task);
+          setTaskEditOpen(true);
+        }}
         handleAutoScheduleClick={handleAutoScheduleClick}
         isAutoScheduleRefreshing={isRefreshing || !initialSyncComplete}
         workingHoursStart={activeSchedule?.working_hours_start}
@@ -524,9 +539,9 @@ export function WeekCalendarContainer({
         task={selectedTask}
         open={taskEditOpen}
         onOpenChange={setTaskEditOpen}
-        onTaskUpdated={_updatedTask => {
+        onTaskUpdated={async _updatedTask => {
           onTaskDropped?.();
-          refreshEvents();
+          await Promise.all([refreshEvents(), loadTasks()]);
         }}
         onTaskCloned={() => {
           onTaskDropped?.();

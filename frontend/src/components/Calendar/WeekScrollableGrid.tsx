@@ -11,13 +11,71 @@ import {
   getMonthDay,
   isSameDay,
 } from '@/utils/calendarUtils';
+import { parseLocalDate } from '@/utils/dateUtils';
 import { startOfDay, endOfDay } from 'date-fns';
+
+/**
+ * Returns true if a recurring reminder task has an occurrence on the given date.
+ * Uses recurrence_start_date as anchor and applies pattern + interval.
+ */
+function reminderOccursOnDate(task: Task, date: Date): boolean {
+  const anchorRaw = task.recurrence_start_date ?? task.due_date;
+  if (!anchorRaw) return false;
+
+  const anchorDay =
+    typeof anchorRaw === 'string'
+      ? parseLocalDate(anchorRaw)
+      : anchorRaw instanceof Date
+        ? anchorRaw
+        : null;
+  if (!anchorDay) return false;
+  anchorDay.setHours(0, 0, 0, 0);
+  const checkDay = new Date(date);
+  checkDay.setHours(0, 0, 0, 0);
+
+  if (checkDay < anchorDay) return false;
+
+  const pattern = task.recurrence_pattern;
+  const interval = task.recurrence_interval ?? 1;
+
+  if (pattern === 'daily') {
+    const diffDays = Math.round(
+      (checkDay.getTime() - anchorDay.getTime()) / 86400000
+    );
+    return diffDays % interval === 0;
+  }
+  if (pattern === 'weekly') {
+    if (checkDay.getDay() !== anchorDay.getDay()) return false;
+    const diffDays = Math.round(
+      (checkDay.getTime() - anchorDay.getTime()) / 86400000
+    );
+    return (diffDays / 7) % interval === 0;
+  }
+  if (pattern === 'monthly') {
+    const anchorDayOfMonth = anchorDay.getDate();
+    const lastDayOfCheckMonth = new Date(
+      checkDay.getFullYear(),
+      checkDay.getMonth() + 1,
+      0
+    ).getDate();
+    // Match exact day, or if anchor overflows this month match the last day instead
+    const effectiveDay = Math.min(anchorDayOfMonth, lastDayOfCheckMonth);
+    if (checkDay.getDate() !== effectiveDay) return false;
+    const monthDiff =
+      (checkDay.getFullYear() - anchorDay.getFullYear()) * 12 +
+      (checkDay.getMonth() - anchorDay.getMonth());
+    return monthDiff % interval === 0;
+  }
+  return false;
+}
 
 interface WeekScrollableGridProps {
   weekDates: Date[];
   eventsByDay: { [key: string]: CalendarEventUnion[] };
   allDayEvents?: FilteredGoogleEvent[];
+  reminderTasks?: Task[];
   onBannerEventClick?: (event: FilteredGoogleEvent) => void;
+  onReminderTaskClick?: (task: Task) => void;
   onGridCellClick: (date: Date, hour: number, minute: number) => void;
   onEventMouseDown: (
     e: React.MouseEvent,
@@ -47,7 +105,9 @@ function WeekScrollableGrid({
   weekDates,
   eventsByDay,
   allDayEvents = [],
+  reminderTasks = [],
   onBannerEventClick,
+  onReminderTaskClick,
   onGridCellClick,
   onEventMouseDown,
   draggingEventId,
@@ -133,6 +193,20 @@ function WeekScrollableGrid({
             return date >= start && date <= end;
           });
 
+          const dayReminderTasks = reminderTasks.filter(task => {
+            if (task.is_recurring) {
+              return reminderOccursOnDate(task, date);
+            }
+            return task.due_date
+              ? isSameDay(
+                  typeof task.due_date === 'string'
+                    ? parseLocalDate(task.due_date)
+                    : task.due_date,
+                  date
+                )
+              : false;
+          });
+
           return (
             <div
               key={index}
@@ -168,6 +242,17 @@ function WeekScrollableGrid({
                   </button>
                 );
               })}
+              {dayReminderTasks.map(task => (
+                <button
+                  key={`reminder-${task.id}`}
+                  type="button"
+                  onClick={() => onReminderTaskClick?.(task)}
+                  className="px-2 py-0.5 text-[10px] font-medium bg-indigo-100 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-300 rounded border border-indigo-200 dark:border-indigo-800/60 truncate cursor-pointer hover:bg-indigo-200 dark:hover:bg-indigo-800/60 transition-colors text-left"
+                  title={task.title}
+                >
+                  {task.title}
+                </button>
+              ))}
             </div>
           );
         })}

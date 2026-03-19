@@ -9,10 +9,14 @@ export function transformFormDataToTask(
   data: TaskFormData,
   userId: string
 ): Omit<Task, 'id' | 'created_at' | 'updated_at' | 'status' | 'dependencies'> {
-  const planned = Math.max(data.planned_duration_minutes, 0);
+  const isReminder = data.is_reminder ?? false;
+  const planned = isReminder ? 1 : Math.max(data.planned_duration_minutes, 0);
   const isRecurring = data.is_recurring ?? false;
   const actual = Math.min(
-    Math.max(isRecurring ? 0 : (data.actual_duration_minutes ?? 0), 0),
+    Math.max(
+      isRecurring || isReminder ? 0 : (data.actual_duration_minutes ?? 0),
+      0
+    ),
     planned
   );
   const transformed = {
@@ -41,6 +45,7 @@ export function transformFormDataToTask(
     start_date: data.startDate
       ? normalizeToMidnight(parseLocalDate(data.startDate))
       : null,
+    is_reminder: isReminder,
   };
   return transformed;
 }

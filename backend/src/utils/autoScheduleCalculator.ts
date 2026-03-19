@@ -102,7 +102,9 @@ export function calculateAutoSchedule(params: {
     schedules = [],
   } = params;
 
-  const incompleteTasks = tasks.filter(task => task.status !== 'completed');
+  const incompleteTasks = tasks.filter(
+    task => task.status !== 'completed' && !task.is_reminder
+  );
   console.log(
     `[AutoSchedule:calc] ${tasks.length} total tasks, ${incompleteTasks.length} incomplete`
   );

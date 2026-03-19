@@ -311,6 +311,7 @@ export class TaskService {
             : 1,
           next_generation_cutoff: nextGenerationCutoff,
           recurrence_start_date: recurrenceStartDateString,
+          is_reminder: input.is_reminder ?? false,
         },
       ])
       .select()
@@ -402,6 +403,7 @@ export class TaskService {
       next_generation_cutoff?: string | null;
       recurrence_start_date?: string | null;
       start_date?: string | null;
+      is_reminder?: boolean;
     } = {
       updated_at: new Date().toISOString(),
     };
@@ -488,6 +490,10 @@ export class TaskService {
         updateData.recurrence_interval = 1;
         updateData.next_generation_cutoff = null;
       }
+    }
+
+    if (input.is_reminder !== undefined) {
+      updateData.is_reminder = input.is_reminder;
     }
 
     const rawPlanned =
