@@ -11,6 +11,7 @@ interface CreateCalendarEventInput {
   completed_at?: string | null;
   google_event_id?: string;
   synced_from_google?: boolean;
+  is_all_day?: boolean;
 }
 
 interface UpdateCalendarEventInput {
@@ -23,6 +24,7 @@ interface UpdateCalendarEventInput {
   completed_at?: string | null;
   google_event_id?: string;
   synced_from_google?: boolean;
+  is_all_day?: boolean;
 }
 
 interface Task {
@@ -90,6 +92,7 @@ interface CalendarEvent {
   updated_at: Date;
   google_event_id?: string | null; // ID from Google Calendar if synced
   synced_from_google?: boolean; // Whether this event was synced from Google Calendar
+  is_all_day?: boolean; // Whether this is an all-day event (from Google Calendar)
   // Explicitly exclude task-related fields
   linked_task_id?: never;
   completed_at?: never;

@@ -85,19 +85,35 @@ export function useCalendarEvents(weekDates: Date[]) {
     });
   }, [weekKey, getWeekRangeIso, weekKeyRef]);
 
-  // Group events by day for easier rendering
+  // Separate all-day events from timed events
+  const { timedEvents, allDaySyncedEvents } = useMemo(() => {
+    const timed: CalendarEventUnion[] = [];
+    const allDay: CalendarEventUnion[] = [];
+    for (const event of events) {
+      if (
+        (event as unknown as { is_all_day?: boolean }).is_all_day
+      ) {
+        allDay.push(event);
+      } else {
+        timed.push(event);
+      }
+    }
+    return { timedEvents: timed, allDaySyncedEvents: allDay };
+  }, [events]);
+
+  // Group timed events by day for easier rendering
   const eventsByDay = useMemo(() => {
     const grouped: { [key: string]: CalendarEventUnion[] } = {};
 
     weekDates.forEach((date, index) => {
       const dayKey = `day-${index}`;
-      grouped[dayKey] = events.filter(event =>
+      grouped[dayKey] = timedEvents.filter(event =>
         isSameDay(event.start_time, date)
       );
     });
 
     return grouped;
-  }, [events, weekDates]);
+  }, [timedEvents, weekDates]);
 
   const refreshEvents = async () => {
     try {
@@ -127,6 +143,7 @@ export function useCalendarEvents(weekDates: Date[]) {
     events,
     setEvents,
     eventsByDay,
+    allDaySyncedEvents,
     loading,
     error,
     refreshEvents,

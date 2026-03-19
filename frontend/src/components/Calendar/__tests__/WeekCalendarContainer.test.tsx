@@ -55,6 +55,7 @@ jest.mock('../hooks', () => ({
     events: [],
     setEvents: jest.fn(),
     eventsByDay: {},
+    allDaySyncedEvents: [],
     loading: false,
     error: null,
     refreshEvents: jest.fn().mockResolvedValue([]),
