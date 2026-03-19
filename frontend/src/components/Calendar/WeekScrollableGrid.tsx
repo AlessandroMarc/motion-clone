@@ -47,7 +47,15 @@ function reminderOccursOnDate(task: Task, date: Date): boolean {
     return (diffDays / 7) % interval === 0;
   }
   if (pattern === 'monthly') {
-    if (checkDay.getDate() !== anchorDay.getDate()) return false;
+    const anchorDayOfMonth = anchorDay.getDate();
+    const lastDayOfCheckMonth = new Date(
+      checkDay.getFullYear(),
+      checkDay.getMonth() + 1,
+      0
+    ).getDate();
+    // Match exact day, or if anchor overflows this month match the last day instead
+    const effectiveDay = Math.min(anchorDayOfMonth, lastDayOfCheckMonth);
+    if (checkDay.getDate() !== effectiveDay) return false;
     const monthDiff =
       (checkDay.getFullYear() - anchorDay.getFullYear()) * 12 +
       (checkDay.getMonth() - anchorDay.getMonth());
@@ -177,7 +185,9 @@ function WeekScrollableGrid({
             if (task.is_recurring) {
               return reminderOccursOnDate(task, date);
             }
-            return task.due_date ? isSameDay(new Date(task.due_date), date) : false;
+            return task.due_date
+              ? isSameDay(new Date(task.due_date), date)
+              : false;
           });
 
           return (
@@ -220,7 +230,7 @@ function WeekScrollableGrid({
                   key={`reminder-${task.id}`}
                   type="button"
                   onClick={() => onReminderTaskClick?.(task)}
-                  className="px-2 py-0.5 text-[10px] font-medium bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300 rounded border border-amber-200 dark:border-amber-800/60 truncate cursor-pointer hover:bg-amber-200 dark:hover:bg-amber-800/60 transition-colors text-left"
+                  className="px-2 py-0.5 text-[10px] font-medium bg-indigo-100 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-300 rounded border border-indigo-200 dark:border-indigo-800/60 truncate cursor-pointer hover:bg-indigo-200 dark:hover:bg-indigo-800/60 transition-colors text-left"
                   title={task.title}
                 >
                   {task.title}

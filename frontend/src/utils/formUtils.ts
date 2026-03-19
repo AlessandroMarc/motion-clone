@@ -13,7 +13,10 @@ export function transformFormDataToTask(
   const planned = isReminder ? 1 : Math.max(data.planned_duration_minutes, 0);
   const isRecurring = data.is_recurring ?? false;
   const actual = Math.min(
-    Math.max(isRecurring || isReminder ? 0 : (data.actual_duration_minutes ?? 0), 0),
+    Math.max(
+      isRecurring || isReminder ? 0 : (data.actual_duration_minutes ?? 0),
+      0
+    ),
     planned
   );
   const transformed = {

@@ -248,18 +248,22 @@ export function WeekCalendarContainer({
     loadSchedules();
   }, [user?.id]);
 
-  const { tasksMap, handleAutoScheduleClick, isRefreshing } = useAutoSchedule(
-    user,
-    events,
-    refreshEvents,
-    onTaskDropped,
-    activeSchedule,
-    initialSyncComplete,
-    schedules
-  );
+  const { tasksMap, loadTasks, handleAutoScheduleClick, isRefreshing } =
+    useAutoSchedule(
+      user,
+      events,
+      refreshEvents,
+      onTaskDropped,
+      activeSchedule,
+      initialSyncComplete,
+      schedules
+    );
 
   const reminderTasks = useMemo<Task[]>(
-    () => [...tasksMap.values()].filter(t => t.is_reminder && t.status !== 'completed'),
+    () =>
+      [...tasksMap.values()].filter(
+        t => t.is_reminder && t.status !== 'completed'
+      ),
     [tasksMap]
   );
 
@@ -307,7 +311,7 @@ export function WeekCalendarContainer({
       recurrenceStartDate: taskData.recurrence_start_date,
       isReminder: taskData.is_reminder,
     });
-    await refreshEvents();
+    await Promise.all([refreshEvents(), loadTasks()]);
     onTaskDropped?.();
   };
 
@@ -511,7 +515,7 @@ export function WeekCalendarContainer({
         onOpenChange={setTaskEditOpen}
         onTaskUpdated={_updatedTask => {
           onTaskDropped?.();
-          refreshEvents();
+          Promise.all([refreshEvents(), loadTasks()]);
         }}
         onTaskCloned={() => {
           onTaskDropped?.();

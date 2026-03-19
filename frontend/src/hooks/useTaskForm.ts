@@ -62,7 +62,10 @@ export const taskSchema = z
     is_reminder: z.boolean(),
   })
   .superRefine((data, ctx) => {
-    if (!data.is_reminder && data.actual_duration_minutes > data.planned_duration_minutes) {
+    if (
+      !data.is_reminder &&
+      data.actual_duration_minutes > data.planned_duration_minutes
+    ) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         path: ['actual_duration_minutes'],
