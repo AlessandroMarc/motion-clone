@@ -18,6 +18,11 @@ export function KanbanTaskCard({
   onToggleCompletion,
   isPlanned = false,
 }: KanbanTaskCardProps) {
+  const handleDragStart = (e: React.DragEvent) => {
+    e.dataTransfer.setData('application/x-kanban-task-id', task.id);
+    e.dataTransfer.effectAllowed = 'move';
+  };
+
   return (
     <CompactTaskCard
       task={task}
@@ -25,6 +30,9 @@ export function KanbanTaskCard({
       onSelect={onSelect}
       onDelete={onDelete}
       onToggleCompletion={onToggleCompletion}
+      draggable
+      showDragHandle
+      onDragStart={handleDragStart}
     />
   );
 }

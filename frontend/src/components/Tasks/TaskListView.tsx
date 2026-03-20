@@ -4,7 +4,7 @@ import { toast } from 'sonner';
 import { Card, CardContent } from '@/components/ui/card';
 import { motion } from 'framer-motion';
 import { Circle, LayoutList, Columns3 } from 'lucide-react';
-import type { Project, Task } from '@/types';
+import type { Project, Task, WorkItemStatus } from '@/types';
 import { ErrorState, LoadingState } from '@/components/shared';
 import { fadeInScale } from '@/lib/animations';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -39,6 +39,7 @@ interface TaskListViewProps {
   showCompleted: boolean;
   onShowCompletedChange: (show: boolean) => void;
   onToggleTaskCompletion: (task: Task, nextCompleted: boolean) => Promise<void>;
+  onTaskStatusChange: (task: Task, newStatus: WorkItemStatus) => Promise<void>;
 }
 
 export function TaskListView({
@@ -61,6 +62,7 @@ export function TaskListView({
   showCompleted,
   onShowCompletedChange,
   onToggleTaskCompletion,
+  onTaskStatusChange,
 }: TaskListViewProps) {
   const isMobile = useIsMobile();
 
@@ -177,6 +179,7 @@ export function TaskListView({
           }}
           onSelectTask={onSelectTask}
           onTaskCreate={onTaskCreate}
+          onTaskStatusChange={onTaskStatusChange}
         />
       )}
 

@@ -15,6 +15,31 @@ export interface ChangelogEntry {
 
 export const changelogEntries: ChangelogEntry[] = [
   {
+    version: '1.9.0',
+    date: 'March 2026',
+    title: 'Status Kanban Board',
+    description:
+      'The Kanban board is now organised by task status with drag-and-drop to move tasks between columns.',
+    items: [
+      {
+        type: 'new',
+        text: 'Kanban columns are now "Not Started", "In Progress", and "Completed" — reflecting actual task status instead of project.',
+      },
+      {
+        type: 'new',
+        text: 'Drag and drop tasks between status columns to update their status instantly.',
+      },
+      {
+        type: 'new',
+        text: 'Tasks within each column are sorted by deadline, so the most urgent work always surfaces first.',
+      },
+      {
+        type: 'new',
+        text: 'Optional "Group by project" toggle organises tasks into labelled project sections within each status column.',
+      },
+    ],
+  },
+  {
     version: '1.8.1',
     date: 'March 2026',
     title: 'Bug Fixes',

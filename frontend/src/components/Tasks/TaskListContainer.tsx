@@ -6,6 +6,7 @@ import {
   isCalendarEventTask,
   type CalendarEventUnion,
   type Task,
+  type WorkItemStatus,
 } from '@/types';
 import { taskService } from '@/services/taskService';
 import { logger } from '@/lib/logger';
@@ -117,6 +118,42 @@ export function TaskListContainer({
     setSelectedTask(updatedTask);
   };
 
+  const handleTaskStatusChange = async (
+    task: Task,
+    newStatus: WorkItemStatus
+  ) => {
+    // Optimistic update: move the task immediately so the UI responds without waiting for the API
+    setTasks(prev =>
+      prev.map(t => (t.id === task.id ? { ...t, status: newStatus } : t))
+    );
+    try {
+      let updatedTask: Task;
+      if (newStatus === 'completed') {
+        updatedTask = await taskService.setTaskCompleted(task, true);
+      } else if (newStatus === 'not-started') {
+        updatedTask = await taskService.updateTask(task.id, {
+          actualDurationMinutes: 0,
+        });
+      } else {
+        // in-progress: set a minimal actual duration (1 minute) to mark as started
+        const planned = task.planned_duration_minutes ?? 0;
+        updatedTask = await taskService.updateTask(task.id, {
+          actualDurationMinutes: planned > 1 ? 1 : 0,
+        });
+      }
+      // Reconcile with server response
+      setTasks(prev =>
+        prev.map(t => (t.id === updatedTask.id ? updatedTask : t))
+      );
+      onTaskUpdate?.();
+    } catch (e) {
+      // Revert on failure
+      setTasks(prev => prev.map(t => (t.id === task.id ? task : t)));
+      logger.error('[TaskList] Failed to update task status', e);
+      toast.error('Failed to update task status');
+    }
+  };
+
   const handleTaskClonedInDialog = (clonedTask: Task) => {
     setTasks(prev => [...prev, clonedTask]);
     onTaskUpdate?.();
@@ -177,6 +214,7 @@ export function TaskListContainer({
       showCompleted={showCompleted}
       onShowCompletedChange={setShowCompleted}
       onToggleTaskCompletion={handleToggleTaskCompletion}
+      onTaskStatusChange={handleTaskStatusChange}
     />
   );
 }
