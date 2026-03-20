@@ -135,18 +135,6 @@ export class AutoScheduleService {
    * Returns a summary of what was changed (or unchanged).
    */
   async run(userId: string, authToken: string): Promise<AutoScheduleRunResult> {
-    // Auto-scheduling relies on a persistent background process that cannot run
-    // on Vercel's serverless / edge runtime — bail out immediately.
-    if (process.env.VERCEL) {
-      console.log('[AutoSchedule] Skipping — running on Vercel');
-      return {
-        unchanged: true,
-        eventsCreated: 0,
-        eventsDeleted: 0,
-        violations: 0,
-      };
-    }
-
     const perf = new PerfTracker('AutoSchedule');
     perf.start('total');
 

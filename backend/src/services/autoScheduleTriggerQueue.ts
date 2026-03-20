@@ -58,6 +58,11 @@ class AutoScheduleTriggerQueueImpl {
    * @param authToken Auth token for API calls
    */
   trigger(userId: string, authToken: string): void {
+    // Background debounced triggers cannot run on Vercel's serverless runtime.
+    // The manual /api/auto-schedule/run endpoint bypasses this queue and calls
+    // AutoScheduleService.run() directly, so it is unaffected.
+    if (process.env.VERCEL) return;
+
     // If a sync run is already in flight, mark that we need a rerun after it finishes
     if (this.runningSyncPromises.has(userId)) {
       this.needsRerun.add(userId);
