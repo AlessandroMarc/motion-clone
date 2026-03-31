@@ -50,23 +50,29 @@ router.post('/', async (req: Request, res: Response) => {
       return ResponseHelper.badRequest(res, error.message);
     }
 
-    // Ping Slack (Lead Magnet Notification)
+    // Ping Telegram (Lead Magnet Notification)
     try {
-      const SLACK_WEBHOOK_URL = process.env.SLACK_WEBHOOK_URL;
-      if (SLACK_WEBHOOK_URL) {
-        await fetch(SLACK_WEBHOOK_URL, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            text: `🚀 *New lead joined the waitlist!*\n📧 Email: ${emailInput}\n📅 Date: ${new Date().toLocaleString()}`,
-          }),
-        });
+      const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
+      const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID;
+      if (TELEGRAM_BOT_TOKEN && TELEGRAM_CHAT_ID) {
+        await fetch(
+          `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              chat_id: TELEGRAM_CHAT_ID,
+              text: `🚀 *New lead joined the waitlist!*\n📧 Email: ${emailInput}\n📅 Date: ${new Date().toLocaleString()}`,
+              parse_mode: 'Markdown',
+            }),
+          }
+        );
       }
-    } catch (slackError) {
-      // We don't want to fail the subscription if Slack notification fails
+    } catch (telegramError) {
+      // We don't want to fail the subscription if Telegram notification fails
       console.error(
-        '[Subscriptions] Failed to send Slack notification:',
-        slackError
+        '[Subscriptions] Failed to send Telegram notification:',
+        telegramError
       );
     }
 
