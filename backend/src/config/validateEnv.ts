@@ -48,9 +48,12 @@ const ENV_VAR_SCHEMA: EnvVarConfig[] = [
     validateUrl: true,
   },
   {
-    name: 'SLACK_WEBHOOK_URL',
+    name: 'TELEGRAM_BOT_TOKEN',
     required: false,
-    validateUrl: true,
+  },
+  {
+    name: 'TELEGRAM_CHAT_ID',
+    required: false,
   },
 ];
 
