@@ -3,7 +3,7 @@
 import { CalendarEventUnion, isCalendarEventTask, type Task } from '@/types';
 import { formatEventTime } from '@/utils/calendarUtils';
 import { formatDate } from '@/utils/dateUtils';
-import { AlertTriangle, CheckCircle2 } from 'lucide-react';
+import { AlertTriangle, CheckCircle2, Pin } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import {
   Tooltip,
@@ -91,6 +91,18 @@ export function CalendarEventCard({
           >
             {event.title}
           </span>
+          {isTaskEvent && task?.is_manually_pinned && !isCompleted && (
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Pin className="h-2.5 w-2.5 shrink-0 opacity-80 text-amber-300" />
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Manually pinned — auto-schedule won't move this</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          )}
           {isCompleted && (
             <CheckCircle2 className="h-2.5 w-2.5 shrink-0 opacity-70" />
           )}
