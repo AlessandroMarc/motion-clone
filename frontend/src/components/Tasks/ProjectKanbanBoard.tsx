@@ -6,7 +6,7 @@ import type { Task, Project, WorkItemStatus } from '@/types';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { groupTasksByProject } from '@/utils/taskUtils';
-import { PROJECT_COLORS, getProjectColorIndex } from '@/utils/projectColors';
+import { getProjectColorIndex } from '@/utils/projectColors';
 import { KanbanColumn, type TaskGroup } from './KanbanColumn';
 
 // Dot colors for project group headers (must be static for Tailwind JIT)

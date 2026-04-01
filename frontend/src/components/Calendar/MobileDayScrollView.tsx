@@ -4,7 +4,7 @@ import React, { useRef, useCallback } from 'react';
 import type { CalendarEventUnion, Task } from '@/types';
 import { isCalendarEventTask } from '@/types';
 import type { FilteredGoogleEvent } from '@/services/googleCalendarService';
-import { formatEventTime, isSameDay } from '@/utils/calendarUtils';
+import { formatEventTime } from '@/utils/calendarUtils';
 import { formatDateLong } from '@/utils/dateUtils';
 import { CheckCircle2, Sparkles, Circle, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';

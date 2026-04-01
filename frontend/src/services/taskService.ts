@@ -87,7 +87,6 @@ class TaskService {
       recurrenceInterval,
       startDate,
       isReminder,
-      isManuallyPinned,
       ...rest
     } = input;
 
