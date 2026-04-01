@@ -38,6 +38,7 @@ import {
 import { toast } from 'sonner';
 import { userSettingsService } from '@/services/userSettingsService';
 import { HiddenEventsIndicator } from './HiddenEventsIndicator';
+import { PinnedTasksWarningDialog } from './PinnedTasksWarningDialog';
 
 interface WeekCalendarContainerProps {
   onTaskDropped?: () => void;
@@ -274,16 +275,21 @@ export function WeekCalendarContainer({
     loadSchedules();
   }, [user?.id]);
 
-  const { tasksMap, loadTasks, handleAutoScheduleClick, isRefreshing } =
-    useAutoSchedule(
-      user,
-      events,
-      refreshEvents,
-      onTaskDropped,
-      activeSchedule,
-      initialSyncComplete,
-      schedules
-    );
+  const {
+    tasksMap,
+    loadTasks,
+    handleAutoScheduleClick,
+    isRefreshing,
+    pinnedWarning,
+  } = useAutoSchedule(
+    user,
+    events,
+    refreshEvents,
+    onTaskDropped,
+    activeSchedule,
+    initialSyncComplete,
+    schedules
+  );
 
   const reminderTasks = useMemo<Task[]>(
     () =>
@@ -469,6 +475,7 @@ export function WeekCalendarContainer({
         <CalendarCompletionDialog
           open={dialogs.completionChoiceOpen}
           sessionCount={dialogs.completionChoiceSessionCount}
+          isRecurring={dialogs.completionChoiceIsRecurring}
           onChoice={choice => dialogs.handleCompletionChoice(choice, setEvents)}
           onCancel={() => dialogs.setCompletionChoiceOpen(false)}
         />
@@ -484,6 +491,14 @@ export function WeekCalendarContainer({
             onTaskDropped?.();
           }}
         />
+        {pinnedWarning && (
+          <PinnedTasksWarningDialog
+            open={true}
+            pinnedTasks={pinnedWarning.tasks}
+            onConfirm={unpinAll => pinnedWarning.resolve(unpinAll)}
+            onCancel={() => pinnedWarning.resolve(false)}
+          />
+        )}
       </div>
     );
   }
@@ -547,6 +562,14 @@ export function WeekCalendarContainer({
           onTaskDropped?.();
         }}
       />
+      {pinnedWarning && (
+        <PinnedTasksWarningDialog
+          open={true}
+          pinnedTasks={pinnedWarning.tasks}
+          onConfirm={unpinAll => pinnedWarning.resolve(unpinAll)}
+          onCancel={() => pinnedWarning.resolve(false)}
+        />
+      )}
     </>
   );
 }

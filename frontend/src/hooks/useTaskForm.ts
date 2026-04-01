@@ -60,6 +60,7 @@ export const taskSchema = z
     recurrenceStartDate: z.string().optional(), // 'YYYY-MM-DD'; anchors day-of-week / day-of-month
     startDate: z.string().optional(), // 'YYYY-MM-DD'; earliest date the task may be scheduled
     is_reminder: z.boolean().catch(false),
+    is_manually_pinned: z.boolean().catch(false),
   })
   .superRefine((data, ctx) => {
     if (
@@ -134,6 +135,7 @@ export function useTaskForm(onTaskCreate: TaskCreateFormProps['onTaskCreate']) {
       recurrenceStartDate: undefined,
       startDate: undefined,
       is_reminder: false,
+      is_manually_pinned: false,
     },
   });
 

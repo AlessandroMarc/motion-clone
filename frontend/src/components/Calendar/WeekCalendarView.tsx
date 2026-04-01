@@ -220,6 +220,7 @@ export function WeekCalendarView({
       <CalendarCompletionDialog
         open={dialogs.completionChoiceOpen}
         sessionCount={dialogs.completionChoiceSessionCount}
+        isRecurring={dialogs.completionChoiceIsRecurring}
         onChoice={choice => dialogs.handleCompletionChoice(choice, setEvents)}
         onCancel={() => dialogs.setCompletionChoiceOpen(false)}
       />

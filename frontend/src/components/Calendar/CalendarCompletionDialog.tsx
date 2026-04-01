@@ -16,6 +16,7 @@ interface CalendarCompletionDialogProps {
   onChoice: (choice: 'session' | 'task') => void;
   onCancel: () => void;
   sessionCount: number;
+  isRecurring?: boolean;
 }
 
 export function CalendarCompletionDialog({
@@ -23,6 +24,7 @@ export function CalendarCompletionDialog({
   onChoice,
   onCancel,
   sessionCount,
+  isRecurring,
 }: CalendarCompletionDialogProps) {
   return (
     <AlertDialog open={open} onOpenChange={o => !o && onCancel()}>
@@ -43,9 +45,11 @@ export function CalendarCompletionDialog({
           >
             This session only
           </AlertDialogAction>
-          <AlertDialogAction onClick={() => onChoice('task')}>
-            Complete entire task
-          </AlertDialogAction>
+          {!isRecurring && (
+            <AlertDialogAction onClick={() => onChoice('task')}>
+              Complete entire task
+            </AlertDialogAction>
+          )}
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>

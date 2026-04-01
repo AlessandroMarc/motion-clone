@@ -1,5 +1,6 @@
 import { CalendarEventUnion, type CreateCalendarEventInput } from '@/types';
 import { calendarService } from '@/services/calendarService';
+import { taskService } from '@/services/taskService';
 import { toast } from 'sonner';
 
 export function useExternalTaskDrop(
@@ -38,6 +39,9 @@ export function useExternalTaskDrop(
       await calendarService.createCalendarEvent(
         eventData as CreateCalendarEventInput
       );
+
+      // Mark the task as manually pinned so auto-schedule won't move it
+      await taskService.updateTask(task.id, { isManuallyPinned: true });
 
       // Refresh calendar events to ensure we have the latest data
       await refreshEvents();

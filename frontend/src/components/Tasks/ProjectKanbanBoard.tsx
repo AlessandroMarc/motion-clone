@@ -100,14 +100,20 @@ export function ProjectKanbanBoard({
     return map;
   }, [tasks]);
 
-  const groupsByStatus = useMemo((): Record<WorkItemStatus, TaskGroup[]> | null => {
+  const groupsByStatus = useMemo((): Record<
+    WorkItemStatus,
+    TaskGroup[]
+  > | null => {
     if (!groupByProject) return null;
 
     const result = {} as Record<WorkItemStatus, TaskGroup[]>;
 
     for (const { status } of STATUS_COLUMNS) {
       const statusTasks = tasksByStatus[status];
-      const { unassigned, byProject } = groupTasksByProject(statusTasks, projects);
+      const { unassigned, byProject } = groupTasksByProject(
+        statusTasks,
+        projects
+      );
 
       const groups: TaskGroup[] = [
         ...byProject.map(({ project, tasks: t }) => {

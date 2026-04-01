@@ -26,6 +26,10 @@ export function useAutoSchedule(
   const [_tasks, setTasks] = useState<Task[]>([]);
   const [tasksMap, setTasksMap] = useState<Map<string, Task>>(new Map());
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [pinnedWarning, setPinnedWarning] = useState<{
+    tasks: Array<{ id: string; title: string }>;
+    resolve: (unpinAll: boolean) => void;
+  } | null>(null);
 
   // Single guard: prevents concurrent scheduling runs
   const isSchedulingRef = useRef(false);
@@ -162,6 +166,42 @@ export function useAutoSchedule(
     isClickInFlightRef.current = true;
 
     try {
+      // Check if any pinned tasks would be affected
+      let pinnedTasks: Array<{ id: string; title: string }> = [];
+      try {
+        pinnedTasks = await calendarService.getPinnedTasksPreview();
+      } catch {
+        // Non-fatal: proceed without warning if preview fails
+      }
+
+      if (pinnedTasks.length > 0) {
+        // Ask user what to do with pinned tasks
+        const unpinAll = await new Promise<boolean | null>(resolve => {
+          setPinnedWarning({
+            tasks: pinnedTasks,
+            resolve: (unpinAll: boolean) => {
+              setPinnedWarning(null);
+              resolve(unpinAll);
+            },
+          });
+        });
+
+        if (unpinAll === null) {
+          // User cancelled
+          return;
+        }
+
+        if (unpinAll) {
+          // Unpin all affected tasks before scheduling
+          await Promise.allSettled(
+            pinnedTasks.map(t =>
+              taskService.updateTask(t.id, { isManuallyPinned: false })
+            )
+          );
+        }
+        // If unpinAll === false: keep pinned, scheduler will skip them naturally
+      }
+
       lastAppliedAtRef.current = 0;
       consecutiveAutoRunsRef.current = 0;
       await runFullSchedule();
@@ -194,5 +234,10 @@ export function useAutoSchedule(
     loadTasks,
     handleAutoScheduleClick,
     isRefreshing,
+    pinnedWarning,
+    dismissPinnedWarning: () => {
+      pinnedWarning?.resolve(false);
+      setPinnedWarning(null);
+    },
   };
 }

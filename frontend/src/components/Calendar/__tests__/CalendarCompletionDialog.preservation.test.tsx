@@ -1,0 +1,98 @@
+/**
+ * Property 2: Preservation - CalendarCompletionDialog shows "Complete entire task" for non-recurring tasks
+ *
+ * Validates: Requirements 3.1, 3.4
+ *
+ * These tests MUST PASS on unfixed code.
+ * They document the baseline dialog behavior that must not regress after the fix.
+ *
+ * ON UNFIXED CODE: PASSES — "Complete entire task" button is always shown.
+ * ON FIXED CODE:   PASSES — button is still shown when isRecurring is false or not set.
+ */
+
+import { render, screen } from '@testing-library/react';
+import { CalendarCompletionDialog } from '../CalendarCompletionDialog';
+
+jest.mock('@/components/ui/alert-dialog', () => ({
+  AlertDialog: ({
+    children,
+    open,
+  }: {
+    children: React.ReactNode;
+    open: boolean;
+  }) => (open ? <div>{children}</div> : null),
+  AlertDialogContent: ({ children }: { children: React.ReactNode }) => (
+    <div>{children}</div>
+  ),
+  AlertDialogHeader: ({ children }: { children: React.ReactNode }) => (
+    <div>{children}</div>
+  ),
+  AlertDialogTitle: ({ children }: { children: React.ReactNode }) => (
+    <h2>{children}</h2>
+  ),
+  AlertDialogDescription: ({ children }: { children: React.ReactNode }) => (
+    <p>{children}</p>
+  ),
+  AlertDialogFooter: ({ children }: { children: React.ReactNode }) => (
+    <div>{children}</div>
+  ),
+  AlertDialogCancel: ({
+    children,
+    onClick,
+  }: {
+    children: React.ReactNode;
+    onClick?: () => void;
+  }) => <button onClick={onClick}>{children}</button>,
+  AlertDialogAction: ({
+    children,
+    onClick,
+    className,
+  }: {
+    children: React.ReactNode;
+    onClick?: () => void;
+    className?: string;
+  }) => (
+    <button onClick={onClick} className={className}>
+      {children}
+    </button>
+  ),
+}));
+
+describe('CalendarCompletionDialog — Preservation (Property 2): "Complete entire task" button', () => {
+  it('shows "Complete entire task" button when isRecurring is not set', () => {
+    render(
+      <CalendarCompletionDialog
+        open={true}
+        onChoice={jest.fn()}
+        onCancel={jest.fn()}
+        sessionCount={3}
+      />
+    );
+    expect(screen.getByText('Complete entire task')).toBeInTheDocument();
+  });
+
+  it('shows "Complete entire task" button when isRecurring is false', () => {
+    render(
+      <CalendarCompletionDialog
+        open={true}
+        onChoice={jest.fn()}
+        onCancel={jest.fn()}
+        sessionCount={2}
+        isRecurring={false}
+      />
+    );
+    expect(screen.getByText('Complete entire task')).toBeInTheDocument();
+  });
+
+  it('shows "This session only" button in all cases', () => {
+    render(
+      <CalendarCompletionDialog
+        open={true}
+        onChoice={jest.fn()}
+        onCancel={jest.fn()}
+        sessionCount={2}
+      />
+    );
+    expect(screen.getByText('This session only')).toBeInTheDocument();
+  });
+});

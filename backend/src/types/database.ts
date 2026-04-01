@@ -37,6 +37,7 @@ export interface CreateTaskInput {
   recurrence_interval?: number;
   recurrence_start_date?: Date | null;
   is_reminder?: boolean;
+  is_manually_pinned?: boolean;
 }
 
 export interface UpdateTaskInput {
@@ -58,6 +59,7 @@ export interface UpdateTaskInput {
   recurrence_interval?: number | null;
   recurrence_start_date?: Date | null;
   is_reminder?: boolean;
+  is_manually_pinned?: boolean;
 }
 
 export interface CreateProjectInput {

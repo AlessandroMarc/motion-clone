@@ -47,4 +47,39 @@ router.post('/run', async (req: Request, res: Response) => {
   }
 });
 
+/**
+ * GET /api/auto-schedule/pinned-preview
+ *
+ * Returns the list of manually-pinned tasks whose calendar events would be
+ * moved or deleted if auto-schedule ran right now (i.e. tasks that have
+ * pinned events that conflict with the proposed schedule).
+ *
+ * Response body (on success):
+ *  {
+ *    pinnedTasks: Array<{ id: string; title: string }>
+ *  }
+ */
+router.get('/pinned-preview', async (req: Request, res: Response) => {
+  try {
+    const authReq = req as AuthRequest;
+
+    if (!authReq.userId || !authReq.authToken) {
+      return ResponseHelper.unauthorized(res);
+    }
+
+    const pinnedTasks = await autoScheduleService.getPinnedTasksAffectedByRun(
+      authReq.userId,
+      authReq.authToken
+    );
+
+    ResponseHelper.success(res, { pinnedTasks }, 'Pinned preview computed');
+  } catch (error) {
+    console.error('[AutoScheduleRoute] Error computing pinned preview:', error);
+    ResponseHelper.internalError(
+      res,
+      error instanceof Error ? error.message : 'Internal server error'
+    );
+  }
+});
+
 export default router;

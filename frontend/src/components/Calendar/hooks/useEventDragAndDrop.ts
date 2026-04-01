@@ -5,6 +5,7 @@ import {
   type UpdateCalendarEventInput,
 } from '@/types';
 import { calendarService } from '@/services/calendarService';
+import { taskService } from '@/services/taskService';
 
 const dragThresholdPx = 5;
 
@@ -170,6 +171,13 @@ export function useEventDragAndDrop(
           start_time: (preview.start_time as Date).toISOString(),
           end_time: (preview.end_time as Date).toISOString(),
         } as UpdateCalendarEventInput);
+
+        // Mark the linked task as manually pinned so auto-schedule won't move it
+        if (isCalendarEventTask(preview) && preview.linked_task_id) {
+          await taskService.updateTask(preview.linked_task_id, {
+            isManuallyPinned: true,
+          });
+        }
 
         // Notify parent of update
         if (onEventUpdate) {

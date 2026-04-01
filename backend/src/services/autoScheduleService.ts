@@ -404,4 +404,77 @@ export class AutoScheduleService {
 
     return { created, deleted };
   }
+
+  /**
+   * Returns the list of manually-pinned tasks whose existing calendar events
+   * would be deleted or moved if auto-schedule ran right now.
+   * Used by the frontend to warn the user before running auto-schedule.
+   */
+  async getPinnedTasksAffectedByRun(
+    userId: string,
+    authToken: string
+  ): Promise<Array<{ id: string; title: string }>> {
+    const taskClient = getAuthenticatedSupabase(authToken);
+    const [allTasks, allEvents] = await Promise.all([
+      this.taskService.getAllTasks(taskClient),
+      this.calendarEventService.getAllCalendarEvents(authToken),
+    ]);
+
+    const pinnedTasks = allTasks.filter(t => t.is_manually_pinned);
+    if (pinnedTasks.length === 0) return [];
+
+    const enrichedEvents = await this.fetchFullHorizonEvents(
+      allTasks,
+      allEvents,
+      authToken
+    );
+
+    const [schedules, activeSchedule] = await Promise.all([
+      this.userSettingsService.getUserSchedules(userId, authToken),
+      this.userSettingsService.getActiveSchedule(userId, authToken),
+    ]);
+
+    // Run schedule WITHOUT pinned tasks to get the "unpinned" proposed events
+    const tasksWithoutPinned = allTasks.filter(t => !t.is_manually_pinned);
+    const { eventsToCreate } = this.computeProposedSchedule(
+      userId,
+      tasksWithoutPinned,
+      enrichedEvents,
+      activeSchedule,
+      schedules
+    );
+
+    const proposedKeys = new Set(
+      eventsToCreate.map(e =>
+        eventKey(e.linked_task_id, e.start_time, e.end_time)
+      )
+    );
+
+    const allTaskEvents = enrichedEvents.filter(e =>
+      isCalendarEventTask(e)
+    ) as CalendarEventTask[];
+
+    const nowMs = Date.now();
+    const affectedTaskIds = new Set<string>();
+
+    for (const task of pinnedTasks) {
+      const pinnedEvents = allTaskEvents.filter(
+        e =>
+          e.linked_task_id === task.id &&
+          !e.completed_at &&
+          new Date(e.end_time).getTime() > nowMs
+      );
+      for (const evt of pinnedEvents) {
+        const key = eventKey(evt.linked_task_id, evt.start_time, evt.end_time);
+        if (!proposedKeys.has(key)) {
+          affectedTaskIds.add(task.id);
+          break;
+        }
+      }
+    }
+
+    return pinnedTasks
+      .filter(t => affectedTaskIds.has(t.id))
+      .map(t => ({ id: t.id, title: t.title }));
+  }
 }
