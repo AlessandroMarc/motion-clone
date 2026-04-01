@@ -17,6 +17,7 @@ import type {
   Schedule,
   CreateCalendarEventInput,
 } from '../types/database.js';
+import type { SupabaseClient } from '@supabase/supabase-js';
 import { getAuthenticatedSupabase } from '../config/supabase.js';
 import { TaskService } from './taskService.js';
 import { CalendarEventService } from './calendarEventService.js';
@@ -412,11 +413,11 @@ export class AutoScheduleService {
    */
   async getPinnedTasksAffectedByRun(
     userId: string,
+    supabaseClient: SupabaseClient,
     authToken: string
   ): Promise<Array<{ id: string; title: string }>> {
-    const taskClient = getAuthenticatedSupabase(authToken);
     const [allTasks, allEvents] = await Promise.all([
-      this.taskService.getAllTasks(taskClient),
+      this.taskService.getAllTasks(supabaseClient),
       this.calendarEventService.getAllCalendarEvents(authToken),
     ]);
 
@@ -434,11 +435,15 @@ export class AutoScheduleService {
       this.userSettingsService.getActiveSchedule(userId, authToken),
     ]);
 
-    // Run schedule WITHOUT pinned tasks to get the "unpinned" proposed events
-    const tasksWithoutPinned = allTasks.filter(t => !t.is_manually_pinned);
+    // Run schedule with pinned tasks treated as unpinned to see where the
+    // scheduler would place them — if the proposed slot differs from the
+    // existing pinned slot, that task is "affected".
+    const tasksAsUnpinned = allTasks.map(t =>
+      t.is_manually_pinned ? { ...t, is_manually_pinned: false } : t
+    );
     const { eventsToCreate } = this.computeProposedSchedule(
       userId,
-      tasksWithoutPinned,
+      tasksAsUnpinned,
       enrichedEvents,
       activeSchedule,
       schedules

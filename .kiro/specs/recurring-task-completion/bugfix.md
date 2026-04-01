@@ -16,7 +16,7 @@ When completing a session (calendar event) linked to a recurring task, the syste
 
 ### Expected Behavior (Correct)
 
-2.1 WHEN a user completes a calendar session he is not asked what he wants to complete. it is always the specific occurrence.
+2.1 WHEN a user completes a calendar session linked to a recurring task, he is not asked what he wants to complete; it is always the specific occurrence.
 
 ### Unchanged Behavior (Regression Prevention)
 

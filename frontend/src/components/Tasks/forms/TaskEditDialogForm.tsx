@@ -298,6 +298,7 @@ export function TaskEditDialogForm({
           ? normalizeToMidnight(parseLocalDate(data.startDate))
           : null,
         isReminder: data.is_reminder,
+        isManuallyPinned: data.is_manually_pinned,
       });
 
       onTaskCloned?.(clonedTask);

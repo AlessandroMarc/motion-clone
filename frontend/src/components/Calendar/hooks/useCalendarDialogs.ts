@@ -191,10 +191,17 @@ export function useCalendarDialogs(
     setCompletionChoiceOpen(false);
 
     try {
+      if (choice === 'session') {
+        // Session-only: no need to fetch the task
+        await completeSingleEvent(true, setEvents);
+        fireConfetti();
+        return;
+      }
+
       const task = await taskService.getTaskById(editEvent.linked_task_id);
 
-      if (choice === 'session' || task.is_recurring) {
-        // For recurring tasks, 'task' choice behaves like 'session' — complete only this occurrence
+      if (task.is_recurring) {
+        // Recurring task: 'task' choice behaves like 'session' — complete only this occurrence
         await completeSingleEvent(true, setEvents);
         fireConfetti();
       } else {

@@ -28,7 +28,7 @@ export function useAutoSchedule(
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [pinnedWarning, setPinnedWarning] = useState<{
     tasks: Array<{ id: string; title: string }>;
-    resolve: (unpinAll: boolean) => void;
+    resolve: (unpinAll: boolean | null) => void;
   } | null>(null);
 
   // Single guard: prevents concurrent scheduling runs
@@ -179,9 +179,9 @@ export function useAutoSchedule(
         const unpinAll = await new Promise<boolean | null>(resolve => {
           setPinnedWarning({
             tasks: pinnedTasks,
-            resolve: (unpinAll: boolean) => {
+            resolve: (value: boolean | null) => {
               setPinnedWarning(null);
-              resolve(unpinAll);
+              resolve(value);
             },
           });
         });
@@ -192,8 +192,8 @@ export function useAutoSchedule(
         }
 
         if (unpinAll) {
-          // Unpin all affected tasks before scheduling
-          await Promise.allSettled(
+          // Unpin all affected tasks before scheduling; abort on any failure
+          await Promise.all(
             pinnedTasks.map(t =>
               taskService.updateTask(t.id, { isManuallyPinned: false })
             )

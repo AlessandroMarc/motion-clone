@@ -18,6 +18,7 @@ export interface CreateTaskInput {
   recurrenceStartDate?: Date | null;
   startDate?: Date | null; // earliest date this task may be scheduled
   isReminder?: boolean;
+  isManuallyPinned?: boolean;
 }
 
 /** Task update payload (frontend API shape). */

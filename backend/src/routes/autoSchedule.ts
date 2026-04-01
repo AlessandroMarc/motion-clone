@@ -63,12 +63,13 @@ router.get('/pinned-preview', async (req: Request, res: Response) => {
   try {
     const authReq = req as AuthRequest;
 
-    if (!authReq.userId || !authReq.authToken) {
+    if (!authReq.userId || !authReq.authToken || !authReq.supabaseClient) {
       return ResponseHelper.unauthorized(res);
     }
 
     const pinnedTasks = await autoScheduleService.getPinnedTasksAffectedByRun(
       authReq.userId,
+      authReq.supabaseClient,
       authReq.authToken
     );
 

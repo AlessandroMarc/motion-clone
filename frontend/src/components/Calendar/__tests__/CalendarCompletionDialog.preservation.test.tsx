@@ -84,6 +84,19 @@ describe('CalendarCompletionDialog — Preservation (Property 2): "Complete enti
     expect(screen.getByText('Complete entire task')).toBeInTheDocument();
   });
 
+  it('hides "Complete entire task" button when isRecurring is true', () => {
+    render(
+      <CalendarCompletionDialog
+        open={true}
+        onChoice={jest.fn()}
+        onCancel={jest.fn()}
+        sessionCount={3}
+        isRecurring={true}
+      />
+    );
+    expect(screen.queryByText('Complete entire task')).toBeNull();
+  });
+
   it('shows "This session only" button in all cases', () => {
     render(
       <CalendarCompletionDialog

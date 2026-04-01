@@ -63,8 +63,8 @@ function makeRecurringTask(overrides: Partial<Task> = {}): Task {
     blockedBy: [],
     project_id: undefined,
     user_id: 'user-1',
-    created_at: new Date('2024-01-01'),
-    updated_at: new Date('2024-01-01'),
+    created_at: new Date('2024-01-01T00:00:00Z'),
+    updated_at: new Date('2024-01-01T00:00:00Z'),
     planned_duration_minutes: 30,
     actual_duration_minutes: 0,
     schedule_id: undefined,
@@ -72,7 +72,7 @@ function makeRecurringTask(overrides: Partial<Task> = {}): Task {
     is_recurring: true,
     recurrence_pattern: 'daily',
     recurrence_interval: 1,
-    recurrence_start_date: new Date('2024-01-01'),
+    recurrence_start_date: new Date('2024-01-01T00:00:00Z'),
     ...overrides,
   };
 }
@@ -87,8 +87,8 @@ function makeCalendarEventTask(
     start_time: new Date('2024-06-10T09:00:00Z'),
     end_time: new Date('2024-06-10T09:30:00Z'),
     user_id: 'user-1',
-    created_at: new Date('2024-01-01'),
-    updated_at: new Date('2024-01-01'),
+    created_at: new Date('2024-01-01T00:00:00Z'),
+    updated_at: new Date('2024-01-01T00:00:00Z'),
     linked_task_id: linkedTaskId,
     completed_at: null,
     ...overrides,
@@ -238,19 +238,20 @@ function makeNonRecurringTask(
 ): Task {
   const priorities = ['low', 'medium', 'high'] as const;
   const statuses = ['not-started', 'in-progress'] as const;
+  const month = String((seed % 9) + 1).padStart(2, '0');
   return {
     id: `task-non-recurring-${seed}`,
     title: `Non-recurring task ${seed}`,
     description: seed % 2 === 0 ? `Description ${seed}` : undefined,
-    due_date: seed % 3 === 0 ? new Date(`2024-0${(seed % 9) + 1}-15`) : null,
+    due_date: seed % 3 === 0 ? new Date(`2024-${month}-15T00:00:00Z`) : null,
     priority: priorities[seed % priorities.length],
     status: statuses[seed % statuses.length],
     dependencies: [],
     blockedBy: [],
     project_id: seed % 4 === 0 ? `project-${seed}` : undefined,
     user_id: 'user-1',
-    created_at: new Date('2024-01-01'),
-    updated_at: new Date('2024-01-01'),
+    created_at: new Date('2024-01-01T00:00:00Z'),
+    updated_at: new Date('2024-01-01T00:00:00Z'),
     planned_duration_minutes: 15 + (seed % 8) * 15,
     actual_duration_minutes: 0,
     schedule_id: undefined,
@@ -280,8 +281,8 @@ function makeRecurringTaskVariant(
     blockedBy: [],
     project_id: undefined,
     user_id: 'user-1',
-    created_at: new Date('2024-01-01'),
-    updated_at: new Date('2024-01-01'),
+    created_at: new Date('2024-01-01T00:00:00Z'),
+    updated_at: new Date('2024-01-01T00:00:00Z'),
     planned_duration_minutes: 30 + (seed % 4) * 15,
     actual_duration_minutes: 0,
     schedule_id: undefined,
@@ -289,7 +290,7 @@ function makeRecurringTaskVariant(
     is_recurring: true,
     recurrence_pattern: patterns[seed % patterns.length],
     recurrence_interval: (seed % 3) + 1,
-    recurrence_start_date: new Date('2024-01-01'),
+    recurrence_start_date: new Date('2024-01-01T00:00:00Z'),
     ...overrides,
   };
 }

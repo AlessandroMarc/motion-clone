@@ -7,6 +7,7 @@ import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { groupTasksByProject } from '@/utils/taskUtils';
 import { getProjectColorIndex } from '@/utils/projectColors';
+import { parseLocalDate } from '@/utils/dateUtils';
 import { KanbanColumn, type TaskGroup } from './KanbanColumn';
 
 // Dot colors for project group headers (must be static for Tailwind JIT)
@@ -52,7 +53,8 @@ function sortByDeadline(tasks: Task[]): Task[] {
     if (!a.due_date && !b.due_date) return 0;
     if (!a.due_date) return 1;
     if (!b.due_date) return -1;
-    return new Date(a.due_date).getTime() - new Date(b.due_date).getTime();
+    return parseLocalDate(a.due_date instanceof Date ? a.due_date.toISOString().slice(0, 10) : String(a.due_date)).getTime() -
+      parseLocalDate(b.due_date instanceof Date ? b.due_date.toISOString().slice(0, 10) : String(b.due_date)).getTime();
   });
 }
 

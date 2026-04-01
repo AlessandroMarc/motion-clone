@@ -79,7 +79,7 @@ Property 1: Bug Condition - Recurring Task Completion Completes Only the Occurre
 
 _For any_ calendar event where the linked task has `is_recurring = true` and the user chooses `'task'` in the completion dialog, the fixed `handleCompletionChoice` function SHALL complete only the selected calendar event (identical behavior to choosing `'session'`), leaving the recurring task's `status` and `actual_duration_minutes` unchanged.
 
-**Validates: Requirements 2.1, 2.2**
+**Validates: Requirement 2.1**
 
 Property 2: Preservation - Non-Recurring Task Completion Behavior Unchanged
 

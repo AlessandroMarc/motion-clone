@@ -34,7 +34,7 @@ export function CalendarCompletionDialog({
           <AlertDialogDescription>
             This task has {sessionCount} scheduled{' '}
             {sessionCount === 1 ? 'session' : 'sessions'}. Do you want to
-            complete only this session or the entire task?
+            complete only this session{!isRecurring && ' or the entire task'}?
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>

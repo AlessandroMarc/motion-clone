@@ -41,7 +41,14 @@ export function useExternalTaskDrop(
       );
 
       // Mark the task as manually pinned so auto-schedule won't move it
-      await taskService.updateTask(task.id, { isManuallyPinned: true });
+      try {
+        await taskService.updateTask(task.id, { isManuallyPinned: true });
+      } catch (pinErr) {
+        console.error('[useExternalTaskDrop] Failed to pin task:', pinErr);
+        toast.warning(
+          'Event created but failed to pin task — auto-scheduler may move it'
+        );
+      }
 
       // Refresh calendar events to ensure we have the latest data
       await refreshEvents();

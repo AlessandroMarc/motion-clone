@@ -23,7 +23,7 @@ export const changelogEntries: ChangelogEntry[] = [
     items: [
       {
         type: 'fixed',
-        text: 'Choosing "Complete entire task" on a recurring task session now completes only that occurrence — future sessions are preserved.',
+        text: 'The "Complete entire task" option is no longer shown when completing a recurring task session — only the specific occurrence is completed, leaving future sessions intact.',
       },
       {
         type: 'improved',
