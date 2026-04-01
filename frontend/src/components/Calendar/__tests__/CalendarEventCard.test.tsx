@@ -75,6 +75,9 @@ const makeTask = (overrides: Partial<Task> = {}): Task => ({
   updated_at: new Date(),
   planned_duration_minutes: 60,
   actual_duration_minutes: 0,
+  is_recurring: false,
+  is_reminder: false,
+  is_manually_pinned: false,
   ...overrides,
 });
 

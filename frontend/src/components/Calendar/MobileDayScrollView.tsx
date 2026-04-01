@@ -5,7 +5,7 @@ import type { CalendarEventUnion, Task } from '@/types';
 import { isCalendarEventTask } from '@/types';
 import type { FilteredGoogleEvent } from '@/services/googleCalendarService';
 import { formatEventTime } from '@/utils/calendarUtils';
-import { formatDateLong, parseLocalDate } from '@/utils/dateUtils';
+import { formatDateLong, parseLocalDate, toLocalDateString } from '@/utils/dateUtils';
 import { CheckCircle2, Sparkles, Circle, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -196,7 +196,7 @@ export function MobileDayScrollView({
                         new Date(
                           parseLocalDate(
                             task.due_date instanceof Date
-                              ? task.due_date.toISOString().slice(0, 10)
+                              ? toLocalDateString(task.due_date)
                               : String(task.due_date)
                           ).setHours(23, 59, 59, 999)
                         );
