@@ -19,7 +19,11 @@ export class UserSettingsService {
   // user_settings query on every cache hit.
   private static scheduleCache = new Map<
     string,
-    { schedules: Schedule[]; activeScheduleId: string | null; timestamp: number }
+    {
+      schedules: Schedule[];
+      activeScheduleId: string | null;
+      timestamp: number;
+    }
   >();
   private static readonly CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
   private static readonly MAX_CACHE_ENTRIES = 10_000;
@@ -96,10 +100,7 @@ export class UserSettingsService {
         `Failed to fetch schedules: ${schedulesResult.error.message}`
       );
     }
-    if (
-      settingsResult.error &&
-      settingsResult.error.code !== 'PGRST116'
-    ) {
+    if (settingsResult.error && settingsResult.error.code !== 'PGRST116') {
       throw new Error(
         `Failed to fetch user settings: ${settingsResult.error.message}`
       );
@@ -111,8 +112,7 @@ export class UserSettingsService {
       updated_at: new Date(s.updated_at),
     }));
 
-    const activeScheduleId =
-      settingsResult.data?.active_schedule_id ?? null;
+    const activeScheduleId = settingsResult.data?.active_schedule_id ?? null;
 
     // Populate cache
     UserSettingsService.enforceCacheBound();

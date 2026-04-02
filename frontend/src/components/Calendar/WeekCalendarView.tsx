@@ -55,6 +55,7 @@ type Dialogs = {
   completionChoiceOpen: boolean;
   setCompletionChoiceOpen: React.Dispatch<React.SetStateAction<boolean>>;
   completionChoiceSessionCount: number;
+  completionChoiceIsRecurring: boolean;
   handleCompletionChoice: (
     choice: 'session' | 'task',
     setEvents: React.Dispatch<React.SetStateAction<CalendarEventUnion[]>>
@@ -220,6 +221,7 @@ export function WeekCalendarView({
       <CalendarCompletionDialog
         open={dialogs.completionChoiceOpen}
         sessionCount={dialogs.completionChoiceSessionCount}
+        isRecurring={dialogs.completionChoiceIsRecurring}
         onChoice={choice => dialogs.handleCompletionChoice(choice, setEvents)}
         onCancel={() => dialogs.setCompletionChoiceOpen(false)}
       />

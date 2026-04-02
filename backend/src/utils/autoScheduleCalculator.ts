@@ -245,6 +245,7 @@ export function calculateAutoSchedule(params: {
     // They should be recomputed on each run so remaining chunks can move earlier
     // (for example, to continue the same task before unrelated tasks).
     // Recurring tasks keep their dated occurrences stable.
+    // Manually pinned tasks also keep their events locked in place.
     //
     // For recurring tasks, also include completed events for this task so that
     // prepareRecurringTaskEvents sees them in existingByDate and does not
@@ -259,7 +260,9 @@ export function calculateAutoSchedule(params: {
       : [];
     const lockedFutureEvents = task.is_recurring
       ? [...futureValidEvents, ...completedEventsForTask]
-      : [];
+      : task.is_manually_pinned
+        ? [...futureValidEvents]
+        : [];
 
     // Add kept future events (excluding completed) as blockers BEFORE
     // generating new events so new slots won't overlap with them.

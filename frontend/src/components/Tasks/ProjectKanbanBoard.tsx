@@ -6,7 +6,8 @@ import type { Task, Project, WorkItemStatus } from '@/types';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { groupTasksByProject } from '@/utils/taskUtils';
-import { PROJECT_COLORS, getProjectColorIndex } from '@/utils/projectColors';
+import { getProjectColorIndex } from '@/utils/projectColors';
+import { parseLocalDate, toLocalDateString } from '@/utils/dateUtils';
 import { KanbanColumn, type TaskGroup } from './KanbanColumn';
 
 // Dot colors for project group headers (must be static for Tailwind JIT)
@@ -52,7 +53,14 @@ function sortByDeadline(tasks: Task[]): Task[] {
     if (!a.due_date && !b.due_date) return 0;
     if (!a.due_date) return 1;
     if (!b.due_date) return -1;
-    return new Date(a.due_date).getTime() - new Date(b.due_date).getTime();
+    const aDateStr = a.due_date instanceof Date
+      ? toLocalDateString(a.due_date)
+      : String(a.due_date);
+    const bDateStr = b.due_date instanceof Date
+      ? toLocalDateString(b.due_date)
+      : String(b.due_date);
+
+    return parseLocalDate(aDateStr).getTime() - parseLocalDate(bDateStr).getTime();
   });
 }
 
@@ -100,14 +108,20 @@ export function ProjectKanbanBoard({
     return map;
   }, [tasks]);
 
-  const groupsByStatus = useMemo((): Record<WorkItemStatus, TaskGroup[]> | null => {
+  const groupsByStatus = useMemo((): Record<
+    WorkItemStatus,
+    TaskGroup[]
+  > | null => {
     if (!groupByProject) return null;
 
     const result = {} as Record<WorkItemStatus, TaskGroup[]>;
 
     for (const { status } of STATUS_COLUMNS) {
       const statusTasks = tasksByStatus[status];
-      const { unassigned, byProject } = groupTasksByProject(statusTasks, projects);
+      const { unassigned, byProject } = groupTasksByProject(
+        statusTasks,
+        projects
+      );
 
       const groups: TaskGroup[] = [
         ...byProject.map(({ project, tasks: t }) => {

@@ -404,6 +404,7 @@ export class TaskService {
       recurrence_start_date?: string | null;
       start_date?: string | null;
       is_reminder?: boolean;
+      is_manually_pinned?: boolean;
     } = {
       updated_at: new Date().toISOString(),
     };
@@ -494,6 +495,10 @@ export class TaskService {
 
     if (input.is_reminder !== undefined) {
       updateData.is_reminder = input.is_reminder;
+    }
+
+    if (input.is_manually_pinned !== undefined) {
+      updateData.is_manually_pinned = input.is_manually_pinned;
     }
 
     const rawPlanned =

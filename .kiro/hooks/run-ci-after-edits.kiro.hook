@@ -1,0 +1,15 @@
+{
+  "enabled": true,
+  "name": "Run CI After Edits",
+  "description": "Runs npm run ci after the agent finishes making edits to ensure everything passes. If not, fix!",
+  "version": "1",
+  "when": {
+    "type": "agentStop"
+  },
+  "then": {
+    "type": "runCommand",
+    "command": "npm run ci"
+  },
+  "workspaceFolderName": "motion-clone",
+  "shortName": "run-ci-after-edits"
+}

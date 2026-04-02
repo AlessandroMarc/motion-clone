@@ -26,6 +26,10 @@ export function useAutoSchedule(
   const [_tasks, setTasks] = useState<Task[]>([]);
   const [tasksMap, setTasksMap] = useState<Map<string, Task>>(new Map());
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [pinnedWarning, setPinnedWarning] = useState<{
+    tasks: Array<{ id: string; title: string }>;
+    resolve: (unpinAll: boolean | null) => void;
+  } | null>(null);
 
   // Single guard: prevents concurrent scheduling runs
   const isSchedulingRef = useRef(false);
@@ -160,8 +164,47 @@ export function useAutoSchedule(
       return;
     }
     isClickInFlightRef.current = true;
+    // Disable the button immediately so the UI reflects the in-flight state
+    // even before the async getPinnedTasksPreview call completes.
+    setIsRefreshing(true);
 
     try {
+      // Check if any pinned tasks would be affected
+      let pinnedTasks: Array<{ id: string; title: string }> = [];
+      try {
+        pinnedTasks = await calendarService.getPinnedTasksPreview();
+      } catch {
+        // Non-fatal: proceed without warning if preview fails
+      }
+
+      if (pinnedTasks.length > 0) {
+        // Ask user what to do with pinned tasks
+        const unpinAll = await new Promise<boolean | null>(resolve => {
+          setPinnedWarning({
+            tasks: pinnedTasks,
+            resolve: (value: boolean | null) => {
+              setPinnedWarning(null);
+              resolve(value);
+            },
+          });
+        });
+
+        if (unpinAll === null) {
+          // User cancelled
+          return;
+        }
+
+        if (unpinAll) {
+          // Unpin all affected tasks before scheduling; abort on any failure
+          await Promise.all(
+            pinnedTasks.map(t =>
+              taskService.updateTask(t.id, { isManuallyPinned: false })
+            )
+          );
+        }
+        // If unpinAll === false: keep pinned, scheduler will skip them naturally
+      }
+
       lastAppliedAtRef.current = 0;
       consecutiveAutoRunsRef.current = 0;
       await runFullSchedule();
@@ -176,6 +219,9 @@ export function useAutoSchedule(
       toast.error(errorMessage);
     } finally {
       isClickInFlightRef.current = false;
+      // Ensure the button is always re-enabled, even if runFullSchedule bailed
+      // early (e.g. throttled) without calling stopScheduling() itself.
+      setIsRefreshing(false);
     }
   }, [user, runFullSchedule]);
 
@@ -194,5 +240,10 @@ export function useAutoSchedule(
     loadTasks,
     handleAutoScheduleClick,
     isRefreshing,
+    pinnedWarning,
+    dismissPinnedWarning: () => {
+      pinnedWarning?.resolve(false);
+      setPinnedWarning(null);
+    },
   };
 }

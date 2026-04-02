@@ -1,0 +1,18 @@
+{
+  "enabled": true,
+  "name": "Update Changelog on New Feature",
+  "description": "When new user-facing features are added, reminds the agent to update frontend/src/content/changelog.ts with the relevant changes",
+  "version": "1",
+  "when": {
+    "type": "postToolUse",
+    "toolTypes": [
+      "write"
+    ]
+  },
+  "then": {
+    "type": "askAgent",
+    "prompt": "If the code change you just made introduces a new feature, improvement, or bug fix that is relevant to the end user, update frontend/src/content/changelog.ts by adding a new entry (or appending to the latest version's items array if appropriate). Follow the existing format using ChangelogEntry and ChangeItem types with 'new', 'improved', or 'fixed' change types."
+  },
+  "workspaceFolderName": "motion-clone",
+  "shortName": "update-changelog-on-feature"
+}

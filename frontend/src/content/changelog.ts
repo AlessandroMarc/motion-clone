@@ -15,6 +15,48 @@ export interface ChangelogEntry {
 
 export const changelogEntries: ChangelogEntry[] = [
   {
+    version: '1.10.1',
+    date: 'April 2026',
+    title: 'Recurring Task Completion Fix',
+    description:
+      'Completing a session on a recurring task no longer permanently kills the task.',
+    items: [
+      {
+        type: 'fixed',
+        text: 'The "Complete entire task" option is no longer shown when completing a recurring task session — only the specific occurrence is completed, leaving future sessions intact.',
+      },
+      {
+        type: 'improved',
+        text: 'Completing a recurring task session no longer shows the session/task choice dialog — it always completes just the occurrence directly.',
+      },
+    ],
+  },
+  {
+    version: '1.10.0',
+    date: 'April 2026',
+    title: 'Manually Pinned Tasks',
+    description:
+      'Tasks dragged onto the calendar are now pinned in place — auto-schedule will warn you before moving them.',
+    items: [
+      {
+        type: 'new',
+        text: 'Dragging a task onto the calendar (or moving an existing session) marks it as "manually pinned", anchoring it to that time slot.',
+      },
+      {
+        type: 'new',
+        text: 'Auto-schedule now warns you when pinned tasks would be rescheduled, letting you choose which ones to keep fixed.',
+      },
+      {
+        type: 'new',
+        text: 'The task edit dialog shows a "Manually pinned" toggle so you can pin or unpin any task at any time.',
+      },
+      {
+        type: 'improved',
+        text: 'Pinned task sessions are treated as immovable blockers by the scheduler, so other tasks are placed around them.',
+      },
+    ],
+  },
+  {
     version: '1.9.0',
     date: 'March 2026',
     title: 'Status Kanban Board',

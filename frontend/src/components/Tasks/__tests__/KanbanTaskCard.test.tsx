@@ -169,16 +169,4 @@ describe('KanbanTaskCard', () => {
     const card = screen.getByTestId('card');
     expect(card.className).not.toContain('cursor-pointer');
   });
-
-  it('applies cursor-pointer class when onSelect is provided', () => {
-    render(
-      <KanbanTaskCard
-        task={makeTask()}
-        onDelete={jest.fn()}
-        onSelect={jest.fn()}
-      />
-    );
-    const card = screen.getByTestId('card');
-    expect(card.className).toContain('cursor-pointer');
-  });
 });

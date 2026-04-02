@@ -12,6 +12,7 @@ import { TaskBlockedByField } from './TaskBlockedByField';
 import { TaskDurationFields } from './TaskDurationFields';
 import { TaskRecurrenceFields } from './TaskRecurrenceFields';
 import { TaskReminderField } from './TaskReminderField';
+import { TaskManualPinField } from './TaskManualPinField';
 
 interface TaskFormFieldsProps {
   currentTaskId?: string;
@@ -24,6 +25,7 @@ export function TaskFormFields({ currentTaskId, errors }: TaskFormFieldsProps) {
   const priority = watch('priority');
   const isRecurring = watch('is_recurring');
   const isReminder = watch('is_reminder');
+  const isManuallyPinned = watch('is_manually_pinned');
   const recurrencePattern = watch('recurrence_pattern');
   const recurrenceInterval = watch('recurrence_interval');
   const recurrenceStartDate = watch('recurrenceStartDate');
@@ -59,6 +61,19 @@ export function TaskFormFields({ currentTaskId, errors }: TaskFormFieldsProps) {
             }}
           />
         </div>
+        {!isReminder && (
+          <div className="md:col-span-2">
+            <TaskManualPinField
+              isManuallyPinned={isManuallyPinned ?? false}
+              onIsManuallyPinnedChange={checked => {
+                setValue('is_manually_pinned', checked, {
+                  shouldDirty: true,
+                  shouldValidate: true,
+                });
+              }}
+            />
+          </div>
+        )}
         {!isRecurring && (
           <TaskDueDateField register={register} errors={errors} />
         )}

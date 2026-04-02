@@ -53,6 +53,7 @@ interface Task {
   recurrence_start_date?: Date | null; // anchor date: sets the day-of-week / day-of-month for the pattern
   next_generation_cutoff?: Date | null; // tracks how far into the future calendar events have been generated
   is_reminder?: boolean; // if true: shown in calendar banner on due_date, not auto-scheduled
+  is_manually_pinned?: boolean; // if true: auto-scheduler will not move or delete this task's calendar events
 }
 
 interface Project {

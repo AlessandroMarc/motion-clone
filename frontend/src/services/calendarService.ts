@@ -294,6 +294,19 @@ class CalendarService {
 
     return response.data;
   }
+
+  /** Returns pinned tasks whose events would be moved/deleted by auto-schedule. */
+  async getPinnedTasksPreview(): Promise<Array<{ id: string; title: string }>> {
+    const response = await request<{
+      pinnedTasks: Array<{ id: string; title: string }>;
+    }>('/auto-schedule/pinned-preview');
+
+    if (!response.success || !response.data) {
+      throw new Error(response.error || 'Failed to fetch pinned preview');
+    }
+
+    return response.data.pinnedTasks;
+  }
 }
 
 export const calendarService = new CalendarService();

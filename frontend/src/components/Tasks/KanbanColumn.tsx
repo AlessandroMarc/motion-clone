@@ -126,7 +126,10 @@ export function KanbanColumn({
                   <div className="flex items-center gap-1.5 mb-1">
                     {group.color && (
                       <span
-                        className={cn('w-2 h-2 rounded-full shrink-0', group.color)}
+                        className={cn(
+                          'w-2 h-2 rounded-full shrink-0',
+                          group.color
+                        )}
                       />
                     )}
                     <span className="text-[10px] font-medium text-muted-foreground truncate">

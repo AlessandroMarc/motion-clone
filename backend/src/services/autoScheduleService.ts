@@ -17,6 +17,7 @@ import type {
   Schedule,
   CreateCalendarEventInput,
 } from '../types/database.js';
+import type { SupabaseClient } from '@supabase/supabase-js';
 import { getAuthenticatedSupabase } from '../config/supabase.js';
 import { TaskService } from './taskService.js';
 import { CalendarEventService } from './calendarEventService.js';
@@ -403,5 +404,82 @@ export class AutoScheduleService {
     }
 
     return { created, deleted };
+  }
+
+  /**
+   * Returns the list of manually-pinned tasks whose existing calendar events
+   * would be deleted or moved if auto-schedule ran right now.
+   * Used by the frontend to warn the user before running auto-schedule.
+   */
+  async getPinnedTasksAffectedByRun(
+    userId: string,
+    supabaseClient: SupabaseClient,
+    authToken: string
+  ): Promise<Array<{ id: string; title: string }>> {
+    const [allTasks, allEvents] = await Promise.all([
+      this.taskService.getAllTasks(supabaseClient),
+      this.calendarEventService.getAllCalendarEvents(authToken),
+    ]);
+
+    const pinnedTasks = allTasks.filter(t => t.is_manually_pinned);
+    if (pinnedTasks.length === 0) return [];
+
+    const enrichedEvents = await this.fetchFullHorizonEvents(
+      allTasks,
+      allEvents,
+      authToken
+    );
+
+    const [schedules, activeSchedule] = await Promise.all([
+      this.userSettingsService.getUserSchedules(userId, authToken),
+      this.userSettingsService.getActiveSchedule(userId, authToken),
+    ]);
+
+    // Run schedule with pinned tasks treated as unpinned to see where the
+    // scheduler would place them — if the proposed slot differs from the
+    // existing pinned slot, that task is "affected".
+    const tasksAsUnpinned = allTasks.map(t =>
+      t.is_manually_pinned ? { ...t, is_manually_pinned: false } : t
+    );
+    const { eventsToCreate } = this.computeProposedSchedule(
+      userId,
+      tasksAsUnpinned,
+      enrichedEvents,
+      activeSchedule,
+      schedules
+    );
+
+    const proposedKeys = new Set(
+      eventsToCreate.map(e =>
+        eventKey(e.linked_task_id, e.start_time, e.end_time)
+      )
+    );
+
+    const allTaskEvents = enrichedEvents.filter(e =>
+      isCalendarEventTask(e)
+    ) as CalendarEventTask[];
+
+    const nowMs = Date.now();
+    const affectedTaskIds = new Set<string>();
+
+    for (const task of pinnedTasks) {
+      const pinnedEvents = allTaskEvents.filter(
+        e =>
+          e.linked_task_id === task.id &&
+          !e.completed_at &&
+          new Date(e.end_time).getTime() > nowMs
+      );
+      for (const evt of pinnedEvents) {
+        const key = eventKey(evt.linked_task_id, evt.start_time, evt.end_time);
+        if (!proposedKeys.has(key)) {
+          affectedTaskIds.add(task.id);
+          break;
+        }
+      }
+    }
+
+    return pinnedTasks
+      .filter(t => affectedTaskIds.has(t.id))
+      .map(t => ({ id: t.id, title: t.title }));
   }
 }

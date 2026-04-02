@@ -90,9 +90,7 @@ export function useCalendarEvents(weekDates: Date[]) {
     const timed: CalendarEventUnion[] = [];
     const allDay: CalendarEventUnion[] = [];
     for (const event of events) {
-      if (
-        (event as unknown as { is_all_day?: boolean }).is_all_day
-      ) {
+      if (event.is_all_day) {
         allDay.push(event);
       } else {
         timed.push(event);

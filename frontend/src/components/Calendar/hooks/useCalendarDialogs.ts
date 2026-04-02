@@ -36,6 +36,8 @@ export function useCalendarDialogs(
   const [completionChoiceOpen, setCompletionChoiceOpen] = useState(false);
   const [completionChoiceSessionCount, setCompletionChoiceSessionCount] =
     useState(0);
+  const [completionChoiceIsRecurring, setCompletionChoiceIsRecurring] =
+    useState(false);
 
   const openCreateDialog = (date: Date, hour: number, minute: number) => {
     const start = new Date(date);
@@ -124,8 +126,21 @@ export function useCalendarDialogs(
       );
 
       if (otherIncomplete.length > 0) {
-        // Multiple incomplete sessions — ask the user (count = this + other incomplete)
+        // Multiple incomplete sessions — check if recurring before asking
+        const linkedTask = await taskService.getTaskById(
+          editEvent.linked_task_id
+        );
+
+        if (linkedTask.is_recurring) {
+          // Recurring task: always complete only this occurrence, no dialog needed
+          fireConfetti();
+          await completeSingleEvent(true, setEvents);
+          return;
+        }
+
+        // Non-recurring: ask the user (count = this + other incomplete)
         setCompletionChoiceSessionCount(otherIncomplete.length + 1);
+        setCompletionChoiceIsRecurring(false);
         setCompletionChoiceOpen(true);
       } else {
         // Only session — just complete it
@@ -175,23 +190,32 @@ export function useCalendarDialogs(
 
     setCompletionChoiceOpen(false);
 
-    if (choice === 'session') {
-      await completeSingleEvent(true, setEvents);
-      fireConfetti();
-    } else {
-      // Complete entire task + all linked events
-      try {
-        const task = await taskService.getTaskById(editEvent.linked_task_id);
+    try {
+      if (choice === 'session') {
+        // Session-only: no need to fetch the task
+        await completeSingleEvent(true, setEvents);
+        fireConfetti();
+        return;
+      }
+
+      const task = await taskService.getTaskById(editEvent.linked_task_id);
+
+      if (task.is_recurring) {
+        // Recurring task: 'task' choice behaves like 'session' — complete only this occurrence
+        await completeSingleEvent(true, setEvents);
+        fireConfetti();
+      } else {
+        // Non-recurring task: complete task + all linked events
         await taskService.completeTaskWithEvents(task);
         await refreshEvents();
         setEditOpen(false);
         onTaskDropped?.();
         fireConfetti();
         toast.success('Task completed');
-      } catch (err) {
-        console.error('Failed to complete entire task:', err);
-        toast.error('Failed to complete task');
       }
+    } catch (err) {
+      console.error('Failed to complete task:', err);
+      toast.error('Failed to complete task');
     }
   };
 
@@ -294,6 +318,7 @@ export function useCalendarDialogs(
     completionChoiceOpen,
     setCompletionChoiceOpen,
     completionChoiceSessionCount,
+    completionChoiceIsRecurring,
     handleCompletionChoice,
   };
 }
