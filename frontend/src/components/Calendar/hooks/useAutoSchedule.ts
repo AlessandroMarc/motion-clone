@@ -164,6 +164,9 @@ export function useAutoSchedule(
       return;
     }
     isClickInFlightRef.current = true;
+    // Disable the button immediately so the UI reflects the in-flight state
+    // even before the async getPinnedTasksPreview call completes.
+    setIsRefreshing(true);
 
     try {
       // Check if any pinned tasks would be affected
@@ -216,6 +219,9 @@ export function useAutoSchedule(
       toast.error(errorMessage);
     } finally {
       isClickInFlightRef.current = false;
+      // Ensure the button is always re-enabled, even if runFullSchedule bailed
+      // early (e.g. throttled) without calling stopScheduling() itself.
+      setIsRefreshing(false);
     }
   }, [user, runFullSchedule]);
 
