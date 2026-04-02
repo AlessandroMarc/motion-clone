@@ -109,7 +109,7 @@ Assuming the root cause analysis is correct:
 
 **Specific Changes**:
 
-4. **Add `isRecurring` prop**: Accept an `isRecurring?: boolean` prop. When true, hide the "Complete entire task" button (or relabel it to "Complete this occurrence") so the dialog is not misleading for recurring tasks.
+1. **Add `isRecurring` prop**: Accept an `isRecurring?: boolean` prop. When true, hide the "Complete entire task" button (or relabel it to "Complete this occurrence") so the dialog is not misleading for recurring tasks.
 
 **File**: `frontend/src/components/Calendar/hooks/useCalendarDialogs.ts`
 
@@ -117,7 +117,7 @@ Assuming the root cause analysis is correct:
 
 **Specific Changes**:
 
-5. **Store `isRecurring` when opening dialog**: When setting `completionChoiceOpen = true`, also fetch or derive `is_recurring` from the linked task and store it in state so it can be passed to the dialog.
+1. **Store `isRecurring` when opening dialog**: When setting `completionChoiceOpen = true`, also fetch or derive `is_recurring` from the linked task and store it in state so it can be passed to the dialog.
 
 ### Pseudocode for Fixed `handleCompletionChoice`
 

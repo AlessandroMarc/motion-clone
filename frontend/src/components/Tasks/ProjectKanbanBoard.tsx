@@ -53,10 +53,14 @@ function sortByDeadline(tasks: Task[]): Task[] {
     if (!a.due_date && !b.due_date) return 0;
     if (!a.due_date) return 1;
     if (!b.due_date) return -1;
-    return (
-      parseLocalDate(toLocalDateString(a.due_date as Date | string)).getTime() -
-      parseLocalDate(toLocalDateString(b.due_date as Date | string)).getTime()
-    );
+    const aDateStr = a.due_date instanceof Date
+      ? toLocalDateString(a.due_date)
+      : String(a.due_date);
+    const bDateStr = b.due_date instanceof Date
+      ? toLocalDateString(b.due_date)
+      : String(b.due_date);
+
+    return parseLocalDate(aDateStr).getTime() - parseLocalDate(bDateStr).getTime();
   });
 }
 

@@ -27,10 +27,6 @@ export const changelogEntries: ChangelogEntry[] = [
       },
       {
         type: 'improved',
-        text: 'The completion dialog no longer shows the "Complete entire task" option for recurring tasks, since it only applies to one-off tasks.',
-      },
-      {
-        type: 'improved',
         text: 'Completing a recurring task session no longer shows the session/task choice dialog — it always completes just the occurrence directly.',
       },
     ],

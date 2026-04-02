@@ -1,13 +1,16 @@
+/** @jest-environment jsdom */
 /**
  * Property 2: Preservation - CalendarCompletionDialog shows "Complete entire task" for non-recurring tasks
  *
  * Validates: Requirements 3.1, 3.4
  *
- * These tests MUST PASS on unfixed code.
- * They document the baseline dialog behavior that must not regress after the fix.
+ * Preservation tests document baseline dialog behavior that must not regress after the fix.
+ * The recurring-task regression assertion (isRecurring=true case) is expected to FAIL on unfixed code.
  *
- * ON UNFIXED CODE: PASSES — "Complete entire task" button is always shown.
- * ON FIXED CODE:   PASSES — button is still shown when isRecurring is false or not set.
+ * ON UNFIXED CODE: First two tests PASS — "Complete entire task" button is always shown.
+ *                  Third test (isRecurring=true) FAILS — button should be hidden but isn't.
+ * ON FIXED CODE:   All tests PASS — button is shown when isRecurring is false or not set,
+ *                  and hidden when isRecurring is true.
  */
 
 import { render, screen } from '@testing-library/react';
