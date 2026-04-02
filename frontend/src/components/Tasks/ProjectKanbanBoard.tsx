@@ -7,7 +7,7 @@ import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { groupTasksByProject } from '@/utils/taskUtils';
 import { getProjectColorIndex } from '@/utils/projectColors';
-import { parseLocalDate } from '@/utils/dateUtils';
+import { parseLocalDate, toLocalDateString } from '@/utils/dateUtils';
 import { KanbanColumn, type TaskGroup } from './KanbanColumn';
 
 // Dot colors for project group headers (must be static for Tailwind JIT)
@@ -55,10 +55,10 @@ function sortByDeadline(tasks: Task[]): Task[] {
     if (!b.due_date) return -1;
 
     const aDateStr = a.due_date instanceof Date
-      ? `${a.due_date.getFullYear()}-${String(a.due_date.getMonth() + 1).padStart(2, '0')}-${String(a.due_date.getDate()).padStart(2, '0')}`
+      ? toLocalDateString(a.due_date)
       : String(a.due_date);
     const bDateStr = b.due_date instanceof Date
-      ? `${b.due_date.getFullYear()}-${String(b.due_date.getMonth() + 1).padStart(2, '0')}-${String(b.due_date.getDate()).padStart(2, '0')}`
+      ? toLocalDateString(b.due_date)
       : String(b.due_date);
 
     return parseLocalDate(aDateStr).getTime() - parseLocalDate(bDateStr).getTime();

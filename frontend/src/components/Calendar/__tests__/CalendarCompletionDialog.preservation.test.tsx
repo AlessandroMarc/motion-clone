@@ -1,3 +1,4 @@
+/** @jest-environment jsdom */
 /**
  * Property 2: Preservation - CalendarCompletionDialog shows "Complete entire task" for non-recurring tasks
  *
