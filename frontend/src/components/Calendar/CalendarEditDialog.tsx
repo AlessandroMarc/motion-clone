@@ -19,10 +19,13 @@ interface CalendarEditDialogProps {
   startTime: string;
   endTime: string;
   isTaskEvent?: boolean;
+  isSyncedFromGoogle?: boolean;
   completed?: boolean;
   onCompletedChange: (completed: boolean) => Promise<void> | void;
   onLinkClick: () => void;
   onDelete?: () => Promise<void> | void;
+  onEditGoogleEvent?: () => void;
+  onDeleteGoogleEvent?: () => void;
 }
 
 function formatDisplayTime(isoLocalString: string): string {
@@ -44,22 +47,28 @@ function GoogleEventDetails({
   startTime,
   endTime,
   isTaskEvent,
+  isSyncedFromGoogle,
   completed,
   onCompletedChange,
   onClose,
   onLinkClick,
   onDelete,
+  onEditGoogleEvent,
+  onDeleteGoogleEvent,
 }: {
   title: string;
   description: string;
   startTime: string;
   endTime: string;
   isTaskEvent?: boolean;
+  isSyncedFromGoogle?: boolean;
   completed?: boolean;
   onCompletedChange: (completed: boolean) => Promise<void> | void;
   onClose: () => void;
   onLinkClick: () => void;
   onDelete?: () => Promise<void> | void;
+  onEditGoogleEvent?: () => void;
+  onDeleteGoogleEvent?: () => void;
 }): React.ReactElement {
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const handleCompleteClick = async () => {
@@ -160,6 +169,28 @@ function GoogleEventDetails({
             )}
           </>
         )}
+        {!isTaskEvent && isSyncedFromGoogle && (
+          <>
+            {onEditGoogleEvent && (
+              <Button
+                variant="outline"
+                onClick={onEditGoogleEvent}
+                className="w-full sm:flex-1"
+              >
+                Edit
+              </Button>
+            )}
+            {onDeleteGoogleEvent && (
+              <Button
+                variant="destructive"
+                onClick={onDeleteGoogleEvent}
+                className="w-full sm:w-auto"
+              >
+                Delete
+              </Button>
+            )}
+          </>
+        )}
         <Button
           variant="outline"
           onClick={onClose}
@@ -185,10 +216,13 @@ function CalendarEditDialog({
   startTime,
   endTime,
   isTaskEvent = false,
+  isSyncedFromGoogle = false,
   completed = false,
   onCompletedChange,
   onLinkClick,
   onDelete,
+  onEditGoogleEvent,
+  onDeleteGoogleEvent,
 }: CalendarEditDialogProps): React.ReactElement {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -199,11 +233,14 @@ function CalendarEditDialog({
           startTime={startTime}
           endTime={endTime}
           isTaskEvent={isTaskEvent}
+          isSyncedFromGoogle={isSyncedFromGoogle}
           completed={completed}
           onCompletedChange={onCompletedChange}
           onClose={() => onOpenChange(false)}
           onLinkClick={onLinkClick}
           onDelete={onDelete}
+          onEditGoogleEvent={onEditGoogleEvent}
+          onDeleteGoogleEvent={onDeleteGoogleEvent}
         />
       </DialogContent>
     </Dialog>

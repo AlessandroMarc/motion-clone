@@ -18,7 +18,7 @@ function getOAuthConfigOrThrow() {
   return getGoogleOAuthEnv();
 }
 
-const SCOPES = ['https://www.googleapis.com/auth/calendar.readonly'];
+const SCOPES = ['https://www.googleapis.com/auth/calendar.events'];
 
 interface GoogleCalendarToken {
   id: string;
@@ -800,5 +800,114 @@ export class GoogleCalendarService {
       last_synced_at: tokens?.last_synced_at || null,
       isExpired,
     };
+  }
+
+  /**
+   * Get an authenticated OAuth2 client with valid credentials for the user.
+   */
+  private async getAuthenticatedCalendar(userId: string) {
+    const { clientId, clientSecret, redirectUri } = getOAuthConfigOrThrow();
+    const accessToken = await this.getValidAccessToken(userId);
+    const tokens = await this.getTokens(userId);
+    if (!tokens) {
+      throw new Error('No Google Calendar tokens found for user');
+    }
+
+    const oauth2Client = new google.auth.OAuth2(
+      clientId,
+      clientSecret,
+      redirectUri
+    );
+
+    oauth2Client.setCredentials({
+      access_token: accessToken,
+      refresh_token: tokens.refresh_token,
+    });
+
+    return {
+      calendar: google.calendar({ version: 'v3', auth: oauth2Client }),
+      calendarId: tokens.calendar_id || 'primary',
+    };
+  }
+
+  /**
+   * Create an event on Google Calendar.
+   * Returns the Google event ID of the created event.
+   */
+  async createGoogleEvent(
+    userId: string,
+    event: {
+      title: string;
+      description?: string;
+      start_time: string;
+      end_time: string;
+    }
+  ): Promise<string> {
+    const { calendar, calendarId } = await this.getAuthenticatedCalendar(userId);
+
+    const response = await calendar.events.insert({
+      calendarId,
+      requestBody: {
+        summary: event.title,
+        description: event.description ?? null,
+        start: { dateTime: new Date(event.start_time).toISOString() },
+        end: { dateTime: new Date(event.end_time).toISOString() },
+      },
+    });
+
+    const googleEventId = response.data?.id;
+    if (!googleEventId) {
+      throw new Error('Google Calendar did not return an event ID');
+    }
+
+    return googleEventId;
+  }
+
+  /**
+   * Update an event on Google Calendar.
+   */
+  async updateGoogleEvent(
+    userId: string,
+    googleEventId: string,
+    updates: {
+      title?: string;
+      description?: string;
+      start_time?: string;
+      end_time?: string;
+    }
+  ): Promise<void> {
+    const { calendar, calendarId } = await this.getAuthenticatedCalendar(userId);
+
+    const requestBody: Record<string, unknown> = {};
+    if (updates.title !== undefined) requestBody.summary = updates.title;
+    if (updates.description !== undefined)
+      requestBody.description = updates.description;
+    if (updates.start_time !== undefined)
+      requestBody.start = {
+        dateTime: new Date(updates.start_time).toISOString(),
+      };
+    if (updates.end_time !== undefined)
+      requestBody.end = { dateTime: new Date(updates.end_time).toISOString() };
+
+    await calendar.events.patch({
+      calendarId,
+      eventId: googleEventId,
+      requestBody,
+    });
+  }
+
+  /**
+   * Delete an event from Google Calendar.
+   */
+  async deleteGoogleEvent(
+    userId: string,
+    googleEventId: string
+  ): Promise<void> {
+    const { calendar, calendarId } = await this.getAuthenticatedCalendar(userId);
+
+    await calendar.events.delete({
+      calendarId,
+      eventId: googleEventId,
+    });
   }
 }

@@ -1,11 +1,13 @@
 import express, { type Request, type Response } from 'express';
 import { GoogleCalendarService } from '../services/googleCalendarService.js';
+import { CalendarEventService } from '../services/calendarEventService.js';
 import { getFrontendUrl } from '../config/env.js';
 import { ResponseHelper } from '../utils/responseHelpers.js';
 import { authMiddleware, type AuthRequest } from '../middleware/auth.js';
 
 const router = express.Router();
 const googleCalendarService = new GoogleCalendarService();
+const calendarEventService = new CalendarEventService();
 
 function getFrontendBaseUrlOrFail(res: Response): string | null {
   try {
@@ -197,6 +199,135 @@ router.delete(
       ResponseHelper.internalError(
         res,
         error instanceof Error ? error.message : 'Internal server error'
+      );
+    }
+  }
+);
+
+// POST /api/google-calendar/events - Create event on Google Calendar + local DB
+router.post('/events', authMiddleware, async (req: Request, res: Response) => {
+  try {
+    const authReq = req as AuthRequest;
+    const { title, description, start_time, end_time } = req.body;
+
+    if (!title || !start_time || !end_time) {
+      return ResponseHelper.badRequest(
+        res,
+        'title, start_time, and end_time are required'
+      );
+    }
+
+    // Create on Google Calendar first
+    const googleEventId = await googleCalendarService.createGoogleEvent(
+      authReq.userId,
+      { title, description, start_time, end_time }
+    );
+
+    // Create locally with synced_from_google flag
+    const localEvent = await calendarEventService.createCalendarEvent({
+      title,
+      description,
+      start_time,
+      end_time,
+      user_id: authReq.userId,
+      google_event_id: googleEventId,
+      synced_from_google: true,
+    });
+
+    ResponseHelper.success(res, localEvent, 'Google Calendar event created');
+  } catch (error) {
+    console.error('[GoogleCalendarRoute] Create event error:', error);
+    ResponseHelper.internalError(
+      res,
+      error instanceof Error ? error.message : 'Failed to create event'
+    );
+  }
+});
+
+// PUT /api/google-calendar/events/:googleEventId - Update event on Google + local DB
+router.put(
+  '/events/:googleEventId',
+  authMiddleware,
+  async (req: Request, res: Response) => {
+    try {
+      const authReq = req as AuthRequest;
+      const googleEventId = req.params.googleEventId as string;
+      const { title, description, start_time, end_time } = req.body;
+
+      // Update on Google Calendar
+      await googleCalendarService.updateGoogleEvent(
+        authReq.userId,
+        googleEventId,
+        { title, description, start_time, end_time }
+      );
+
+      // Find and update local event
+      const localEvent =
+        await calendarEventService.getCalendarEventByGoogleEventId(
+          authReq.userId,
+          googleEventId
+        );
+
+      if (!localEvent) {
+        return ResponseHelper.notFound(res, 'Local calendar event not found');
+      }
+
+      const updateData: Record<string, unknown> = {};
+      if (title !== undefined) updateData.title = title;
+      if (description !== undefined) updateData.description = description;
+      if (start_time !== undefined) updateData.start_time = start_time;
+      if (end_time !== undefined) updateData.end_time = end_time;
+
+      const updated = await calendarEventService.updateCalendarEvent(
+        localEvent.id,
+        updateData,
+        undefined,
+        true
+      );
+
+      ResponseHelper.success(res, updated, 'Google Calendar event updated');
+    } catch (error) {
+      console.error('[GoogleCalendarRoute] Update event error:', error);
+      ResponseHelper.internalError(
+        res,
+        error instanceof Error ? error.message : 'Failed to update event'
+      );
+    }
+  }
+);
+
+// DELETE /api/google-calendar/events/:googleEventId - Delete event from Google + local DB
+router.delete(
+  '/events/:googleEventId',
+  authMiddleware,
+  async (req: Request, res: Response) => {
+    try {
+      const authReq = req as AuthRequest;
+      const googleEventId = req.params.googleEventId as string;
+
+      // Delete from Google Calendar
+      await googleCalendarService.deleteGoogleEvent(
+        authReq.userId,
+        googleEventId
+      );
+
+      // Find and delete local event
+      const localEvent =
+        await calendarEventService.getCalendarEventByGoogleEventId(
+          authReq.userId,
+          googleEventId
+        );
+
+      if (localEvent) {
+        await calendarEventService.deleteCalendarEvent(localEvent.id);
+      }
+
+      ResponseHelper.success(res, null, 'Google Calendar event deleted');
+    } catch (error) {
+      console.error('[GoogleCalendarRoute] Delete event error:', error);
+      ResponseHelper.internalError(
+        res,
+        error instanceof Error ? error.message : 'Failed to delete event'
       );
     }
   }

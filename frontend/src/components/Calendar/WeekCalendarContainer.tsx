@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   type CalendarEventUnion,
+  type CreateCalendarEventInput,
   isCalendarEventTask,
   type Schedule,
 } from '@/types';
@@ -26,6 +27,7 @@ import { MobileDayScrollView } from './MobileDayScrollView';
 import { DeadlineViolationsBar } from './DeadlineViolationsBar';
 import CalendarEditDialog from './CalendarEditDialog';
 import { CalendarCompletionDialog } from './CalendarCompletionDialog';
+import { GoogleCalendarEventForm } from './GoogleCalendarEventForm';
 import { TaskEditDialogForm } from '@/components/Tasks/forms/TaskEditDialogForm';
 import { taskService } from '@/services/taskService';
 import type { Task } from '@/types';
@@ -60,6 +62,7 @@ export function WeekCalendarContainer({
   const navigation = useWeekCalendarNavigation();
 
   const [initialSyncComplete, setInitialSyncComplete] = useState(false);
+  const [googleCalendarConnected, setGoogleCalendarConnected] = useState(false);
   const [hiddenEvents, setHiddenEvents] = useState<FilteredGoogleEvent[]>(
     () => {
       if (typeof window === 'undefined') return [];
@@ -91,6 +94,8 @@ export function WeekCalendarContainer({
           '[WeekCalendarContainer] Checking Google Calendar connection...'
         );
         const status = await googleCalendarService.getStatus(user.id);
+
+        setGoogleCalendarConnected(status.connected);
 
         if (status.connected) {
           logger.info('[WeekCalendarContainer] Syncing Google Calendar...');
@@ -328,7 +333,11 @@ export function WeekCalendarContainer({
       'id' | 'created_at' | 'updated_at' | 'status' | 'dependencies'
     >
   ) => {
-    await taskService.createTask({
+    // Check if this is a calendar-slot-triggered creation
+    const slot = dialogs.clickedSlot;
+    const isFromCalendar = dialogs.taskCreateFromCalendarOpen;
+
+    const task = await taskService.createTask({
       title: taskData.title,
       description: taskData.description,
       dueDate: taskData.due_date,
@@ -342,7 +351,41 @@ export function WeekCalendarContainer({
       recurrenceInterval: taskData.recurrence_interval,
       recurrenceStartDate: taskData.recurrence_start_date,
       isReminder: taskData.is_reminder,
+      isManuallyPinned: isFromCalendar ? true : undefined,
     });
+
+    // If triggered from calendar click, create a calendar event at the clicked slot
+    if (isFromCalendar && slot && user) {
+      try {
+        const start = new Date(slot.date);
+        start.setHours(slot.hour, slot.minute, 0, 0);
+        const end = new Date(start);
+        const durationHours = Math.max(
+          1,
+          Math.ceil((taskData.planned_duration_minutes || 60) / 60)
+        );
+        end.setHours(start.getHours() + durationHours);
+
+        await calendarService.createCalendarEvent({
+          title: task.title,
+          description: task.description,
+          start_time: start.toISOString(),
+          end_time: end.toISOString(),
+          linked_task_id: task.id,
+          user_id: user.id,
+        } as CreateCalendarEventInput);
+      } catch (err) {
+        console.error(
+          '[WeekCalendarContainer] Failed to create calendar event for task:',
+          err
+        );
+        toast.warning(
+          'Task created but failed to schedule it on the calendar'
+        );
+      }
+      dialogs.setTaskCreateFromCalendarOpen(false);
+    }
+
     await Promise.all([refreshEvents(), loadTasks()]);
     onTaskDropped?.();
   };
@@ -465,12 +508,30 @@ export function WeekCalendarContainer({
           isTaskEvent={
             dialogs.editEvent ? isCalendarEventTask(dialogs.editEvent) : false
           }
+          isSyncedFromGoogle={
+            (
+              dialogs.editEvent as CalendarEventUnion & {
+                synced_from_google?: boolean;
+              }
+            )?.synced_from_google === true
+          }
           completed={dialogs.editCompleted}
           onCompletedChange={completed =>
             dialogs.handleUpdateCompletion(completed, setEvents)
           }
           onLinkClick={openTaskEditForm}
           onDelete={() => dialogs.handleDeleteEdit(setEvents)}
+          onEditGoogleEvent={dialogs.handleEditGoogleEvent}
+          onDeleteGoogleEvent={() =>
+            dialogs.handleDeleteGoogleEvent(setEvents)
+          }
+        />
+        <GoogleCalendarEventForm
+          open={dialogs.googleEventFormOpen}
+          onOpenChange={dialogs.setGoogleEventFormOpen}
+          mode={dialogs.googleEventFormMode}
+          initialData={dialogs.googleEventFormData ?? undefined}
+          onSaved={dialogs.handleGoogleEventSaved}
         />
         <CalendarCompletionDialog
           open={dialogs.completionChoiceOpen}
@@ -549,6 +610,7 @@ export function WeekCalendarContainer({
         workingHoursStart={activeSchedule?.working_hours_start}
         workingHoursEnd={activeSchedule?.working_hours_end}
         onTaskCreate={handleTaskCreate}
+        googleCalendarConnected={googleCalendarConnected}
       />
       <TaskEditDialogForm
         task={selectedTask}
