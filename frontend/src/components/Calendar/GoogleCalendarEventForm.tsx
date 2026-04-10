@@ -26,7 +26,7 @@ interface GoogleCalendarEventFormProps {
     endTime: string;
     googleEventId?: string;
   };
-  onSaved: () => void;
+  onSaved: () => void | Promise<void>;
 }
 
 export function GoogleCalendarEventForm({
@@ -87,8 +87,8 @@ export function GoogleCalendarEventForm({
         });
         toast.success('Google Calendar event updated');
       }
+      await onSaved();
       onOpenChange(false);
-      onSaved();
     } catch (err) {
       console.error('Failed to save Google Calendar event:', err);
       toast.error(

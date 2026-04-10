@@ -317,15 +317,19 @@ describe('POST /api/google-calendar/events', () => {
         end_time: '2026-04-10T11:00:00.000Z',
       }
     );
-    expect(mockCalendarEventService.createCalendarEvent).toHaveBeenCalledWith({
-      title: 'Team meeting',
-      description: 'Weekly sync',
-      start_time: '2026-04-10T10:00:00.000Z',
-      end_time: '2026-04-10T11:00:00.000Z',
-      user_id: 'user-1',
-      google_event_id: 'google-evt-123',
-      synced_from_google: true,
-    });
+    expect(mockCalendarEventService.createCalendarEvent).toHaveBeenCalledWith(
+      {
+        title: 'Team meeting',
+        description: 'Weekly sync',
+        start_time: '2026-04-10T10:00:00.000Z',
+        end_time: '2026-04-10T11:00:00.000Z',
+        user_id: 'user-1',
+        google_event_id: 'google-evt-123',
+        synced_from_google: true,
+      },
+      undefined,
+      'fake-test-token'
+    );
   });
 
   test('returns 401 without auth header', async () => {
@@ -404,12 +408,12 @@ describe('PUT /api/google-calendar/events/:googleEventId', () => {
     );
     expect(mockCalendarEventService.getCalendarEventByGoogleEventId).toHaveBeenCalledWith(
       'user-1',
-      'google-evt-123'
+      'google-evt-123',
+      'fake-test-token'
     );
   });
 
   test('returns 404 when local event not found', async () => {
-    mockGoogleCalendarService.updateGoogleEvent.mockResolvedValue(undefined);
     mockCalendarEventService.getCalendarEventByGoogleEventId.mockResolvedValue(null);
 
     const res = await supertest(app)
@@ -429,6 +433,12 @@ describe('PUT /api/google-calendar/events/:googleEventId', () => {
   });
 
   test('returns 500 when Google API throws', async () => {
+    mockCalendarEventService.getCalendarEventByGoogleEventId.mockResolvedValue({
+      id: 'local-evt-1',
+      google_event_id: 'google-evt-123',
+      start_time: '2026-04-10T10:00:00.000Z',
+      end_time: '2026-04-10T11:00:00.000Z',
+    });
     mockGoogleCalendarService.updateGoogleEvent.mockRejectedValue(
       new Error('Google API update error')
     );
@@ -522,9 +532,10 @@ describe('DELETE /api/google-calendar/events/:googleEventId', () => {
     );
     expect(mockCalendarEventService.getCalendarEventByGoogleEventId).toHaveBeenCalledWith(
       'user-1',
-      'google-evt-123'
+      'google-evt-123',
+      'fake-test-token'
     );
-    expect(mockCalendarEventService.deleteCalendarEvent).toHaveBeenCalledWith('local-evt-1');
+    expect(mockCalendarEventService.deleteCalendarEvent).toHaveBeenCalledWith('local-evt-1', 'fake-test-token');
   });
 
   test('succeeds even when local event not found (already deleted)', async () => {

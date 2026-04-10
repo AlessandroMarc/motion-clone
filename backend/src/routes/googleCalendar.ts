@@ -241,15 +241,19 @@ router.post('/events', authMiddleware, async (req: Request, res: Response) => {
     );
 
     // Create locally with synced_from_google flag
-    const localEvent = await calendarEventService.createCalendarEvent({
-      title,
-      description,
-      start_time,
-      end_time,
-      user_id: authReq.userId,
-      google_event_id: googleEventId,
-      synced_from_google: true,
-    });
+    const localEvent = await calendarEventService.createCalendarEvent(
+      {
+        title,
+        description,
+        start_time,
+        end_time,
+        user_id: authReq.userId,
+        google_event_id: googleEventId,
+        synced_from_google: true,
+      },
+      undefined,
+      authReq.authToken
+    );
 
     ResponseHelper.success(res, localEvent, 'Google Calendar event created');
   } catch (error) {
@@ -283,23 +287,37 @@ router.put(
         }
       }
 
+      // Verify local event exists before modifying Google
+      const localEvent =
+        await calendarEventService.getCalendarEventByGoogleEventId(
+          authReq.userId,
+          googleEventId,
+          authReq.authToken
+        );
+
+      if (!localEvent) {
+        return ResponseHelper.notFound(res, 'Local calendar event not found');
+      }
+
+      // Validate effective time range (partial updates against stored values)
+      if ((start_time !== undefined || end_time !== undefined) && !(start_time !== undefined && end_time !== undefined)) {
+        const effectiveStart = start_time !== undefined
+          ? new Date(start_time)
+          : new Date(localEvent.start_time);
+        const effectiveEnd = end_time !== undefined
+          ? new Date(end_time)
+          : new Date(localEvent.end_time);
+        if (effectiveEnd <= effectiveStart) {
+          return ResponseHelper.badRequest(res, 'end_time must be after start_time');
+        }
+      }
+
       // Update on Google Calendar
       await googleCalendarService.updateGoogleEvent(
         authReq.userId,
         googleEventId,
         { title, description, start_time, end_time }
       );
-
-      // Find and update local event
-      const localEvent =
-        await calendarEventService.getCalendarEventByGoogleEventId(
-          authReq.userId,
-          googleEventId
-        );
-
-      if (!localEvent) {
-        return ResponseHelper.notFound(res, 'Local calendar event not found');
-      }
 
       const input: UpdateCalendarEventInput = {};
       if (title !== undefined) input.title = title;
@@ -343,11 +361,12 @@ router.delete(
       const localEvent =
         await calendarEventService.getCalendarEventByGoogleEventId(
           authReq.userId,
-          googleEventId
+          googleEventId,
+          authReq.authToken
         );
 
       if (localEvent) {
-        await calendarEventService.deleteCalendarEvent(localEvent.id);
+        await calendarEventService.deleteCalendarEvent(localEvent.id, authReq.authToken);
       }
 
       ResponseHelper.success(res, null, 'Google Calendar event deleted');
