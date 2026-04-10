@@ -4,6 +4,14 @@ import { CalendarEventService } from '../services/calendarEventService.js';
 import { getFrontendUrl } from '../config/env.js';
 import { ResponseHelper } from '../utils/responseHelpers.js';
 import { authMiddleware, type AuthRequest } from '../middleware/auth.js';
+import type { UpdateCalendarEventInput } from '../types/database.js';
+
+/** Validate that a string is a parseable date and return the Date, or null. */
+function parseTimestamp(value: unknown): Date | null {
+  if (typeof value !== 'string') return null;
+  const d = new Date(value);
+  return Number.isNaN(d.getTime()) ? null : d;
+}
 
 const router = express.Router();
 const googleCalendarService = new GoogleCalendarService();
@@ -217,6 +225,15 @@ router.post('/events', authMiddleware, async (req: Request, res: Response) => {
       );
     }
 
+    const parsedStart = parseTimestamp(start_time);
+    const parsedEnd = parseTimestamp(end_time);
+    if (!parsedStart || !parsedEnd) {
+      return ResponseHelper.badRequest(res, 'start_time and end_time must be valid timestamps');
+    }
+    if (parsedEnd <= parsedStart) {
+      return ResponseHelper.badRequest(res, 'end_time must be after start_time');
+    }
+
     // Create on Google Calendar first
     const googleEventId = await googleCalendarService.createGoogleEvent(
       authReq.userId,
@@ -254,6 +271,18 @@ router.put(
       const googleEventId = req.params.googleEventId as string;
       const { title, description, start_time, end_time } = req.body;
 
+      // Validate timestamps when provided
+      if (start_time !== undefined || end_time !== undefined) {
+        const parsedStart = start_time !== undefined ? parseTimestamp(start_time) : null;
+        const parsedEnd = end_time !== undefined ? parseTimestamp(end_time) : null;
+        if ((start_time !== undefined && !parsedStart) || (end_time !== undefined && !parsedEnd)) {
+          return ResponseHelper.badRequest(res, 'start_time and end_time must be valid timestamps');
+        }
+        if (parsedStart && parsedEnd && parsedEnd <= parsedStart) {
+          return ResponseHelper.badRequest(res, 'end_time must be after start_time');
+        }
+      }
+
       // Update on Google Calendar
       await googleCalendarService.updateGoogleEvent(
         authReq.userId,
@@ -272,17 +301,16 @@ router.put(
         return ResponseHelper.notFound(res, 'Local calendar event not found');
       }
 
-      const updateData: Record<string, unknown> = {};
-      if (title !== undefined) updateData.title = title;
-      if (description !== undefined) updateData.description = description;
-      if (start_time !== undefined) updateData.start_time = start_time;
-      if (end_time !== undefined) updateData.end_time = end_time;
+      const input: UpdateCalendarEventInput = {};
+      if (title !== undefined) input.title = title;
+      if (description !== undefined) input.description = description;
+      if (start_time !== undefined) input.start_time = start_time;
+      if (end_time !== undefined) input.end_time = end_time;
 
       const updated = await calendarEventService.updateCalendarEvent(
         localEvent.id,
-        updateData,
-        undefined,
-        true
+        input,
+        authReq.authToken
       );
 
       ResponseHelper.success(res, updated, 'Google Calendar event updated');

@@ -246,7 +246,7 @@ export function WeekCalendarView({
         onChooseTask={dialogs.handleChooseTask}
         onChooseGoogleEvent={dialogs.handleChooseGoogleEvent}
         googleCalendarConnected={googleCalendarConnected}
-        slotLabel={dialogs.getSlotLabel()}
+        slotLabel={typeof dialogs.getSlotLabel === 'function' ? dialogs.getSlotLabel() : undefined}
       />
 
       {/* Task create dialog triggered from calendar click */}

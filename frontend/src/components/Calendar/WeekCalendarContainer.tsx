@@ -106,6 +106,8 @@ export function WeekCalendarContainer({
             Array.isArray(result.errors) &&
             result.errors[0] === 'google_calendar_invalid_grant'
           ) {
+            // Backend deleted tokens — mark disconnected immediately
+            setGoogleCalendarConnected(false);
             // show toast guiding user to profile page
             toast.error(
               <span>
@@ -359,12 +361,11 @@ export function WeekCalendarContainer({
       try {
         const start = new Date(slot.date);
         start.setHours(slot.hour, slot.minute, 0, 0);
-        const end = new Date(start);
-        const durationHours = Math.max(
+        const durationMinutes = Math.max(
           1,
-          Math.ceil((taskData.planned_duration_minutes || 60) / 60)
+          taskData.planned_duration_minutes || 60
         );
-        end.setHours(start.getHours() + durationHours);
+        const end = new Date(start.getTime() + durationMinutes * 60_000);
 
         await calendarService.createCalendarEvent({
           title: task.title,

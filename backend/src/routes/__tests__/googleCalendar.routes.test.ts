@@ -465,6 +465,38 @@ describe('PUT /api/google-calendar/events/:googleEventId', () => {
     const updateCall = mockCalendarEventService.updateCalendarEvent.mock.calls[0];
     expect(updateCall[0]).toBe('local-evt-1');
     expect(updateCall[1]).toEqual({ title: 'New title', description: 'New desc' });
+    // Should pass authToken (from the mocked middleware) instead of undefined
+    expect(updateCall[2]).toBe('fake-test-token');
+  });
+
+  test('returns 400 when timestamps are invalid', async () => {
+    const res = await supertest(app)
+      .put('/api/google-calendar/events/google-evt-123')
+      .set(AUTH_HEADER)
+      .send({ start_time: 'not-a-date' });
+    expect(res.status).toBe(400);
+    expect(res.body.success).toBe(false);
+  });
+});
+
+// ── POST /api/google-calendar/events — timestamp validation ─────────────────
+describe('POST /api/google-calendar/events — timestamp validation', () => {
+  test('returns 400 when start_time is invalid', async () => {
+    const res = await supertest(app)
+      .post('/api/google-calendar/events')
+      .set(AUTH_HEADER)
+      .send({ title: 'Test', start_time: 'invalid', end_time: '2026-04-10T11:00:00Z' });
+    expect(res.status).toBe(400);
+    expect(res.body.error).toContain('valid timestamps');
+  });
+
+  test('returns 400 when end_time is before start_time', async () => {
+    const res = await supertest(app)
+      .post('/api/google-calendar/events')
+      .set(AUTH_HEADER)
+      .send({ title: 'Test', start_time: '2026-04-10T12:00:00Z', end_time: '2026-04-10T10:00:00Z' });
+    expect(res.status).toBe(400);
+    expect(res.body.error).toContain('end_time must be after start_time');
   });
 });
 

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -44,15 +44,14 @@ export function GoogleCalendarEventForm({
   const [endTime, setEndTime] = useState(initialData?.endTime || '');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Reset form when initialData changes (dialog opens with new data)
-  const [prevInitialData, setPrevInitialData] = useState(initialData);
-  if (initialData !== prevInitialData) {
-    setPrevInitialData(initialData);
+  // Reset form when dialog opens or initialData changes
+  useEffect(() => {
+    if (!open) return;
     setTitle(initialData?.title || '');
     setDescription(initialData?.description || '');
     setStartTime(initialData?.startTime || '');
     setEndTime(initialData?.endTime || '');
-  }
+  }, [open, mode, initialData]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
