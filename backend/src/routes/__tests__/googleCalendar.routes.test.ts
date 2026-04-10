@@ -423,6 +423,44 @@ describe('PUT /api/google-calendar/events/:googleEventId', () => {
 
     expect(res.status).toBe(404);
     expect(res.body.success).toBe(false);
+    // Google update should NOT have been called since local event was not found
+    expect(mockGoogleCalendarService.updateGoogleEvent).not.toHaveBeenCalled();
+  });
+
+  test('returns 400 when only start_time is after stored end_time', async () => {
+    mockCalendarEventService.getCalendarEventByGoogleEventId.mockResolvedValue({
+      id: 'local-evt-1',
+      google_event_id: 'google-evt-123',
+      start_time: '2026-04-10T10:00:00.000Z',
+      end_time: '2026-04-10T11:00:00.000Z',
+    });
+
+    const res = await supertest(app)
+      .put('/api/google-calendar/events/google-evt-123')
+      .set(AUTH_HEADER)
+      .send({ start_time: '2026-04-10T12:00:00.000Z' });
+
+    expect(res.status).toBe(400);
+    expect(res.body.error).toContain('end_time must be after start_time');
+    expect(mockGoogleCalendarService.updateGoogleEvent).not.toHaveBeenCalled();
+  });
+
+  test('returns 400 when only end_time is before stored start_time', async () => {
+    mockCalendarEventService.getCalendarEventByGoogleEventId.mockResolvedValue({
+      id: 'local-evt-1',
+      google_event_id: 'google-evt-123',
+      start_time: '2026-04-10T10:00:00.000Z',
+      end_time: '2026-04-10T11:00:00.000Z',
+    });
+
+    const res = await supertest(app)
+      .put('/api/google-calendar/events/google-evt-123')
+      .set(AUTH_HEADER)
+      .send({ end_time: '2026-04-10T09:00:00.000Z' });
+
+    expect(res.status).toBe(400);
+    expect(res.body.error).toContain('end_time must be after start_time');
+    expect(mockGoogleCalendarService.updateGoogleEvent).not.toHaveBeenCalled();
   });
 
   test('returns 401 without auth header', async () => {

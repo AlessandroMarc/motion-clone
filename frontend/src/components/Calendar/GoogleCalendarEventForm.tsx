@@ -87,8 +87,16 @@ export function GoogleCalendarEventForm({
         });
         toast.success('Google Calendar event updated');
       }
-      await onSaved();
       onOpenChange(false);
+      try {
+        await onSaved();
+      } catch (refreshError) {
+        console.error(
+          'Google Calendar event saved, but calendar refresh failed:',
+          refreshError
+        );
+        toast.error('Event saved, but the calendar could not be refreshed');
+      }
     } catch (err) {
       console.error('Failed to save Google Calendar event:', err);
       toast.error(
