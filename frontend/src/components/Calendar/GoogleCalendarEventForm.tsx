@@ -64,14 +64,25 @@ export function GoogleCalendarEventForm({
       return;
     }
 
+    const parsedStart = new Date(startTime);
+    const parsedEnd = new Date(endTime);
+    if (Number.isNaN(parsedStart.getTime()) || Number.isNaN(parsedEnd.getTime())) {
+      toast.error('Start and end times must be valid');
+      return;
+    }
+    if (parsedEnd <= parsedStart) {
+      toast.error('End time must be after start time');
+      return;
+    }
+
     setIsSubmitting(true);
     try {
       if (mode === 'create') {
         await googleCalendarService.createEvent({
           title: title.trim(),
           description: description.trim() || undefined,
-          start_time: new Date(startTime).toISOString(),
-          end_time: new Date(endTime).toISOString(),
+          start_time: parsedStart.toISOString(),
+          end_time: parsedEnd.toISOString(),
         });
         toast.success('Google Calendar event created');
       } else {
@@ -82,8 +93,8 @@ export function GoogleCalendarEventForm({
         await googleCalendarService.updateEvent(initialData.googleEventId, {
           title: title.trim(),
           description: description.trim() || undefined,
-          start_time: new Date(startTime).toISOString(),
-          end_time: new Date(endTime).toISOString(),
+          start_time: parsedStart.toISOString(),
+          end_time: parsedEnd.toISOString(),
         });
         toast.success('Google Calendar event updated');
       }
