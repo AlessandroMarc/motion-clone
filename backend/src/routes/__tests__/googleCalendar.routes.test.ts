@@ -17,11 +17,26 @@ const mockGoogleCalendarService = {
   getConnectionStatus: jest.fn(),
   syncEventsFromGoogle: jest.fn(),
   disconnectGoogleCalendar: jest.fn(),
+  createGoogleEvent: jest.fn(),
+  updateGoogleEvent: jest.fn(),
+  deleteGoogleEvent: jest.fn(),
 };
 jest.unstable_mockModule('../../services/googleCalendarService.js', () => ({
   GoogleCalendarService: jest
     .fn()
     .mockImplementation(() => mockGoogleCalendarService),
+}));
+
+const mockCalendarEventService = {
+  createCalendarEvent: jest.fn(),
+  updateCalendarEvent: jest.fn(),
+  deleteCalendarEvent: jest.fn(),
+  getCalendarEventByGoogleEventId: jest.fn(),
+};
+jest.unstable_mockModule('../../services/calendarEventService.js', () => ({
+  CalendarEventService: jest
+    .fn()
+    .mockImplementation(() => mockCalendarEventService),
 }));
 
 jest.unstable_mockModule('../../config/env.js', () => ({
@@ -262,5 +277,254 @@ describe('DELETE /api/google-calendar/disconnect', () => {
       .send({});
     expect(res.status).toBe(400);
     expect(res.body.success).toBe(false);
+  });
+});
+
+// ── POST /api/google-calendar/events ────────────────────────────────────────
+describe('POST /api/google-calendar/events', () => {
+  test('creates event on Google Calendar and locally', async () => {
+    mockGoogleCalendarService.createGoogleEvent.mockResolvedValue('google-evt-123');
+    mockCalendarEventService.createCalendarEvent.mockResolvedValue({
+      id: 'local-evt-1',
+      title: 'Team meeting',
+      description: 'Weekly sync',
+      start_time: '2026-04-10T10:00:00.000Z',
+      end_time: '2026-04-10T11:00:00.000Z',
+      user_id: 'user-1',
+      google_event_id: 'google-evt-123',
+      synced_from_google: true,
+    });
+
+    const res = await supertest(app)
+      .post('/api/google-calendar/events')
+      .set(AUTH_HEADER)
+      .send({
+        title: 'Team meeting',
+        description: 'Weekly sync',
+        start_time: '2026-04-10T10:00:00.000Z',
+        end_time: '2026-04-10T11:00:00.000Z',
+      });
+
+    expect(res.status).toBe(200);
+    expect(res.body.success).toBe(true);
+    expect(res.body.data.google_event_id).toBe('google-evt-123');
+    expect(mockGoogleCalendarService.createGoogleEvent).toHaveBeenCalledWith(
+      'user-1',
+      {
+        title: 'Team meeting',
+        description: 'Weekly sync',
+        start_time: '2026-04-10T10:00:00.000Z',
+        end_time: '2026-04-10T11:00:00.000Z',
+      }
+    );
+    expect(mockCalendarEventService.createCalendarEvent).toHaveBeenCalledWith({
+      title: 'Team meeting',
+      description: 'Weekly sync',
+      start_time: '2026-04-10T10:00:00.000Z',
+      end_time: '2026-04-10T11:00:00.000Z',
+      user_id: 'user-1',
+      google_event_id: 'google-evt-123',
+      synced_from_google: true,
+    });
+  });
+
+  test('returns 401 without auth header', async () => {
+    const res = await supertest(app)
+      .post('/api/google-calendar/events')
+      .send({ title: 'Test', start_time: '2026-04-10T10:00:00Z', end_time: '2026-04-10T11:00:00Z' });
+    expect(res.status).toBe(401);
+  });
+
+  test('returns 400 when title is missing', async () => {
+    const res = await supertest(app)
+      .post('/api/google-calendar/events')
+      .set(AUTH_HEADER)
+      .send({ start_time: '2026-04-10T10:00:00Z', end_time: '2026-04-10T11:00:00Z' });
+    expect(res.status).toBe(400);
+    expect(res.body.success).toBe(false);
+  });
+
+  test('returns 400 when start_time is missing', async () => {
+    const res = await supertest(app)
+      .post('/api/google-calendar/events')
+      .set(AUTH_HEADER)
+      .send({ title: 'Test', end_time: '2026-04-10T11:00:00Z' });
+    expect(res.status).toBe(400);
+  });
+
+  test('returns 400 when end_time is missing', async () => {
+    const res = await supertest(app)
+      .post('/api/google-calendar/events')
+      .set(AUTH_HEADER)
+      .send({ title: 'Test', start_time: '2026-04-10T10:00:00Z' });
+    expect(res.status).toBe(400);
+  });
+
+  test('returns 500 when Google API throws', async () => {
+    mockGoogleCalendarService.createGoogleEvent.mockRejectedValue(
+      new Error('Google API error')
+    );
+    const res = await supertest(app)
+      .post('/api/google-calendar/events')
+      .set(AUTH_HEADER)
+      .send({ title: 'Test', start_time: '2026-04-10T10:00:00Z', end_time: '2026-04-10T11:00:00Z' });
+    expect(res.status).toBe(500);
+    expect(res.body.success).toBe(false);
+    expect(res.body.error).toContain('Google API error');
+  });
+});
+
+// ── PUT /api/google-calendar/events/:googleEventId ──────────────────────────
+describe('PUT /api/google-calendar/events/:googleEventId', () => {
+  test('updates event on Google Calendar and locally', async () => {
+    mockGoogleCalendarService.updateGoogleEvent.mockResolvedValue(undefined);
+    mockCalendarEventService.getCalendarEventByGoogleEventId.mockResolvedValue({
+      id: 'local-evt-1',
+      title: 'Old title',
+      google_event_id: 'google-evt-123',
+    });
+    mockCalendarEventService.updateCalendarEvent.mockResolvedValue({
+      id: 'local-evt-1',
+      title: 'Updated title',
+      google_event_id: 'google-evt-123',
+    });
+
+    const res = await supertest(app)
+      .put('/api/google-calendar/events/google-evt-123')
+      .set(AUTH_HEADER)
+      .send({ title: 'Updated title' });
+
+    expect(res.status).toBe(200);
+    expect(res.body.success).toBe(true);
+    expect(res.body.data.title).toBe('Updated title');
+    expect(mockGoogleCalendarService.updateGoogleEvent).toHaveBeenCalledWith(
+      'user-1',
+      'google-evt-123',
+      { title: 'Updated title' }
+    );
+    expect(mockCalendarEventService.getCalendarEventByGoogleEventId).toHaveBeenCalledWith(
+      'user-1',
+      'google-evt-123'
+    );
+  });
+
+  test('returns 404 when local event not found', async () => {
+    mockGoogleCalendarService.updateGoogleEvent.mockResolvedValue(undefined);
+    mockCalendarEventService.getCalendarEventByGoogleEventId.mockResolvedValue(null);
+
+    const res = await supertest(app)
+      .put('/api/google-calendar/events/nonexistent-id')
+      .set(AUTH_HEADER)
+      .send({ title: 'Updated title' });
+
+    expect(res.status).toBe(404);
+    expect(res.body.success).toBe(false);
+  });
+
+  test('returns 401 without auth header', async () => {
+    const res = await supertest(app)
+      .put('/api/google-calendar/events/google-evt-123')
+      .send({ title: 'Updated' });
+    expect(res.status).toBe(401);
+  });
+
+  test('returns 500 when Google API throws', async () => {
+    mockGoogleCalendarService.updateGoogleEvent.mockRejectedValue(
+      new Error('Google API update error')
+    );
+
+    const res = await supertest(app)
+      .put('/api/google-calendar/events/google-evt-123')
+      .set(AUTH_HEADER)
+      .send({ title: 'Updated title' });
+
+    expect(res.status).toBe(500);
+    expect(res.body.success).toBe(false);
+    expect(res.body.error).toContain('Google API update error');
+  });
+
+  test('only sends provided fields as update data', async () => {
+    mockGoogleCalendarService.updateGoogleEvent.mockResolvedValue(undefined);
+    mockCalendarEventService.getCalendarEventByGoogleEventId.mockResolvedValue({
+      id: 'local-evt-1',
+      google_event_id: 'google-evt-123',
+    });
+    mockCalendarEventService.updateCalendarEvent.mockResolvedValue({
+      id: 'local-evt-1',
+      title: 'New title',
+      description: 'New desc',
+    });
+
+    const res = await supertest(app)
+      .put('/api/google-calendar/events/google-evt-123')
+      .set(AUTH_HEADER)
+      .send({ title: 'New title', description: 'New desc' });
+
+    expect(res.status).toBe(200);
+    // Verify only title and description are in the update payload (not start_time/end_time)
+    const updateCall = mockCalendarEventService.updateCalendarEvent.mock.calls[0];
+    expect(updateCall[0]).toBe('local-evt-1');
+    expect(updateCall[1]).toEqual({ title: 'New title', description: 'New desc' });
+  });
+});
+
+// ── DELETE /api/google-calendar/events/:googleEventId ───────────────────────
+describe('DELETE /api/google-calendar/events/:googleEventId', () => {
+  test('deletes event from Google Calendar and locally', async () => {
+    mockGoogleCalendarService.deleteGoogleEvent.mockResolvedValue(undefined);
+    mockCalendarEventService.getCalendarEventByGoogleEventId.mockResolvedValue({
+      id: 'local-evt-1',
+      google_event_id: 'google-evt-123',
+    });
+    mockCalendarEventService.deleteCalendarEvent.mockResolvedValue(true);
+
+    const res = await supertest(app)
+      .delete('/api/google-calendar/events/google-evt-123')
+      .set(AUTH_HEADER);
+
+    expect(res.status).toBe(200);
+    expect(res.body.success).toBe(true);
+    expect(mockGoogleCalendarService.deleteGoogleEvent).toHaveBeenCalledWith(
+      'user-1',
+      'google-evt-123'
+    );
+    expect(mockCalendarEventService.getCalendarEventByGoogleEventId).toHaveBeenCalledWith(
+      'user-1',
+      'google-evt-123'
+    );
+    expect(mockCalendarEventService.deleteCalendarEvent).toHaveBeenCalledWith('local-evt-1');
+  });
+
+  test('succeeds even when local event not found (already deleted)', async () => {
+    mockGoogleCalendarService.deleteGoogleEvent.mockResolvedValue(undefined);
+    mockCalendarEventService.getCalendarEventByGoogleEventId.mockResolvedValue(null);
+
+    const res = await supertest(app)
+      .delete('/api/google-calendar/events/google-evt-123')
+      .set(AUTH_HEADER);
+
+    expect(res.status).toBe(200);
+    expect(res.body.success).toBe(true);
+    expect(mockCalendarEventService.deleteCalendarEvent).not.toHaveBeenCalled();
+  });
+
+  test('returns 401 without auth header', async () => {
+    const res = await supertest(app)
+      .delete('/api/google-calendar/events/google-evt-123');
+    expect(res.status).toBe(401);
+  });
+
+  test('returns 500 when Google API throws', async () => {
+    mockGoogleCalendarService.deleteGoogleEvent.mockRejectedValue(
+      new Error('Google API delete error')
+    );
+
+    const res = await supertest(app)
+      .delete('/api/google-calendar/events/google-evt-123')
+      .set(AUTH_HEADER);
+
+    expect(res.status).toBe(500);
+    expect(res.body.success).toBe(false);
+    expect(res.body.error).toContain('Google API delete error');
   });
 });
