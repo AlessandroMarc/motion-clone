@@ -15,6 +15,31 @@ export interface ChangelogEntry {
 
 export const changelogEntries: ChangelogEntry[] = [
   {
+    version: '1.11.0',
+    date: 'April 2026',
+    title: 'Google Calendar Full CRUD & Click-to-Create',
+    description:
+      'Create and edit Google Calendar events directly from the calendar view — plus click any time slot to quickly add new events.',
+    items: [
+      {
+        type: 'new',
+        text: 'Click on an empty time slot in the calendar to instantly create a new Google Calendar event with a streamlined form.',
+      },
+      {
+        type: 'new',
+        text: 'Full CRUD support for Google Calendar events — click any existing Google event to edit its title, description, start/end times, or delete it.',
+      },
+      {
+        type: 'new',
+        text: 'Dedicated Google Calendar event form with datetime pickers, validation, and real-time sync back to Google.',
+      },
+      {
+        type: 'improved',
+        text: 'Calendar dialogs now intelligently distinguish between task sessions and Google Calendar events for the right editing experience.',
+      },
+    ],
+  },
+  {
     version: '1.10.1',
     date: 'April 2026',
     title: 'Recurring Task Completion Fix',
