@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -26,7 +26,7 @@ interface GoogleCalendarEventFormProps {
     endTime: string;
     googleEventId?: string;
   };
-  onSaved: () => void;
+  onSaved: () => void | Promise<void>;
 }
 
 export function GoogleCalendarEventForm({
@@ -44,15 +44,14 @@ export function GoogleCalendarEventForm({
   const [endTime, setEndTime] = useState(initialData?.endTime || '');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Reset form when initialData changes (dialog opens with new data)
-  const [prevInitialData, setPrevInitialData] = useState(initialData);
-  if (initialData !== prevInitialData) {
-    setPrevInitialData(initialData);
+  // Reset form when dialog opens or initialData changes
+  useEffect(() => {
+    if (!open) return;
     setTitle(initialData?.title || '');
     setDescription(initialData?.description || '');
     setStartTime(initialData?.startTime || '');
     setEndTime(initialData?.endTime || '');
-  }
+  }, [open, mode, initialData]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -65,14 +64,25 @@ export function GoogleCalendarEventForm({
       return;
     }
 
+    const parsedStart = new Date(startTime);
+    const parsedEnd = new Date(endTime);
+    if (Number.isNaN(parsedStart.getTime()) || Number.isNaN(parsedEnd.getTime())) {
+      toast.error('Start and end times must be valid');
+      return;
+    }
+    if (parsedEnd <= parsedStart) {
+      toast.error('End time must be after start time');
+      return;
+    }
+
     setIsSubmitting(true);
     try {
       if (mode === 'create') {
         await googleCalendarService.createEvent({
           title: title.trim(),
           description: description.trim() || undefined,
-          start_time: new Date(startTime).toISOString(),
-          end_time: new Date(endTime).toISOString(),
+          start_time: parsedStart.toISOString(),
+          end_time: parsedEnd.toISOString(),
         });
         toast.success('Google Calendar event created');
       } else {
@@ -83,13 +93,21 @@ export function GoogleCalendarEventForm({
         await googleCalendarService.updateEvent(initialData.googleEventId, {
           title: title.trim(),
           description: description.trim() || undefined,
-          start_time: new Date(startTime).toISOString(),
-          end_time: new Date(endTime).toISOString(),
+          start_time: parsedStart.toISOString(),
+          end_time: parsedEnd.toISOString(),
         });
         toast.success('Google Calendar event updated');
       }
       onOpenChange(false);
-      onSaved();
+      try {
+        await onSaved();
+      } catch (refreshError) {
+        console.error(
+          'Google Calendar event saved, but calendar refresh failed:',
+          refreshError
+        );
+        toast.error('Event saved, but the calendar could not be refreshed');
+      }
     } catch (err) {
       console.error('Failed to save Google Calendar event:', err);
       toast.error(

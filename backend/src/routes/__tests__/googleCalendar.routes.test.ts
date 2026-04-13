@@ -317,15 +317,19 @@ describe('POST /api/google-calendar/events', () => {
         end_time: '2026-04-10T11:00:00.000Z',
       }
     );
-    expect(mockCalendarEventService.createCalendarEvent).toHaveBeenCalledWith({
-      title: 'Team meeting',
-      description: 'Weekly sync',
-      start_time: '2026-04-10T10:00:00.000Z',
-      end_time: '2026-04-10T11:00:00.000Z',
-      user_id: 'user-1',
-      google_event_id: 'google-evt-123',
-      synced_from_google: true,
-    });
+    expect(mockCalendarEventService.createCalendarEvent).toHaveBeenCalledWith(
+      {
+        title: 'Team meeting',
+        description: 'Weekly sync',
+        start_time: '2026-04-10T10:00:00.000Z',
+        end_time: '2026-04-10T11:00:00.000Z',
+        user_id: 'user-1',
+        google_event_id: 'google-evt-123',
+        synced_from_google: true,
+      },
+      undefined,
+      'fake-test-token'
+    );
   });
 
   test('returns 401 without auth header', async () => {
@@ -404,12 +408,12 @@ describe('PUT /api/google-calendar/events/:googleEventId', () => {
     );
     expect(mockCalendarEventService.getCalendarEventByGoogleEventId).toHaveBeenCalledWith(
       'user-1',
-      'google-evt-123'
+      'google-evt-123',
+      'fake-test-token'
     );
   });
 
   test('returns 404 when local event not found', async () => {
-    mockGoogleCalendarService.updateGoogleEvent.mockResolvedValue(undefined);
     mockCalendarEventService.getCalendarEventByGoogleEventId.mockResolvedValue(null);
 
     const res = await supertest(app)
@@ -419,6 +423,44 @@ describe('PUT /api/google-calendar/events/:googleEventId', () => {
 
     expect(res.status).toBe(404);
     expect(res.body.success).toBe(false);
+    // Google update should NOT have been called since local event was not found
+    expect(mockGoogleCalendarService.updateGoogleEvent).not.toHaveBeenCalled();
+  });
+
+  test('returns 400 when only start_time is after stored end_time', async () => {
+    mockCalendarEventService.getCalendarEventByGoogleEventId.mockResolvedValue({
+      id: 'local-evt-1',
+      google_event_id: 'google-evt-123',
+      start_time: '2026-04-10T10:00:00.000Z',
+      end_time: '2026-04-10T11:00:00.000Z',
+    });
+
+    const res = await supertest(app)
+      .put('/api/google-calendar/events/google-evt-123')
+      .set(AUTH_HEADER)
+      .send({ start_time: '2026-04-10T12:00:00.000Z' });
+
+    expect(res.status).toBe(400);
+    expect(res.body.error).toContain('end_time must be after start_time');
+    expect(mockGoogleCalendarService.updateGoogleEvent).not.toHaveBeenCalled();
+  });
+
+  test('returns 400 when only end_time is before stored start_time', async () => {
+    mockCalendarEventService.getCalendarEventByGoogleEventId.mockResolvedValue({
+      id: 'local-evt-1',
+      google_event_id: 'google-evt-123',
+      start_time: '2026-04-10T10:00:00.000Z',
+      end_time: '2026-04-10T11:00:00.000Z',
+    });
+
+    const res = await supertest(app)
+      .put('/api/google-calendar/events/google-evt-123')
+      .set(AUTH_HEADER)
+      .send({ end_time: '2026-04-10T09:00:00.000Z' });
+
+    expect(res.status).toBe(400);
+    expect(res.body.error).toContain('end_time must be after start_time');
+    expect(mockGoogleCalendarService.updateGoogleEvent).not.toHaveBeenCalled();
   });
 
   test('returns 401 without auth header', async () => {
@@ -429,6 +471,12 @@ describe('PUT /api/google-calendar/events/:googleEventId', () => {
   });
 
   test('returns 500 when Google API throws', async () => {
+    mockCalendarEventService.getCalendarEventByGoogleEventId.mockResolvedValue({
+      id: 'local-evt-1',
+      google_event_id: 'google-evt-123',
+      start_time: '2026-04-10T10:00:00.000Z',
+      end_time: '2026-04-10T11:00:00.000Z',
+    });
     mockGoogleCalendarService.updateGoogleEvent.mockRejectedValue(
       new Error('Google API update error')
     );
@@ -465,6 +513,38 @@ describe('PUT /api/google-calendar/events/:googleEventId', () => {
     const updateCall = mockCalendarEventService.updateCalendarEvent.mock.calls[0];
     expect(updateCall[0]).toBe('local-evt-1');
     expect(updateCall[1]).toEqual({ title: 'New title', description: 'New desc' });
+    // Should pass authToken (from the mocked middleware) instead of undefined
+    expect(updateCall[2]).toBe('fake-test-token');
+  });
+
+  test('returns 400 when timestamps are invalid', async () => {
+    const res = await supertest(app)
+      .put('/api/google-calendar/events/google-evt-123')
+      .set(AUTH_HEADER)
+      .send({ start_time: 'not-a-date' });
+    expect(res.status).toBe(400);
+    expect(res.body.success).toBe(false);
+  });
+});
+
+// ── POST /api/google-calendar/events — timestamp validation ─────────────────
+describe('POST /api/google-calendar/events — timestamp validation', () => {
+  test('returns 400 when start_time is invalid', async () => {
+    const res = await supertest(app)
+      .post('/api/google-calendar/events')
+      .set(AUTH_HEADER)
+      .send({ title: 'Test', start_time: 'invalid', end_time: '2026-04-10T11:00:00Z' });
+    expect(res.status).toBe(400);
+    expect(res.body.error).toContain('valid timestamps');
+  });
+
+  test('returns 400 when end_time is before start_time', async () => {
+    const res = await supertest(app)
+      .post('/api/google-calendar/events')
+      .set(AUTH_HEADER)
+      .send({ title: 'Test', start_time: '2026-04-10T12:00:00Z', end_time: '2026-04-10T10:00:00Z' });
+    expect(res.status).toBe(400);
+    expect(res.body.error).toContain('end_time must be after start_time');
   });
 });
 
@@ -490,9 +570,10 @@ describe('DELETE /api/google-calendar/events/:googleEventId', () => {
     );
     expect(mockCalendarEventService.getCalendarEventByGoogleEventId).toHaveBeenCalledWith(
       'user-1',
-      'google-evt-123'
+      'google-evt-123',
+      'fake-test-token'
     );
-    expect(mockCalendarEventService.deleteCalendarEvent).toHaveBeenCalledWith('local-evt-1');
+    expect(mockCalendarEventService.deleteCalendarEvent).toHaveBeenCalledWith('local-evt-1', 'fake-test-token');
   });
 
   test('succeeds even when local event not found (already deleted)', async () => {

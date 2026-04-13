@@ -92,14 +92,16 @@ export function TaskCreateDialogForm({
 
   return (
     <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-      <DialogTrigger asChild>
-        {trigger ?? (
-          <Button className="gap-2" data-onboarding-step="create-task">
-            <Plus className="h-4 w-4" />
-            Create Task
-          </Button>
-        )}
-      </DialogTrigger>
+      {trigger !== null && (
+        <DialogTrigger asChild>
+          {trigger ?? (
+            <Button className="gap-2" data-onboarding-step="create-task">
+              <Plus className="h-4 w-4" />
+              Create Task
+            </Button>
+          )}
+        </DialogTrigger>
+      )}
       <DialogContent className="sm:max-w-[500px] max-h-[90vh] flex flex-col overflow-hidden">
         <DialogHeader>
           <DialogTitle>Create New Task</DialogTitle>
