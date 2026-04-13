@@ -12,6 +12,9 @@ import { CalendarHeader, CalendarLegend } from './CalendarHeader';
 import WeekScrollableGrid from './WeekScrollableGrid';
 import CalendarEditDialog from './CalendarEditDialog';
 import { CalendarCompletionDialog } from './CalendarCompletionDialog';
+import { CalendarCreateChoiceDialog } from './CalendarCreateChoiceDialog';
+import { GoogleCalendarEventForm } from './GoogleCalendarEventForm';
+import { TaskCreateDialogForm } from '@/components/Tasks/forms/TaskCreateDialogForm';
 import { DeadlineViolationsBar } from './DeadlineViolationsBar';
 
 type Dialogs = {
@@ -58,6 +61,32 @@ type Dialogs = {
   completionChoiceIsRecurring: boolean;
   handleCompletionChoice: (
     choice: 'session' | 'task',
+    setEvents: React.Dispatch<React.SetStateAction<CalendarEventUnion[]>>
+  ) => Promise<void>;
+  // Choice dialog (Task vs Google Event)
+  choiceDialogOpen: boolean;
+  setChoiceDialogOpen: React.Dispatch<React.SetStateAction<boolean>>;
+  handleGridCellClick: (date: Date, hour: number, minute: number) => void;
+  getSlotLabel: () => string | undefined;
+  handleChooseTask: () => void;
+  handleChooseGoogleEvent: () => void;
+  // Task create from calendar
+  taskCreateFromCalendarOpen: boolean;
+  setTaskCreateFromCalendarOpen: React.Dispatch<React.SetStateAction<boolean>>;
+  // Google Calendar event form
+  googleEventFormOpen: boolean;
+  setGoogleEventFormOpen: React.Dispatch<React.SetStateAction<boolean>>;
+  googleEventFormMode: 'create' | 'edit';
+  googleEventFormData: {
+    title?: string;
+    description?: string;
+    startTime: string;
+    endTime: string;
+    googleEventId?: string;
+  } | null;
+  handleGoogleEventSaved: () => Promise<void>;
+  handleEditGoogleEvent: () => void;
+  handleDeleteGoogleEvent: (
     setEvents: React.Dispatch<React.SetStateAction<CalendarEventUnion[]>>
   ) => Promise<void>;
 };
@@ -113,6 +142,7 @@ interface WeekCalendarViewProps {
 
   workingHoursStart?: number;
   workingHoursEnd?: number;
+  googleCalendarConnected?: boolean;
 }
 
 export function WeekCalendarView({
@@ -152,7 +182,17 @@ export function WeekCalendarView({
   onTaskCreate,
   workingHoursStart,
   workingHoursEnd,
+  googleCalendarConnected = false,
 }: WeekCalendarViewProps) {
+  const editEvent = dialogs.editEvent as
+    | (CalendarEventUnion & {
+        synced_from_google?: boolean;
+        google_event_id?: string | null;
+      })
+    | null;
+  const isSyncedFromGoogle = editEvent?.synced_from_google === true;
+  const isTaskEvent = editEvent ? isCalendarEventTask(editEvent) : false;
+
   return (
     <div className="space-y-4">
       <DeadlineViolationsBar
@@ -183,7 +223,7 @@ export function WeekCalendarView({
         reminderTasks={reminderTasks}
         onBannerEventClick={onBannerEventClick}
         onReminderTaskClick={onReminderTaskClick}
-        onGridCellClick={() => {}}
+        onGridCellClick={dialogs.handleGridCellClick}
         onEventMouseDown={onEventMouseDown}
         draggingEventId={draggingEventId}
         dragPreview={draggingEventId ? dragPreview : externalDragPreview}
@@ -199,7 +239,33 @@ export function WeekCalendarView({
         workingHoursEnd={workingHoursEnd}
       />
 
-      {/* CalendarCreateDialog removed to disable event creation */}
+      {/* Choice dialog: Task vs Google Calendar Event */}
+      <CalendarCreateChoiceDialog
+        open={dialogs.choiceDialogOpen}
+        onOpenChange={dialogs.setChoiceDialogOpen}
+        onChooseTask={dialogs.handleChooseTask}
+        onChooseGoogleEvent={dialogs.handleChooseGoogleEvent}
+        googleCalendarConnected={googleCalendarConnected}
+        slotLabel={typeof dialogs.getSlotLabel === 'function' ? dialogs.getSlotLabel() : undefined}
+      />
+
+      {/* Task create dialog triggered from calendar click */}
+      {onTaskCreate && (
+        <TaskCreateDialogForm
+          onTaskCreate={onTaskCreate}
+          open={dialogs.taskCreateFromCalendarOpen}
+          onOpenChange={dialogs.setTaskCreateFromCalendarOpen}
+        />
+      )}
+
+      {/* Google Calendar event create/edit form */}
+      <GoogleCalendarEventForm
+        open={dialogs.googleEventFormOpen}
+        onOpenChange={dialogs.setGoogleEventFormOpen}
+        mode={dialogs.googleEventFormMode}
+        initialData={dialogs.googleEventFormData ?? undefined}
+        onSaved={dialogs.handleGoogleEventSaved}
+      />
 
       <CalendarEditDialog
         open={dialogs.editOpen}
@@ -208,15 +274,18 @@ export function WeekCalendarView({
         description={dialogs.editDescription}
         startTime={dialogs.editStartTime}
         endTime={dialogs.editEndTime}
-        isTaskEvent={
-          dialogs.editEvent ? isCalendarEventTask(dialogs.editEvent) : false
-        }
+        isTaskEvent={isTaskEvent}
+        isSyncedFromGoogle={isSyncedFromGoogle}
         completed={dialogs.editCompleted}
         onCompletedChange={completed =>
           dialogs.handleUpdateCompletion(completed, setEvents)
         }
         onLinkClick={openTaskEditForm}
         onDelete={() => dialogs.handleDeleteEdit(setEvents)}
+        onEditGoogleEvent={dialogs.handleEditGoogleEvent}
+        onDeleteGoogleEvent={() =>
+          dialogs.handleDeleteGoogleEvent(setEvents)
+        }
       />
       <CalendarCompletionDialog
         open={dialogs.completionChoiceOpen}

@@ -8,6 +8,16 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
 import { CheckCircle2, Clock, FileText, AlignLeft } from 'lucide-react';
 
@@ -19,10 +29,13 @@ interface CalendarEditDialogProps {
   startTime: string;
   endTime: string;
   isTaskEvent?: boolean;
+  isSyncedFromGoogle?: boolean;
   completed?: boolean;
   onCompletedChange: (completed: boolean) => Promise<void> | void;
   onLinkClick: () => void;
   onDelete?: () => Promise<void> | void;
+  onEditGoogleEvent?: () => void;
+  onDeleteGoogleEvent?: () => void;
 }
 
 function formatDisplayTime(isoLocalString: string): string {
@@ -44,24 +57,32 @@ function GoogleEventDetails({
   startTime,
   endTime,
   isTaskEvent,
+  isSyncedFromGoogle,
   completed,
   onCompletedChange,
   onClose,
   onLinkClick,
   onDelete,
+  onEditGoogleEvent,
+  onDeleteGoogleEvent,
 }: {
   title: string;
   description: string;
   startTime: string;
   endTime: string;
   isTaskEvent?: boolean;
+  isSyncedFromGoogle?: boolean;
   completed?: boolean;
   onCompletedChange: (completed: boolean) => Promise<void> | void;
   onClose: () => void;
   onLinkClick: () => void;
   onDelete?: () => Promise<void> | void;
+  onEditGoogleEvent?: () => void;
+  onDeleteGoogleEvent?: () => void;
 }): React.ReactElement {
   const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [confirmOpen, setConfirmOpen] = useState(false);
+
   const handleCompleteClick = async () => {
     const newCompletedState = !completed;
 
@@ -74,14 +95,13 @@ function GoogleEventDetails({
     }
   };
 
-  const handleDeleteClick = async () => {
+  const handleDeleteClick = () => {
     if (!onDelete) return;
+    setConfirmOpen(true);
+  };
 
-    const confirmed = window.confirm(
-      'Delete this scheduled session? This cannot be undone.'
-    );
-    if (!confirmed) return;
-
+  const handleDeleteConfirm = async () => {
+    if (!onDelete) return;
     try {
       await onDelete();
       onClose();
@@ -160,6 +180,28 @@ function GoogleEventDetails({
             )}
           </>
         )}
+        {!isTaskEvent && isSyncedFromGoogle && (
+          <>
+            {onEditGoogleEvent && (
+              <Button
+                variant="outline"
+                onClick={onEditGoogleEvent}
+                className="w-full sm:flex-1"
+              >
+                Edit
+              </Button>
+            )}
+            {onDeleteGoogleEvent && (
+              <Button
+                variant="destructive"
+                onClick={onDeleteGoogleEvent}
+                className="w-full sm:w-auto"
+              >
+                Delete
+              </Button>
+            )}
+          </>
+        )}
         <Button
           variant="outline"
           onClick={onClose}
@@ -173,6 +215,27 @@ function GoogleEventDetails({
           </p>
         ) : null}
       </DialogFooter>
+
+      <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete session?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This scheduled session will be permanently deleted. This cannot be
+              undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteConfirm}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }
@@ -185,10 +248,13 @@ function CalendarEditDialog({
   startTime,
   endTime,
   isTaskEvent = false,
+  isSyncedFromGoogle = false,
   completed = false,
   onCompletedChange,
   onLinkClick,
   onDelete,
+  onEditGoogleEvent,
+  onDeleteGoogleEvent,
 }: CalendarEditDialogProps): React.ReactElement {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -199,11 +265,14 @@ function CalendarEditDialog({
           startTime={startTime}
           endTime={endTime}
           isTaskEvent={isTaskEvent}
+          isSyncedFromGoogle={isSyncedFromGoogle}
           completed={completed}
           onCompletedChange={onCompletedChange}
           onClose={() => onOpenChange(false)}
           onLinkClick={onLinkClick}
           onDelete={onDelete}
+          onEditGoogleEvent={onEditGoogleEvent}
+          onDeleteGoogleEvent={onDeleteGoogleEvent}
         />
       </DialogContent>
     </Dialog>

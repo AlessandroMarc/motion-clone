@@ -11,7 +11,19 @@ import { formatDateTimeLocal } from '@/utils/dateUtils';
 import { toast } from 'sonner';
 import { fireConfetti } from '@/utils/confetti';
 import type { FilteredGoogleEvent } from '@/services/googleCalendarService';
+import { googleCalendarService } from '@/services/googleCalendarService';
 
+export interface ClickedSlot {
+  date: Date;
+  hour: number;
+  minute: number;
+}
+
+/**
+ * Custom hook for managing calendar dialog state and event operations.
+ * Handles creation, editing, and deletion of both task and Google Calendar events.
+ * Manages choice dialog for time slot clicks, completion confirmations, and UI state.
+ */
 export function useCalendarDialogs(
   user: { id: string } | null,
   refreshEvents: () => Promise<CalendarEventUnion[]>,
@@ -38,6 +50,117 @@ export function useCalendarDialogs(
     useState(0);
   const [completionChoiceIsRecurring, setCompletionChoiceIsRecurring] =
     useState(false);
+
+  // Choice dialog state (Task vs Google Calendar Event)
+  const [choiceDialogOpen, setChoiceDialogOpen] = useState(false);
+  const [clickedSlot, setClickedSlot] = useState<ClickedSlot | null>(null);
+
+  // Task create dialog triggered from calendar click
+  const [taskCreateFromCalendarOpen, setTaskCreateFromCalendarOpen] =
+    useState(false);
+
+  // Google Calendar event form state
+  const [googleEventFormOpen, setGoogleEventFormOpen] = useState(false);
+  const [googleEventFormMode, setGoogleEventFormMode] = useState<
+    'create' | 'edit'
+  >('create');
+  const [googleEventFormData, setGoogleEventFormData] = useState<{
+    title?: string;
+    description?: string;
+    startTime: string;
+    endTime: string;
+    googleEventId?: string;
+  } | null>(null);
+
+  const handleGridCellClick = (date: Date, hour: number, minute: number) => {
+    setClickedSlot({ date, hour, minute });
+    setChoiceDialogOpen(true);
+  };
+
+  const getSlotLabel = (): string | undefined => {
+    if (!clickedSlot) return undefined;
+    const d = new Date(clickedSlot.date);
+    d.setHours(clickedSlot.hour, clickedSlot.minute, 0, 0);
+    return d.toLocaleString('en-US', {
+      weekday: 'long',
+      month: 'short',
+      day: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit',
+    });
+  };
+
+  const handleChooseTask = () => {
+    setChoiceDialogOpen(false);
+    setTaskCreateFromCalendarOpen(true);
+  };
+
+  const handleChooseGoogleEvent = () => {
+    if (!clickedSlot) return;
+    setChoiceDialogOpen(false);
+
+    const start = new Date(clickedSlot.date);
+    start.setHours(clickedSlot.hour, clickedSlot.minute, 0, 0);
+    const end = new Date(start);
+    end.setHours(start.getHours() + 1);
+
+    setGoogleEventFormData({
+      startTime: formatDateTimeLocal(start),
+      endTime: formatDateTimeLocal(end),
+    });
+    setGoogleEventFormMode('create');
+    setGoogleEventFormOpen(true);
+  };
+
+  const handleGoogleEventSaved = async () => {
+    await refreshEvents();
+    onTaskDropped?.();
+  };
+
+  const handleEditGoogleEvent = () => {
+    if (!editEvent) return;
+    const ev = editEvent as CalendarEventUnion & {
+      google_event_id?: string | null;
+    };
+    setEditOpen(false);
+    setGoogleEventFormData({
+      title: editTitle,
+      description: editDescription,
+      startTime: editStartTime,
+      endTime: editEndTime,
+      googleEventId: ev.google_event_id || undefined,
+    });
+    setGoogleEventFormMode('edit');
+    setGoogleEventFormOpen(true);
+  };
+
+  const handleDeleteGoogleEvent = async (
+    setEvents: React.Dispatch<React.SetStateAction<CalendarEventUnion[]>>
+  ) => {
+    if (!editEvent) return;
+    const ev = editEvent as CalendarEventUnion & {
+      google_event_id?: string | null;
+    };
+    if (!ev.google_event_id) return;
+
+    const confirmed = window.confirm(
+      'Delete this Google Calendar event? This will also remove it from Google Calendar.'
+    );
+    if (!confirmed) return;
+
+    try {
+      await googleCalendarService.deleteEvent(ev.google_event_id);
+      setEvents(curr => curr.filter(e => e.id !== editEvent.id));
+      setEditOpen(false);
+      toast.success('Google Calendar event deleted');
+      onTaskDropped?.();
+    } catch (err) {
+      console.error('Failed to delete Google Calendar event:', err);
+      toast.error(
+        err instanceof Error ? err.message : 'Failed to delete event'
+      );
+    }
+  };
 
   const openCreateDialog = (date: Date, hour: number, minute: number) => {
     const start = new Date(date);
@@ -320,5 +443,24 @@ export function useCalendarDialogs(
     completionChoiceSessionCount,
     completionChoiceIsRecurring,
     handleCompletionChoice,
+    // Choice dialog (Task vs Google Event)
+    choiceDialogOpen,
+    setChoiceDialogOpen,
+    clickedSlot,
+    handleGridCellClick,
+    getSlotLabel,
+    handleChooseTask,
+    handleChooseGoogleEvent,
+    // Task create from calendar
+    taskCreateFromCalendarOpen,
+    setTaskCreateFromCalendarOpen,
+    // Google Calendar event form
+    googleEventFormOpen,
+    setGoogleEventFormOpen,
+    googleEventFormMode,
+    googleEventFormData,
+    handleGoogleEventSaved,
+    handleEditGoogleEvent,
+    handleDeleteGoogleEvent,
   };
 }

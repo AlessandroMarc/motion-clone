@@ -1,4 +1,9 @@
 import { getApiBaseUrl, request } from './apiClient';
+import {
+  toCalendarEventUnion,
+  type UnknownRecord,
+} from './transforms';
+import type { CalendarEventUnion } from '@/types';
 
 export interface GoogleCalendarStatus {
   connected: boolean;
@@ -97,6 +102,79 @@ class GoogleCalendarService {
 
     if (!response.success) {
       throw new Error(response.error || 'Failed to disconnect');
+    }
+  }
+
+  /**
+   * Create an event on Google Calendar (and locally).
+   */
+  async createEvent(data: {
+    title: string;
+    description?: string;
+    start_time: string;
+    end_time: string;
+  }): Promise<CalendarEventUnion> {
+    const response = await request<CalendarEventUnion>(
+      '/google-calendar/events',
+      {
+        method: 'POST',
+        body: JSON.stringify(data),
+      }
+    );
+
+    if (!response.success || !response.data) {
+      throw new Error(
+        response.error || 'Failed to create Google Calendar event'
+      );
+    }
+
+    return toCalendarEventUnion(response.data as unknown as UnknownRecord);
+  }
+
+  /**
+   * Update an event on Google Calendar (and locally).
+   */
+  async updateEvent(
+    googleEventId: string,
+    data: {
+      title?: string;
+      description?: string;
+      start_time?: string;
+      end_time?: string;
+    }
+  ): Promise<CalendarEventUnion> {
+    const response = await request<CalendarEventUnion>(
+      `/google-calendar/events/${googleEventId}`,
+      {
+        method: 'PUT',
+        body: JSON.stringify(data),
+      }
+    );
+
+    if (!response.success || !response.data) {
+      throw new Error(
+        response.error || 'Failed to update Google Calendar event'
+      );
+    }
+
+    return toCalendarEventUnion(response.data as unknown as UnknownRecord);
+  }
+
+  /**
+   * Delete an event from Google Calendar (and locally).
+   */
+  async deleteEvent(googleEventId: string): Promise<void> {
+    const response = await request<null>(
+      `/google-calendar/events/${googleEventId}`,
+      {
+        method: 'DELETE',
+      }
+    );
+
+    if (!response.success) {
+      throw new Error(
+        response.error || 'Failed to delete Google Calendar event'
+      );
     }
   }
 }

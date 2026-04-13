@@ -31,14 +31,25 @@ import { TaskReminderField } from './TaskReminderField';
 interface TaskCreateDialogFormProps extends TaskCreateFormProps {
   trigger?: ReactNode;
   initialProjectId?: string | null;
+  /** Controlled open state (optional). When provided, the dialog is externally controlled. */
+  open?: boolean;
+  /** Callback when the open state changes in controlled mode. */
+  onOpenChange?: (open: boolean) => void;
 }
 
 export function TaskCreateDialogForm({
   onTaskCreate,
   trigger,
   initialProjectId,
+  open: controlledOpen,
+  onOpenChange: controlledOnOpenChange,
 }: TaskCreateDialogFormProps) {
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [internalOpen, setInternalOpen] = useState(false);
+  const isControlled = controlledOpen !== undefined;
+  const isDialogOpen = isControlled ? controlledOpen : internalOpen;
+  const setIsDialogOpen = isControlled
+    ? (v: boolean) => controlledOnOpenChange?.(v)
+    : setInternalOpen;
 
   const {
     form,
@@ -81,14 +92,16 @@ export function TaskCreateDialogForm({
 
   return (
     <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-      <DialogTrigger asChild>
-        {trigger ?? (
-          <Button className="gap-2" data-onboarding-step="create-task">
-            <Plus className="h-4 w-4" />
-            Create Task
-          </Button>
-        )}
-      </DialogTrigger>
+      {trigger !== null && (
+        <DialogTrigger asChild>
+          {trigger ?? (
+            <Button className="gap-2" data-onboarding-step="create-task">
+              <Plus className="h-4 w-4" />
+              Create Task
+            </Button>
+          )}
+        </DialogTrigger>
+      )}
       <DialogContent className="sm:max-w-[500px] max-h-[90vh] flex flex-col overflow-hidden">
         <DialogHeader>
           <DialogTitle>Create New Task</DialogTitle>

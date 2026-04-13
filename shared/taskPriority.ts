@@ -2,7 +2,7 @@
  * Shared task priority constants and comparison utilities.
  * Used by both frontend (sorting/display) and backend (scheduling).
  */
-import type { Task } from './types';
+import type { Task } from './types.js';
 
 type TaskPriority = Task['priority'];
 
