@@ -932,7 +932,10 @@ export class CalendarEventService {
     return data || [];
   }
 
-  // Get calendar event by Google event ID
+  /**
+   * Fetch a calendar event by its Google event ID.
+   * Returns the local calendar event record associated with a Google Calendar event.
+   */
   async getCalendarEventByGoogleEventId(
     userId: string,
     googleEventId: string,
@@ -960,7 +963,10 @@ export class CalendarEventService {
     return data;
   }
 
-  // Get all calendar events synced from Google for a user (batch fetch)
+  /**
+   * Fetch all calendar events synced from Google Calendar for a user.
+   * Returns only events with synced_from_google flag set to true.
+   */
   async getAllGoogleCalendarEventsByUserId(
     userId: string,
     authToken?: string

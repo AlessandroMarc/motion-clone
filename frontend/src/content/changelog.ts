@@ -37,6 +37,14 @@ export const changelogEntries: ChangelogEntry[] = [
         type: 'improved',
         text: 'Calendar dialogs now intelligently distinguish between task sessions and Google Calendar events for the right editing experience.',
       },
+      {
+        type: 'improved',
+        text: 'Enhanced error handling for Google Calendar permission issues — users are now clearly prompted to reconnect their Google account with actionable guidance.',
+      },
+      {
+        type: 'improved',
+        text: 'Delete confirmation now uses a styled dialog instead of the browser alert, maintaining consistent app UI.',
+      },
     ],
   },
   {

@@ -19,6 +19,11 @@ export interface ClickedSlot {
   minute: number;
 }
 
+/**
+ * Custom hook for managing calendar dialog state and event operations.
+ * Handles creation, editing, and deletion of both task and Google Calendar events.
+ * Manages choice dialog for time slot clicks, completion confirmations, and UI state.
+ */
 export function useCalendarDialogs(
   user: { id: string } | null,
   refreshEvents: () => Promise<CalendarEventUnion[]>,

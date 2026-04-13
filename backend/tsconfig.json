@@ -4,13 +4,12 @@
     // File Layout
     "rootDir": "../",
     "outDir": "./dist",
-    "baseUrl": ".",
 
     // Environment Settings
     // See also https://aka.ms/tsconfig/module
-    "module": "ESNext",
+    "module": "node16",
     "target": "ES2022",
-    "moduleResolution": "node",
+    "moduleResolution": "node16",
     "allowSyntheticDefaultImports": true,
     "esModuleInterop": true,
     "types": ["node"],

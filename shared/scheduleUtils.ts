@@ -2,7 +2,7 @@
  * Shared schedule interpretation utilities.
  * Used by both frontend (display) and backend (scheduling).
  */
-import type { DayOfWeek, DaySchedule, Schedule } from './types';
+import type { DayOfWeek, DaySchedule, Schedule } from './types.js';
 
 const DAY_SHORT = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'] as const;
 

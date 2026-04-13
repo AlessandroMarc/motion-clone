@@ -29,6 +29,11 @@ interface GoogleCalendarEventFormProps {
   onSaved: () => void | Promise<void>;
 }
 
+/**
+ * Modal form for creating and editing Google Calendar events.
+ * Provides title, description, and start/end time inputs with validation.
+ * Syncs changes to the backend and refreshes the calendar on success.
+ */
 export function GoogleCalendarEventForm({
   open,
   onOpenChange,
@@ -110,9 +115,21 @@ export function GoogleCalendarEventForm({
       }
     } catch (err) {
       console.error('Failed to save Google Calendar event:', err);
-      toast.error(
-        err instanceof Error ? err.message : 'Failed to save event'
-      );
+      const message = err instanceof Error ? err.message : 'Failed to save event';
+      if (message.includes('insufficient authentication scopes')) {
+        toast.error(
+          'Google Calendar permission error. Please reconnect your Google account in Profile settings.',
+          {
+            duration: 8000,
+            action: {
+              label: 'Go to Profile',
+              onClick: () => { window.location.href = '/profile'; },
+            },
+          }
+        );
+      } else {
+        toast.error(message);
+      }
     } finally {
       setIsSubmitting(false);
     }

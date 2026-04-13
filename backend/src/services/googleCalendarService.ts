@@ -289,6 +289,11 @@ export class GoogleCalendarService {
     return syncPromise;
   }
 
+  /**
+   * Internal method to perform the actual sync of Google Calendar events.
+   * Filters out free/declined events and syncs remaining events to the local database.
+   * Returns sync results including count, duration, and filtered events.
+   */
   private async performSyncEventsFromGoogle(
     userId: string,
     authToken?: string

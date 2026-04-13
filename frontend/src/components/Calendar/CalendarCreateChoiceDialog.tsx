@@ -24,6 +24,11 @@ interface CalendarCreateChoiceDialogProps {
   slotLabel?: string;
 }
 
+/**
+ * Dialog that appears when clicking an empty calendar time slot.
+ * Allows users to choose between creating a task or a Google Calendar event.
+ * Disables Google Calendar option if not connected.
+ */
 export function CalendarCreateChoiceDialog({
   open,
   onOpenChange,
