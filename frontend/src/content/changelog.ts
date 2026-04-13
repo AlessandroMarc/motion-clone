@@ -19,11 +19,11 @@ export const changelogEntries: ChangelogEntry[] = [
     date: 'April 2026',
     title: 'Google Calendar Full CRUD & Click-to-Create',
     description:
-      'Create and edit Google Calendar events directly from the calendar view — plus click any time slot to quickly add new events.',
+      'Create and edit Google Calendar events directly from the calendar view — plus click any time slot to choose to create new events.',
     items: [
       {
         type: 'new',
-        text: 'Click on an empty time slot in the calendar to instantly create a new Google Calendar event with a streamlined form.',
+        text: 'Click on an empty time slot in the calendar to choose to create a new Google Calendar event or task with a streamlined form.',
       },
       {
         type: 'new',
@@ -31,7 +31,7 @@ export const changelogEntries: ChangelogEntry[] = [
       },
       {
         type: 'new',
-        text: 'Dedicated Google Calendar event form with datetime pickers, validation, and real-time sync back to Google.',
+        text: 'Dedicated Google Calendar event form with datetime pickers, validation, and sync after changes back to Google.',
       },
       {
         type: 'improved',
