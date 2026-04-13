@@ -5,7 +5,7 @@ import { UserSettingsService } from '../services/userSettingsService.js';
 import { AutoScheduleService } from '../services/autoScheduleService.js';
 import { ResponseHelper } from '../utils/responseHelpers.js';
 import { isCalendarEventTask } from '../types/database.js';
-import type { CalendarEventTask, Task } from '../types/database.js';
+import type { CalendarEventTask, CalendarEventUnion, Task } from '../types/database.js';
 import { calculateAutoSchedule } from '../utils/autoScheduleCalculator.js';
 import { expandRecurringTasks } from '../utils/recurrenceCalculator.js';
 import { TaskService } from '../services/taskService.js';
