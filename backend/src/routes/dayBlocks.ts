@@ -86,7 +86,7 @@ async function simulateDayBlock(
   // Expand recurring tasks
   const recurringTaskSyntheticEvents = expandRecurringTasks(
     allTasks.filter(t => t.is_recurring && t.status !== 'completed'),
-    eventsWithBlock
+    allEvents.filter(e => isCalendarEventTask(e)) as CalendarEventTask[]
   );
 
   const allTaskEventsForScheduling = [
