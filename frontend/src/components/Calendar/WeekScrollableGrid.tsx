@@ -174,7 +174,7 @@ function WeekScrollableGrid({
                       onBlockDay(date);
                     }}
                     className="opacity-40 hover:opacity-90 transition-opacity ml-0.5"
-                    title="Block remaining day — reschedule tasks to tomorrow"
+                    title="Block entire day — reschedule all tasks to tomorrow"
                   >
                     <Moon className="h-3 w-3" />
                   </button>

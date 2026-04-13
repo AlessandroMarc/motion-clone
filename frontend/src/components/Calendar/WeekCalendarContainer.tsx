@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   type CalendarEventUnion,
+  type CalendarEventTask,
   type CreateCalendarEventInput,
   isCalendarEventTask,
   type Schedule,
@@ -41,6 +42,16 @@ import { toast } from 'sonner';
 import { userSettingsService } from '@/services/userSettingsService';
 import { HiddenEventsIndicator } from './HiddenEventsIndicator';
 import { PinnedTasksWarningDialog } from './PinnedTasksWarningDialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 interface WeekCalendarContainerProps {
   onTaskDropped?: () => void;
@@ -311,6 +322,22 @@ export function WeekCalendarContainer({
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [taskEditOpen, setTaskEditOpen] = useState(false);
 
+  // Day block preview state
+  const [dayBlockPreviewOpen, setDayBlockPreviewOpen] = useState(false);
+  const [dayBlockPreviewData, setDayBlockPreviewData] = useState<{
+    date: Date;
+    dateStr: string;
+    fromTime: string;
+    tasksToMove: Array<{
+      task: { id: string; title: string };
+      currentEvent: CalendarEventTask;
+      proposedTime: { start: Date; end: Date } | null;
+    }>;
+    totalEventsCreated: number;
+    totalEventsDeleted: number;
+  } | null>(null);
+  const [dayBlockPreviewLoading, setDayBlockPreviewLoading] = useState(false);
+
   const openTaskEditForm = () => {
     if (!dialogs.editEvent) return;
 
@@ -393,15 +420,44 @@ export function WeekCalendarContainer({
 
   const handleBlockDay = async (date: Date) => {
     const dateStr = date.toISOString().split('T')[0];
-    const now = new Date();
-    // Floor to the current 15-min slot so a task that just started is included
-    const minutesFloor = now.getMinutes() - (now.getMinutes() % 15);
-    const rounded = new Date(now);
-    rounded.setMinutes(minutesFloor, 0, 0);
-    const fromTime = `${String(rounded.getHours()).padStart(2, '0')}:${String(rounded.getMinutes()).padStart(2, '0')}`;
+    // Block from start of working hours (default to 9am if no schedule) to block the entire day
+    const workingHoursStart = activeSchedule?.working_hours_start ?? 9;
+    const fromTime = `${String(workingHoursStart).padStart(2, '0')}:00`;
+
+    // Fetch preview first
+    setDayBlockPreviewLoading(true);
+    try {
+      const preview = await calendarService.previewDayBlock(dateStr, fromTime);
+
+      setDayBlockPreviewData({
+        date,
+        dateStr,
+        fromTime,
+        tasksToMove: preview.tasksToMove,
+        totalEventsCreated: preview.totalEventsCreated,
+        totalEventsDeleted: preview.totalEventsDeleted,
+      });
+      setDayBlockPreviewOpen(true);
+    } catch (e) {
+      toast.error(
+        e instanceof Error ? e.message : 'Could not preview day block'
+      );
+    } finally {
+      setDayBlockPreviewLoading(false);
+    }
+  };
+
+  const handleConfirmBlockDay = async () => {
+    if (!dayBlockPreviewData) return;
+
+    setDayBlockPreviewOpen(false);
+    setDayBlockPreviewLoading(true);
 
     try {
-      const result = await calendarService.createDayBlock(dateStr, fromTime);
+      const result = await calendarService.createDayBlock(
+        dayBlockPreviewData.dateStr,
+        dayBlockPreviewData.fromTime
+      );
       await refreshEvents();
       const changed =
         result.schedule_result.eventsCreated +
@@ -414,6 +470,9 @@ export function WeekCalendarContainer({
       onTaskDropped?.();
     } catch (e) {
       toast.error(e instanceof Error ? e.message : 'Could not block day');
+    } finally {
+      setDayBlockPreviewLoading(false);
+      setDayBlockPreviewData(null);
     }
   };
 
@@ -660,6 +719,110 @@ export function WeekCalendarContainer({
           onCancel={() => pinnedWarning.resolve(false)}
         />
       )}
+
+      {/* Day Block Confirmation Dialog */}
+      <AlertDialog
+        open={dayBlockPreviewOpen}
+        onOpenChange={open => {
+          if (!open) {
+            setDayBlockPreviewOpen(false);
+            setDayBlockPreviewData(null);
+          }
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Block the rest of the day?</AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-3">
+                <p>
+                  This will block your calendar from{' '}
+                  <strong>
+                    {dayBlockPreviewData?.fromTime || 'now'} until{' '}
+                    {dayBlockPreviewData
+                      ? new Date(
+                          new Date(dayBlockPreviewData.dateStr).getTime() +
+                            (activeSchedule?.working_hours_end ?? 18) *
+                              60 *
+                              60 *
+                              1000
+                        )
+                          .toLocaleTimeString('en-US', {
+                            hour: '2-digit',
+                            minute: '2-digit',
+                          })
+                      : 'end of day'}
+                  </strong>
+                  . All task events scheduled during this time will be moved to
+                  the next available slots.
+                </p>
+
+                {dayBlockPreviewData &&
+                  dayBlockPreviewData.tasksToMove.length > 0 && (
+                    <div className="rounded-md border bg-muted/50 p-3">
+                      <p className="text-sm font-medium mb-2">
+                        {dayBlockPreviewData.tasksToMove.length} task
+                        {dayBlockPreviewData.tasksToMove.length !== 1
+                          ? 's'
+                          : ''}{' '}
+                        will be rescheduled:
+                      </p>
+                      <ul className="space-y-2 text-sm">
+                        {dayBlockPreviewData.tasksToMove.map((item, idx) => (
+                          <li key={idx} className="flex items-start gap-2">
+                            <span className="text-muted-foreground">•</span>
+                            <div className="flex-1">
+                              <div className="font-medium">
+                                {item.task.title}
+                              </div>
+                              <div className="text-xs text-muted-foreground">
+                                {item.currentEvent.start_time &&
+                                  new Date(
+                                    item.currentEvent.start_time
+                                  ).toLocaleTimeString('en-US', {
+                                    hour: '2-digit',
+                                    minute: '2-digit',
+                                  })}
+                                {' → '}
+                                {item.proposedTime
+                                  ? item.proposedTime.start.toLocaleTimeString(
+                                      'en-US',
+                                      {
+                                        hour: '2-digit',
+                                        minute: '2-digit',
+                                      }
+                                    )
+                                  : 'pending'}
+                              </div>
+                            </div>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
+                {dayBlockPreviewData &&
+                  dayBlockPreviewData.tasksToMove.length === 0 && (
+                    <p className="text-sm text-muted-foreground">
+                      No tasks are currently scheduled during this time.
+                    </p>
+                  )}
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleConfirmBlockDay}
+              disabled={dayBlockPreviewLoading}
+            >
+              {dayBlockPreviewLoading
+                ? 'Blocking...'
+                : `Block ${dayBlockPreviewData?.tasksToMove.length ?? 0} task${(dayBlockPreviewData?.tasksToMove.length ?? 0) !== 1 ? 's' : ''}`}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }
