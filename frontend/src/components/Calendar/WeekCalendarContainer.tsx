@@ -391,6 +391,32 @@ export function WeekCalendarContainer({
     onTaskDropped?.();
   };
 
+  const handleBlockDay = async (date: Date) => {
+    const dateStr = date.toISOString().split('T')[0];
+    const now = new Date();
+    // Floor to the current 15-min slot so a task that just started is included
+    const minutesFloor = now.getMinutes() - (now.getMinutes() % 15);
+    const rounded = new Date(now);
+    rounded.setMinutes(minutesFloor, 0, 0);
+    const fromTime = `${String(rounded.getHours()).padStart(2, '0')}:${String(rounded.getMinutes()).padStart(2, '0')}`;
+
+    try {
+      const result = await calendarService.createDayBlock(dateStr, fromTime);
+      await refreshEvents();
+      const changed =
+        result.schedule_result.eventsCreated +
+        result.schedule_result.eventsDeleted;
+      toast.success(
+        changed > 0
+          ? `Day blocked — ${changed} task event${changed !== 1 ? 's' : ''} rescheduled`
+          : 'Day blocked'
+      );
+      onTaskDropped?.();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Could not block day');
+    }
+  };
+
   const displayEventsByDay = useMemo(() => {
     if (!isMobile) return eventsByDay;
 
@@ -612,6 +638,7 @@ export function WeekCalendarContainer({
         workingHoursEnd={activeSchedule?.working_hours_end}
         onTaskCreate={handleTaskCreate}
         googleCalendarConnected={googleCalendarConnected}
+        onBlockDay={handleBlockDay}
       />
       <TaskEditDialogForm
         task={selectedTask}

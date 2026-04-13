@@ -385,7 +385,8 @@ export class CalendarEventService {
     }
 
     // Skip overlap check for events synced from Google (they may overlap)
-    if (!input.synced_from_google) {
+    // and for day-blocks (they intentionally cover existing task events)
+    if (!input.synced_from_google && !input.is_day_block) {
       const client = authToken
         ? getAuthenticatedSupabase(authToken)
         : serviceRoleSupabase;
@@ -409,6 +410,7 @@ export class CalendarEventService {
       completed_at: string | null;
       google_event_id?: string | null;
       synced_from_google?: boolean;
+      is_day_block?: boolean;
     } = {
       title: input.title,
       start_time: input.start_time,
@@ -426,6 +428,9 @@ export class CalendarEventService {
     }
     if (input.synced_from_google !== undefined) {
       insertData.synced_from_google = input.synced_from_google;
+    }
+    if (input.is_day_block !== undefined) {
+      insertData.is_day_block = input.is_day_block;
     }
 
     if (!skipLogging) {

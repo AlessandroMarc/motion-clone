@@ -143,6 +143,7 @@ interface WeekCalendarViewProps {
   workingHoursStart?: number;
   workingHoursEnd?: number;
   googleCalendarConnected?: boolean;
+  onBlockDay?: (date: Date) => void;
 }
 
 export function WeekCalendarView({
@@ -183,6 +184,7 @@ export function WeekCalendarView({
   workingHoursStart,
   workingHoursEnd,
   googleCalendarConnected = false,
+  onBlockDay,
 }: WeekCalendarViewProps) {
   const editEvent = dialogs.editEvent as
     | (CalendarEventUnion & {
@@ -237,6 +239,7 @@ export function WeekCalendarView({
         isMobile={isMobile}
         workingHoursStart={workingHoursStart}
         workingHoursEnd={workingHoursEnd}
+        onBlockDay={onBlockDay}
       />
 
       {/* Choice dialog: Task vs Google Calendar Event */}

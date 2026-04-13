@@ -12,6 +12,7 @@ import {
   isSameDay,
 } from '@/utils/calendarUtils';
 import { parseLocalDate } from '@/utils/dateUtils';
+import { Moon } from 'lucide-react';
 import { startOfDay, endOfDay } from 'date-fns';
 
 /**
@@ -99,6 +100,7 @@ interface WeekScrollableGridProps {
   isMobile?: boolean;
   workingHoursStart?: number;
   workingHoursEnd?: number;
+  onBlockDay?: (date: Date) => void;
 }
 
 function WeekScrollableGrid({
@@ -122,6 +124,7 @@ function WeekScrollableGrid({
   isMobile = false,
   workingHoursStart,
   workingHoursEnd,
+  onBlockDay,
 }: WeekScrollableGridProps) {
   const timeSlots = Array.from({ length: 24 }, (_, i) => i);
   const today = new Date();
@@ -155,13 +158,26 @@ function WeekScrollableGrid({
               </div>
               <div
                 className={cn(
-                  'text-sm font-semibold mt-0.5',
+                  'text-sm font-semibold mt-0.5 flex items-center justify-center gap-1',
                   isToday && 'text-primary'
                 )}
               >
                 {getMonthDay(date)}
                 {isToday && (
-                  <span className="ml-1 inline-block w-1.5 h-1.5 rounded-full bg-primary" />
+                  <span className="inline-block w-1.5 h-1.5 rounded-full bg-primary" />
+                )}
+                {isToday && onBlockDay && (
+                  <button
+                    type="button"
+                    onClick={e => {
+                      e.stopPropagation();
+                      onBlockDay(date);
+                    }}
+                    className="opacity-40 hover:opacity-90 transition-opacity ml-0.5"
+                    title="Block remaining day — reschedule tasks to tomorrow"
+                  >
+                    <Moon className="h-3 w-3" />
+                  </button>
                 )}
               </div>
             </div>

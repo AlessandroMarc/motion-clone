@@ -394,7 +394,17 @@ export function useCalendarDialogs(
   ) => {
     if (!editEventId) return;
     try {
-      await calendarService.deleteCalendarEvent(editEventId);
+      const isDayBlock =
+        editEvent &&
+        !isCalendarEventTask(editEvent) &&
+        (editEvent as CalendarEventUnion & { is_day_block?: boolean })
+          .is_day_block === true;
+
+      if (isDayBlock) {
+        await calendarService.deleteDayBlock(editEventId);
+      } else {
+        await calendarService.deleteCalendarEvent(editEventId);
+      }
       setEvents(curr => curr.filter(ev => ev.id !== editEventId));
       setEditOpen(false);
     } catch (err) {
