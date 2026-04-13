@@ -12,7 +12,7 @@ import {
   isSameDay,
 } from '@/utils/calendarUtils';
 import { parseLocalDate } from '@/utils/dateUtils';
-import { Moon } from 'lucide-react';
+import { Moon, Loader2 } from 'lucide-react';
 import { startOfDay, endOfDay } from 'date-fns';
 
 /**
@@ -101,6 +101,7 @@ interface WeekScrollableGridProps {
   workingHoursStart?: number;
   workingHoursEnd?: number;
   onBlockDay?: (date: Date) => void;
+  blockDayLoading?: boolean;
 }
 
 function WeekScrollableGrid({
@@ -125,6 +126,7 @@ function WeekScrollableGrid({
   workingHoursStart,
   workingHoursEnd,
   onBlockDay,
+  blockDayLoading = false,
 }: WeekScrollableGridProps) {
   const timeSlots = Array.from({ length: 24 }, (_, i) => i);
   const today = new Date();
@@ -151,6 +153,7 @@ function WeekScrollableGrid({
         <div className="p-2 text-[10px] font-medium text-muted-foreground/60 text-right pr-3"></div>
         {weekDates.map((date, index) => {
           const isToday = isSameDay(date, today);
+          const isPast = date < today && !isToday;
           return (
             <div key={index} className="p-2 text-center">
               <div className="text-[10px] font-medium text-muted-foreground/70 uppercase tracking-wider">
@@ -166,17 +169,28 @@ function WeekScrollableGrid({
                 {isToday && (
                   <span className="inline-block w-1.5 h-1.5 rounded-full bg-primary" />
                 )}
-                {isToday && onBlockDay && (
+                {onBlockDay && !isPast && (
                   <button
                     type="button"
                     onClick={e => {
                       e.stopPropagation();
-                      onBlockDay(date);
+                      if (!blockDayLoading) onBlockDay(date);
                     }}
-                    className="opacity-40 hover:opacity-90 transition-opacity ml-0.5"
-                    title="Block entire day — reschedule all tasks to tomorrow"
+                    disabled={blockDayLoading}
+                    className="opacity-40 hover:opacity-90 transition-opacity ml-0.5 disabled:cursor-wait"
+                    title={
+                      blockDayLoading
+                        ? 'Calculating schedule changes…'
+                        : isToday
+                          ? 'Block the rest of today — reschedule remaining tasks'
+                          : 'Block this day — reschedule all tasks to the next available slot'
+                    }
                   >
-                    <Moon className="h-3 w-3" />
+                    {blockDayLoading ? (
+                      <Loader2 className="h-3 w-3 animate-spin" />
+                    ) : (
+                      <Moon className="h-3 w-3" />
+                    )}
                   </button>
                 )}
               </div>

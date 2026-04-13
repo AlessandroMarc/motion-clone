@@ -301,7 +301,7 @@ class CalendarService {
    */
   async createDayBlock(
     date: string,
-    fromTime?: string
+    fromTime: string
   ): Promise<{
     day_block: CalendarEventUnion;
     schedule_result: {
@@ -340,7 +340,7 @@ class CalendarService {
    */
   async previewDayBlock(
     date: string,
-    fromTime?: string
+    fromTime: string
   ): Promise<{
     tasksToMove: Array<{
       task: { id: string; title: string };
@@ -350,6 +350,10 @@ class CalendarService {
     totalEventsCreated: number;
     totalEventsDeleted: number;
     violations: number;
+    /** ISO string of the computed block end time (timezone-safe). */
+    blockEndTime: string;
+    /** True when the day is explicitly marked non-working in the user's schedule. */
+    isNonWorkingDay: boolean;
   }> {
     const response = await request<{
       tasksToMove: Array<{
@@ -360,6 +364,8 @@ class CalendarService {
       totalEventsCreated: number;
       totalEventsDeleted: number;
       violations: number;
+      blockEndTime: string;
+      isNonWorkingDay: boolean;
     }>('/day-blocks/preview', {
       method: 'POST',
       body: JSON.stringify({ date, from_time: fromTime }),
@@ -383,6 +389,8 @@ class CalendarService {
       totalEventsCreated: response.data.totalEventsCreated,
       totalEventsDeleted: response.data.totalEventsDeleted,
       violations: response.data.violations,
+      blockEndTime: response.data.blockEndTime,
+      isNonWorkingDay: response.data.isNonWorkingDay,
     };
   }
 

@@ -1,6 +1,6 @@
 'use client';
 
-import { CalendarEventUnion, isCalendarEventTask, type Task } from '@/types';
+import { CalendarEventUnion, isCalendarEventTask, isCalendarEventDayBlock, type Task } from '@/types';
 import { formatEventTime } from '@/utils/calendarUtils';
 import { formatDate } from '@/utils/dateUtils';
 import { AlertTriangle, CheckCircle2, Pin, Moon } from 'lucide-react';
@@ -29,10 +29,7 @@ export function CalendarEventCard({
   task,
 }: CalendarEventCardProps) {
   const isTaskEvent = isCalendarEventTask(event);
-  const isDayBlock =
-    !isTaskEvent &&
-    (event as CalendarEventUnion & { is_day_block?: boolean }).is_day_block ===
-      true;
+  const isDayBlock = isCalendarEventDayBlock(event);
   const isCompleted = isTaskEvent && !!event.completed_at;
   const now = new Date();
   const eventEnd = new Date(event.end_time);

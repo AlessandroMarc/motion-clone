@@ -125,6 +125,13 @@ function isCalendarEventTask(
   );
 }
 
+// Type guard to check if an event is a user-created day block
+function isCalendarEventDayBlock(
+  event: CalendarEventUnion
+): event is CalendarEvent & { is_day_block: true } {
+  return (event as CalendarEvent).is_day_block === true;
+}
+
 /**
  * Valid day-of-week indices: 0 (Sunday) through 6 (Saturday)
  */
@@ -189,4 +196,4 @@ export type {
   OnboardingStatus,
   OnboardingStep,
 };
-export { isCalendarEventTask };
+export { isCalendarEventTask, isCalendarEventDayBlock };

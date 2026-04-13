@@ -328,6 +328,7 @@ export function WeekCalendarContainer({
     date: Date;
     dateStr: string;
     fromTime: string;
+    blockEndTime: string; // ISO string from backend — accurate regardless of timezone
     tasksToMove: Array<{
       task: { id: string; title: string };
       currentEvent: CalendarEventTask;
@@ -335,6 +336,8 @@ export function WeekCalendarContainer({
     }>;
     totalEventsCreated: number;
     totalEventsDeleted: number;
+    violations: number;
+    isNonWorkingDay: boolean;
   } | null>(null);
   const [dayBlockPreviewLoading, setDayBlockPreviewLoading] = useState(false);
 
@@ -419,12 +422,31 @@ export function WeekCalendarContainer({
   };
 
   const handleBlockDay = async (date: Date) => {
-    const dateStr = date.toISOString().split('T')[0];
-    // Block from start of working hours (default to 9am if no schedule) to block the entire day
-    const workingHoursStart = activeSchedule?.working_hours_start ?? 9;
-    const fromTime = `${String(workingHoursStart).padStart(2, '0')}:00`;
+    // Use local date string (YYYY-MM-DD) — avoids UTC-midnight offset issues
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, '0');
+    const d = String(date.getDate()).padStart(2, '0');
+    const dateStr = `${y}-${m}-${d}`;
 
-    // Fetch preview first
+    const isToday = dateStr === (() => {
+      const now = new Date();
+      return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+    })();
+
+    let fromTime: string;
+    if (isToday) {
+      // Block from now (floored to 15-min slot) — computed locally to avoid server UTC clock
+      const now = new Date();
+      const h = String(now.getHours()).padStart(2, '0');
+      const mins = now.getMinutes();
+      const mFloor = String(mins - (mins % 15)).padStart(2, '0');
+      fromTime = `${h}:${mFloor}`;
+    } else {
+      // For future days block the whole working day from its start
+      const workingHoursStart = activeSchedule?.working_hours_start ?? 9;
+      fromTime = `${String(Math.floor(workingHoursStart)).padStart(2, '0')}:00`;
+    }
+
     setDayBlockPreviewLoading(true);
     try {
       const preview = await calendarService.previewDayBlock(dateStr, fromTime);
@@ -433,9 +455,12 @@ export function WeekCalendarContainer({
         date,
         dateStr,
         fromTime,
+        blockEndTime: preview.blockEndTime,
         tasksToMove: preview.tasksToMove,
         totalEventsCreated: preview.totalEventsCreated,
         totalEventsDeleted: preview.totalEventsDeleted,
+        violations: preview.violations,
+        isNonWorkingDay: preview.isNonWorkingDay,
       });
       setDayBlockPreviewOpen(true);
     } catch (e) {
@@ -698,6 +723,7 @@ export function WeekCalendarContainer({
         onTaskCreate={handleTaskCreate}
         googleCalendarConnected={googleCalendarConnected}
         onBlockDay={handleBlockDay}
+        blockDayLoading={dayBlockPreviewLoading}
       />
       <TaskEditDialogForm
         task={selectedTask}
@@ -739,23 +765,24 @@ export function WeekCalendarContainer({
                   This will block your calendar from{' '}
                   <strong>
                     {dayBlockPreviewData?.fromTime || 'now'} until{' '}
-                    {dayBlockPreviewData
-                      ? new Date(
-                          new Date(dayBlockPreviewData.dateStr).getTime() +
-                            (activeSchedule?.working_hours_end ?? 18) *
-                              60 *
-                              60 *
-                              1000
+                    {dayBlockPreviewData?.blockEndTime
+                      ? new Date(dayBlockPreviewData.blockEndTime).toLocaleTimeString(
+                          'en-US',
+                          { hour: '2-digit', minute: '2-digit' }
                         )
-                          .toLocaleTimeString('en-US', {
-                            hour: '2-digit',
-                            minute: '2-digit',
-                          })
                       : 'end of day'}
                   </strong>
                   . All task events scheduled during this time will be moved to
                   the next available slots.
                 </p>
+
+                {/* Non-working day warning */}
+                {dayBlockPreviewData?.isNonWorkingDay && (
+                  <p className="text-sm text-amber-600 dark:text-amber-400">
+                    This is a non-working day in your schedule — no tasks are
+                    auto-scheduled here, so the block won't move anything.
+                  </p>
+                )}
 
                 {dayBlockPreviewData &&
                   dayBlockPreviewData.tasksToMove.length > 0 && (
@@ -778,7 +805,7 @@ export function WeekCalendarContainer({
                               <div className="text-xs text-muted-foreground">
                                 {item.currentEvent.start_time &&
                                   new Date(
-                                    item.currentEvent.start_time
+                                    item.currentEvent.start_time as unknown as string
                                   ).toLocaleTimeString('en-US', {
                                     hour: '2-digit',
                                     minute: '2-digit',
@@ -787,12 +814,9 @@ export function WeekCalendarContainer({
                                 {item.proposedTime
                                   ? item.proposedTime.start.toLocaleTimeString(
                                       'en-US',
-                                      {
-                                        hour: '2-digit',
-                                        minute: '2-digit',
-                                      }
+                                      { hour: '2-digit', minute: '2-digit' }
                                     )
-                                  : 'pending'}
+                                  : 'no slot found'}
                               </div>
                             </div>
                           </li>
@@ -802,11 +826,28 @@ export function WeekCalendarContainer({
                   )}
 
                 {dayBlockPreviewData &&
-                  dayBlockPreviewData.tasksToMove.length === 0 && (
+                  dayBlockPreviewData.tasksToMove.length === 0 &&
+                  !dayBlockPreviewData.isNonWorkingDay && (
                     <p className="text-sm text-muted-foreground">
                       No tasks are currently scheduled during this time.
                     </p>
                   )}
+
+                {/* Violations warning (item 13) */}
+                {dayBlockPreviewData && dayBlockPreviewData.violations > 0 && (
+                  <p className="text-sm text-amber-600 dark:text-amber-400">
+                    {dayBlockPreviewData.violations} task
+                    {dayBlockPreviewData.violations !== 1 ? 's' : ''} cannot be
+                    rescheduled within the scheduling window and will be placed
+                    past their deadline.
+                  </p>
+                )}
+
+                {/* Recurring tasks note (item 17) */}
+                <p className="text-xs text-muted-foreground">
+                  Recurring task occurrences are rescheduled automatically and
+                  are not shown above.
+                </p>
               </div>
             </AlertDialogDescription>
           </AlertDialogHeader>
@@ -818,7 +859,9 @@ export function WeekCalendarContainer({
             >
               {dayBlockPreviewLoading
                 ? 'Blocking...'
-                : `Block ${dayBlockPreviewData?.tasksToMove.length ?? 0} task${(dayBlockPreviewData?.tasksToMove.length ?? 0) !== 1 ? 's' : ''}`}
+                : dayBlockPreviewData && dayBlockPreviewData.tasksToMove.length > 0
+                  ? `Block day — ${dayBlockPreviewData.tasksToMove.length} task${dayBlockPreviewData.tasksToMove.length !== 1 ? 's' : ''} will move`
+                  : 'Block day'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
