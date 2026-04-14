@@ -36,6 +36,7 @@ jest.unstable_mockModule('../../config/supabase.js', () => ({
 const mockAutoScheduleTriggerQueue = {
   trigger: jest.fn(),
   triggerAndWait: jest.fn().mockResolvedValue(undefined),
+  triggerOrWait: jest.fn().mockResolvedValue(undefined),
   cancel: jest.fn(),
   cancelAll: jest.fn(),
 };
@@ -261,7 +262,7 @@ describe('ProjectService', () => {
         'test-token'
       );
 
-      expect(mockAutoScheduleTriggerQueue.trigger).toHaveBeenCalledWith(
+      expect(mockAutoScheduleTriggerQueue.triggerOrWait).toHaveBeenCalledWith(
         'user-1',
         'test-token'
       );
@@ -331,7 +332,7 @@ describe('ProjectService', () => {
         'test-token'
       );
 
-      expect(mockAutoScheduleTriggerQueue.trigger).toHaveBeenCalledWith(
+      expect(mockAutoScheduleTriggerQueue.triggerOrWait).toHaveBeenCalledWith(
         'user-1',
         'test-token'
       );

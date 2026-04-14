@@ -137,13 +137,20 @@ export class ProjectService {
     }
 
     // Trigger auto-schedule if scheduling-relevant fields changed (deadline or schedule).
-    // Fire-and-forget: the background run will debounce and recompute; the client
-    // picks up the new calendar_events via realtime / next fetch.
+    // triggerOrWait() is fire-and-forget on Node but awaited on Vercel where
+    // background tasks cannot outlive the serverless function response.
     if (
       authToken &&
       (input.deadline !== undefined || input.schedule_id !== undefined)
     ) {
-      autoScheduleTriggerQueue.trigger(data.user_id, authToken);
+      try {
+        await autoScheduleTriggerQueue.triggerOrWait(data.user_id, authToken);
+      } catch (err) {
+        console.error(
+          `[ProjectService] Auto-schedule trigger failed for user ${data.user_id}:`,
+          err
+        );
+      }
     }
 
     return data;
@@ -181,11 +188,19 @@ export class ProjectService {
         `[ProjectService] Deleted project and all related data in ${duration}ms`
       );
 
-      // Trigger auto-schedule in the background. The atomic delete RPC already
-      // removed the project's tasks and their calendar_events, so the UI is
-      // consistent immediately; the reschedule of remaining tasks runs out-of-band.
+      // Trigger auto-schedule. The atomic delete RPC already removed the
+      // project's tasks and their calendar_events, so the UI is consistent
+      // immediately; the reschedule of remaining tasks uses triggerOrWait —
+      // fire-and-forget on Node, awaited on Vercel.
       if (userId && authToken) {
-        autoScheduleTriggerQueue.trigger(userId, authToken);
+        try {
+          await autoScheduleTriggerQueue.triggerOrWait(userId, authToken);
+        } catch (err) {
+          console.error(
+            `[ProjectService] Auto-schedule trigger failed for user ${userId}:`,
+            err
+          );
+        }
       }
 
       return true;

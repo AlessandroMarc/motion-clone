@@ -156,6 +156,25 @@ class AutoScheduleTriggerQueueImpl {
   }
 
   /**
+   * Runtime-aware trigger for mutation paths.
+   *
+   * On Vercel's serverless runtime, background work is killed the moment the
+   * function returns, so fire-and-forget via `trigger()` is a no-op there.
+   * To keep auto-scheduling correct in production we must `await` the run.
+   *
+   * On long-lived runtimes (local Node/Express, or any non-Vercel host),
+   * we prefer the debounced fire-and-forget path so the mutation's HTTP
+   * response isn't blocked by scheduling.
+   */
+  async triggerOrWait(userId: string, authToken: string): Promise<void> {
+    if (process.env.VERCEL) {
+      await this.triggerAndWait(userId, authToken);
+      return;
+    }
+    this.trigger(userId, authToken);
+  }
+
+  /**
    * Run auto-schedule asynchronously without blocking the caller.
    * Errors are logged but not thrown.
    *
