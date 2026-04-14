@@ -136,20 +136,14 @@ export class ProjectService {
       throw new Error(`Failed to update project: ${error.message}`);
     }
 
-    // Trigger auto-schedule if scheduling-relevant fields changed (deadline or schedule)
+    // Trigger auto-schedule if scheduling-relevant fields changed (deadline or schedule).
+    // Fire-and-forget: the background run will debounce and recompute; the client
+    // picks up the new calendar_events via realtime / next fetch.
     if (
       authToken &&
       (input.deadline !== undefined || input.schedule_id !== undefined)
     ) {
-      try {
-        // We need the user_id for the trigger; it's in the returned data
-        await autoScheduleTriggerQueue.triggerAndWait(data.user_id, authToken);
-      } catch (err) {
-        console.error(
-          `[ProjectService] Auto-schedule trigger failed for user ${data.user_id}:`,
-          err
-        );
-      }
+      autoScheduleTriggerQueue.trigger(data.user_id, authToken);
     }
 
     return data;
@@ -187,16 +181,11 @@ export class ProjectService {
         `[ProjectService] Deleted project and all related data in ${duration}ms`
       );
 
-      // Trigger auto-schedule if we have userId and authToken
+      // Trigger auto-schedule in the background. The atomic delete RPC already
+      // removed the project's tasks and their calendar_events, so the UI is
+      // consistent immediately; the reschedule of remaining tasks runs out-of-band.
       if (userId && authToken) {
-        try {
-          await autoScheduleTriggerQueue.triggerAndWait(userId, authToken);
-        } catch (err) {
-          console.error(
-            `[ProjectService] Auto-schedule trigger failed for user ${userId}:`,
-            err
-          );
-        }
+        autoScheduleTriggerQueue.trigger(userId, authToken);
       }
 
       return true;

@@ -563,7 +563,11 @@ export class TaskService {
       );
     }
 
-    // Trigger auto-schedule if scheduling-relevant fields changed
+    // Trigger auto-schedule if scheduling-relevant fields changed.
+    // Fire-and-forget: the mutation response doesn't need the new calendar_events.
+    // The scheduler writes to calendar_events in the background; clients observe
+    // the update via realtime / next fetch. The 500ms debounce in trigger()
+    // coalesces bursts of edits into a single run that sees the final state.
     if (
       authToken &&
       (input.due_date !== undefined ||
@@ -576,20 +580,7 @@ export class TaskService {
         input.schedule_id !== undefined)
     ) {
       const userId = input.user_id ?? existingTask.user_id;
-      // Wait for auto-schedule to complete to prevent race conditions
-      // where frontend refreshes before deduplication happens
-      try {
-        await PerfTracker.measure(
-          'TaskService.updateTask › triggerAndWait',
-          () => autoScheduleTriggerQueue.triggerAndWait(userId, authToken!),
-          500
-        );
-      } catch (err) {
-        console.error(
-          `[TaskService] Auto-schedule trigger failed for user ${userId}:`,
-          err
-        );
-      }
+      autoScheduleTriggerQueue.trigger(userId, authToken);
     }
 
     return data;
@@ -626,20 +617,12 @@ export class TaskService {
       throw new Error(`Failed to delete task: ${error.message}`);
     }
 
-    // Trigger auto-schedule and wait for completion
-    // This ensures the calendar is properly rescheduled before the frontend refreshes
+    // Trigger auto-schedule in the background. The deleted task's own
+    // calendar_events were already removed synchronously above, so the UI
+    // sees the deletion immediately. The reschedule of *other* tasks'
+    // events happens out-of-band via the debounced trigger.
     if (authToken) {
-      try {
-        await autoScheduleTriggerQueue.triggerAndWait(
-          existingTask.user_id,
-          authToken
-        );
-      } catch (err) {
-        console.error(
-          `[TaskService] Auto-schedule trigger failed for user ${existingTask.user_id}:`,
-          err
-        );
-      }
+      autoScheduleTriggerQueue.trigger(existingTask.user_id, authToken);
     }
 
     return true;

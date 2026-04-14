@@ -261,7 +261,7 @@ describe('ProjectService', () => {
         'test-token'
       );
 
-      expect(mockAutoScheduleTriggerQueue.triggerAndWait).toHaveBeenCalledWith(
+      expect(mockAutoScheduleTriggerQueue.trigger).toHaveBeenCalledWith(
         'user-1',
         'test-token'
       );
@@ -331,7 +331,7 @@ describe('ProjectService', () => {
         'test-token'
       );
 
-      expect(mockAutoScheduleTriggerQueue.triggerAndWait).toHaveBeenCalledWith(
+      expect(mockAutoScheduleTriggerQueue.trigger).toHaveBeenCalledWith(
         'user-1',
         'test-token'
       );

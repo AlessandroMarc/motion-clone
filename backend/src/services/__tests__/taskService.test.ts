@@ -363,7 +363,7 @@ describe('TaskService', () => {
         'token'
       );
 
-      expect(mockAutoScheduleTriggerQueue.triggerAndWait).toHaveBeenCalledWith(
+      expect(mockAutoScheduleTriggerQueue.trigger).toHaveBeenCalledWith(
         'user-1',
         'token'
       );
@@ -535,7 +535,7 @@ describe('TaskService', () => {
 
       await service.deleteTask('task-1', mockClient, 'token');
 
-      expect(mockAutoScheduleTriggerQueue.triggerAndWait).toHaveBeenCalledWith(
+      expect(mockAutoScheduleTriggerQueue.trigger).toHaveBeenCalledWith(
         'user-1',
         'token'
       );
