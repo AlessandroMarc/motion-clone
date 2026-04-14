@@ -18,14 +18,18 @@ const mockCalendarEventService = {
   getAllCalendarEvents: jest.fn(),
 };
 jest.unstable_mockModule('../../services/calendarEventService.js', () => ({
-  CalendarEventService: jest.fn().mockImplementation(() => mockCalendarEventService),
+  CalendarEventService: jest
+    .fn()
+    .mockImplementation(() => mockCalendarEventService),
 }));
 
 const mockAutoScheduleService = {
   run: jest.fn(),
 };
 jest.unstable_mockModule('../../services/autoScheduleService.js', () => ({
-  AutoScheduleService: jest.fn().mockImplementation(() => mockAutoScheduleService),
+  AutoScheduleService: jest
+    .fn()
+    .mockImplementation(() => mockAutoScheduleService),
 }));
 
 const mockDayBlockService = {
@@ -36,11 +40,13 @@ const mockDayBlockService = {
 };
 jest.unstable_mockModule('../../services/dayBlockService.js', () => ({
   DayBlockService: jest.fn().mockImplementation(() => mockDayBlockService),
-  buildLocalDateTime: jest.fn().mockImplementation((dateStr: string, timeStr: string) => {
-    const [y, m, d] = (dateStr as string).split('-').map(Number);
-    const [h, min] = (timeStr as string).split(':').map(Number);
-    return new Date(y!, m! - 1, d!, h!, min!, 0, 0);
-  }),
+  buildLocalDateTime: jest
+    .fn()
+    .mockImplementation((dateStr: string, timeStr: string) => {
+      const [y, m, d] = (dateStr as string).split('-').map(Number);
+      const [h, min] = (timeStr as string).split(':').map(Number);
+      return new Date(y!, m! - 1, d!, h!, min!, 0, 0);
+    }),
 }));
 
 // ── dynamic imports after mocks ───────────────────────────────────────────────
@@ -180,6 +186,52 @@ describe('POST /api/day-blocks/preview', () => {
     expect(res.status).toBe(500);
     expect(res.body.success).toBe(false);
   });
+
+  test('returns 400 when date format is malformed (not YYYY-MM-DD)', async () => {
+    const res = await supertest(app)
+      .post('/api/day-blocks/preview')
+      .set(AUTH_HEADER)
+      .send({ date: '04/13/2026', from_time: '09:00' });
+    expect(res.status).toBe(400);
+    expect(mockDayBlockService.simulate).not.toHaveBeenCalled();
+  });
+
+  test('returns 400 when from_time format is malformed (not HH:MM)', async () => {
+    const res = await supertest(app)
+      .post('/api/day-blocks/preview')
+      .set(AUTH_HEADER)
+      .send({ date: '2026-04-13', from_time: '9am' });
+    expect(res.status).toBe(400);
+    expect(mockDayBlockService.simulate).not.toHaveBeenCalled();
+  });
+
+  test('returns 400 with empty body', async () => {
+    const res = await supertest(app)
+      .post('/api/day-blocks/preview')
+      .set(AUTH_HEADER)
+      .send({});
+    expect(res.status).toBe(400);
+  });
+
+  test('preview passes isNonWorkingDay through to service call', async () => {
+    mockDayBlockService.resolveTimes.mockResolvedValue({
+      ...validTimes,
+      isNonWorkingDay: true,
+    });
+    mockDayBlockService.simulate.mockResolvedValue({
+      ...sampleSimulateResult,
+      isNonWorkingDay: true,
+    });
+
+    await supertest(app)
+      .post('/api/day-blocks/preview')
+      .set(AUTH_HEADER)
+      .send({ date: '2026-04-13', from_time: '09:00' });
+
+    // Last arg to simulate() should be `true` (the isNonWorkingDay flag)
+    const call = mockDayBlockService.simulate.mock.calls[0];
+    expect(call[call.length - 1]).toBe(true);
+  });
 });
 
 // ── POST /api/day-blocks ───────────────────────────────────────────────────────
@@ -205,7 +257,9 @@ describe('POST /api/day-blocks', () => {
 
   test('returns 409 when an overlapping day block already exists', async () => {
     mockDayBlockService.resolveTimes.mockResolvedValue(validTimes);
-    mockDayBlockService.findOverlappingDayBlock.mockResolvedValue(sampleDayBlock);
+    mockDayBlockService.findOverlappingDayBlock.mockResolvedValue(
+      sampleDayBlock
+    );
 
     const res = await supertest(app)
       .post('/api/day-blocks')
@@ -268,12 +322,40 @@ describe('POST /api/day-blocks', () => {
 
     expect(res.status).toBe(500);
   });
+
+  test('does not run overlap check when resolveTimes fails', async () => {
+    mockDayBlockService.resolveTimes.mockResolvedValue({ error: 'nope' });
+
+    await supertest(app)
+      .post('/api/day-blocks')
+      .set(AUTH_HEADER)
+      .send({ date: '2026-04-13', from_time: '20:00' });
+
+    expect(mockDayBlockService.findOverlappingDayBlock).not.toHaveBeenCalled();
+    expect(mockDayBlockService.create).not.toHaveBeenCalled();
+  });
+
+  test('returns 500 when overlap check throws', async () => {
+    mockDayBlockService.resolveTimes.mockResolvedValue(validTimes);
+    mockDayBlockService.findOverlappingDayBlock.mockRejectedValue(
+      new Error('overlap-check-failed')
+    );
+
+    const res = await supertest(app)
+      .post('/api/day-blocks')
+      .set(AUTH_HEADER)
+      .send({ date: '2026-04-13', from_time: '09:00' });
+
+    expect(res.status).toBe(500);
+  });
 });
 
 // ── DELETE /api/day-blocks/:id ─────────────────────────────────────────────────
 describe('DELETE /api/day-blocks/:id', () => {
   test('deletes a day block and re-runs auto-schedule', async () => {
-    mockCalendarEventService.getCalendarEventById.mockResolvedValue(sampleDayBlock);
+    mockCalendarEventService.getCalendarEventById.mockResolvedValue(
+      sampleDayBlock
+    );
     mockCalendarEventService.deleteCalendarEvent.mockResolvedValue(true);
     mockAutoScheduleService.run.mockResolvedValue(sampleScheduleResult);
 
@@ -323,7 +405,9 @@ describe('DELETE /api/day-blocks/:id', () => {
   });
 
   test('returns 500 when delete service throws', async () => {
-    mockCalendarEventService.getCalendarEventById.mockResolvedValue(sampleDayBlock);
+    mockCalendarEventService.getCalendarEventById.mockResolvedValue(
+      sampleDayBlock
+    );
     mockCalendarEventService.deleteCalendarEvent.mockRejectedValue(
       new Error('DB error')
     );
@@ -334,5 +418,106 @@ describe('DELETE /api/day-blocks/:id', () => {
 
     expect(res.status).toBe(500);
   });
+
+  test('does not run auto-schedule when event is not a day block', async () => {
+    mockCalendarEventService.getCalendarEventById.mockResolvedValue({
+      id: 'evt-1',
+      is_day_block: false,
+    });
+
+    await supertest(app).delete('/api/day-blocks/evt-1').set(AUTH_HEADER);
+
+    expect(mockAutoScheduleService.run).not.toHaveBeenCalled();
+    expect(mockCalendarEventService.deleteCalendarEvent).not.toHaveBeenCalled();
+  });
+
+  test('does not run auto-schedule when event is missing', async () => {
+    mockCalendarEventService.getCalendarEventById.mockResolvedValue(null);
+
+    await supertest(app).delete('/api/day-blocks/nope').set(AUTH_HEADER);
+
+    expect(mockAutoScheduleService.run).not.toHaveBeenCalled();
+  });
 });
 
+// ── Full-flow integration: preview → create → delete ──────────────────────
+describe('Full flow: preview → create → delete', () => {
+  test('a user can preview, create, then delete a day block', async () => {
+    mockDayBlockService.resolveTimes.mockResolvedValue(validTimes);
+    mockDayBlockService.simulate.mockResolvedValue({
+      ...sampleSimulateResult,
+      tasksToMove: [
+        {
+          task: { id: 'task-1', title: 'Write tests' },
+          currentEvent: { id: 'evt-1', linked_task_id: 'task-1' },
+          proposedTime: null,
+        },
+      ],
+      totalEventsCreated: 1,
+      totalEventsDeleted: 1,
+    });
+    mockDayBlockService.findOverlappingDayBlock.mockResolvedValue(null);
+    mockDayBlockService.create.mockResolvedValue({
+      dayBlock: sampleDayBlock,
+      scheduleResult: sampleScheduleResult,
+    });
+    mockCalendarEventService.getCalendarEventById.mockResolvedValue(
+      sampleDayBlock
+    );
+    mockCalendarEventService.deleteCalendarEvent.mockResolvedValue(true);
+    mockAutoScheduleService.run.mockResolvedValue(sampleScheduleResult);
+
+    // 1. Preview
+    const previewRes = await supertest(app)
+      .post('/api/day-blocks/preview')
+      .set(AUTH_HEADER)
+      .send({ date: '2026-04-13', from_time: '09:00' });
+    expect(previewRes.status).toBe(200);
+    expect(previewRes.body.data.tasksToMove).toHaveLength(1);
+
+    // 2. Create
+    const createRes = await supertest(app)
+      .post('/api/day-blocks')
+      .set(AUTH_HEADER)
+      .send({ date: '2026-04-13', from_time: '09:00' });
+    expect(createRes.status).toBe(200);
+    expect(createRes.body.data.day_block.id).toBe('db-1');
+
+    // 3. Delete
+    const deleteRes = await supertest(app)
+      .delete('/api/day-blocks/db-1')
+      .set(AUTH_HEADER);
+    expect(deleteRes.status).toBe(200);
+
+    // Auto-schedule ran after creation AND after deletion
+    expect(mockDayBlockService.create).toHaveBeenCalledTimes(1);
+    expect(mockAutoScheduleService.run).toHaveBeenCalledTimes(1);
+  });
+
+  test('creating a second block over the same window is rejected with 409', async () => {
+    mockDayBlockService.resolveTimes.mockResolvedValue(validTimes);
+    // First create succeeds
+    mockDayBlockService.findOverlappingDayBlock.mockResolvedValueOnce(null);
+    mockDayBlockService.create.mockResolvedValueOnce({
+      dayBlock: sampleDayBlock,
+      scheduleResult: sampleScheduleResult,
+    });
+
+    const firstRes = await supertest(app)
+      .post('/api/day-blocks')
+      .set(AUTH_HEADER)
+      .send({ date: '2026-04-13', from_time: '09:00' });
+    expect(firstRes.status).toBe(200);
+
+    // Second create: overlap detected → 409
+    mockDayBlockService.findOverlappingDayBlock.mockResolvedValueOnce(
+      sampleDayBlock
+    );
+    const secondRes = await supertest(app)
+      .post('/api/day-blocks')
+      .set(AUTH_HEADER)
+      .send({ date: '2026-04-13', from_time: '09:00' });
+    expect(secondRes.status).toBe(409);
+    expect(mockDayBlockService.create).toHaveBeenCalledTimes(1);
+  });
+});
