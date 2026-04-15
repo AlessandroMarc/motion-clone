@@ -242,7 +242,7 @@ export function WeekCalendarContainer({
     );
   };
 
-  const { draggingEventId, dragPreview, onEventMouseDown } =
+  const { draggingEventId, dragPreview, onEventMouseDown, onResizeMouseDown } =
     useEventDragAndDrop(
       weekDates,
       dayRefs,
@@ -585,6 +585,7 @@ export function WeekCalendarContainer({
         dragPreview={dragPreview}
         externalDragPreview={externalDragPreview}
         onEventMouseDown={onEventMouseDown}
+        onResizeMouseDown={onResizeMouseDown}
         setDayRef={(idx, el) => (dayRefs.current[idx] = el)}
         gridRef={gridRef}
         scrollSentinelRef={scrollSentinelRef}

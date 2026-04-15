@@ -18,6 +18,11 @@ interface DayColumnEventsProps {
     event: CalendarEventUnion,
     eventDayIndex: number
   ) => void;
+  onResizeMouseDown: (
+    e: React.MouseEvent,
+    event: CalendarEventUnion,
+    eventDayIndex: number
+  ) => void;
   tasksMap?: Map<string, Task>;
 }
 
@@ -28,6 +33,7 @@ export function DayColumnEvents({
   dragPreview,
   layoutMap,
   onEventMouseDown,
+  onResizeMouseDown,
   tasksMap,
 }: DayColumnEventsProps) {
   const renderEventBox = (
@@ -58,6 +64,7 @@ export function DayColumnEvents({
               ? tasksMap?.get(event.linked_task_id)
               : undefined
           }
+          onResizeMouseDown={e => onResizeMouseDown(e, event, dayIndex)}
         />
       </div>
     );

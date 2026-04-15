@@ -111,6 +111,11 @@ interface WeekCalendarViewProps {
     event: CalendarEventUnion,
     eventDayIndex: number
   ) => void;
+  onResizeMouseDown: (
+    e: React.MouseEvent,
+    event: CalendarEventUnion,
+    eventDayIndex: number
+  ) => void;
   setDayRef: (idx: number, el: HTMLDivElement | null) => void;
   gridRef: RefObject<HTMLDivElement | null>;
   scrollSentinelRef: RefObject<HTMLDivElement | null>;
@@ -159,6 +164,7 @@ export function WeekCalendarView({
   dragPreview,
   externalDragPreview,
   onEventMouseDown,
+  onResizeMouseDown,
   setDayRef,
   gridRef,
   scrollSentinelRef,
@@ -225,6 +231,7 @@ export function WeekCalendarView({
         onReminderTaskClick={onReminderTaskClick}
         onGridCellClick={dialogs.handleGridCellClick}
         onEventMouseDown={onEventMouseDown}
+        onResizeMouseDown={onResizeMouseDown}
         draggingEventId={draggingEventId}
         dragPreview={draggingEventId ? dragPreview : externalDragPreview}
         setDayRef={setDayRef}

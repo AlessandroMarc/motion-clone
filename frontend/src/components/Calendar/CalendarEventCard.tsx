@@ -21,12 +21,14 @@ interface CalendarEventCardProps {
   event: CalendarEventUnion;
   style?: React.CSSProperties;
   task?: Task; // Optional task data for deadline checking
+  onResizeMouseDown?: (e: React.MouseEvent) => void;
 }
 
 export function CalendarEventCard({
   event,
   style,
   task,
+  onResizeMouseDown,
 }: CalendarEventCardProps) {
   const isTaskEvent = isCalendarEventTask(event);
   const isCompleted = isTaskEvent && !!event.completed_at;
@@ -73,7 +75,7 @@ export function CalendarEventCard({
   return (
     <div
       className={cn(
-        'calendar-event-card h-full overflow-hidden rounded-md cursor-pointer transition-all',
+        'calendar-event-card group relative h-full overflow-hidden rounded-md cursor-pointer transition-all',
         'text-[10px] leading-tight',
         bgClass,
         borderClass,
@@ -131,6 +133,15 @@ export function CalendarEventCard({
           </TooltipProvider>
         )}
       </div>
+      {!isCompleted && (
+        <div
+          className="absolute bottom-0 left-0 right-0 h-2 cursor-s-resize opacity-0 group-hover:opacity-100 bg-white/20 rounded-b"
+          onMouseDown={e => {
+            e.stopPropagation();
+            onResizeMouseDown?.(e);
+          }}
+        />
+      )}
     </div>
   );
 }

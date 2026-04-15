@@ -6,6 +6,7 @@ import {
 } from '@/types';
 import { calendarService } from '@/services/calendarService';
 import { taskService } from '@/services/taskService';
+import { googleCalendarService } from '@/services/googleCalendarService';
 
 const dragThresholdPx = 5;
 
@@ -26,6 +27,7 @@ export function useEventDragAndDrop(
     originalEnd: Date;
     originalDayIndex: number;
     durationMs: number;
+    dragType: 'move' | 'resize';
   } | null>(null);
   const pendingClickOrDragRef = useRef<{
     startClientX: number;
@@ -42,13 +44,6 @@ export function useEventDragAndDrop(
   ) => {
     e.preventDefault();
     e.stopPropagation();
-
-    // Google Calendar events are read-only — open details immediately on click.
-    // Only task events support drag-to-reschedule.
-    if (!isCalendarEventTask(event)) {
-      onEventClick(event);
-      return;
-    }
 
     // Defer decision: click vs drag based on movement threshold
     pendingClickOrDragRef.current = {
@@ -76,6 +71,7 @@ export function useEventDragAndDrop(
           durationMs:
             new Date(pending.event.end_time).getTime() -
             new Date(pending.event.start_time).getTime(),
+          dragType: 'move',
         };
         setDragPreview(pending.event);
         pending.active = false;
@@ -99,59 +95,107 @@ export function useEventDragAndDrop(
     window.addEventListener('mouseup', handlePendingMouseUp, { once: true });
   };
 
+  const onResizeMouseDown = (
+    e: React.MouseEvent,
+    event: CalendarEventUnion,
+    eventDayIndex: number
+  ) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    setDraggingEventId(event.id);
+    dragStateRef.current = {
+      startClientX: e.clientX,
+      startClientY: e.clientY,
+      originalStart: new Date(event.start_time),
+      originalEnd: new Date(event.end_time),
+      originalDayIndex: eventDayIndex,
+      durationMs:
+        new Date(event.end_time).getTime() -
+        new Date(event.start_time).getTime(),
+      dragType: 'resize',
+    };
+    setDragPreview(event);
+  };
+
   useEffect(() => {
     if (!draggingEventId) return;
 
     const hourHeight = 64; // px
     const minutesPerPixel = 60 / hourHeight;
-    const snapMinutes = 30; // snap to 30 minutes
+    const snapMinutesMove = 30;
+    const snapMinutesResize = 15;
+    const minDurationMs = 15 * 60 * 1000;
 
     const handleMouseMove = (e: MouseEvent) => {
       const state = dragStateRef.current;
       if (!state) return;
 
-      // Determine which day column we're over
-      let targetDayIndex = state.originalDayIndex;
-      for (let i = 0; i < dayRefs.current.length; i++) {
-        const el = dayRefs.current[i];
-        if (!el) continue;
-        const rect = el.getBoundingClientRect();
-        if (
-          e.clientX >= rect.left &&
-          e.clientX <= rect.right &&
-          e.clientY >= rect.top &&
-          e.clientY <= rect.bottom
-        ) {
-          targetDayIndex = i;
-          break;
+      if (state.dragType === 'resize') {
+        // Resize: only change end_time, start stays fixed
+        const deltaY = e.clientY - state.startClientY;
+        const deltaMinutesRaw = deltaY * minutesPerPixel;
+        const deltaMinutes =
+          Math.round(deltaMinutesRaw / snapMinutesResize) * snapMinutesResize;
+
+        const newEndMs = state.originalEnd.getTime() + deltaMinutes * 60 * 1000;
+        // Enforce minimum duration
+        const clampedEndMs = Math.max(
+          state.originalStart.getTime() + minDurationMs,
+          newEndMs
+        );
+        const newEnd = new Date(clampedEndMs);
+
+        setDragPreview(prev =>
+          prev
+            ? {
+                ...prev,
+                end_time: newEnd,
+              }
+            : prev
+        );
+      } else {
+        // Move: existing logic — day-crossing, 30-min snap, updates both start+end
+        let targetDayIndex = state.originalDayIndex;
+        for (let i = 0; i < dayRefs.current.length; i++) {
+          const el = dayRefs.current[i];
+          if (!el) continue;
+          const rect = el.getBoundingClientRect();
+          if (
+            e.clientX >= rect.left &&
+            e.clientX <= rect.right &&
+            e.clientY >= rect.top &&
+            e.clientY <= rect.bottom
+          ) {
+            targetDayIndex = i;
+            break;
+          }
         }
+
+        const deltaY = e.clientY - state.startClientY;
+        const deltaMinutesRaw = deltaY * minutesPerPixel;
+        const deltaMinutes =
+          Math.round(deltaMinutesRaw / snapMinutesMove) * snapMinutesMove;
+
+        const baseStart = new Date(state.originalStart);
+        const baseDayDate = new Date(weekDates[targetDayIndex]);
+        baseDayDate.setHours(baseStart.getHours(), baseStart.getMinutes(), 0, 0);
+
+        const newStart = new Date(
+          baseDayDate.getTime() + deltaMinutes * 60 * 1000
+        );
+        const newEnd = new Date(newStart.getTime() + state.durationMs);
+
+        setDragPreview(prev =>
+          prev
+            ? {
+                ...prev,
+                start_time: newStart,
+                end_time: newEnd,
+              }
+            : prev
+        );
       }
-
-      // Vertical movement -> minutes delta
-      const deltaY = e.clientY - state.startClientY;
-      const deltaMinutesRaw = deltaY * minutesPerPixel;
-      const deltaMinutes =
-        Math.round(deltaMinutesRaw / snapMinutes) * snapMinutes;
-
-      const baseStart = new Date(state.originalStart);
-      // Adjust base to same time on target day
-      const baseDayDate = new Date(weekDates[targetDayIndex]);
-      baseDayDate.setHours(baseStart.getHours(), baseStart.getMinutes(), 0, 0);
-
-      const newStart = new Date(
-        baseDayDate.getTime() + deltaMinutes * 60 * 1000
-      );
-      const newEnd = new Date(newStart.getTime() + state.durationMs);
-
-      setDragPreview(prev =>
-        prev
-          ? {
-              ...prev,
-              start_time: newStart,
-              end_time: newEnd,
-            }
-          : prev
-      );
     };
 
     const handleMouseUp = async () => {
@@ -167,29 +211,46 @@ export function useEventDragAndDrop(
 
       // Persist update
       try {
-        const originalStart = (state.originalStart as Date).toISOString();
-        const originalEnd = new Date(
-          new Date(state.originalStart).getTime() + state.durationMs
-        ).toISOString();
+        const newStartTime = (preview.start_time as Date).toISOString();
+        const newEndTime = (preview.end_time as Date).toISOString();
 
-        await calendarService.updateCalendarEvent(preview.id, {
-          start_time: (preview.start_time as Date).toISOString(),
-          end_time: (preview.end_time as Date).toISOString(),
-        } as UpdateCalendarEventInput);
+        const isGoogleEvent =
+          !isCalendarEventTask(preview) &&
+          'google_event_id' in preview &&
+          preview.google_event_id;
 
-        // Mark the linked task as manually pinned so auto-schedule won't move it
-        if (isCalendarEventTask(preview) && preview.linked_task_id) {
-          try {
-            await taskService.updateTask(preview.linked_task_id, {
-              isManuallyPinned: true,
-            });
-          } catch (pinErr) {
-            // Rollback calendar event to its original times
-            await calendarService.updateCalendarEvent(preview.id, {
-              start_time: originalStart,
-              end_time: originalEnd,
-            } as UpdateCalendarEventInput);
-            throw pinErr;
+        if (isGoogleEvent) {
+          // Update via Google Calendar API (syncs to Google and updates local DB)
+          await googleCalendarService.updateEvent(preview.google_event_id!, {
+            start_time: newStartTime,
+            end_time: newEndTime,
+          });
+        } else {
+          // Task event: update internal calendar event
+          const originalStart = (state.originalStart as Date).toISOString();
+          const originalEnd = new Date(
+            new Date(state.originalStart).getTime() + state.durationMs
+          ).toISOString();
+
+          await calendarService.updateCalendarEvent(preview.id, {
+            start_time: newStartTime,
+            end_time: newEndTime,
+          } as UpdateCalendarEventInput);
+
+          // Mark the linked task as manually pinned so auto-schedule won't move it
+          if (isCalendarEventTask(preview) && preview.linked_task_id) {
+            try {
+              await taskService.updateTask(preview.linked_task_id, {
+                isManuallyPinned: true,
+              });
+            } catch (pinErr) {
+              // Rollback calendar event to its original times
+              await calendarService.updateCalendarEvent(preview.id, {
+                start_time: originalStart,
+                end_time: originalEnd,
+              } as UpdateCalendarEventInput);
+              throw pinErr;
+            }
           }
         }
 
@@ -221,5 +282,6 @@ export function useEventDragAndDrop(
     draggingEventId,
     dragPreview,
     onEventMouseDown,
+    onResizeMouseDown,
   };
 }

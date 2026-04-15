@@ -18,6 +18,11 @@ interface DayColumnProps {
     event: CalendarEventUnion,
     eventDayIndex: number
   ) => void;
+  onResizeMouseDown: (
+    e: React.MouseEvent,
+    event: CalendarEventUnion,
+    eventDayIndex: number
+  ) => void;
   draggingEventId: string | null;
   dragPreview: CalendarEventUnion | null;
   setDayRef: (el: HTMLDivElement | null) => void;
@@ -46,6 +51,7 @@ function DayColumn({
   dayEvents,
   onGridCellClick,
   onEventMouseDown,
+  onResizeMouseDown,
   draggingEventId,
   dragPreview,
   setDayRef,
@@ -143,6 +149,7 @@ function DayColumn({
         dragPreview={previewBelongsHere ? dragPreview : null}
         layoutMap={layoutMap}
         onEventMouseDown={onEventMouseDown}
+        onResizeMouseDown={onResizeMouseDown}
         tasksMap={tasksMap}
       />
 
