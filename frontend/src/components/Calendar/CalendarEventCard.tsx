@@ -1,6 +1,11 @@
 'use client';
 
-import { CalendarEventUnion, isCalendarEventTask, isCalendarEventDayBlock, type Task } from '@/types';
+import {
+  CalendarEventUnion,
+  isCalendarEventTask,
+  isCalendarEventDayBlock,
+  type Task,
+} from '@/types';
 import { formatEventTime } from '@/utils/calendarUtils';
 import { formatDate } from '@/utils/dateUtils';
 import { AlertTriangle, CheckCircle2, Pin, Moon } from 'lucide-react';

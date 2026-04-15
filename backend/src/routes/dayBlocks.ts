@@ -2,7 +2,10 @@ import express, { type Request, type Response } from 'express';
 import { authMiddleware, type AuthRequest } from '../middleware/auth.js';
 import { CalendarEventService } from '../services/calendarEventService.js';
 import { AutoScheduleService } from '../services/autoScheduleService.js';
-import { DayBlockService, buildLocalDateTime } from '../services/dayBlockService.js';
+import {
+  DayBlockService,
+  buildLocalDateTime,
+} from '../services/dayBlockService.js';
 import { ResponseHelper } from '../utils/responseHelpers.js';
 
 const router = express.Router();
@@ -46,7 +49,11 @@ router.post('/preview', async (req: Request, res: Response) => {
     // Validate the from_time string can form a real datetime
     const probe = buildLocalDateTime(date, from_time);
     if (isNaN(probe.getTime())) {
-      return ResponseHelper.error(res, 'Invalid date/from_time combination', 400);
+      return ResponseHelper.error(
+        res,
+        'Invalid date/from_time combination',
+        400
+      );
     }
 
     const times = await dayBlockService.resolveTimes(
@@ -56,7 +63,12 @@ router.post('/preview', async (req: Request, res: Response) => {
       from_time
     );
     if ('error' in times) {
-      return ResponseHelper.error(res, 'Working day already over — no block possible', 400, times.error);
+      return ResponseHelper.error(
+        res,
+        'Working day already over — no block possible',
+        400,
+        times.error
+      );
     }
 
     const result = await dayBlockService.simulate(
@@ -112,7 +124,11 @@ router.post('/', async (req: Request, res: Response) => {
 
     const probe = buildLocalDateTime(date, from_time);
     if (isNaN(probe.getTime())) {
-      return ResponseHelper.error(res, 'Invalid date/from_time combination', 400);
+      return ResponseHelper.error(
+        res,
+        'Invalid date/from_time combination',
+        400
+      );
     }
 
     const times = await dayBlockService.resolveTimes(
@@ -122,7 +138,12 @@ router.post('/', async (req: Request, res: Response) => {
       from_time
     );
     if ('error' in times) {
-      return ResponseHelper.error(res, 'Working day already over — no block created', 400, times.error);
+      return ResponseHelper.error(
+        res,
+        'Working day already over — no block created',
+        400,
+        times.error
+      );
     }
 
     // Reject if an overlapping day block already exists
@@ -184,7 +205,10 @@ router.delete('/:id', async (req: Request, res: Response) => {
 
     // Fetch the event first to verify it's actually a day block.
     // The authenticated client enforces RLS ownership automatically.
-    const event = await calendarEventService.getCalendarEventById(id, authReq.authToken);
+    const event = await calendarEventService.getCalendarEventById(
+      id,
+      authReq.authToken
+    );
     if (!event) {
       return ResponseHelper.notFound(res, 'Day block not found');
     }

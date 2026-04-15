@@ -228,10 +228,16 @@ router.post('/events', authMiddleware, async (req: Request, res: Response) => {
     const parsedStart = parseTimestamp(start_time);
     const parsedEnd = parseTimestamp(end_time);
     if (!parsedStart || !parsedEnd) {
-      return ResponseHelper.badRequest(res, 'start_time and end_time must be valid timestamps');
+      return ResponseHelper.badRequest(
+        res,
+        'start_time and end_time must be valid timestamps'
+      );
     }
     if (parsedEnd <= parsedStart) {
-      return ResponseHelper.badRequest(res, 'end_time must be after start_time');
+      return ResponseHelper.badRequest(
+        res,
+        'end_time must be after start_time'
+      );
     }
 
     // Create on Google Calendar first
@@ -277,13 +283,24 @@ router.put(
 
       // Validate timestamps when provided
       if (start_time !== undefined || end_time !== undefined) {
-        const parsedStart = start_time !== undefined ? parseTimestamp(start_time) : null;
-        const parsedEnd = end_time !== undefined ? parseTimestamp(end_time) : null;
-        if ((start_time !== undefined && !parsedStart) || (end_time !== undefined && !parsedEnd)) {
-          return ResponseHelper.badRequest(res, 'start_time and end_time must be valid timestamps');
+        const parsedStart =
+          start_time !== undefined ? parseTimestamp(start_time) : null;
+        const parsedEnd =
+          end_time !== undefined ? parseTimestamp(end_time) : null;
+        if (
+          (start_time !== undefined && !parsedStart) ||
+          (end_time !== undefined && !parsedEnd)
+        ) {
+          return ResponseHelper.badRequest(
+            res,
+            'start_time and end_time must be valid timestamps'
+          );
         }
         if (parsedStart && parsedEnd && parsedEnd <= parsedStart) {
-          return ResponseHelper.badRequest(res, 'end_time must be after start_time');
+          return ResponseHelper.badRequest(
+            res,
+            'end_time must be after start_time'
+          );
         }
       }
 
@@ -300,15 +317,23 @@ router.put(
       }
 
       // Validate effective time range (partial updates against stored values)
-      if ((start_time !== undefined || end_time !== undefined) && !(start_time !== undefined && end_time !== undefined)) {
-        const effectiveStart = start_time !== undefined
-          ? new Date(start_time)
-          : new Date(localEvent.start_time);
-        const effectiveEnd = end_time !== undefined
-          ? new Date(end_time)
-          : new Date(localEvent.end_time);
+      if (
+        (start_time !== undefined || end_time !== undefined) &&
+        !(start_time !== undefined && end_time !== undefined)
+      ) {
+        const effectiveStart =
+          start_time !== undefined
+            ? new Date(start_time)
+            : new Date(localEvent.start_time);
+        const effectiveEnd =
+          end_time !== undefined
+            ? new Date(end_time)
+            : new Date(localEvent.end_time);
         if (effectiveEnd <= effectiveStart) {
-          return ResponseHelper.badRequest(res, 'end_time must be after start_time');
+          return ResponseHelper.badRequest(
+            res,
+            'end_time must be after start_time'
+          );
         }
       }
 
@@ -366,7 +391,10 @@ router.delete(
         );
 
       if (localEvent) {
-        await calendarEventService.deleteCalendarEvent(localEvent.id, authReq.authToken);
+        await calendarEventService.deleteCalendarEvent(
+          localEvent.id,
+          authReq.authToken
+        );
       }
 
       ResponseHelper.success(res, null, 'Google Calendar event deleted');

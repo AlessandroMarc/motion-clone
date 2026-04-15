@@ -335,13 +335,11 @@ describe('POST /api/google-calendar/events', () => {
   });
 
   test('returns 401 without auth header', async () => {
-    const res = await supertest(app)
-      .post('/api/google-calendar/events')
-      .send({
-        title: 'Test',
-        start_time: '2026-04-10T10:00:00Z',
-        end_time: '2026-04-10T11:00:00Z',
-      });
+    const res = await supertest(app).post('/api/google-calendar/events').send({
+      title: 'Test',
+      start_time: '2026-04-10T10:00:00Z',
+      end_time: '2026-04-10T11:00:00Z',
+    });
     expect(res.status).toBe(401);
   });
 

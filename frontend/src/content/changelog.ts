@@ -23,11 +23,11 @@ export const changelogEntries: ChangelogEntry[] = [
     items: [
       {
         type: 'new',
-        text: 'Moon icon on today\'s calendar column header — click it to instantly block the remaining working hours and reschedule all pending tasks to the next available day.',
+        text: "Moon icon on today's calendar column header — click it to instantly block the remaining working hours and reschedule all pending tasks to the next available day.",
       },
       {
         type: 'new',
-        text: 'Day-block events appear as a distinct grey hatched overlay on the calendar so it\'s clear the window is reserved.',
+        text: "Day-block events appear as a distinct grey hatched overlay on the calendar so it's clear the window is reserved.",
       },
       {
         type: 'new',
