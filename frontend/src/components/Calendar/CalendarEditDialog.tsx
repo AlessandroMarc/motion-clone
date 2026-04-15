@@ -103,10 +103,6 @@ function GoogleEventDetails({
     }
   };
 
-  const handleDeleteConfirm = async () => {
-    // No longer used — delete button calls handleDeleteClick directly
-  };
-
   return (
     <>
       <DialogHeader>
@@ -203,27 +199,6 @@ function GoogleEventDetails({
           </p>
         ) : null}
       </DialogFooter>
-
-      <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Delete session?</AlertDialogTitle>
-            <AlertDialogDescription>
-              This scheduled session will be permanently deleted. This cannot be
-              undone.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleDeleteConfirm}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-            >
-              Delete
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </>
   );
 }
