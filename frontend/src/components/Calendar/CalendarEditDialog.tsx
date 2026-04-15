@@ -71,7 +71,6 @@ function GoogleEventDetails({
   onDeleteGoogleEvent?: () => void;
 }): React.ReactElement {
   const [deleteError, setDeleteError] = useState<string | null>(null);
-  const [confirmOpen, setConfirmOpen] = useState(false);
 
   const handleCompleteClick = async () => {
     const newCompletedState = !completed;
