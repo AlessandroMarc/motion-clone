@@ -83,6 +83,11 @@ interface WeekScrollableGridProps {
     event: CalendarEventUnion,
     eventDayIndex: number
   ) => void;
+  onResizeMouseDown: (
+    e: React.MouseEvent,
+    event: CalendarEventUnion,
+    eventDayIndex: number
+  ) => void;
   draggingEventId: string | null;
   dragPreview: CalendarEventUnion | null;
   setDayRef: (dayIndex: number, el: HTMLDivElement | null) => void;
@@ -113,6 +118,7 @@ function WeekScrollableGrid({
   onReminderTaskClick,
   onGridCellClick,
   onEventMouseDown,
+  onResizeMouseDown,
   draggingEventId,
   dragPreview,
   setDayRef,
@@ -320,6 +326,7 @@ function WeekScrollableGrid({
                 dayEvents={dayEvents}
                 onGridCellClick={onGridCellClick}
                 onEventMouseDown={onEventMouseDown}
+                onResizeMouseDown={onResizeMouseDown}
                 draggingEventId={draggingEventId}
                 dragPreview={dragPreview}
                 setDayRef={createDayRefCallback(dayIndex)}
