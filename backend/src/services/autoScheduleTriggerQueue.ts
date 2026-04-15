@@ -137,7 +137,7 @@ class AutoScheduleTriggerQueueImpl {
   /**
    * Trigger auto-schedule and wait for completion (synchronous mode).
    * Used when the caller needs to ensure scheduling is complete before proceeding.
-   * Debounces rapid calls but waits for the scheduled run to finish.
+   * Always waits for the scheduled run to finish, regardless of runtime.
    *
    * @param userId User ID
    * @param authToken Auth token for API calls
@@ -153,6 +153,17 @@ class AutoScheduleTriggerQueueImpl {
 
     // Join or start a run and wait for it
     await this.executeRun(userId, authToken);
+  }
+
+  /**
+   * Trigger auto-schedule and wait for completion.
+   *
+   * Always awaits the auto-schedule run, regardless of runtime (Vercel or local).
+   * This ensures the caller (e.g., task create/update/delete) only returns after
+   * the calendar has been updated, so the frontend sees the scheduled events immediately.
+   */
+  async triggerOrWait(userId: string, authToken: string): Promise<void> {
+    await this.triggerAndWait(userId, authToken);
   }
 
   /**

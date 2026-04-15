@@ -8,16 +8,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
 import { CheckCircle2, Clock, FileText, AlignLeft } from 'lucide-react';
 
@@ -81,7 +71,6 @@ function GoogleEventDetails({
   onDeleteGoogleEvent?: () => void;
 }): React.ReactElement {
   const [deleteError, setDeleteError] = useState<string | null>(null);
-  const [confirmOpen, setConfirmOpen] = useState(false);
 
   const handleCompleteClick = async () => {
     const newCompletedState = !completed;
@@ -95,12 +84,7 @@ function GoogleEventDetails({
     }
   };
 
-  const handleDeleteClick = () => {
-    if (!onDelete) return;
-    setConfirmOpen(true);
-  };
-
-  const handleDeleteConfirm = async () => {
+  const handleDeleteClick = async () => {
     if (!onDelete) return;
     try {
       await onDelete();
@@ -215,27 +199,6 @@ function GoogleEventDetails({
           </p>
         ) : null}
       </DialogFooter>
-
-      <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Delete session?</AlertDialogTitle>
-            <AlertDialogDescription>
-              This scheduled session will be permanently deleted. This cannot be
-              undone.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleDeleteConfirm}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-            >
-              Delete
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </>
   );
 }

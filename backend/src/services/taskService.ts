@@ -323,10 +323,20 @@ export class TaskService {
 
     perf.end('total', 200);
 
-    // Trigger auto-schedule asynchronously (fire-and-forget)
-    // For task creation, we don't need to wait since there are no existing events to deduplicate
+    // Trigger auto-schedule and wait for completion.
+    // This ensures the calendar is deduplicated when the frontend refreshes.
+    // triggerOrWait() is runtime-aware: fire-and-forget on long-lived runtimes
+    // (dev/Node) so the mutation returns fast, but awaited on Vercel where
+    // background work dies when the serverless function exits.
     if (authToken) {
-      autoScheduleTriggerQueue.trigger(input.user_id, authToken);
+      try {
+        await autoScheduleTriggerQueue.triggerOrWait(input.user_id, authToken);
+      } catch (err) {
+        console.error(
+          `[TaskService] Auto-schedule trigger failed for user ${input.user_id}:`,
+          err
+        );
+      }
     }
 
     return data;
@@ -563,7 +573,10 @@ export class TaskService {
       );
     }
 
-    // Trigger auto-schedule if scheduling-relevant fields changed
+    // Trigger auto-schedule if scheduling-relevant fields changed.
+    // triggerOrWait() is runtime-aware: fire-and-forget on long-lived runtimes
+    // (dev/Node) so the mutation returns fast, but awaited on Vercel where
+    // background work dies when the serverless function exits.
     if (
       authToken &&
       (input.due_date !== undefined ||
@@ -576,14 +589,8 @@ export class TaskService {
         input.schedule_id !== undefined)
     ) {
       const userId = input.user_id ?? existingTask.user_id;
-      // Wait for auto-schedule to complete to prevent race conditions
-      // where frontend refreshes before deduplication happens
       try {
-        await PerfTracker.measure(
-          'TaskService.updateTask › triggerAndWait',
-          () => autoScheduleTriggerQueue.triggerAndWait(userId, authToken!),
-          500
-        );
+        await autoScheduleTriggerQueue.triggerOrWait(userId, authToken);
       } catch (err) {
         console.error(
           `[TaskService] Auto-schedule trigger failed for user ${userId}:`,
@@ -626,11 +633,13 @@ export class TaskService {
       throw new Error(`Failed to delete task: ${error.message}`);
     }
 
-    // Trigger auto-schedule and wait for completion
-    // This ensures the calendar is properly rescheduled before the frontend refreshes
+    // Trigger auto-schedule. The deleted task's own calendar_events were
+    // already removed synchronously above, so the UI sees the deletion
+    // immediately. The reschedule of *other* tasks' events is handled by
+    // triggerOrWait() — fire-and-forget on Node, awaited on Vercel.
     if (authToken) {
       try {
-        await autoScheduleTriggerQueue.triggerAndWait(
+        await autoScheduleTriggerQueue.triggerOrWait(
           existingTask.user_id,
           authToken
         );

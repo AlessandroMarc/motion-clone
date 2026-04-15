@@ -48,7 +48,7 @@ class TaskService {
 
     const task = toTask(response.data);
 
-    // Auto-schedule is triggered by backend event queue on task creation
+    // Auto-schedule is triggered by the backend and completes before the response returns
     return task;
   }
 

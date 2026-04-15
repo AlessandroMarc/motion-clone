@@ -136,14 +136,15 @@ export class ProjectService {
       throw new Error(`Failed to update project: ${error.message}`);
     }
 
-    // Trigger auto-schedule if scheduling-relevant fields changed (deadline or schedule)
+    // Trigger auto-schedule if scheduling-relevant fields changed (deadline or schedule).
+    // triggerOrWait() is fire-and-forget on Node but awaited on Vercel where
+    // background tasks cannot outlive the serverless function response.
     if (
       authToken &&
       (input.deadline !== undefined || input.schedule_id !== undefined)
     ) {
       try {
-        // We need the user_id for the trigger; it's in the returned data
-        await autoScheduleTriggerQueue.triggerAndWait(data.user_id, authToken);
+        await autoScheduleTriggerQueue.triggerOrWait(data.user_id, authToken);
       } catch (err) {
         console.error(
           `[ProjectService] Auto-schedule trigger failed for user ${data.user_id}:`,
@@ -187,10 +188,13 @@ export class ProjectService {
         `[ProjectService] Deleted project and all related data in ${duration}ms`
       );
 
-      // Trigger auto-schedule if we have userId and authToken
+      // Trigger auto-schedule. The atomic delete RPC already removed the
+      // project's tasks and their calendar_events, so the UI is consistent
+      // immediately; the reschedule of remaining tasks uses triggerOrWait —
+      // fire-and-forget on Node, awaited on Vercel.
       if (userId && authToken) {
         try {
-          await autoScheduleTriggerQueue.triggerAndWait(userId, authToken);
+          await autoScheduleTriggerQueue.triggerOrWait(userId, authToken);
         } catch (err) {
           console.error(
             `[ProjectService] Auto-schedule trigger failed for user ${userId}:`,

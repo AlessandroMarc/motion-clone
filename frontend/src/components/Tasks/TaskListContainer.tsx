@@ -85,6 +85,27 @@ export function TaskListContainer({
     task: Task,
     nextCompleted: boolean
   ) => {
+    // Optimistic update: flip the task's status + actual_duration immediately
+    // so the UI responds instantly. Reconcile with the server response below,
+    // or revert on failure.
+    const optimisticActual = nextCompleted
+      ? Math.max(task.planned_duration_minutes || 1, 1)
+      : 0;
+    const optimisticStatus: WorkItemStatus = nextCompleted
+      ? 'completed'
+      : 'not-started';
+    setTasks(prev =>
+      prev.map(current =>
+        current.id === task.id
+          ? {
+              ...current,
+              actual_duration_minutes: optimisticActual,
+              status: optimisticStatus,
+            }
+          : current
+      )
+    );
+
     try {
       const updatedTask = await taskService.setTaskCompleted(
         task,
@@ -98,6 +119,10 @@ export function TaskListContainer({
       onTaskUpdate?.();
       toast.success(nextCompleted ? 'Task completed' : 'Task reopened');
     } catch (error) {
+      // Revert optimistic change
+      setTasks(prev =>
+        prev.map(current => (current.id === task.id ? task : current))
+      );
       logger.error('[TaskList] Failed to toggle task completion', error);
       toast.error('Failed to update task');
     }

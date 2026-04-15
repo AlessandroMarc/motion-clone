@@ -31,6 +31,7 @@ jest.unstable_mockModule('../../config/supabase.js', () => ({
 const mockAutoScheduleTriggerQueue = {
   trigger: jest.fn(),
   triggerAndWait: jest.fn().mockResolvedValue(undefined),
+  triggerOrWait: jest.fn().mockResolvedValue(undefined),
   cancel: jest.fn(),
   cancelAll: jest.fn(),
 };
@@ -187,7 +188,7 @@ describe('TaskService', () => {
       expect(result).toEqual(task);
     });
 
-    test('should trigger auto-schedule asynchronously when created with token', async () => {
+    test('should trigger auto-schedule and wait for completion when created with token', async () => {
       const task = makeTask({ user_id: 'user-1' });
       mockClient.single.mockResolvedValue({ data: task, error: null });
 
@@ -197,7 +198,7 @@ describe('TaskService', () => {
         'token'
       );
 
-      expect(mockAutoScheduleTriggerQueue.trigger).toHaveBeenCalledWith(
+      expect(mockAutoScheduleTriggerQueue.triggerOrWait).toHaveBeenCalledWith(
         'user-1',
         'token'
       );
@@ -363,7 +364,7 @@ describe('TaskService', () => {
         'token'
       );
 
-      expect(mockAutoScheduleTriggerQueue.triggerAndWait).toHaveBeenCalledWith(
+      expect(mockAutoScheduleTriggerQueue.triggerOrWait).toHaveBeenCalledWith(
         'user-1',
         'token'
       );
@@ -535,7 +536,7 @@ describe('TaskService', () => {
 
       await service.deleteTask('task-1', mockClient, 'token');
 
-      expect(mockAutoScheduleTriggerQueue.triggerAndWait).toHaveBeenCalledWith(
+      expect(mockAutoScheduleTriggerQueue.triggerOrWait).toHaveBeenCalledWith(
         'user-1',
         'token'
       );
