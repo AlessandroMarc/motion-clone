@@ -157,7 +157,7 @@ describe('DayBlockService', () => {
       updated_at: new Date(),
     };
 
-    test('happy path: returns startTime / endTime from global working hours', async () => {
+    test('happy path: returns startTime / endTime (always 23:59)', async () => {
       mockUserSettingsService.getActiveSchedule.mockResolvedValue(baseSchedule);
       const result = await svc.resolveTimes(
         'user-1',
@@ -167,11 +167,12 @@ describe('DayBlockService', () => {
       );
       if ('error' in result) throw new Error('expected success');
       expect(result.startTime.getHours()).toBe(10);
-      expect(result.endTime.getHours()).toBe(17);
+      expect(result.endTime.getHours()).toBe(23);
+      expect(result.endTime.getMinutes()).toBe(59);
       expect(result.isNonWorkingDay).toBe(false);
     });
 
-    test('uses working_days override when present', async () => {
+    test('endTime is always 23:59 regardless of working_days override', async () => {
       const sched: Schedule = {
         ...baseSchedule,
         working_days: {
@@ -193,7 +194,8 @@ describe('DayBlockService', () => {
         '10:00'
       );
       if ('error' in result) throw new Error('expected success');
-      expect(result.endTime.getHours()).toBe(14);
+      expect(result.endTime.getHours()).toBe(23);
+      expect(result.endTime.getMinutes()).toBe(59);
       expect(result.isNonWorkingDay).toBe(false);
     });
 
@@ -236,13 +238,13 @@ describe('DayBlockService', () => {
       expect('error' in result).toBe(true);
     });
 
-    test('returns error when from_time is after midnight', async () => {
+    test('returns error when from_time is at or after midnight (23:59)', async () => {
       mockUserSettingsService.getActiveSchedule.mockResolvedValue(baseSchedule);
       const result = await svc.resolveTimes(
         'user-1',
         'token',
         '2026-04-13',
-        '23:00'
+        '23:59'
       );
       expect('error' in result).toBe(true);
     });
