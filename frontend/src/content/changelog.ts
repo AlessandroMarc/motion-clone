@@ -15,6 +15,31 @@ export interface ChangelogEntry {
 
 export const changelogEntries: ChangelogEntry[] = [
   {
+    version: '1.12.0',
+    date: 'April 2026',
+    title: 'Continue Tomorrow — Day Blocking',
+    description:
+      'Block the rest of your day with one click and let the scheduler push all remaining tasks to tomorrow.',
+    items: [
+      {
+        type: 'new',
+        text: "Moon icon on today's calendar column header — click it to instantly block the remaining working hours and reschedule all pending tasks to the next available day.",
+      },
+      {
+        type: 'new',
+        text: "Day-block events appear as a distinct grey hatched overlay on the calendar so it's clear the window is reserved.",
+      },
+      {
+        type: 'new',
+        text: 'Deleting a day-block automatically re-runs auto-schedule so tasks reclaim the freed slots.',
+      },
+      {
+        type: 'improved',
+        text: 'Auto-schedule now treats day-blocks as opaque busy intervals — tasks are never placed inside a blocked window.',
+      },
+    ],
+  },
+  {
     version: '1.11.0',
     date: 'April 2026',
     title: 'Google Calendar Full CRUD & Click-to-Create',

@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   type CalendarEventUnion,
+  type CalendarEventTask,
   type CreateCalendarEventInput,
   isCalendarEventTask,
   type Schedule,
@@ -41,6 +42,16 @@ import { toast } from 'sonner';
 import { userSettingsService } from '@/services/userSettingsService';
 import { HiddenEventsIndicator } from './HiddenEventsIndicator';
 import { PinnedTasksWarningDialog } from './PinnedTasksWarningDialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 interface WeekCalendarContainerProps {
   onTaskDropped?: () => void;
@@ -311,6 +322,25 @@ export function WeekCalendarContainer({
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [taskEditOpen, setTaskEditOpen] = useState(false);
 
+  // Day block preview state
+  const [dayBlockPreviewOpen, setDayBlockPreviewOpen] = useState(false);
+  const [dayBlockPreviewData, setDayBlockPreviewData] = useState<{
+    date: Date;
+    dateStr: string;
+    fromTime: string;
+    blockEndTime: string; // ISO string from backend — accurate regardless of timezone
+    tasksToMove: Array<{
+      task: { id: string; title: string };
+      currentEvent: CalendarEventTask;
+      proposedTime: { start: Date; end: Date } | null;
+    }>;
+    totalEventsCreated: number;
+    totalEventsDeleted: number;
+    violations: number;
+    isNonWorkingDay: boolean;
+  } | null>(null);
+  const [dayBlockPreviewLoading, setDayBlockPreviewLoading] = useState(false);
+
   const openTaskEditForm = () => {
     if (!dialogs.editEvent) return;
 
@@ -380,15 +410,95 @@ export function WeekCalendarContainer({
           '[WeekCalendarContainer] Failed to create calendar event for task:',
           err
         );
-        toast.warning(
-          'Task created but failed to schedule it on the calendar'
-        );
+        toast.warning('Task created but failed to schedule it on the calendar');
       }
       dialogs.setTaskCreateFromCalendarOpen(false);
     }
 
     await Promise.all([refreshEvents(), loadTasks()]);
     onTaskDropped?.();
+  };
+
+  const handleBlockDay = async (date: Date) => {
+    // Use local date string (YYYY-MM-DD) — avoids UTC-midnight offset issues
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, '0');
+    const d = String(date.getDate()).padStart(2, '0');
+    const dateStr = `${y}-${m}-${d}`;
+
+    const isToday =
+      dateStr ===
+      (() => {
+        const now = new Date();
+        return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+      })();
+
+    let fromTime: string;
+    if (isToday) {
+      // Block from now (floored to 15-min slot) — computed locally to avoid server UTC clock
+      const now = new Date();
+      const h = String(now.getHours()).padStart(2, '0');
+      const mins = now.getMinutes();
+      const mFloor = String(mins - (mins % 15)).padStart(2, '0');
+      fromTime = `${h}:${mFloor}`;
+    } else {
+      // For future days block the whole working day from its start
+      const workingHoursStart = activeSchedule?.working_hours_start ?? 9;
+      fromTime = `${String(Math.floor(workingHoursStart)).padStart(2, '0')}:00`;
+    }
+
+    setDayBlockPreviewLoading(true);
+    try {
+      const preview = await calendarService.previewDayBlock(dateStr, fromTime);
+
+      setDayBlockPreviewData({
+        date,
+        dateStr,
+        fromTime,
+        blockEndTime: preview.blockEndTime,
+        tasksToMove: preview.tasksToMove,
+        totalEventsCreated: preview.totalEventsCreated,
+        totalEventsDeleted: preview.totalEventsDeleted,
+        violations: preview.violations,
+        isNonWorkingDay: preview.isNonWorkingDay,
+      });
+      setDayBlockPreviewOpen(true);
+    } catch (e) {
+      toast.error(
+        e instanceof Error ? e.message : 'Could not preview day block'
+      );
+    } finally {
+      setDayBlockPreviewLoading(false);
+    }
+  };
+
+  const handleConfirmBlockDay = async () => {
+    if (!dayBlockPreviewData) return;
+
+    setDayBlockPreviewOpen(false);
+    setDayBlockPreviewLoading(true);
+
+    try {
+      const result = await calendarService.createDayBlock(
+        dayBlockPreviewData.dateStr,
+        dayBlockPreviewData.fromTime
+      );
+      await refreshEvents();
+      const changed =
+        result.schedule_result.eventsCreated +
+        result.schedule_result.eventsDeleted;
+      toast.success(
+        changed > 0
+          ? `Day blocked — ${changed} task event${changed !== 1 ? 's' : ''} rescheduled`
+          : 'Day blocked'
+      );
+      onTaskDropped?.();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Could not block day');
+    } finally {
+      setDayBlockPreviewLoading(false);
+      setDayBlockPreviewData(null);
+    }
   };
 
   const displayEventsByDay = useMemo(() => {
@@ -523,9 +633,7 @@ export function WeekCalendarContainer({
           onLinkClick={openTaskEditForm}
           onDelete={() => dialogs.handleDeleteEdit(setEvents)}
           onEditGoogleEvent={dialogs.handleEditGoogleEvent}
-          onDeleteGoogleEvent={() =>
-            dialogs.handleDeleteGoogleEvent(setEvents)
-          }
+          onDeleteGoogleEvent={() => dialogs.handleDeleteGoogleEvent(setEvents)}
         />
         <GoogleCalendarEventForm
           open={dialogs.googleEventFormOpen}
@@ -613,6 +721,8 @@ export function WeekCalendarContainer({
         workingHoursEnd={activeSchedule?.working_hours_end}
         onTaskCreate={handleTaskCreate}
         googleCalendarConnected={googleCalendarConnected}
+        onBlockDay={handleBlockDay}
+        blockDayLoading={dayBlockPreviewLoading}
       />
       <TaskEditDialogForm
         task={selectedTask}
@@ -634,6 +744,131 @@ export function WeekCalendarContainer({
           onCancel={() => pinnedWarning.resolve(false)}
         />
       )}
+
+      {/* Day Block Confirmation Dialog */}
+      <AlertDialog
+        open={dayBlockPreviewOpen}
+        onOpenChange={open => {
+          if (!open) {
+            setDayBlockPreviewOpen(false);
+            setDayBlockPreviewData(null);
+          }
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Block the rest of the day?</AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-3">
+                <p>
+                  This will block your calendar from{' '}
+                  <strong>
+                    {dayBlockPreviewData?.fromTime || 'now'} until{' '}
+                    {dayBlockPreviewData?.blockEndTime
+                      ? new Date(
+                          dayBlockPreviewData.blockEndTime
+                        ).toLocaleTimeString('en-US', {
+                          hour: '2-digit',
+                          minute: '2-digit',
+                        })
+                      : 'end of day'}
+                  </strong>
+                  . All task events scheduled during this time will be moved to
+                  the next available slots.
+                </p>
+
+                {/* Non-working day warning */}
+                {dayBlockPreviewData?.isNonWorkingDay && (
+                  <p className="text-sm text-amber-600 dark:text-amber-400">
+                    This is a non-working day in your schedule — no tasks are
+                    auto-scheduled here, so the block won't move anything.
+                  </p>
+                )}
+
+                {dayBlockPreviewData &&
+                  dayBlockPreviewData.tasksToMove.length > 0 && (
+                    <div className="rounded-md border bg-muted/50 p-3">
+                      <p className="text-sm font-medium mb-2">
+                        {dayBlockPreviewData.tasksToMove.length} task
+                        {dayBlockPreviewData.tasksToMove.length !== 1
+                          ? 's'
+                          : ''}{' '}
+                        will be rescheduled:
+                      </p>
+                      <ul className="space-y-2 text-sm">
+                        {dayBlockPreviewData.tasksToMove.map((item, idx) => (
+                          <li key={idx} className="flex items-start gap-2">
+                            <span className="text-muted-foreground">•</span>
+                            <div className="flex-1">
+                              <div className="font-medium">
+                                {item.task.title}
+                              </div>
+                              <div className="text-xs text-muted-foreground">
+                                {item.currentEvent.start_time &&
+                                  new Date(
+                                    item.currentEvent
+                                      .start_time as unknown as string
+                                  ).toLocaleTimeString('en-US', {
+                                    hour: '2-digit',
+                                    minute: '2-digit',
+                                  })}
+                                {' → '}
+                                {item.proposedTime
+                                  ? item.proposedTime.start.toLocaleTimeString(
+                                      'en-US',
+                                      { hour: '2-digit', minute: '2-digit' }
+                                    )
+                                  : 'no slot found'}
+                              </div>
+                            </div>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
+                {dayBlockPreviewData &&
+                  dayBlockPreviewData.tasksToMove.length === 0 &&
+                  !dayBlockPreviewData.isNonWorkingDay && (
+                    <p className="text-sm text-muted-foreground">
+                      No tasks are currently scheduled during this time.
+                    </p>
+                  )}
+
+                {/* Violations warning (item 13) */}
+                {dayBlockPreviewData && dayBlockPreviewData.violations > 0 && (
+                  <p className="text-sm text-amber-600 dark:text-amber-400">
+                    {dayBlockPreviewData.violations} task
+                    {dayBlockPreviewData.violations !== 1 ? 's' : ''} cannot be
+                    rescheduled within the scheduling window and will be placed
+                    past their deadline.
+                  </p>
+                )}
+
+                {/* Recurring tasks note (item 17) */}
+                <p className="text-xs text-muted-foreground">
+                  Recurring task occurrences are rescheduled automatically and
+                  are not shown above.
+                </p>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleConfirmBlockDay}
+              disabled={dayBlockPreviewLoading}
+            >
+              {dayBlockPreviewLoading
+                ? 'Blocking...'
+                : dayBlockPreviewData &&
+                    dayBlockPreviewData.tasksToMove.length > 0
+                  ? `Block day — ${dayBlockPreviewData.tasksToMove.length} task${dayBlockPreviewData.tasksToMove.length !== 1 ? 's' : ''} will move`
+                  : 'Block day'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }

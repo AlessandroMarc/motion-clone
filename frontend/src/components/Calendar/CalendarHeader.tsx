@@ -244,6 +244,16 @@ export function CalendarLegend() {
         <span className="inline-block h-2.5 w-2.5 rounded-sm bg-red-500/80" />
         <span>Past deadline</span>
       </div>
+      <div className="flex items-center gap-1">
+        <span
+          className="inline-block h-2.5 w-2.5 rounded-sm bg-slate-400/30"
+          style={{
+            backgroundImage:
+              'repeating-linear-gradient(135deg, transparent, transparent 2px, rgba(0,0,0,0.08) 2px, rgba(0,0,0,0.08) 4px)',
+          }}
+        />
+        <span>Day blocked</span>
+      </div>
     </div>
   );
 }

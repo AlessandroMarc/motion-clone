@@ -21,7 +21,9 @@ jest.mock('@/components/ui/button', () => ({
 
 jest.mock('@/components/ui/tooltip', () => ({
   Tooltip: ({ children }: any) => <>{children}</>,
-  TooltipContent: ({ children }: any) => <div data-testid="tooltip-content">{children}</div>,
+  TooltipContent: ({ children }: any) => (
+    <div data-testid="tooltip-content">{children}</div>
+  ),
   TooltipProvider: ({ children }: any) => <>{children}</>,
   TooltipTrigger: ({ children }: any) => <>{children}</>,
 }));
@@ -86,7 +88,9 @@ describe('CalendarCreateChoiceDialog', () => {
       />
     );
 
-    const googleButton = screen.getByText('Google Calendar Event').closest('button')!;
+    const googleButton = screen
+      .getByText('Google Calendar Event')
+      .closest('button')!;
     await userEvent.click(googleButton);
 
     expect(onChooseGoogleEvent).toHaveBeenCalledTimes(1);
@@ -100,7 +104,9 @@ describe('CalendarCreateChoiceDialog', () => {
       />
     );
 
-    const googleButton = screen.getByText('Google Calendar Event').closest('button')!;
+    const googleButton = screen
+      .getByText('Google Calendar Event')
+      .closest('button')!;
     expect(googleButton).toBeDisabled();
   });
 
@@ -112,7 +118,9 @@ describe('CalendarCreateChoiceDialog', () => {
       />
     );
 
-    const googleButton = screen.getByText('Google Calendar Event').closest('button')!;
+    const googleButton = screen
+      .getByText('Google Calendar Event')
+      .closest('button')!;
     expect(googleButton).not.toBeDisabled();
   });
 
@@ -130,16 +138,18 @@ describe('CalendarCreateChoiceDialog', () => {
   });
 
   it('does not render when open is false', () => {
-    render(
-      <CalendarCreateChoiceDialog {...baseProps} open={false} />
-    );
+    render(<CalendarCreateChoiceDialog {...baseProps} open={false} />);
 
     expect(screen.queryByText('Create New')).not.toBeInTheDocument();
   });
 
   it('renders both option descriptions', () => {
     render(<CalendarCreateChoiceDialog {...baseProps} />);
-    expect(screen.getByText('Create a manually scheduled task')).toBeInTheDocument();
-    expect(screen.getByText('Create an event on Google Calendar')).toBeInTheDocument();
+    expect(
+      screen.getByText('Create a manually scheduled task')
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText('Create an event on Google Calendar')
+    ).toBeInTheDocument();
   });
 });

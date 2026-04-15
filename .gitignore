@@ -13,6 +13,9 @@ backend/dist/
 # Cursor
 .cursor/
 
+# Other AI tool configs
+.qwen/
+
 # Playwright
 playwright-report/
 test-results/
