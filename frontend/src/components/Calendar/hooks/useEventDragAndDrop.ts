@@ -209,16 +209,20 @@ export function useEventDragAndDrop(
         return;
       }
 
-      // Persist update
+      // Use state.originalEnd directly — avoids recomputing from durationMs,
+      // which is correct for move but misleading for resize where only end_time changed.
+      const originalStart = state.originalStart.toISOString();
+      const originalEnd = state.originalEnd.toISOString();
+      const newStartTime = (preview.start_time as Date).toISOString();
+      const newEndTime = (preview.end_time as Date).toISOString();
+
+      const isGoogleEvent =
+        !isCalendarEventTask(preview) &&
+        'google_event_id' in preview &&
+        preview.google_event_id;
+
+      // Persist update — onEventUpdate is only called after all external writes succeed
       try {
-        const newStartTime = (preview.start_time as Date).toISOString();
-        const newEndTime = (preview.end_time as Date).toISOString();
-
-        const isGoogleEvent =
-          !isCalendarEventTask(preview) &&
-          'google_event_id' in preview &&
-          preview.google_event_id;
-
         if (isGoogleEvent) {
           // Update via Google Calendar API (syncs to Google and updates local DB)
           await googleCalendarService.updateEvent(preview.google_event_id!, {
@@ -227,11 +231,6 @@ export function useEventDragAndDrop(
           });
         } else {
           // Task event: update internal calendar event
-          const originalStart = (state.originalStart as Date).toISOString();
-          const originalEnd = new Date(
-            new Date(state.originalStart).getTime() + state.durationMs
-          ).toISOString();
-
           await calendarService.updateCalendarEvent(preview.id, {
             start_time: newStartTime,
             end_time: newEndTime,
@@ -244,7 +243,7 @@ export function useEventDragAndDrop(
                 isManuallyPinned: true,
               });
             } catch (pinErr) {
-              // Rollback calendar event to its original times
+              // Pin failed: rollback calendar event to its original times
               await calendarService.updateCalendarEvent(preview.id, {
                 start_time: originalStart,
                 end_time: originalEnd,
@@ -254,7 +253,7 @@ export function useEventDragAndDrop(
           }
         }
 
-        // Notify parent of update
+        // Only notify parent after all external updates succeed
         if (onEventUpdate) {
           onEventUpdate(
             preview.id,
