@@ -220,33 +220,34 @@ describe('DayBlockService', () => {
       );
       if ('error' in result) throw new Error('expected success');
       expect(result.isNonWorkingDay).toBe(true);
-      // Falls back to working_hours_end (17)
-      expect(result.endTime.getHours()).toBe(17);
+      // Day blocks always extend to 23:59 regardless of schedule
+      expect(result.endTime.getHours()).toBe(23);
+      expect(result.endTime.getMinutes()).toBe(59);
     });
 
-    test('returns error when from_time equals working end', async () => {
+    test('returns error when from_time equals midnight', async () => {
       mockUserSettingsService.getActiveSchedule.mockResolvedValue(baseSchedule);
       const result = await svc.resolveTimes(
         'user-1',
         'token',
         '2026-04-13',
-        '17:00'
+        '23:59'
       );
       expect('error' in result).toBe(true);
     });
 
-    test('returns error when from_time is after working end', async () => {
+    test('returns error when from_time is after midnight', async () => {
       mockUserSettingsService.getActiveSchedule.mockResolvedValue(baseSchedule);
       const result = await svc.resolveTimes(
         'user-1',
         'token',
         '2026-04-13',
-        '19:00'
+        '23:00'
       );
       expect('error' in result).toBe(true);
     });
 
-    test('handles fractional working_hours_end (e.g. 17.5)', async () => {
+    test('endTime is always 23:59 regardless of working_hours_end', async () => {
       mockUserSettingsService.getActiveSchedule.mockResolvedValue({
         ...baseSchedule,
         working_hours_end: 17.5,
@@ -258,11 +259,12 @@ describe('DayBlockService', () => {
         '10:00'
       );
       if ('error' in result) throw new Error('expected success');
-      expect(result.endTime.getHours()).toBe(17);
-      expect(result.endTime.getMinutes()).toBe(30);
+      // Day blocks always extend to 23:59
+      expect(result.endTime.getHours()).toBe(23);
+      expect(result.endTime.getMinutes()).toBe(59);
     });
 
-    test('defaults endTime to 18:00 when no schedule exists', async () => {
+    test('endTime is 23:59 when no schedule exists', async () => {
       mockUserSettingsService.getActiveSchedule.mockResolvedValue(null);
       const result = await svc.resolveTimes(
         'user-1',
@@ -271,7 +273,8 @@ describe('DayBlockService', () => {
         '10:00'
       );
       if ('error' in result) throw new Error('expected success');
-      expect(result.endTime.getHours()).toBe(18);
+      expect(result.endTime.getHours()).toBe(23);
+      expect(result.endTime.getMinutes()).toBe(59);
       expect(result.isNonWorkingDay).toBe(false);
     });
   });
