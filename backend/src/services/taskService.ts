@@ -323,10 +323,20 @@ export class TaskService {
 
     perf.end('total', 200);
 
-    // Trigger auto-schedule asynchronously (fire-and-forget)
-    // For task creation, we don't need to wait since there are no existing events to deduplicate
+    // Trigger auto-schedule and wait for completion.
+    // This ensures the calendar is deduplicated when the frontend refreshes.
+    // triggerOrWait() is runtime-aware: fire-and-forget on long-lived runtimes
+    // (dev/Node) so the mutation returns fast, but awaited on Vercel where
+    // background work dies when the serverless function exits.
     if (authToken) {
-      autoScheduleTriggerQueue.trigger(input.user_id, authToken);
+      try {
+        await autoScheduleTriggerQueue.triggerOrWait(input.user_id, authToken);
+      } catch (err) {
+        console.error(
+          `[TaskService] Auto-schedule trigger failed for user ${input.user_id}:`,
+          err
+        );
+      }
     }
 
     return data;

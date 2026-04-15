@@ -137,7 +137,7 @@ class AutoScheduleTriggerQueueImpl {
   /**
    * Trigger auto-schedule and wait for completion (synchronous mode).
    * Used when the caller needs to ensure scheduling is complete before proceeding.
-   * Debounces rapid calls but waits for the scheduled run to finish.
+   * Always waits for the scheduled run to finish, regardless of runtime.
    *
    * @param userId User ID
    * @param authToken Auth token for API calls
@@ -156,22 +156,14 @@ class AutoScheduleTriggerQueueImpl {
   }
 
   /**
-   * Runtime-aware trigger for mutation paths.
+   * Trigger auto-schedule and wait for completion.
    *
-   * On Vercel's serverless runtime, background work is killed the moment the
-   * function returns, so fire-and-forget via `trigger()` is a no-op there.
-   * To keep auto-scheduling correct in production we must `await` the run.
-   *
-   * On long-lived runtimes (local Node/Express, or any non-Vercel host),
-   * we prefer the debounced fire-and-forget path so the mutation's HTTP
-   * response isn't blocked by scheduling.
+   * Always awaits the auto-schedule run, regardless of runtime (Vercel or local).
+   * This ensures the caller (e.g., task create/update/delete) only returns after
+   * the calendar has been updated, so the frontend sees the scheduled events immediately.
    */
   async triggerOrWait(userId: string, authToken: string): Promise<void> {
-    if (process.env.VERCEL) {
-      await this.triggerAndWait(userId, authToken);
-      return;
-    }
-    this.trigger(userId, authToken);
+    await this.triggerAndWait(userId, authToken);
   }
 
   /**

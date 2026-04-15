@@ -481,4 +481,281 @@ test.describe('Auto-Schedule – overlap prevention', () => {
       timeout: 10_000,
     });
   });
+
+  test('auto-schedule runs automatically when a new task is created', async ({
+    page,
+  }) => {
+    // Track whether auto-schedule was called
+    let autoScheduleCalled = false;
+
+    // Override the auto-schedule route to track calls
+    await page.route(
+      'http://localhost:3003/api/auto-schedule/run',
+      async (route: Route) => {
+        if (route.request().method() === 'POST') {
+          autoScheduleCalled = true;
+          console.log('[E2E] Auto-schedule called automatically');
+          await route.fulfill({
+            status: 200,
+            contentType: 'application/json',
+            body: JSON.stringify(
+              apiSuccess(
+                {
+                  unchanged: false,
+                  eventsCreated: 1,
+                  eventsDeleted: 0,
+                  violations: 0,
+                },
+                'Auto-schedule completed'
+              )
+            ),
+          });
+          return;
+        }
+        await route.continue();
+      }
+    );
+
+    // Mock tasks with an empty initial list
+    const tasks: Record<string, unknown>[] = [];
+
+    // Intercept POST /tasks to add the new task to the list
+    await page.route(
+      'http://localhost:3003/api/tasks',
+      async (route: Route) => {
+        const method = route.request().method();
+        if (method === 'POST') {
+          const body = route.request().postDataJSON();
+          const newTask = {
+            ...body,
+            id: 'new-task-1',
+            status: 'not-started',
+            created_at: '2024-01-01T00:00:00Z',
+            updated_at: '2024-01-01T00:00:00Z',
+          };
+          tasks.push(newTask);
+
+          await route.fulfill({
+            status: 201,
+            contentType: 'application/json',
+            body: JSON.stringify(apiSuccess(newTask, 'Task created')),
+          });
+          return;
+        }
+        // GET handler
+        await route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify(apiSuccess(tasks, 'Tasks retrieved', tasks.length)),
+        });
+      }
+    );
+
+    // Other required routes
+    await page.route('http://localhost:3003/api/calendar-events*', route =>
+      route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify(apiSuccess([], 'Events retrieved', 0)),
+      })
+    );
+
+    await page.route('http://localhost:3003/api/projects*', route =>
+      route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify(
+          apiSuccess(mockProjects, 'Projects retrieved', mockProjects.length)
+        ),
+      })
+    );
+
+    await page.route('http://localhost:3003/api/schedules*', route =>
+      route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify(
+          apiSuccess([mockSchedule], 'Schedules retrieved', 1)
+        ),
+      })
+    );
+
+    await page.route('http://localhost:3003/api/user-settings*', route =>
+      route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify(apiSuccess(mockUserSettings, 'OK')),
+      })
+    );
+
+    await page.route('http://localhost:3003/**', route =>
+      route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ success: true, message: 'OK', data: [] }),
+      })
+    );
+
+    await page.goto('/calendar');
+
+    // Open the new task dialog via the "New Task" button in the calendar header
+    const newTaskButton = page.getByRole('button', { name: /new task/i });
+    await expect(newTaskButton).toBeVisible({ timeout: 15_000 });
+    await newTaskButton.click();
+
+    // Fill in the task form
+    const titleInput = page.getByLabel(/title/i);
+    await titleInput.fill('Auto-scheduled task');
+
+    // Submit the form
+    const submitButton = page.getByRole('button', { name: /create/i });
+    await submitButton.click();
+
+    // Wait a moment for the auto-schedule trigger to fire
+    await page.waitForTimeout(1000);
+
+    // Verify that auto-schedule was called automatically (without clicking the button)
+    expect(autoScheduleCalled, 'Auto-schedule should run automatically when a task is created').toBe(true);
+  });
+
+  test('auto-schedule runs automatically when a task is updated with scheduling-relevant fields', async ({
+    page,
+  }) => {
+    let autoScheduleCalled = false;
+
+    await page.route(
+      'http://localhost:3003/api/auto-schedule/run',
+      async (route: Route) => {
+        if (route.request().method() === 'POST') {
+          autoScheduleCalled = true;
+          await route.fulfill({
+            status: 200,
+            contentType: 'application/json',
+            body: JSON.stringify(
+              apiSuccess(
+                {
+                  unchanged: false,
+                  eventsCreated: 0,
+                  eventsDeleted: 0,
+                  violations: 0,
+                },
+                'Auto-schedule completed'
+              )
+            ),
+          });
+          return;
+        }
+        await route.continue();
+      }
+    );
+
+    const tasks = [
+      makeTask({
+        id: 'task-to-update',
+        title: 'Task to Update',
+        planned_duration_minutes: 60,
+        actual_duration_minutes: 0,
+        status: 'not-started',
+        is_recurring: false,
+        due_date: null,
+      }),
+    ];
+
+    // Track update payloads
+    let updatePayload: Record<string, unknown> | null = null;
+
+    await page.route(
+      'http://localhost:3003/api/tasks*',
+      async (route: Route) => {
+        const method = route.request().method();
+        if (method === 'GET') {
+          await route.fulfill({
+            status: 200,
+            contentType: 'application/json',
+            body: JSON.stringify(
+              apiSuccess(tasks, 'Tasks retrieved', tasks.length)
+            ),
+          });
+        } else if (method === 'PUT') {
+          updatePayload = route.request().postDataJSON();
+          const updatedTask = { ...tasks[0], ...updatePayload };
+          await route.fulfill({
+            status: 200,
+            contentType: 'application/json',
+            body: JSON.stringify(apiSuccess(updatedTask, 'Task updated')),
+          });
+        } else {
+          await route.fulfill({
+            status: 200,
+            contentType: 'application/json',
+            body: JSON.stringify(apiSuccess(null)),
+          });
+        }
+      }
+    );
+
+    await page.route('http://localhost:3003/api/calendar-events*', route =>
+      route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify(apiSuccess([], 'Events retrieved', 0)),
+      })
+    );
+
+    await page.route('http://localhost:3003/api/projects*', route =>
+      route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify(
+          apiSuccess(mockProjects, 'Projects retrieved', mockProjects.length)
+        ),
+      })
+    );
+
+    await page.route('http://localhost:3003/api/schedules*', route =>
+      route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify(
+          apiSuccess([mockSchedule], 'Schedules retrieved', 1)
+        ),
+      })
+    );
+
+    await page.route('http://localhost:3003/api/user-settings*', route =>
+      route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify(apiSuccess(mockUserSettings, 'OK')),
+      })
+    );
+
+    await page.route('http://localhost:3003/**', route =>
+      route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ success: true, message: 'OK', data: [] }),
+      })
+    );
+
+    await page.goto('/calendar');
+
+    // Simulate a task update with a due_date (scheduling-relevant field)
+    // In the real app this happens via the task edit dialog, but here we directly
+    // trigger the update by calling the API through a page.evaluate
+    await page.evaluate(async () => {
+      // This simulates what happens when the frontend taskService.updateTask is called
+      const response = await fetch('http://localhost:3003/api/tasks/task-to-update', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ due_date: '2099-12-31' }),
+      });
+      return response.json();
+    });
+
+    // Wait for the auto-schedule trigger
+    await page.waitForTimeout(1000);
+
+    expect(autoScheduleCalled, 'Auto-schedule should run when a task is updated with scheduling-relevant fields').toBe(true);
+  });
 });

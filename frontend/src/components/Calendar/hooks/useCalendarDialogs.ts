@@ -73,6 +73,15 @@ export function useCalendarDialogs(
     googleEventId?: string;
   } | null>(null);
 
+  // Delete confirmation dialog state
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [deleteConfirmLinkedTask, setDeleteConfirmLinkedTask] = useState<{
+    id: string;
+    title: string;
+    is_recurring: boolean;
+    eventId: string;
+  } | null>(null);
+
   const handleGridCellClick = (date: Date, hour: number, minute: number) => {
     setClickedSlot({ date, hour, minute });
     setChoiceDialogOpen(true);
