@@ -18,4 +18,4 @@ export type {
   OnboardingStep,
   WorkItemStatus,
 } from '@shared/types';
-export { isCalendarEventTask } from '@shared/types';
+export { isCalendarEventTask, isCalendarEventDayBlock } from '@shared/types';

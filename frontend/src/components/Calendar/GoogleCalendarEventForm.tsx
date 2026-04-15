@@ -71,7 +71,10 @@ export function GoogleCalendarEventForm({
 
     const parsedStart = new Date(startTime);
     const parsedEnd = new Date(endTime);
-    if (Number.isNaN(parsedStart.getTime()) || Number.isNaN(parsedEnd.getTime())) {
+    if (
+      Number.isNaN(parsedStart.getTime()) ||
+      Number.isNaN(parsedEnd.getTime())
+    ) {
       toast.error('Start and end times must be valid');
       return;
     }
@@ -115,7 +118,8 @@ export function GoogleCalendarEventForm({
       }
     } catch (err) {
       console.error('Failed to save Google Calendar event:', err);
-      const message = err instanceof Error ? err.message : 'Failed to save event';
+      const message =
+        err instanceof Error ? err.message : 'Failed to save event';
       if (message.includes('insufficient authentication scopes')) {
         toast.error(
           'Google Calendar permission error. Please reconnect your Google account in Profile settings.',
@@ -123,7 +127,9 @@ export function GoogleCalendarEventForm({
             duration: 8000,
             action: {
               label: 'Go to Profile',
-              onClick: () => { window.location.href = '/profile'; },
+              onClick: () => {
+                window.location.href = '/profile';
+              },
             },
           }
         );

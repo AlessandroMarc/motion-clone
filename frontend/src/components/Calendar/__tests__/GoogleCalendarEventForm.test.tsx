@@ -105,10 +105,14 @@ describe('GoogleCalendarEventForm', () => {
       />
     );
 
-    const titleInput = screen.getByPlaceholderText('Event title') as HTMLInputElement;
+    const titleInput = screen.getByPlaceholderText(
+      'Event title'
+    ) as HTMLInputElement;
     expect(titleInput.value).toBe('Pre-filled');
 
-    const descInput = screen.getByPlaceholderText('Optional description') as HTMLTextAreaElement;
+    const descInput = screen.getByPlaceholderText(
+      'Optional description'
+    ) as HTMLTextAreaElement;
     expect(descInput.value).toBe('Some desc');
   });
 
@@ -137,12 +141,7 @@ describe('GoogleCalendarEventForm', () => {
     mockCreateEvent.mockResolvedValue({ id: 'new-event' });
     const onSaved = jest.fn();
 
-    render(
-      <GoogleCalendarEventForm
-        {...baseProps}
-        onSaved={onSaved}
-      />
-    );
+    render(<GoogleCalendarEventForm {...baseProps} onSaved={onSaved} />);
 
     // Fill in title
     const titleInput = screen.getByPlaceholderText('Event title');
@@ -214,7 +213,9 @@ describe('GoogleCalendarEventForm', () => {
 
   it('does not render when open is false', () => {
     render(<GoogleCalendarEventForm {...baseProps} open={false} />);
-    expect(screen.queryByText('New Google Calendar Event')).not.toBeInTheDocument();
+    expect(
+      screen.queryByText('New Google Calendar Event')
+    ).not.toBeInTheDocument();
   });
 
   it('shows error toast when createEvent fails', async () => {

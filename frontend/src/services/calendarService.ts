@@ -295,6 +295,132 @@ class CalendarService {
     return response.data;
   }
 
+  /**
+   * Create a day-block from a chosen time to end of working hours, then
+   * immediately re-run auto-schedule so remaining tasks are pushed past it.
+   */
+  async createDayBlock(
+    date: string,
+    fromTime: string
+  ): Promise<{
+    day_block: CalendarEventUnion;
+    schedule_result: {
+      unchanged: boolean;
+      eventsCreated: number;
+      eventsDeleted: number;
+      violations: number;
+    };
+  }> {
+    const response = await request<{
+      day_block: UnknownRecord;
+      schedule_result: {
+        unchanged: boolean;
+        eventsCreated: number;
+        eventsDeleted: number;
+        violations: number;
+      };
+    }>('/day-blocks', {
+      method: 'POST',
+      body: JSON.stringify({ date, from_time: fromTime }),
+    });
+
+    if (!response.success || !response.data) {
+      throw new Error(response.error || 'Failed to create day block');
+    }
+
+    return {
+      day_block: toCalendarEventUnion(response.data.day_block),
+      schedule_result: response.data.schedule_result,
+    };
+  }
+
+  /**
+   * Preview what would happen if a day-block were created, without actually
+   * creating it. Returns the list of tasks that would be moved.
+   */
+  async previewDayBlock(
+    date: string,
+    fromTime: string
+  ): Promise<{
+    tasksToMove: Array<{
+      task: { id: string; title: string };
+      currentEvent: CalendarEventTask;
+      proposedTime: { start: Date; end: Date } | null;
+    }>;
+    totalEventsCreated: number;
+    totalEventsDeleted: number;
+    violations: number;
+    /** ISO string of the computed block end time (timezone-safe). */
+    blockEndTime: string;
+    /** True when the day is explicitly marked non-working in the user's schedule. */
+    isNonWorkingDay: boolean;
+  }> {
+    const response = await request<{
+      tasksToMove: Array<{
+        task: { id: string; title: string };
+        currentEvent: UnknownRecord;
+        proposedTime: { start: string; end: string } | null;
+      }>;
+      totalEventsCreated: number;
+      totalEventsDeleted: number;
+      violations: number;
+      blockEndTime: string;
+      isNonWorkingDay: boolean;
+    }>('/day-blocks/preview', {
+      method: 'POST',
+      body: JSON.stringify({ date, from_time: fromTime }),
+    });
+
+    if (!response.success || !response.data) {
+      throw new Error(response.error || 'Failed to preview day block');
+    }
+
+    return {
+      tasksToMove: response.data.tasksToMove.map(t => ({
+        task: t.task,
+        currentEvent: t.currentEvent as unknown as CalendarEventTask,
+        proposedTime: t.proposedTime
+          ? {
+              start: new Date(t.proposedTime.start),
+              end: new Date(t.proposedTime.end),
+            }
+          : null,
+      })),
+      totalEventsCreated: response.data.totalEventsCreated,
+      totalEventsDeleted: response.data.totalEventsDeleted,
+      violations: response.data.violations,
+      blockEndTime: response.data.blockEndTime,
+      isNonWorkingDay: response.data.isNonWorkingDay,
+    };
+  }
+
+  /**
+   * Delete a day-block and re-run auto-schedule so tasks reclaim the freed window.
+   */
+  async deleteDayBlock(id: string): Promise<{
+    schedule_result: {
+      unchanged: boolean;
+      eventsCreated: number;
+      eventsDeleted: number;
+      violations: number;
+    };
+  }> {
+    const response = await request<{
+      schedule_result: {
+        unchanged: boolean;
+        eventsCreated: number;
+        eventsDeleted: number;
+        violations: number;
+      };
+    }>(`/day-blocks/${id}`, { method: 'DELETE' });
+
+    if (!response.success || !response.data) {
+      throw new Error(response.error || 'Failed to delete day block');
+    }
+
+    return response.data;
+  }
+
   /** Returns pinned tasks whose events would be moved/deleted by auto-schedule. */
   async getPinnedTasksPreview(): Promise<Array<{ id: string; title: string }>> {
     const response = await request<{

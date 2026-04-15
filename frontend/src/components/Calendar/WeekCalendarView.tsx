@@ -143,6 +143,8 @@ interface WeekCalendarViewProps {
   workingHoursStart?: number;
   workingHoursEnd?: number;
   googleCalendarConnected?: boolean;
+  onBlockDay?: (date: Date) => void;
+  blockDayLoading?: boolean;
 }
 
 export function WeekCalendarView({
@@ -183,6 +185,8 @@ export function WeekCalendarView({
   workingHoursStart,
   workingHoursEnd,
   googleCalendarConnected = false,
+  onBlockDay,
+  blockDayLoading = false,
 }: WeekCalendarViewProps) {
   const editEvent = dialogs.editEvent as
     | (CalendarEventUnion & {
@@ -237,6 +241,8 @@ export function WeekCalendarView({
         isMobile={isMobile}
         workingHoursStart={workingHoursStart}
         workingHoursEnd={workingHoursEnd}
+        onBlockDay={onBlockDay}
+        blockDayLoading={blockDayLoading}
       />
 
       {/* Choice dialog: Task vs Google Calendar Event */}
@@ -246,7 +252,11 @@ export function WeekCalendarView({
         onChooseTask={dialogs.handleChooseTask}
         onChooseGoogleEvent={dialogs.handleChooseGoogleEvent}
         googleCalendarConnected={googleCalendarConnected}
-        slotLabel={typeof dialogs.getSlotLabel === 'function' ? dialogs.getSlotLabel() : undefined}
+        slotLabel={
+          typeof dialogs.getSlotLabel === 'function'
+            ? dialogs.getSlotLabel()
+            : undefined
+        }
       />
 
       {/* Task create dialog triggered from calendar click */}
@@ -283,9 +293,7 @@ export function WeekCalendarView({
         onLinkClick={openTaskEditForm}
         onDelete={() => dialogs.handleDeleteEdit(setEvents)}
         onEditGoogleEvent={dialogs.handleEditGoogleEvent}
-        onDeleteGoogleEvent={() =>
-          dialogs.handleDeleteGoogleEvent(setEvents)
-        }
+        onDeleteGoogleEvent={() => dialogs.handleDeleteGoogleEvent(setEvents)}
       />
       <CalendarCompletionDialog
         open={dialogs.completionChoiceOpen}

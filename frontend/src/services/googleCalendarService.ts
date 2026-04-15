@@ -1,8 +1,5 @@
 import { getApiBaseUrl, request } from './apiClient';
-import {
-  toCalendarEventUnion,
-  type UnknownRecord,
-} from './transforms';
+import { toCalendarEventUnion, type UnknownRecord } from './transforms';
 import type { CalendarEventUnion } from '@/types';
 
 export interface GoogleCalendarStatus {

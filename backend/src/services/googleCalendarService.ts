@@ -848,7 +848,8 @@ export class GoogleCalendarService {
       end_time: string;
     }
   ): Promise<string> {
-    const { calendar, calendarId } = await this.getAuthenticatedCalendar(userId);
+    const { calendar, calendarId } =
+      await this.getAuthenticatedCalendar(userId);
 
     const response = await calendar.events.insert({
       calendarId,
@@ -881,7 +882,8 @@ export class GoogleCalendarService {
       end_time?: string;
     }
   ): Promise<void> {
-    const { calendar, calendarId } = await this.getAuthenticatedCalendar(userId);
+    const { calendar, calendarId } =
+      await this.getAuthenticatedCalendar(userId);
 
     const requestBody: Record<string, unknown> = {};
     if (updates.title !== undefined) requestBody.summary = updates.title;
@@ -908,7 +910,8 @@ export class GoogleCalendarService {
     userId: string,
     googleEventId: string
   ): Promise<void> {
-    const { calendar, calendarId } = await this.getAuthenticatedCalendar(userId);
+    const { calendar, calendarId } =
+      await this.getAuthenticatedCalendar(userId);
 
     await calendar.events.delete({
       calendarId,
