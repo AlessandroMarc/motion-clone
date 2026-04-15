@@ -4,7 +4,11 @@ import { UserSettingsService } from './userSettingsService.js';
 import { AutoScheduleService } from './autoScheduleService.js';
 import { TaskService } from './taskService.js';
 import { isCalendarEventTask } from '../types/database.js';
-import type { CalendarEventTask, CalendarEventUnion, Task } from '../types/database.js';
+import type {
+  CalendarEventTask,
+  CalendarEventUnion,
+  Task,
+} from '../types/database.js';
 import { calculateAutoSchedule } from '../utils/autoScheduleCalculator.js';
 import { expandRecurringTasks } from '../utils/recurrenceCalculator.js';
 
@@ -73,27 +77,37 @@ export class DayBlockService {
     authToken: string,
     dateStr: string,
     fromTimeStr: string
-  ): Promise<{ startTime: Date; endTime: Date; isNonWorkingDay: boolean } | { error: string }> {
+  ): Promise<
+    | { startTime: Date; endTime: Date; isNonWorkingDay: boolean }
+    | { error: string }
+  > {
     const startTime = buildLocalDateTime(dateStr, fromTimeStr);
 
-    const schedule = await userSettingsService.getActiveSchedule(userId, authToken);
+    const schedule = await userSettingsService.getActiveSchedule(
+      userId,
+      authToken
+    );
     const dayOfWeek = startTime.getDay() as 0 | 1 | 2 | 3 | 4 | 5 | 6;
     const daySchedule = schedule?.working_days?.[dayOfWeek];
 
     // daySchedule === null  → explicitly non-working day
-    // daySchedule === undefined → no per-day config, use global hours
     const isNonWorkingDay = daySchedule === null;
 
-    const workingEnd =
-      (daySchedule != null ? daySchedule.end : undefined) ??
-      schedule?.working_hours_end ??
-      18;
-
-    const endTimeStr = workingEndToTimeString(workingEnd);
-    const endTime = buildLocalDateTime(dateStr, endTimeStr);
+    // Day blocks extend to midnight (23:59), not to working_hours_end.
+    // Working hours only affect when tasks are scheduled, not when you can block.
+    const [yearStr, monthStr, dayStr] = dateStr.split('-');
+    const endTime = new Date(
+      Number(yearStr),
+      Number(monthStr) - 1,
+      Number(dayStr),
+      23,
+      59,
+      0,
+      0
+    );
 
     if (startTime >= endTime) {
-      return { error: 'The chosen time is at or after the end of your working hours' };
+      return { error: 'The chosen time must be before midnight' };
     }
 
     return { startTime, endTime, isNonWorkingDay };
@@ -108,7 +122,8 @@ export class DayBlockService {
     startTime: Date,
     endTime: Date
   ): Promise<CalendarEventUnion | null> {
-    const allEvents = await calendarEventService.getAllCalendarEvents(authToken);
+    const allEvents =
+      await calendarEventService.getAllCalendarEvents(authToken);
     const hit = allEvents.find(e => {
       if (!(e as { is_day_block?: boolean }).is_day_block) return false;
       const eStart = new Date(e.start_time as unknown as string).getTime();
@@ -153,7 +168,10 @@ export class DayBlockService {
       google_event_id: null as string | null,
       description: null as string | null,
     };
-    const eventsWithBlock = [...allEvents, hypotheticalDayBlock] as CalendarEventUnion[];
+    const eventsWithBlock = [
+      ...allEvents,
+      hypotheticalDayBlock,
+    ] as CalendarEventUnion[];
 
     const [schedules, activeSchedule] = await Promise.all([
       userSettingsService.getUserSchedules(userId, authToken),
@@ -228,24 +246,37 @@ export class DayBlockService {
 
       for (let i = 0; i < sortedCurrent.length; i++) {
         const currentEvt = sortedCurrent[i]!;
-        const currentStart = new Date(currentEvt.start_time as unknown as string).getTime();
-        const currentEnd = new Date(currentEvt.end_time as unknown as string).getTime();
+        const currentStart = new Date(
+          currentEvt.start_time as unknown as string
+        ).getTime();
+        const currentEnd = new Date(
+          currentEvt.end_time as unknown as string
+        ).getTime();
         const isBlocked = currentStart < blockEnd && currentEnd > blockStart;
         if (!isBlocked) continue;
 
         // Use the same-index proposed event to keep chunk correspondence stable
         const proposed = proposedEvents[i] ?? null;
-        tasksToMove.push({ task, currentEvent: currentEvt, proposedTime: proposed });
+        tasksToMove.push({
+          task,
+          currentEvent: currentEvt,
+          proposedTime: proposed,
+        });
       }
     }
 
     // Count net schedule changes
     const currentKeys = new Set(
-      currentTaskEvents.map(e => `${e.linked_task_id}|${e.start_time}|${e.end_time}`)
+      currentTaskEvents.map(
+        e => `${e.linked_task_id}|${e.start_time}|${e.end_time}`
+      )
     );
     const proposedKeys = new Set(
       taskEvents.flatMap(({ task: t, events: evts }) =>
-        evts.map(e => `${t.id}|${e.start_time.toISOString()}|${e.end_time.toISOString()}`)
+        evts.map(
+          e =>
+            `${t.id}|${e.start_time.toISOString()}|${e.end_time.toISOString()}`
+        )
       )
     );
 

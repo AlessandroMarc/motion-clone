@@ -410,9 +410,7 @@ export function WeekCalendarContainer({
           '[WeekCalendarContainer] Failed to create calendar event for task:',
           err
         );
-        toast.warning(
-          'Task created but failed to schedule it on the calendar'
-        );
+        toast.warning('Task created but failed to schedule it on the calendar');
       }
       dialogs.setTaskCreateFromCalendarOpen(false);
     }
@@ -428,10 +426,12 @@ export function WeekCalendarContainer({
     const d = String(date.getDate()).padStart(2, '0');
     const dateStr = `${y}-${m}-${d}`;
 
-    const isToday = dateStr === (() => {
-      const now = new Date();
-      return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
-    })();
+    const isToday =
+      dateStr ===
+      (() => {
+        const now = new Date();
+        return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+      })();
 
     let fromTime: string;
     if (isToday) {
@@ -633,9 +633,7 @@ export function WeekCalendarContainer({
           onLinkClick={openTaskEditForm}
           onDelete={() => dialogs.handleDeleteEdit(setEvents)}
           onEditGoogleEvent={dialogs.handleEditGoogleEvent}
-          onDeleteGoogleEvent={() =>
-            dialogs.handleDeleteGoogleEvent(setEvents)
-          }
+          onDeleteGoogleEvent={() => dialogs.handleDeleteGoogleEvent(setEvents)}
         />
         <GoogleCalendarEventForm
           open={dialogs.googleEventFormOpen}
@@ -766,10 +764,12 @@ export function WeekCalendarContainer({
                   <strong>
                     {dayBlockPreviewData?.fromTime || 'now'} until{' '}
                     {dayBlockPreviewData?.blockEndTime
-                      ? new Date(dayBlockPreviewData.blockEndTime).toLocaleTimeString(
-                          'en-US',
-                          { hour: '2-digit', minute: '2-digit' }
-                        )
+                      ? new Date(
+                          dayBlockPreviewData.blockEndTime
+                        ).toLocaleTimeString('en-US', {
+                          hour: '2-digit',
+                          minute: '2-digit',
+                        })
                       : 'end of day'}
                   </strong>
                   . All task events scheduled during this time will be moved to
@@ -805,7 +805,8 @@ export function WeekCalendarContainer({
                               <div className="text-xs text-muted-foreground">
                                 {item.currentEvent.start_time &&
                                   new Date(
-                                    item.currentEvent.start_time as unknown as string
+                                    item.currentEvent
+                                      .start_time as unknown as string
                                   ).toLocaleTimeString('en-US', {
                                     hour: '2-digit',
                                     minute: '2-digit',
@@ -859,7 +860,8 @@ export function WeekCalendarContainer({
             >
               {dayBlockPreviewLoading
                 ? 'Blocking...'
-                : dayBlockPreviewData && dayBlockPreviewData.tasksToMove.length > 0
+                : dayBlockPreviewData &&
+                    dayBlockPreviewData.tasksToMove.length > 0
                   ? `Block day — ${dayBlockPreviewData.tasksToMove.length} task${dayBlockPreviewData.tasksToMove.length !== 1 ? 's' : ''} will move`
                   : 'Block day'}
             </AlertDialogAction>
