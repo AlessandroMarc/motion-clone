@@ -15,6 +15,35 @@ export interface ChangelogEntry {
 
 export const changelogEntries: ChangelogEntry[] = [
   {
+    version: '1.13.0',
+    date: 'April 2026',
+    title: 'Event Resize & Faster Interactions',
+    description:
+      'Resize calendar events by dragging their bottom edge, plus faster app performance with optimized auth and background scheduling.',
+    items: [
+      {
+        type: 'new',
+        text: 'Resize calendar events by dragging the bottom edge — duration adjusts in 15-minute increments with a 15-minute minimum.',
+      },
+      {
+        type: 'new',
+        text: 'Google Calendar events can now be dragged and dropped to reschedule them, just like tasks.',
+      },
+      {
+        type: 'improved',
+        text: 'Task completion now updates instantly with optimistic UI — no waiting for the server to respond.',
+      },
+      {
+        type: 'improved',
+        text: 'App feels snappier — auth tokens are cached in memory so API calls no longer wait for session checks.',
+      },
+      {
+        type: 'improved',
+        text: 'Auto-schedule now runs in the background after task changes, so you can keep working without waiting for rescheduling to finish.',
+      },
+    ],
+  },
+  {
     version: '1.12.0',
     date: 'April 2026',
     title: 'Continue Tomorrow — Day Blocking',
