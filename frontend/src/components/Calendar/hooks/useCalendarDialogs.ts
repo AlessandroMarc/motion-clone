@@ -402,20 +402,100 @@ export function useCalendarDialogs(
   const handleDeleteEdit = async (
     setEvents: React.Dispatch<React.SetStateAction<CalendarEventUnion[]>>
   ) => {
-    if (!editEventId) return;
-    try {
-      const isDayBlock = editEvent && isCalendarEventDayBlock(editEvent);
+    if (!editEventId || !editEvent) return;
 
-      if (isDayBlock) {
-        await calendarService.deleteDayBlock(editEventId);
-      } else {
-        await calendarService.deleteCalendarEvent(editEventId);
+    const isDayBlock = isCalendarEventDayBlock(editEvent);
+
+    // If it's a day block or a banner event (no linked task), delete immediately
+    if (isDayBlock || !isCalendarEventTask(editEvent)) {
+      try {
+        if (isDayBlock) {
+          await calendarService.deleteDayBlock(editEventId);
+        } else {
+          await calendarService.deleteCalendarEvent(editEventId);
+        }
+        setEvents(curr => curr.filter(ev => ev.id !== editEventId));
+        setEditOpen(false);
+      } catch (err) {
+        console.error('Failed to delete calendar event:', err);
+        throw err;
       }
+      return;
+    }
+
+    // It's a task-linked event — show confirmation dialog
+    const linkedTaskId = (editEvent as { linked_task_id?: string | null })
+      .linked_task_id;
+
+    if (!linkedTaskId) {
+      // No linked task, delete immediately
+      try {
+        await calendarService.deleteCalendarEvent(editEventId);
+        setEvents(curr => curr.filter(ev => ev.id !== editEventId));
+        setEditOpen(false);
+      } catch (err) {
+        console.error('Failed to delete calendar event:', err);
+        throw err;
+      }
+      return;
+    }
+
+    // Fetch the linked task to show in the confirmation dialog
+    try {
+      const task = await taskService.getTaskById(linkedTaskId);
+      setDeleteConfirmLinkedTask({
+        id: task.id,
+        title: task.title,
+        is_recurring: task.is_recurring ?? false,
+        eventId: editEventId,
+      });
+      setDeleteConfirmOpen(true);
+    } catch (err) {
+      console.error('Failed to fetch task for delete confirmation:', err);
+      // Fallback: delete the event anyway
+      await calendarService.deleteCalendarEvent(editEventId);
       setEvents(curr => curr.filter(ev => ev.id !== editEventId));
       setEditOpen(false);
+    }
+  };
+
+  const handleDeleteConfirm = async (
+    choice: 'event' | 'task',
+    setEvents: React.Dispatch<React.SetStateAction<CalendarEventUnion[]>>
+  ) => {
+    if (!deleteConfirmLinkedTask) return;
+
+    setDeleteConfirmOpen(false);
+    setEditOpen(false);
+
+    try {
+      if (choice === 'event') {
+        // Delete only the calendar event instance
+        await calendarService.deleteCalendarEvent(
+          deleteConfirmLinkedTask.eventId
+        );
+        setEvents(curr =>
+          curr.filter(ev => ev.id !== deleteConfirmLinkedTask.eventId)
+        );
+        toast.success('Calendar event deleted');
+      } else {
+        // Delete the task and all its linked calendar events
+        await taskService.deleteTask(deleteConfirmLinkedTask.id);
+        setEvents(curr =>
+          curr.filter(
+            ev =>
+              !isCalendarEventTask(ev) ||
+              ev.linked_task_id !== deleteConfirmLinkedTask.id
+          )
+        );
+        toast.success('Task and all calendar events deleted');
+      }
+      onTaskDropped?.();
     } catch (err) {
-      console.error('Failed to delete calendar event:', err);
-      throw err;
+      console.error('Failed to delete:', err);
+      toast.error(err instanceof Error ? err.message : 'Failed to delete');
+    } finally {
+      setDeleteConfirmLinkedTask(null);
     }
   };
 
@@ -478,5 +558,10 @@ export function useCalendarDialogs(
     handleGoogleEventSaved,
     handleEditGoogleEvent,
     handleDeleteGoogleEvent,
+    // Delete confirmation dialog
+    deleteConfirmOpen,
+    setDeleteConfirmOpen,
+    deleteConfirmLinkedTask,
+    handleDeleteConfirm,
   };
 }

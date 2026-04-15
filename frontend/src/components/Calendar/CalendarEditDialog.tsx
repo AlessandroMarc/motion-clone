@@ -8,16 +8,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
 import { CheckCircle2, Clock, FileText, AlignLeft } from 'lucide-react';
 
@@ -95,12 +85,7 @@ function GoogleEventDetails({
     }
   };
 
-  const handleDeleteClick = () => {
-    if (!onDelete) return;
-    setConfirmOpen(true);
-  };
-
-  const handleDeleteConfirm = async () => {
+  const handleDeleteClick = async () => {
     if (!onDelete) return;
     try {
       await onDelete();
@@ -117,6 +102,10 @@ function GoogleEventDetails({
         err
       );
     }
+  };
+
+  const handleDeleteConfirm = async () => {
+    // No longer used — delete button calls handleDeleteClick directly
   };
 
   return (

@@ -669,6 +669,56 @@ export function WeekCalendarContainer({
             onCancel={() => pinnedWarning.resolve(false)}
           />
         )}
+
+        {/* Delete Task/Event Confirmation Dialog (mobile) */}
+        <AlertDialog
+          open={dialogs.deleteConfirmOpen}
+          onOpenChange={open => {
+            if (!open) {
+              dialogs.setDeleteConfirmOpen(false);
+            }
+          }}
+        >
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Delete event or task?</AlertDialogTitle>
+              <AlertDialogDescription asChild>
+                <div className="space-y-3">
+                  <p>
+                    This calendar event is linked to the task "
+                    <strong>{dialogs.deleteConfirmLinkedTask?.title}</strong>".
+                    What would you like to delete?
+                  </p>
+                  {dialogs.deleteConfirmLinkedTask?.is_recurring && (
+                    <p className="text-sm text-muted-foreground">
+                      This is a recurring task. Deleting the task will remove all
+                      future occurrences.
+                    </p>
+                  )}
+                </div>
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={() =>
+                  dialogs.handleDeleteConfirm('event', setEvents)
+                }
+                className="bg-secondary text-secondary-foreground hover:bg-secondary/90"
+              >
+                Delete event only
+              </AlertDialogAction>
+              <AlertDialogAction
+                onClick={() =>
+                  dialogs.handleDeleteConfirm('task', setEvents)
+                }
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              >
+                Delete task &amp; all events
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     );
   }
@@ -864,6 +914,56 @@ export function WeekCalendarContainer({
                     dayBlockPreviewData.tasksToMove.length > 0
                   ? `Block day — ${dayBlockPreviewData.tasksToMove.length} task${dayBlockPreviewData.tasksToMove.length !== 1 ? 's' : ''} will move`
                   : 'Block day'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Delete Task/Event Confirmation Dialog */}
+      <AlertDialog
+        open={dialogs.deleteConfirmOpen}
+        onOpenChange={open => {
+          if (!open) {
+            dialogs.setDeleteConfirmOpen(false);
+          }
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete event or task?</AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-3">
+                <p>
+                  This calendar event is linked to the task "
+                  <strong>{dialogs.deleteConfirmLinkedTask?.title}</strong>".
+                  What would you like to delete?
+                </p>
+                {dialogs.deleteConfirmLinkedTask?.is_recurring && (
+                  <p className="text-sm text-muted-foreground">
+                    This is a recurring task. Deleting the task will remove all
+                    future occurrences.
+                  </p>
+                )}
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() =>
+                dialogs.handleDeleteConfirm('event', setEvents)
+              }
+              className="bg-secondary text-secondary-foreground hover:bg-secondary/90"
+            >
+              Delete event only
+            </AlertDialogAction>
+            <AlertDialogAction
+              onClick={() =>
+                dialogs.handleDeleteConfirm('task', setEvents)
+              }
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Delete task &amp; all events
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
