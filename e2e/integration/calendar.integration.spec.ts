@@ -18,7 +18,7 @@ test.describe('Calendar — integration', () => {
     await expect(page).toHaveURL(/\/calendar/);
 
     // Verify the "Today" navigation button is visible
-    const todayBtn = page.getByRole('button', { name: /today/i });
+    const todayBtn = page.getByRole('button', { name: 'Today', exact: true });
     await expect(todayBtn).toBeVisible({ timeout: 10000 });
 
     // Verify week navigation arrows exist

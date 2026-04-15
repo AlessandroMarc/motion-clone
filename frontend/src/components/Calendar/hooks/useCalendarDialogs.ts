@@ -2,6 +2,7 @@ import { useState } from 'react';
 import {
   CalendarEventUnion,
   isCalendarEventTask,
+  isCalendarEventDayBlock,
   type CreateCalendarEventInput,
   type UpdateCalendarEventInput,
 } from '@/types';
@@ -394,7 +395,13 @@ export function useCalendarDialogs(
   ) => {
     if (!editEventId) return;
     try {
-      await calendarService.deleteCalendarEvent(editEventId);
+      const isDayBlock = editEvent && isCalendarEventDayBlock(editEvent);
+
+      if (isDayBlock) {
+        await calendarService.deleteDayBlock(editEventId);
+      } else {
+        await calendarService.deleteCalendarEvent(editEventId);
+      }
       setEvents(curr => curr.filter(ev => ev.id !== editEventId));
       setEditOpen(false);
     } catch (err) {
