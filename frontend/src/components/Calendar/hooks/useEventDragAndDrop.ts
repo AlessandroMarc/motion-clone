@@ -224,11 +224,25 @@ export function useEventDragAndDrop(
       // Persist update — onEventUpdate is only called after all external writes succeed
       try {
         if (isGoogleEvent) {
-          // Update via Google Calendar API (syncs to Google and updates local DB)
-          await googleCalendarService.updateEvent(preview.google_event_id!, {
-            start_time: newStartTime,
-            end_time: newEndTime,
-          });
+          // Update via Google Calendar API (syncs to Google and updates local DB).
+          // On failure, attempt a best-effort rollback of the local DB copy in case
+          // the Google write partially succeeded before the local DB write failed.
+          try {
+            await googleCalendarService.updateEvent(preview.google_event_id!, {
+              start_time: newStartTime,
+              end_time: newEndTime,
+            });
+          } catch (googleErr) {
+            try {
+              await calendarService.updateCalendarEvent(preview.id, {
+                start_time: originalStart,
+                end_time: originalEnd,
+              } as UpdateCalendarEventInput);
+            } catch {
+              // Best-effort only — ignore secondary rollback failure
+            }
+            throw googleErr;
+          }
         } else {
           // Task event: update internal calendar event
           await calendarService.updateCalendarEvent(preview.id, {
@@ -236,14 +250,14 @@ export function useEventDragAndDrop(
             end_time: newEndTime,
           } as UpdateCalendarEventInput);
 
-          // Mark the linked task as manually pinned so auto-schedule won't move it
+          // Mark the linked task as manually pinned so auto-schedule won't move it.
+          // If pinning fails, rollback the calendar event to its original times.
           if (isCalendarEventTask(preview) && preview.linked_task_id) {
             try {
               await taskService.updateTask(preview.linked_task_id, {
                 isManuallyPinned: true,
               });
             } catch (pinErr) {
-              // Pin failed: rollback calendar event to its original times
               await calendarService.updateCalendarEvent(preview.id, {
                 start_time: originalStart,
                 end_time: originalEnd,
